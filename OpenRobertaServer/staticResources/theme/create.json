@@ -1,0 +1,33 @@
+{
+    "category": {
+        "CAT_ACTION_RGB": "#0064A2",
+        "CAT_SENSOR_RGB": "#008A8F",
+        "CAT_CONTROL_RGB": "#003366",
+        "CAT_LOGIC_RGB": "#0064A2",
+        "CAT_MATH_RGB": "#0064A2",
+        "CAT_TEXT_RGB": "#008A8F",
+        "CAT_COLOUR_RGB": "#003366",
+        "CAT_VARIABLE_RGB": "#0064A2",
+        "CAT_LIST_RGB": "#003366",
+        "CAT_PROCEDURE_RGB": "#003366",
+        "CAT_ACTIVITY_RGB": "#0064A2",
+        "CAT_COMMUNICATION_RGB": "#003366",
+        "CAT_IMAGE_RGB": "#008A8F"
+    },
+    "data_type": {
+        "Number": "#0064A2",
+        "String": "#008A8F",
+        "Boolean": "#0064A2",
+        "Colour": "#003366",
+        "Connection": "#0064A2",
+        "Sensor": "#008A8F",
+        "Image": "#008A8F",
+        "Actor": "#0064A2",
+        "Array_Number": "#003366",
+        "Array_String": "#003366",
+        "Array_Boolean": "#003366",
+        "Array_Colour": "#003366",
+        "Array_Connection": "#003366",
+        "Array_Image": "#003366"
+    }
+}

@@ -109,7 +109,7 @@ start-from-git) if [[ ! -d $DB_PARENTDIR ]]; then
                    echo "No database found. An empty database will be created."
                    java -cp ${JAVA_LIB_DIR}/\* de.fhg.iais.roberta.main.Administration create-empty-db jdbc:hsqldb:file:$DB_PARENTDIR/$DB_NAME
                 fi
-                java $RDBG -cp ${JAVA_LIB_DIR}/\* de.fhg.iais.roberta.main.ServerStarter \
+                java $RDBG -cp OpenRobertaServer/src/main/resources:${JAVA_LIB_DIR}/\* de.fhg.iais.roberta.main.ServerStarter \
                      -d database.mode=embedded \
                      -d database.parentdir=$DB_PARENTDIR \
                      -d database.name=$DB_NAME \

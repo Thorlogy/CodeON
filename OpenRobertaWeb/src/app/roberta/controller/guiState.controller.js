@@ -404,12 +404,16 @@ function setRunEnabled(running) {
     running ? true : false;
     GUISTATE.gui.runEnabled = running;
     if (running) {
-        GUISTATE.gui.blocklyWorkspace && GUISTATE.gui.blocklyWorkspace.robControls.enable('runOnBrick');
-        GUISTATE.gui.blocklyWorkspace && GUISTATE.gui.blocklyWorkspace.robControls.enable('stopProgram');
+        if (GUISTATE.gui.blocklyWorkspace && GUISTATE.gui.blocklyWorkspace.robControls) {
+            GUISTATE.gui.blocklyWorkspace.robControls.enable('runOnBrick');
+            GUISTATE.gui.blocklyWorkspace.robControls.enable('stopProgram');
+        }
         $('.menuRunProg, #runSourceCodeEditor').removeClass('disabled');
     } else {
-        GUISTATE.gui.blocklyWorkspace && GUISTATE.gui.blocklyWorkspace.robControls.disable('runOnBrick');
-        GUISTATE.gui.blocklyWorkspace && GUISTATE.gui.blocklyWorkspace.robControls.disable('stopProgram');
+        if (GUISTATE.gui.blocklyWorkspace && GUISTATE.gui.blocklyWorkspace.robControls) {
+            GUISTATE.gui.blocklyWorkspace.robControls.disable('runOnBrick');
+            GUISTATE.gui.blocklyWorkspace.robControls.disable('stopProgram');
+        }
         $('.menuRunProg, #runSourceCodeEditor').addClass('disabled');
     }
 }
@@ -641,15 +645,21 @@ function setProgramSaved(save) {
     if (save) {
         $('#menuSaveProg').parent().removeClass('disabled');
         $('#menuSaveProg').parent().addClass('disabled');
-        getBlocklyWorkspace().robControls.disable('saveProgram');
+        if (getBlocklyWorkspace().robControls) {
+            getBlocklyWorkspace().robControls.disable('saveProgram');
+        }
     } else {
         if (isUserLoggedIn() && !isProgramStandard() && isProgramWritable()) {
             $('#menuSaveProg').parent().removeClass('disabled');
-            getBlocklyWorkspace().robControls.enable('saveProgram');
+            if (getBlocklyWorkspace().robControls) {
+                getBlocklyWorkspace().robControls.enable('saveProgram');
+            }
         } else {
             $('#menuSaveProg').parent().removeClass('disabled');
             $('#menuSaveProg').parent().addClass('disabled');
-            getBlocklyWorkspace().robControls.disable('saveProgram');
+            if (getBlocklyWorkspace().robControls) {
+                getBlocklyWorkspace().robControls.disable('saveProgram');
+            }
         }
     }
     GUISTATE.program.saved = save;
@@ -663,15 +673,21 @@ function setConfigurationSaved(save) {
     if (save) {
         $('#menuSaveConfig').parent().removeClass('disabled');
         $('#menuSaveConfig').parent().addClass('disabled');
-        getBricklyWorkspace().robControls.disable('saveProgram');
+        if (getBricklyWorkspace().robControls) {
+            getBricklyWorkspace().robControls.disable('saveProgram');
+        }
     } else {
         if (isUserLoggedIn() && !isConfigurationStandard() && !isConfigurationAnonymous()) {
             $('#menuSaveConfig').parent().removeClass('disabled');
-            getBricklyWorkspace().robControls.enable('saveProgram');
+            if (getBricklyWorkspace().robControls) {
+                getBricklyWorkspace().robControls.enable('saveProgram');
+            }
         } else {
             $('#menuSaveConfig').parent().removeClass('disabled');
             $('#menuSaveConfig').parent().addClass('disabled');
-            getBricklyWorkspace().robControls.disable('saveProgram');
+            if (getBricklyWorkspace().robControls) {
+                getBricklyWorkspace().robControls.disable('saveProgram');
+            }
         }
     }
     GUISTATE.configuration.saved = save;

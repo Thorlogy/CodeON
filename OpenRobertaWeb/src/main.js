@@ -1,3 +1,33 @@
+// Global Scoped Pointer-to-Mouse Proxy – restores Blockly drag-and-drop on modern browsers
+(function () {
+    var blocklySelector = '.blocklySvg, .blocklyToolboxDiv, .blocklyTreeRow';
+    ['pointerdown', 'pointermove', 'pointerup', 'pointercancel'].forEach(function (type) {
+        document.addEventListener(
+            type,
+            function (e) {
+                if (!e.target.closest(blocklySelector)) return;
+                var mouseEvent = new MouseEvent(type.replace('pointer', 'mouse'), {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window,
+                    clientX: e.clientX,
+                    clientY: e.clientY,
+                    button: e.button,
+                    buttons: e.buttons,
+                    ctrlKey: e.ctrlKey,
+                    shiftKey: e.shiftKey,
+                    altKey: e.altKey,
+                    metaKey: e.metaKey,
+                });
+                e.preventDefault();
+                e.target.dispatchEvent(mouseEvent);
+            },
+            true
+        );
+    });
+    console.log('✓ Blockly Pointer-to-Mouse Proxy installed');
+})();
+
 require.config({
     baseUrl: '.',
     paths: {
@@ -135,6 +165,8 @@ require.config({
         port: 'js/app/configVisualization/port',
         robotBlock: 'js/app/configVisualization/robotBlock',
         wires: 'js/app/configVisualization/wires',
+        creators_theme: 'js/creators_theme',
+        'aiHelper.controller': 'js/app/roberta/controller/aiHelper.controller',
     },
     shim: {
         webots: {
@@ -249,6 +281,8 @@ require([
     //end connections
     'ace',
     'ace_lang',
+    'creators_theme',
+    'aiHelper.controller',
 ], function (require) {
     //window.Popper = require('popper.js').default;
     window.$ = window.jQuery = require('jquery');
@@ -290,6 +324,8 @@ require([
     startViewController = require('startView.controller');
     connectionController = require('connection.controller');
     aceEditor = require('aceEditor');
+    creatorsTheme = require('creators_theme');
+    aiHelperController = require('aiHelper.controller');
 
     $(document).ready(WRAP.wrapTotal(init, 'page init'));
 });
@@ -318,6 +354,8 @@ function init() {
             legalController.init();
             sourceCodeEditorController.init();
             tutorialController.init();
+            creatorsTheme.init();
+            aiHelperController.init();
             userGroupController.init();
             notificationController.init();
             return startViewController.init(initProgramming);

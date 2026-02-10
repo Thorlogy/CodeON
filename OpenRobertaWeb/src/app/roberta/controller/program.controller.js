@@ -46,9 +46,140 @@ function init() {
 
 function initView() {
     var toolbox = GUISTATE_C.getProgramToolbox();
-    blocklyWorkspace = Blockly.inject(document.getElementById('blocklyDiv'), {
+
+    var serverTheme = GUISTATE_C.getTheme();
+    var blocklyTheme;
+    // Determine the active Blockly instance.
+    // If running V10, window.Blockly should be set and have Theme support.
+    // Otherwise, use the imported Blockly (legacy).
+    var activeBlockly = (typeof window !== 'undefined' && window.Blockly && window.Blockly.Theme) ? window.Blockly : Blockly;
+
+    if (serverTheme && activeBlockly.Theme) {
+        var categoryStyles = {};
+        var blockStyles = {};
+
+        // Map OpenRoberta categories to Blockly V10 categoryStyles
+        if (serverTheme.category) {
+            var catMap = {
+                "TOOLBOX_ACTION": "CAT_ACTION_RGB",
+                "TOOLBOX_SENSOR": "CAT_SENSOR_RGB",
+                "TOOLBOX_CONTROL": "CAT_CONTROL_RGB",
+                "TOOLBOX_LOGIC": "CAT_LOGIC_RGB",
+                "TOOLBOX_MATH": "CAT_MATH_RGB",
+                "TOOLBOX_TEXT": "CAT_TEXT_RGB",
+                "TOOLBOX_LIST": "CAT_LIST_RGB",
+                "TOOLBOX_COLOUR": "CAT_COLOUR_RGB",
+                "TOOLBOX_VARIABLE": "CAT_VARIABLE_RGB",
+                "TOOLBOX_PROCEDURE": "CAT_PROCEDURE_RGB",
+                "TOOLBOX_COMMUNICATION": "CAT_COMMUNICATION_RGB",
+                "TOOLBOX_IMAGE": "CAT_IMAGE_RGB",
+                "TOOLBOX_DAEMON": "CAT_DAEMON_RGB",
+                // Expert categories
+                "TOOLBOX_DRIVE": "CAT_ACTION_RGB",
+                "TOOLBOX_MOVE": "CAT_ACTION_RGB",
+                "TOOLBOX_DISPLAY": "CAT_ACTION_RGB",
+                "TOOLBOX_SOUND": "CAT_ACTION_RGB",
+                "TOOLBOX_LIGHT": "CAT_ACTION_RGB",
+                "TOOLBOX_PIN": "CAT_ACTION_RGB",
+                "TOOLBOX_WAIT": "CAT_CONTROL_RGB",
+                "TOOLBOX_DECISION": "CAT_CONTROL_RGB",
+                "TOOLBOX_LOOP": "CAT_CONTROL_RGB"
+            };
+
+            for (var key in catMap) {
+                if (serverTheme.category[catMap[key]]) {
+                    categoryStyles[key] = {
+                        "colour": serverTheme.category[catMap[key]]
+                    };
+                }
+            }
+
+            // 1. Inject categorystyle into the Toolbox XML
+            if (toolbox) {
+                try {
+                    var parser = new DOMParser();
+                    var xmlDoc = parser.parseFromString(toolbox, "text/xml");
+                    var categories = xmlDoc.getElementsByTagName("category");
+                    for (var i = 0; i < categories.length; i++) {
+                        var catName = categories[i].getAttribute("name");
+                        if (catName && categoryStyles[catName]) {
+                            categories[i].setAttribute("categorystyle", catName);
+                        }
+                    }
+                    var serializer = new XMLSerializer();
+                    toolbox = serializer.serializeToString(xmlDoc);
+                } catch (e) {
+                    console.error("Error patching toolbox XML:", e);
+                }
+            }
+        }
+
+        // Define standard block styles using theme colors
+        if (serverTheme.category) {
+            blockStyles["logic_blocks"] = { "colourPrimary": serverTheme.category["CAT_LOGIC_RGB"] };
+            blockStyles["loop_blocks"] = { "colourPrimary": serverTheme.category["CAT_CONTROL_RGB"] };
+            blockStyles["math_blocks"] = { "colourPrimary": serverTheme.category["CAT_MATH_RGB"] };
+            blockStyles["text_blocks"] = { "colourPrimary": serverTheme.category["CAT_TEXT_RGB"] };
+            blockStyles["list_blocks"] = { "colourPrimary": serverTheme.category["CAT_LIST_RGB"] };
+            blockStyles["colour_blocks"] = { "colourPrimary": serverTheme.category["CAT_COLOUR_RGB"] };
+            blockStyles["variable_blocks"] = { "colourPrimary": serverTheme.category["CAT_VARIABLE_RGB"] };
+            blockStyles["procedure_blocks"] = { "colourPrimary": serverTheme.category["CAT_PROCEDURE_RGB"] };
+
+            // Custom OpenRoberta Styles
+            blockStyles["robActions_blocks"] = { "colourPrimary": serverTheme.category["CAT_ACTION_RGB"] };
+            blockStyles["robSensors_blocks"] = { "colourPrimary": serverTheme.category["CAT_SENSOR_RGB"] };
+            blockStyles["robControls_blocks"] = { "colourPrimary": serverTheme.category["CAT_CONTROL_RGB"] };
+            blockStyles["robBrick_blocks"] = { "colourPrimary": serverTheme.category["CAT_ACTION_RGB"] };
+        }
+
+        // 2. Assign styles to OpenRoberta blocks in Blockly.Blocks
+        if (activeBlockly.Blocks) {
+            for (var blockName in activeBlockly.Blocks) {
+                if (activeBlockly.Blocks.hasOwnProperty(blockName)) {
+                    var block = activeBlockly.Blocks[blockName];
+                    if (blockName.startsWith("robActions")) {
+                        block.style = "robActions_blocks";
+                    } else if (blockName.startsWith("robSensors")) {
+                        block.style = "robSensors_blocks";
+                    } else if (blockName.startsWith("robControls")) {
+                        block.style = "robControls_blocks";
+                    } else if (blockName.startsWith("robBrick")) {
+                        block.style = "robBrick_blocks";
+                    }
+                }
+            }
+        }
+
+        blocklyTheme = activeBlockly.Theme.defineTheme('CreateV10', {
+            'base': activeBlockly.Themes.Classic,
+            'categoryStyles': categoryStyles,
+            'blockStyles': blockStyles,
+            'componentStyles': {
+                'workspaceBackgroundColour': '#ffffff',
+                'toolboxBackgroundColour': '#DDDDDD',
+                'toolboxForegroundColour': '#000000',
+                'flyoutBackgroundColour': '#dddddd',
+                'flyoutForegroundColour': '#000000',
+                'flyoutOpacity': 1,
+                'scrollbarColour': '#797979',
+                'insertionMarkerColour': '#fff',
+                'insertionMarkerOpacity': 0.3,
+                'scrollbarOpacity': 0.4,
+                'cursorColour': '#d0d0d0'
+            },
+            'fontStyle': {
+                'family': '"Helvetica Neue", Helvetica, Arial, sans-serif',
+                'weight': 'normal',
+                'size': 12
+            }
+        });
+    }
+
+    blocklyWorkspace = activeBlockly.inject(document.getElementById('blocklyDiv'), {
         path: '/blockly/',
         toolbox: toolbox,
+        theme: blocklyTheme || GUISTATE_C.getTheme(), // Fallback to old behavior if something fails
+
         trashcan: true,
         scrollbars: true,
         media: '../blockly/media/',
@@ -62,7 +193,6 @@ function initView() {
         },
         variableDeclaration: true,
         robControls: true,
-        theme: GUISTATE_C.getTheme(),
     });
     $(window).resize();
     blocklyWorkspace.setDevice({
@@ -145,6 +275,11 @@ function initEvents() {
         LOG.info('toolbox clicked, switched to ' + target);
     });
 
+    $('#syncButton').onWrap('click', function (e) {
+        e.preventDefault();
+        alert("Reverse synchronization (Python -> Blocks) is not yet supported. This feature will use AI to reconstruct blocks from code.");
+    });
+
     bindControl();
     blocklyWorkspace.addChangeListener(function (event) {
         if (listenToBlocklyEvents && event.type != Blockly.Events.UI && GUISTATE_C.isProgramSaved()) {
@@ -163,6 +298,24 @@ function initEvents() {
                 offset: -10,
             });
         }
+
+        // Auto-Sync: Update Source Code Editor if visible
+        if (event.type !== Blockly.Events.UI && $('#sourceCodeEditorPane').is(':visible')) {
+            clearTimeout(blocklyWorkspace.syncTimeout);
+            blocklyWorkspace.syncTimeout = setTimeout(function () {
+                var dom = Blockly.Xml.workspaceToDom(blocklyWorkspace);
+                var xmlProgram = Blockly.Xml.domToText(dom);
+                var xmlConfigText = GUISTATE_C.isConfigurationAnonymous() ? GUISTATE_C.getConfigurationXML() : undefined;
+                var isNamedConfig = !GUISTATE_C.isConfigurationStandard() && !GUISTATE_C.isConfigurationAnonymous();
+                var configName = isNamedConfig ? GUISTATE_C.getConfigurationName() : undefined;
+                var language = GUISTATE_C.getLanguage();
+
+                PROGRAM.showSourceProgram(GUISTATE_C.getProgramName(), configName, xmlProgram, xmlConfigText, language, getSSID(), getPassword(), function (result) {
+                    ACE_EDITOR.setEditorCode(result.sourceCode);
+                });
+            }, 2000);
+        }
+
         return false;
     });
 }
@@ -356,7 +509,7 @@ function showSaveAsModal() {
             $('#single-modal label').text(Blockly.Msg['POPUP_NAME']);
         },
         saveAsProgramToServer,
-        function () {},
+        function () { },
         {
             rules: {
                 singleModalInput: {

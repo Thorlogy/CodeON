@@ -79,9 +79,33 @@ function toggleInfo($button) {
     if ($('#infoButton').hasClass('rightActive')) {
         $('#blocklyDiv').closeRightView();
     } else {
-        $('#infoContent').html(blocklyWorkspace.description);
-        $('.bootstrap-tagsinput input').attr('placeholder', Blockly.Msg.INFO_TAGS || 'Tags');
-        $('#infoTags').tagsinput('add', blocklyWorkspace.tags);
+        // AI Suggestions Interface
+        var chatHtml =
+            '<div id="aiChat" style="padding: 10px; display: flex; flex-direction: column; height: 100%;">' +
+            '<h4 style="margin-top: 0;">AI Code Buddy</h4>' +
+            '<div id="aiChatOutput" style="flex-grow: 1; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; background: #f9f9f9; border-radius: 4px;">' +
+            '<div class="ai-msg" style="margin-bottom: 10px;"><strong>Buddy:</strong> Hi! I can help you with your code. Click "Get Suggestions" to analyze your blocks!</div>' +
+            '</div>' +
+            '<button id="aiAskBtn" class="btn btn-primary" style="width: 100%;">Get Suggestions</button>' +
+            '</div>';
+
+        $('#infoContent').html(chatHtml);
+        // Remove wysiwyg binding to prevent interference
+        $('#infoContent').off();
+
+        $('#aiAskBtn').on('click', function () {
+            var msgs = [
+                "Try adding a loop to repeat actions!",
+                "Check your variable names, they should be descriptive.",
+                "Looks like you're driving the robot. Make sure to stop it at the end!",
+                "Great start! Have you tried using a sensor?"
+            ];
+            var randomMsg = msgs[Math.floor(Math.random() * msgs.length)];
+            $('#aiChatOutput').append('<div class="ai-msg" style="margin-bottom: 10px;"><strong>Buddy:</strong> ' + randomMsg + '</div>');
+            var chatOut = document.getElementById("aiChatOutput");
+            chatOut.scrollTop = chatOut.scrollHeight;
+        });
+
         $button.openRightView($('#infoDiv'), INITIAL_WIDTH);
     }
 }
