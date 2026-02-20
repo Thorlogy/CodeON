@@ -338,7 +338,7 @@ window.MissionSim3D = (function () {
         var yaw = Math.atan2(dirX, dirZ);
         surf.rotation.order = 'YXZ';
         surf.rotation.y = yaw;
-        surf.rotation.x = -Math.PI / 2 + slopeAngle;
+        surf.rotation.x = -Math.PI / 2 - slopeAngle;
         rampGroup.add(surf);
 
         // ── Yellow edge stripes ──────────────────────────────────
