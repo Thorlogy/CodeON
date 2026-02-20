@@ -81,6 +81,9 @@ window.MissionSim3D = (function () {
     //              dirX, dirZ,  len,  perpX, perpZ }
     var ramps = [];
 
+    // Track dynamically added objects to clear them on reset
+    var dynamicMeshes = [];
+
 
     // ════════════════════════════════════════════════════════════════
     // INIT
@@ -181,10 +184,11 @@ window.MissionSim3D = (function () {
         // ── World objects ──────────────────────────────────────────
         addTarget(0, -18, 0x22c55e);    // green ring further back
 
-        // ── Bridge / composite ramp ────────────
-        addRamp({ x0: 0, y0: 0, z0: -3, x1: 0, y1: 2.2, z1: -9, width: 4.5 }); // Up
-        addRamp({ x0: 0, y0: 2.2, z0: -9, x1: 0, y1: 2.2, z1: -14, width: 4.5 }); // Flat
-        addRamp({ x0: 0, y0: 2.2, z0: -14, x1: 0, y1: 0, z1: -20, width: 4.5 }); // Down
+        // Use the initial load objects simply as defaults (though now they can be empty!)
+        // I will leave an example ramp for testing, but they will be overridable by code soon
+        // addRamp({ x0: 0, y0: 0, z0: -3, x1: 0, y1: 2.2, z1: -9, width: 4.5 }); // Up
+        // addRamp({ x0: 0, y0: 2.2, z0: -9, x1: 0, y1: 2.2, z1: -14, width: 4.5 }); // Flat
+        // addRamp({ x0: 0, y0: 2.2, z0: -14, x1: 0, y1: 0, z1: -20, width: 4.5 }); // Down
 
         // ── Render loop ────────────────────────────────────────────
         clock = new THREE.Clock();
@@ -269,22 +273,22 @@ window.MissionSim3D = (function () {
     // ════════════════════════════════════════════════════════════════
     // WORLD OBJECTS
     // ════════════════════════════════════════════════════════════════
-    function addObstacle(xWorld, zWorld, color) {
-        var geo = new THREE.BoxGeometry(3, 3.5, 3);
+    function addObstacle(x, z, w, d, h, color) {
+        var geo = new THREE.BoxGeometry(w, h, d);
         var mat = new THREE.MeshPhongMaterial({ color: color || 0x3b82f6, shininess: 40 });
-        var box = new THREE.Mesh(geo, mat);
-        box.position.set(xWorld, 1.75, zWorld);
-        box.castShadow = true;
-        box.receiveShadow = true;
-        scene.add(box);
+        var m = new THREE.Mesh(geo, mat);
+        m.position.set(x, h / 2, z);
+        m.castShadow = true;
+        m.receiveShadow = true;
+        scene.add(m);
 
-        // Register AABB (half-extents: 1.5 x 1.5 in X/Z)
         obstacles.push({
-            minX: xWorld - 1.5,
-            maxX: xWorld + 1.5,
-            minZ: zWorld - 1.5,
-            maxZ: zWorld + 1.5
+            minX: x - w / 2, maxX: x + w / 2,
+            minZ: z - d / 2, maxZ: z + d / 2,
+            h: h
         });
+
+        return m;
     }
 
     function addTarget(xWorld, zWorld, color) {
@@ -346,7 +350,7 @@ window.MissionSim3D = (function () {
         [-1, 1].forEach(function (s) {
             var stripe = new THREE.Mesh(new THREE.PlaneGeometry(0.18, hyp), stripeMat);
             // Parent to the surface so it perfectly matches its rotation and slope
-            // The PlaneGeometry is created in the XY plane by default. 
+            // The PlaneGeometry is created in the XY plane by default.
             // We just shift it left/right along its local X, and slightly up along its local Z (normal)
             stripe.position.set(s * (w / 2 - 0.1), 0, 0.01);
             surf.add(stripe);
@@ -437,6 +441,7 @@ window.MissionSim3D = (function () {
         });
 
         console.log('[MissionSim3D] Ramp added. slope=' + (slopeAngle * 180 / Math.PI).toFixed(1) + '° len=' + len.toFixed(1));
+        return rampGroup;
     }
 
     /**
@@ -503,6 +508,16 @@ window.MissionSim3D = (function () {
         robotState.wheelPosR = 0;
         commandQueue = [];
         onDoneCallback = null;
+
+        // Clear dynamic world objects
+        for (var i = 0; i < dynamicMeshes.length; i++) {
+            scene.remove(dynamicMeshes[i]);
+        }
+        dynamicMeshes = [];
+        // Reset collision maps (keeping targets/permanent bounds if any, but clearing blocks)
+        obstacles = [];
+        ramps = [];
+
         applyRobotPose();
         console.log('[MissionSim3D] Reset');
     }
@@ -596,6 +611,20 @@ window.MissionSim3D = (function () {
 
         var cmd = commandQueue.shift();
         console.log('[MissionSim3D] Executing:', cmd);
+
+        if (cmd.type === 'build_ramp') {
+            var rMesh = addRamp(cmd);
+            dynamicMeshes.push(rMesh);
+            executeNextCommand();
+            return;
+        }
+
+        if (cmd.type === 'build_obstacle') {
+            var oMesh = addObstacle(cmd.x, cmd.z, cmd.w, cmd.d, cmd.h, cmd.color);
+            dynamicMeshes.push(oMesh);
+            executeNextCommand();
+            return;
+        }
 
         if (cmd.type === 'drive') {
             executeDrive(cmd.distance, cmd.speed, executeNextCommand);
@@ -829,6 +858,8 @@ window.MissionSim3D = (function () {
         init: init,
         reset: reset,
         runCommands: runCommands,
-        stop: stop
+        stop: stop,
+        addRamp: addRamp,
+        addObstacle: addObstacle
     };
 })();

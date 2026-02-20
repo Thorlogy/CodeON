@@ -102,6 +102,22 @@
                     inputs: { WAIT: 1000 }
                 }
             ]
+        },
+        {
+            category: 'Weltbau',
+            color: '#8b5cf6', // Indigo/Purple
+            blocks: [
+                {
+                    label: '🌉 Baue Rampe',
+                    type: 'robActions_build_ramp',
+                    inputs: { X0: 0, Y0: 0, Z0: 5, X1: 0, Y1: 2, Z1: 15, WIDTH: 4 }
+                },
+                {
+                    label: '🧱 Baue Hindernis',
+                    type: 'robActions_build_obstacle',
+                    inputs: { X: 5, Z: 5, WIDTH: 2, HEIGHT: 2, DEPTH: 2 }
+                }
+            ]
         }
     ];
 
