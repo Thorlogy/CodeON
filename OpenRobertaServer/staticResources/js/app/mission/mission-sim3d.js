@@ -377,24 +377,30 @@ window.MissionSim3D = (function () {
                 positions.push(lx, ly, lz);
             }
 
-            // Left wall: from ground (0) to surface (y0/y1) (Quad = 2 tris)
+            // Left wall (facing -X local side, which is actually side=lH)
+            // Points: A(0,0,lH), B(len,0,lH), C(len,y1,lH), D(0,y0,lH)
+            // Winding: from outside (looking +ve along lH's normal), CCW is A -> B -> C and A -> C -> D
             v(0, 0, lH); v(len, 0, lH); v(len, y1, lH);
             v(0, 0, lH); v(len, y1, lH); v(0, y0, lH);
 
-            // Right wall: Quad
-            v(0, 0, rH); v(len, y1, rH); v(len, 0, rH);
+            // Right wall (facing +X local side, which is side=rH)
+            // Points: A(0,0,rH), B(len,0,rH), C(len,y1,rH), D(0,y0,rH)
+            // Winding: from outside, CCW is A -> D -> C and A -> C -> B
             v(0, 0, rH); v(0, y0, rH); v(len, y1, rH);
+            v(0, 0, rH); v(len, y1, rH); v(len, 0, rH);
 
-            // Front wall (at al=0), if y0 > 0:
+            // Front wall (at al=0, facing -Z local), if y0 > 0:
+            // Points: A(0,0,rH), B(0,y0,rH), C(0,y0,lH), D(0,0,lH)
             if (y0 > 0) {
-                v(0, 0, rH); v(0, y0, lH); v(0, 0, lH);
                 v(0, 0, rH); v(0, y0, rH); v(0, y0, lH);
+                v(0, 0, rH); v(0, y0, lH); v(0, 0, lH);
             }
 
-            // Back wall (at al=len), if y1 > 0:
+            // Back wall (at al=len, facing +Z local), if y1 > 0:
+            // Points: A(len,0,lH), B(len,y1,lH), C(len,y1,rH), D(len,0,rH)
             if (y1 > 0) {
-                v(len, 0, lH); v(len, y1, lH); v(len, 0, rH);
-                v(len, y1, lH); v(len, y1, rH); v(len, 0, rH);
+                v(len, 0, lH); v(len, y1, lH); v(len, y1, rH);
+                v(len, 0, lH); v(len, y1, rH); v(len, 0, rH);
             }
 
             var geo = new THREE.BufferGeometry();
