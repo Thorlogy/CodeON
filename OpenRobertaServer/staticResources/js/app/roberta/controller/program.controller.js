@@ -771,5 +771,9 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
     exports.loadToolbox = loadToolbox;
     exports.loadExternalToolbox = loadExternalToolbox;
     exports.programToBlocklyWorkspace = programToBlocklyWorkspace;
+    exports.getSSID = getSSID;
+    exports.setSSID = setSSID;
+    exports.getPassword = getPassword;
+    exports.setPassword = setPassword;
 
 });

@@ -10,6 +10,166 @@ let wasEdited: boolean = false;
 let previousLineCount: number = 0;
 let initialized: boolean = false;
 
+// EV3dev API Autocomplete Completer
+const ev3devCompleter = {
+    getCompletions: function (editor: any, session: any, pos: any, prefix: string, callback: any) {
+        const completions = [
+            // Hal display methods
+            {
+                caption: 'hal.drawText',
+                value: 'hal.drawText(text, x, y)',
+                meta: 'EV3dev Display',
+                score: 1000
+            },
+            {
+                caption: 'hal.drawPicture',
+                value: 'hal.drawPicture(picture, x, y)',
+                meta: 'EV3dev Display',
+                score: 1000
+            },
+            {
+                caption: 'hal.clearDisplay',
+                value: 'hal.clearDisplay()',
+                meta: 'EV3dev Display',
+                score: 1000
+            },
+            // Hal timing methods
+            {
+                caption: 'hal.waitFor',
+                value: 'hal.waitFor(ms)',
+                meta: 'EV3dev Timing',
+                score: 1000
+            },
+            // Motor control methods
+            {
+                caption: 'hal.rotateDirectionRegulated',
+                value: 'hal.rotateDirectionRegulated(port, direction, speed)',
+                meta: 'EV3dev Motor',
+                score: 1000
+            },
+            {
+                caption: 'hal.rotateDirectionAngle',
+                value: 'hal.rotateDirectionAngle(port, direction, speed, angle)',
+                meta: 'EV3dev Motor',
+                score: 1000
+            },
+            {
+                caption: 'hal.turnOnRegulatedMotor',
+                value: 'hal.turnOnRegulatedMotor(port, speed)',
+                meta: 'EV3dev Motor',
+                score: 1000
+            },
+            {
+                caption: 'hal.setRegulatedMotorSpeed',
+                value: 'hal.setRegulatedMotorSpeed(port, speed)',
+                meta: 'EV3dev Motor',
+                score: 1000
+            },
+            {
+                caption: 'hal.stopMotor',
+                value: 'hal.stopMotor(port, mode)',
+                meta: 'EV3dev Motor',
+                score: 1000
+            },
+            // Sensor methods
+            {
+                caption: 'hal.isKeyPressed',
+                value: 'hal.isKeyPressed(key)',
+                meta: 'EV3dev Sensor',
+                score: 1000
+            },
+            {
+                caption: 'hal.isPressed',
+                value: 'hal.isPressed(port)',
+                meta: 'EV3dev Sensor',
+                score: 1000
+            },
+            {
+                caption: 'hal.getUltraSonicSensorDistance',
+                value: 'hal.getUltraSonicSensorDistance(port)',
+                meta: 'EV3dev Sensor',
+                score: 1000
+            },
+            {
+                caption: 'hal.getColorSensorColour',
+                value: 'hal.getColorSensorColour(port)',
+                meta: 'EV3dev Sensor',
+                score: 1000
+            },
+            {
+                caption: 'hal.getColorSensorRed',
+                value: 'hal.getColorSensorRed(port)',
+                meta: 'EV3dev Sensor',
+                score: 1000
+            },
+            {
+                caption: 'hal.getGyroSensorAngle',
+                value: 'hal.getGyroSensorAngle(port)',
+                meta: 'EV3dev Sensor',
+                score: 1000
+            },
+            {
+                caption: 'hal.getInfraredSensorDistance',
+                value: 'hal.getInfraredSensorDistance(port)',
+                meta: 'EV3dev Sensor',
+                score: 1000
+            },
+            // Sound methods
+            {
+                caption: 'hal.playTone',
+                value: 'hal.playTone(frequency, duration)',
+                meta: 'EV3dev Sound',
+                score: 1000
+            },
+            {
+                caption: 'hal.playFile',
+                value: 'hal.playFile(filename)',
+                meta: 'EV3dev Sound',
+                score: 1000
+            },
+            // LED methods
+            {
+                caption: 'hal.ledOn',
+                value: 'hal.ledOn(color, mode)',
+                meta: 'EV3dev LED',
+                score: 1000
+            },
+            {
+                caption: 'hal.ledOff',
+                value: 'hal.ledOff()',
+                meta: 'EV3dev LED',
+                score: 1000
+            },
+            // Common Python patterns
+            {
+                caption: 'if',
+                value: 'if ${1:condition}:\n    ${2:pass}',
+                meta: 'Python',
+                score: 900
+            },
+            {
+                caption: 'while',
+                value: 'while ${1:condition}:\n    ${2:pass}',
+                meta: 'Python',
+                score: 900
+            },
+            {
+                caption: 'for',
+                value: 'for ${1:i} in range(${2:10}):\n    ${3:pass}',
+                meta: 'Python',
+                score: 900
+            },
+            {
+                caption: 'def',
+                value: 'def ${1:function_name}(${2:params}):\n    ${3:pass}',
+                meta: 'Python',
+                score: 900
+            }
+        ];
+        callback(null, completions);
+    }
+};
+
 export function init() {
     if (initialized) return;
 
@@ -19,18 +179,31 @@ export function init() {
     codeView = ace.edit('codeContent');
     applyDefaultSettings(codeView);
     codeView.setOptions({
-        readOnly: true,
-        highlightActiveLine: false,
-        highlightGutterLine: false,
+        readOnly: false,  // Changed from true to false to enable editing
+        highlightActiveLine: true,  // Changed from false to enable active line highlighting
+        highlightGutterLine: true,  // Changed from false to enable gutter line highlighting
+        enableBasicAutocompletion: true,  // Added for autocomplete
+        enableSnippets: true,  // Added for snippets
+        enableLiveAutocompletion: true,  // Added for live autocomplete
     });
+
+    // Add custom EV3dev completer to codeView as well
+    // @ts-ignore
+    const langToolsForCodeView = ace.require('ace/ext/language_tools');
+    langToolsForCodeView.addCompleter(ev3devCompleter);
 
     editor = ace.edit('aceEditor');
     applyDefaultSettings(editor);
     editor.setOptions({
         enableBasicAutocompletion: true,
-        enableSnippets: false,
-        enableLiveAutocompletion: false,
+        enableSnippets: true,
+        enableLiveAutocompletion: true,
     });
+
+    // Add custom EV3dev completer
+    // @ts-ignore
+    const langTools = ace.require('ace/ext/language_tools');
+    langTools.addCompleter(ev3devCompleter);
 
     editor.session.on('change', function () {
         if (previousLineCount !== editor.session.getLength()) {

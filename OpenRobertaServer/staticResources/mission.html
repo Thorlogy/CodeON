@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="utf-8">
+    <title>NEPO 3D</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ── Sidebar ── */
+        #sidebar {
+            width: 220px;
+            min-width: 220px;
+            background: linear-gradient(180deg, #16213e 0%, #0f3460 100%);
+            display: flex;
+            flex-direction: column;
+            padding: 20px 14px 14px;
+            border-right: 2px solid #e94560;
+            z-index: 20;
+        }
+
+        #sidebar h1 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #e94560;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .mission-badge {
+            display: inline-block;
+            background: #e94560;
+            color: white;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+        }
+
+        .goal-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .goal-card h3 {
+            font-size: 0.7rem;
+            color: #a0a0c0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .goal-card p {
+            font-size: 0.82rem;
+            line-height: 1.4;
+            color: #ccd;
+        }
+
+        #status-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-size: 0.78rem;
+            color: #88aaff;
+            margin-bottom: 12px;
+            min-height: 32px;
+            line-height: 1.4;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: auto;
+        }
+
+        .btn {
+            padding: 10px 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn-run {
+            background: linear-gradient(135deg, #00b09b, #96c93d);
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 176, 155, 0.35);
+        }
+
+        .btn-run:hover {
+            box-shadow: 0 6px 20px rgba(0, 176, 155, 0.5);
+        }
+
+        .btn-reset {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ccd;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-reset:hover {
+            background: rgba(255, 255, 255, 0.14);
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #e94560, #c62a47);
+            color: white;
+            box-shadow: 0 4px 15px rgba(233, 69, 96, 0.35);
+            display: none;
+        }
+
+        /* ── Main ── */
+        #main {
+            flex: 1;
+            display: flex;
+            min-width: 0;
+        }
+
+        /* ── Block editor area ── */
+        #editor-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            border-right: 2px solid #e94560;
+        }
+
+        #blockly-panel {
+            flex: 1;
+            min-height: 0;
+            position: relative;
+        }
+
+        #blocklyDiv {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        /* ── Custom toolbox panel ── */
+        #custom-toolbox {
+            width: 200px;
+            min-width: 200px;
+            background: #1e2a3a;
+            border-left: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            border-right: 2px solid #e94560;
+        }
+
+        .toolbox-category {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .toolbox-category-header {
+            padding: 10px 12px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            user-select: none;
+            transition: background 0.15s;
+        }
+
+        .toolbox-category-header:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .toolbox-category-toggle {
+            font-size: 0.6rem;
+            transition: transform 0.2s;
+        }
+
+        .toolbox-category.open .toolbox-category-toggle {
+            transform: rotate(90deg);
+        }
+
+        .toolbox-blocks {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            padding: 4px 8px 8px;
+        }
+
+        .toolbox-category.open .toolbox-blocks {
+            display: flex;
+        }
+
+        .toolbox-block-btn {
+            padding: 8px 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: filter 0.15s, transform 0.1s;
+            color: white;
+            line-height: 1.3;
+        }
+
+        .toolbox-block-btn:hover {
+            filter: brightness(1.15);
+            transform: translateX(2px);
+        }
+
+        .toolbox-block-btn:active {
+            transform: scale(0.97);
+        }
+
+        /* ── 3D Sim ── */
+        #sim-panel {
+            flex: 0 0 45%;
+            min-height: 0;
+            position: relative;
+            background: #000;
+        }
+
+        #sim3d-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        /* Panel labels */
+        .panel-label {
+            position: absolute;
+            top: 6px;
+            right: 10px;
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: rgba(255, 255, 255, 0.2);
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        /* Trash button */
+        #btnTrash {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: rgba(255, 255, 255, 0.4);
+            border-radius: 6px;
+            width: 34px;
+            height: 34px;
+            font-size: 1rem;
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        #btnTrash:hover {
+            background: rgba(233, 69, 96, 0.2);
+            color: #e94560;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ── Sidebar ── -->
+    <div id="sidebar">
+        <h1>NEPO 3D</h1>
+        <span class="mission-badge">Mission 1</span>
+
+        <div class="goal-card">
+            <h3>🎯 Ziel</h3>
+            <p>Programmiere den Roboter so, dass er vorwärts fährt und dann eine Kurve macht!</p>
+        </div>
+
+        <div class="goal-card">
+            <h3>💡 Hinweis</h3>
+            <p>Klicke auf einen Block in der Toolbox (rechts neben dem Workspace), um ihn hinzuzufügen.</p>
+        </div>
+
+        <div id="status-box">Bereit. Blöcke zusammenbauen und auf „▶ Starten" drücken.</div>
+
+        <div class="btn-group">
+            <button class="btn btn-run" id="btnRun">▶ Starten</button>
+            <button class="btn btn-stop" id="btnStop">■ Stopp</button>
+            <button class="btn btn-reset" id="btnReset">↺ Zurücksetzen</button>
+        </div>
+    </div>
+
+    <!-- ── Main ── -->
+    <div id="main">
+
+        <!-- ── Blockly Workspace ── -->
+        <div id="editor-area">
+            <div id="blockly-panel">
+                <span class="panel-label">Blockly</span>
+                <div id="blocklyDiv"></div>
+                <button id="btnTrash" title="Alle Blöcke löschen">🗑</button>
+            </div>
+        </div>
+
+        <!-- ── Custom Click-Toolbox ── -->
+        <div id="custom-toolbox">
+            <!-- Categories filled by mission-app.js -->
+        </div>
+
+        <!-- ── 3D Simulation ── -->
+        <div id="sim-panel">
+            <span class="panel-label" style="color:rgba(255,255,255,0.3)">3D Simulation</span>
+            <div id="sim3d-container"></div>
+        </div>
+    </div>
+
+    <!-- ── Blockly toolbox (hidden – we use custom HTML toolbox instead) ── -->
+
+    <!-- ── Libraries (loaded directly, no RequireJS) ── -->
+    <script src="/blockly/blockly_compressed.js"></script>
+    <script src="/blockly/blocks_compressed.js"></script>
+    <script src="/blockly/msg/js/de.js"></script>
+    <script src="/libs/three.min.js"></script>
+
+    <!-- ── Mission App ── -->
+    <script src="/js/app/mission/mission-blocks.js"></script>
+    <script src="/js/app/mission/mission-interpreter.js"></script>
+    <script src="/js/app/mission/mission-sim3d.js"></script>
+    <script src="/js/app/mission/mission-app.js"></script>
+
+</body>
+
+</html>
