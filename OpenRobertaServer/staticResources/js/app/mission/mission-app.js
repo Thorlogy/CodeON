@@ -93,17 +93,65 @@
             ]
         },
         {
-            category: 'Warten',
-            color: '#6ee7b7',
+            category: 'Schleifen',
+            color: '#c084fc',
             blocks: [
                 {
-                    label: '⏳ Warte 1 Sekunde',
-                    type: 'robControls_wait_time',
-                    inputs: { WAIT: 1000 }
+                    label: '🔁 Wiederhole 3 mal',
+                    type: 'robControls_repeat',
+                    inputs: { TIMES: 3 }
+                },
+                {
+                    label: '🔁 Wiederhole immer',
+                    type: 'robControls_loopForever',
+                    inputs: {}
+                },
+                {
+                    label: '🔁 Wiederhole bis …',
+                    type: 'robControls_repeat_until',
+                    inputs: {}
+                }
+            ]
+        },
+        {
+            category: 'Logik',
+            color: '#67e8f9',
+            blocks: [
+                {
+                    label: '❓ Wenn … dann … sonst',
+                    type: 'robControls_if',
+                    inputs: {}
+                },
+                {
+                    label: '< Vergleich',
+                    type: 'logic_compare',
+                    inputs: { A: 50, B: 30 }
+                }
+            ]
+        },
+        {
+            category: 'Sensoren',
+            color: '#86efac',
+            blocks: [
+                {
+                    label: '🔊 Abstand (cm)',
+                    type: 'robSensors_ultrasonic_get',
+                    inputs: {}
+                },
+                {
+                    label: '🎨 Farbe',
+                    type: 'robSensors_color_get',
+                    inputs: {}
+                },
+                {
+                    label: '👋 Taster gedrückt?',
+                    type: 'robSensors_touch_get',
+                    inputs: {}
                 }
             ]
         }
     ];
+
 
 
 
@@ -234,15 +282,17 @@
         setStatus('Programm wird ausgeführt…', '#fbbf24');
         showStop(true);
 
-        var commands = MissionInterpreter.parse(workspace);
-        if (!commands || commands.length === 0) {
+        var ast = MissionInterpreter.parse(workspace);
+        // The AST is null if no start block found, or a sequence with empty body
+        var hasCode = ast && ast.body && ast.body.length > 0;
+        if (!ast || !hasCode) {
             setStatus('⚠️ Füge Blöcke unter dem Start-Block ein!', '#f87171');
             showStop(false);
             return;
         }
 
         MissionSim3D.reset();
-        MissionSim3D.runCommands(commands, function () {
+        MissionSim3D.runProgram(ast, function () {
             setStatus('✅ Programm fertig!', '#4ade80');
             showStop(false);
         });

@@ -298,6 +298,7 @@ window.MissionSim3D = (function () {
         clock = new THREE.Clock();
         animate();
 
+        initSensorHud();
         window.addEventListener('resize', onResize);
         console.log('[MissionSim3D] Initialized (v2 Differential Drive)');
     }
@@ -369,6 +370,26 @@ window.MissionSim3D = (function () {
         var strip = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.22, 0.18), redMat);
         strip.position.set(0, 0.6, -1.62);
         group.add(strip);
+
+        // ── Ultraschall-Sensor (front) ──────────────────────────────
+        var usMat = new THREE.MeshPhongMaterial({ color: 0x9da8b5, shininess: 80 });
+        var usBody = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.8, 0.24), usMat);
+        usBody.position.set(0, 1.3, -1.74);
+        group.add(usBody);
+        // Two "eyes" of the ultrasonic sensor
+        var eyeMat = new THREE.MeshPhongMaterial({ color: 0x334466, emissive: 0x1122aa, emissiveIntensity: 0.5 });
+        [-0.45, 0.45].forEach(function (ox) {
+            var eye = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.08, 12), eyeMat);
+            eye.rotation.x = Math.PI / 2;
+            eye.position.set(ox, 1.3, -1.87);
+            group.add(eye);
+        });
+
+        // ── Farbsensor (bottom-front) ─────────────────────────────
+        var csMat = new THREE.MeshPhongMaterial({ color: 0xdd2244, emissive: 0xdd0000, emissiveIntensity: 0.3 });
+        var csBody = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.18, 0.3, 10), csMat);
+        csBody.position.set(0, 0.18, -1.3);
+        group.add(csBody);
 
         return group;
     }
@@ -610,8 +631,10 @@ window.MissionSim3D = (function () {
         robotState.omegaR = 0;
         robotState.wheelPosL = 0;
         robotState.wheelPosR = 0;
-        commandQueue = [];
+        robotState.sensors = { ultrasonic: 255, color: 'none', touch: false };
+        programRunnerActive = null;
         onDoneCallback = null;
+
 
         // Clear dynamic world objects
         for (var i = 0; i < dynamicMeshes.length; i++) {
@@ -681,28 +704,179 @@ window.MissionSim3D = (function () {
 
 
     // ════════════════════════════════════════════════════════════════
-    // COMMAND QUEUE
+    // PROGRAM RUNNER (AST-based dynamic executor)
     // ════════════════════════════════════════════════════════════════
-    function runCommands(cmds, onDone) {
-        if (!cmds || cmds.length === 0) {
-            if (onDone) onDone();
-            return;
+    var programRunnerActive = null;  // reference to active runner cancellation token
+    var MAX_ITERATIONS = 10000;      // safety guard against infinite loops
+
+    /**
+     * Evaluate an expression AST node against current sensor state.
+     * Returns a JS value (number, boolean, string).
+     */
+    function evalExpr(expr) {
+        if (!expr) return 0;
+        switch (expr.type) {
+            case 'number': return expr.value;
+            case 'string': return expr.value;
+            case 'boolean': return expr.value;
+            case 'sensor_ultrasonic': return robotState.sensors.ultrasonic;
+            case 'sensor_color': return robotState.sensors.color;
+            case 'sensor_touch': return robotState.sensors.touch;
+            case 'not': return !evalExpr(expr.expr);
+            case 'logic': {
+                var l = evalExpr(expr.left), r = evalExpr(expr.right);
+                return expr.op === 'AND' ? (l && r) : (l || r);
+            }
+            case 'compare': {
+                var l = evalExpr(expr.left), r = evalExpr(expr.right);
+                switch (expr.op) {
+                    case 'EQ': case '=': return l == r;
+                    case 'NEQ': case '!=': return l != r;
+                    case 'LT': case '<': return l < r;
+                    case 'LTE': case '<=': return l <= r;
+                    case 'GT': case '>': return l > r;
+                    case 'GTE': case '>=': return l >= r;
+                    default: return l == r;
+                }
+            }
+            case 'arithmetic': {
+                var l = evalExpr(expr.left), r = evalExpr(expr.right);
+                switch (expr.op) {
+                    case 'ADD': return l + r;
+                    case 'MINUS': return l - r;
+                    case 'MULTIPLY': return l * r;
+                    case 'DIVIDE': return r !== 0 ? l / r : 0;
+                    default: return l + r;
+                }
+            }
+            default:
+                console.warn('[ProgramRunner] Unknown expr:', expr.type);
+                return 0;
         }
+    }
+
+    /**
+     * Execute an AST node, calling done() when finished.
+     * token: object with .cancelled flag for early stop.
+     */
+    function execNode(node, token, done) {
+        if (!isRunning || token.cancelled) return;
+        if (!node) { done(); return; }
+        console.log('[ProgramRunner] exec:', node.type);
+
+        switch (node.type) {
+
+            case 'sequence': {
+                var i = 0;
+                var nodes = node.body || [];
+                function next() {
+                    if (!isRunning || token.cancelled) return;
+                    if (i >= nodes.length) { done(); return; }
+                    execNode(nodes[i++], token, next);
+                }
+                next();
+                break;
+            }
+
+            case 'repeat': {
+                var count = Math.min(Math.floor(node.times) || 0, MAX_ITERATIONS);
+                var iter = 0;
+                function loop() {
+                    if (!isRunning || token.cancelled) return;
+                    if (iter >= count) { done(); return; }
+                    iter++;
+                    execNode(node.body, token, loop);
+                }
+                loop();
+                break;
+            }
+
+            case 'repeat_forever': {
+                var iterGuard = 0;
+                function loopFwd() {
+                    if (!isRunning || token.cancelled) return;
+                    if (++iterGuard > MAX_ITERATIONS) {
+                        console.warn('[ProgramRunner] MAX_ITERATIONS reached in repeat_forever');
+                        done(); return;
+                    }
+                    execNode(node.body, token, loopFwd);
+                }
+                loopFwd();
+                break;
+            }
+
+            case 'repeat_until': {
+                var iterGuard2 = 0;
+                function loopUntil() {
+                    if (!isRunning || token.cancelled) return;
+                    if (++iterGuard2 > MAX_ITERATIONS) { done(); return; }
+                    var condVal = evalExpr(node.cond);
+                    // mode 'UNTIL': keep going until cond is true; 'WHILE': keep going while cond is true
+                    var shouldContinue = (node.mode === 'UNTIL') ? !condVal : !!condVal;
+                    if (!shouldContinue) { done(); return; }
+                    execNode(node.body, token, loopUntil);
+                }
+                loopUntil();
+                break;
+            }
+
+            case 'if': {
+                var condVal = evalExpr(node.cond);
+                if (condVal) {
+                    execNode(node.thenBody, token, done);
+                } else if (node.elseBody) {
+                    execNode(node.elseBody, token, done);
+                } else {
+                    done();
+                }
+                break;
+            }
+
+            case 'drive': {
+                executeDrive(node.distance, node.speed, done);
+                break;
+            }
+            case 'turn': {
+                executeTurn(node.degrees, node.speed, done);
+                break;
+            }
+            case 'stop': {
+                robotState.omegaL = 0;
+                robotState.omegaR = 0;
+                done();
+                break;
+            }
+            case 'wait': {
+                setTimeout(function () {
+                    if (isRunning && !token.cancelled) done();
+                }, node.ms);
+                break;
+            }
+            default:
+                console.warn('[ProgramRunner] Unknown node type:', node.type);
+                done();
+        }
+    }
+
+    /**
+     * Run an AST program. onDone() called when finished.
+     * Accepts both the new AST format and old flat-array for backward compat.
+     */
+    function runProgram(ast, onDone) {
         stop();
-        commandQueue = cmds.slice();
-        onDoneCallback = onDone || null;
+        if (!ast) { if (onDone) onDone(); return; }
+
+        // Legacy backward-compat: flat array of {type,..} command objects
+        if (Array.isArray(ast)) {
+            ast = { type: 'sequence', body: ast };
+        }
+
+        var token = { cancelled: false };
+        programRunnerActive = token;
         isRunning = true;
-        executeNextCommand();
-    }
+        onDoneCallback = onDone || null;
 
-    function stop() {
-        isRunning = false;
-        robotState.omegaL = 0;
-        robotState.omegaR = 0;
-    }
-
-    function executeNextCommand() {
-        if (!isRunning || commandQueue.length === 0) {
+        execNode(ast, token, function () {
             isRunning = false;
             robotState.omegaL = 0;
             robotState.omegaR = 0;
@@ -710,41 +884,12 @@ window.MissionSim3D = (function () {
                 onDoneCallback();
                 onDoneCallback = null;
             }
-            return;
-        }
+        });
+    }
 
-        var cmd = commandQueue.shift();
-        console.log('[MissionSim3D] Executing:', cmd);
-
-        if (cmd.type === 'build_ramp') {
-            var rMesh = addRamp(cmd);
-            dynamicMeshes.push(rMesh);
-            executeNextCommand();
-            return;
-        }
-
-        if (cmd.type === 'build_obstacle') {
-            var oMesh = addObstacle(cmd.x, cmd.z, cmd.w, cmd.d, cmd.h, cmd.color);
-            dynamicMeshes.push(oMesh);
-            executeNextCommand();
-            return;
-        }
-
-        if (cmd.type === 'drive') {
-            executeDrive(cmd.distance, cmd.speed, executeNextCommand);
-        } else if (cmd.type === 'turn') {
-            executeTurn(cmd.degrees, cmd.speed, executeNextCommand);
-        } else if (cmd.type === 'stop') {
-            robotState.omegaL = 0;
-            robotState.omegaR = 0;
-            executeNextCommand();
-        } else if (cmd.type === 'wait') {
-            setTimeout(function () {
-                if (isRunning) executeNextCommand();
-            }, cmd.ms);
-        } else {
-            executeNextCommand();
-        }
+    // Shim: keep runCommands working (used by mission-app.js)
+    function runCommands(cmds, onDone) {
+        runProgram({ type: 'sequence', body: Array.isArray(cmds) ? cmds : [] }, onDone);
     }
 
 
@@ -916,12 +1061,98 @@ window.MissionSim3D = (function () {
 
 
     // ════════════════════════════════════════════════════════════════
+    // SENSOR SIMULATION
+    // ════════════════════════════════════════════════════════════════
+    var sensorRaycaster = new THREE.Raycaster();
+    // Conversion: Three.js units → centimeters.  1 unit = 1/UNIT cm = ~6.67 cm
+    var UNITS_TO_CM = 1 / UNIT;
+    var sensorHud = null;  // DOM element for live sensor display
+
+    function initSensorHud() {
+        sensorHud = document.createElement('div');
+        sensorHud.style.cssText = [
+            'position:absolute', 'bottom:8px', 'left:8px',
+            'background:rgba(0,0,0,0.55)', 'color:#a0c4ff',
+            'font:11px/1.5 monospace', 'padding:4px 8px',
+            'border-radius:6px', 'pointer-events:none',
+            'white-space:pre', 'z-index:20'
+        ].join(';');
+        container.style.position = 'relative';
+        container.appendChild(sensorHud);
+    }
+
+    function updateSensors() {
+        if (!robot || !scene) return;
+        var theta = robotState.theta;
+
+        // ── Ultrasonic (front-facing raycaster) ─────────────────
+        var sinT = Math.sin(theta), cosT = Math.cos(theta);
+        var originUS = new THREE.Vector3(
+            robotState.x,
+            robot.position.y + 1.3,  // height of ultrasonic sensor on robot
+            robotState.z
+        );
+        var dirUS = new THREE.Vector3(-sinT, 0, -cosT).normalize();
+        sensorRaycaster.set(originUS, dirUS);
+        sensorRaycaster.far = 255 / UNITS_TO_CM;  // max 255 cm
+
+        // Intersect with world object meshes
+        var wMeshes = worldObjects.map(function (o) { return o.mesh; });
+        var hits = sensorRaycaster.intersectObjects(wMeshes, true);
+        if (hits.length > 0) {
+            robotState.sensors.ultrasonic = Math.round(hits[0].distance * UNITS_TO_CM);
+        } else {
+            robotState.sensors.ultrasonic = 255;  // no object in range
+        }
+
+        // ── Color sensor (downward raycaster) ──────────────────
+        // Detect green target rings
+        var originCS = new THREE.Vector3(robotState.x, robot.position.y + 0.18, robotState.z);
+        var dirCS = new THREE.Vector3(0, -1, 0);
+        sensorRaycaster.set(originCS, dirCS);
+        sensorRaycaster.far = 2.0;
+        var csHits = sensorRaycaster.intersectObjects(scene.children, true);
+        robotState.sensors.color = 'none';
+        for (var ci = 0; ci < csHits.length; ci++) {
+            var hitObj = csHits[ci].object;
+            if (!hitObj.material) continue;
+            var col = hitObj.material.color;
+            if (!col) continue;
+            // Green ring → 'green', floor grid → 'black'
+            if (col.r < 0.2 && col.g > 0.5 && col.b < 0.3) {
+                robotState.sensors.color = 'green'; break;
+            } else if (col.r < 0.15 && col.g < 0.2 && col.b < 0.25) {
+                robotState.sensors.color = 'black'; break;
+            } else {
+                robotState.sensors.color = 'none'; break;
+            }
+        }
+
+        // ── Touch / Bumper (would-next-step collide?) ────────────
+        var bump = 0.5;  // look ahead 0.5 units
+        var nextX = robotState.x + bump * (-sinT);
+        var nextZ = robotState.z + bump * (-cosT);
+        robotState.sensors.touch = collidesAt(nextX, nextZ);
+
+        // ── HUD update ─────────────────────────────────────────
+        if (sensorHud) {
+            sensorHud.textContent =
+                '🔊 Abstand: ' + robotState.sensors.ultrasonic + ' cm\n' +
+                '🎨 Farbe:   ' + robotState.sensors.color + '\n' +
+                '👋 Taster:  ' + (robotState.sensors.touch ? 'JA' : 'nein');
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════
     // RENDER LOOP
     // ════════════════════════════════════════════════════════════════
     var clock;
 
     function animate() {
         animId = requestAnimationFrame(animate);
+
+        // Update virtual sensors every frame
+        updateSensors();
 
         // Idle LED pulse
         if (robot && robot.userData.led) {
@@ -1041,6 +1272,7 @@ window.MissionSim3D = (function () {
     return {
         init: init,
         reset: reset,
+        runProgram: runProgram,
         runCommands: runCommands,
         stop: stop,
         addRamp: addRamp,

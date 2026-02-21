@@ -92,5 +92,125 @@
         };
     }
 
+    // ══ SCHLEIFEN / LOOPS ══════════════════════════════════════════
+
+    // ── robControls_repeat (Wiederhole N mal) ──────────────────────
+    if (!Blockly.Blocks['robControls_repeat']) {
+        Blockly.Blocks['robControls_repeat'] = {
+            init: function () {
+                this.setColour(300);
+                this.appendValueInput('TIMES')
+                    .setCheck('Number')
+                    .appendField('🔁 Wiederhole');
+                this.appendDummyInput().appendField('mal');
+                this.appendStatementInput('DO').appendField('tue');
+                this.setInputsInline(true);
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+                this.setTooltip('Wiederhole die Blöcke darin N-mal.');
+            }
+        };
+    }
+
+    // ── robControls_loopForever (Wiederhole immer) ─────────────────
+    if (!Blockly.Blocks['robControls_loopForever']) {
+        Blockly.Blocks['robControls_loopForever'] = {
+            init: function () {
+                this.setColour(300);
+                this.appendDummyInput().appendField('🔁 Wiederhole immer');
+                this.appendStatementInput('DO').appendField('tue');
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+                this.setTooltip('Endlosschleife – läuft bis Stopp gedrückt wird.');
+            }
+        };
+    }
+
+    // ── robControls_repeat_until (Wiederhole bis) ──────────────────
+    if (!Blockly.Blocks['robControls_repeat_until']) {
+        Blockly.Blocks['robControls_repeat_until'] = {
+            init: function () {
+                this.setColour(300);
+                this.appendValueInput('CONDITION')
+                    .setCheck('Boolean')
+                    .appendField('🔁 Wiederhole bis');
+                this.appendStatementInput('DO').appendField('tue');
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+                this.setTooltip('Wiederhole, bis die Bedingung wahr ist.');
+            }
+        };
+    }
+
+    // ══ LOGIK / IF-ELSE ════════════════════════════════════════════
+
+    // ── robControls_if (Wenn…dann…sonst) ──────────────────────────
+    if (!Blockly.Blocks['robControls_if']) {
+        Blockly.Blocks['robControls_if'] = {
+            init: function () {
+                this.setColour(210);
+                this.appendValueInput('IF0')
+                    .setCheck('Boolean')
+                    .appendField('❓ Wenn');
+                this.appendStatementInput('DO0').appendField('dann');
+                this.appendStatementInput('ELSE').appendField('sonst');
+                this.setPreviousStatement(true, null);
+                this.setNextStatement(true, null);
+                this.setTooltip('Führe verschiedene Blöcke aus, je nach Bedingung.');
+            }
+        };
+    }
+
+    // ══ SENSOREN ═══════════════════════════════════════════════════
+
+    // ── robSensors_ultrasonic_get (Ultraschall-Abstand) ────────────
+    if (!Blockly.Blocks['robSensors_ultrasonic_get']) {
+        Blockly.Blocks['robSensors_ultrasonic_get'] = {
+            init: function () {
+                this.jsonInit({
+                    type: 'robSensors_ultrasonic_get',
+                    message0: '🔊 Abstand (cm)',
+                    output: 'Number',
+                    colour: 65,
+                    tooltip: 'Gibt den Abstand zum nächsten Hindernis in cm zurück (0–255).',
+                    helpUrl: ''
+                });
+            }
+        };
+    }
+
+    // ── robSensors_color_get (Farbsensor) ─────────────────────────
+    if (!Blockly.Blocks['robSensors_color_get']) {
+        Blockly.Blocks['robSensors_color_get'] = {
+            init: function () {
+                this.jsonInit({
+                    type: 'robSensors_color_get',
+                    message0: '🎨 Farbe',
+                    output: 'String',
+                    colour: 65,
+                    tooltip: 'Gibt die erkannte Farbe zurück (green, none).',
+                    helpUrl: ''
+                });
+            }
+        };
+    }
+
+    // ── robSensors_touch_get (Taster) ──────────────────────────────
+    if (!Blockly.Blocks['robSensors_touch_get']) {
+        Blockly.Blocks['robSensors_touch_get'] = {
+            init: function () {
+                this.jsonInit({
+                    type: 'robSensors_touch_get',
+                    message0: '👋 Taster gedrückt?',
+                    output: 'Boolean',
+                    colour: 65,
+                    tooltip: 'Gibt an, ob der Taster (Bumper) vorne gedrückt ist.',
+                    helpUrl: ''
+                });
+            }
+        };
+    }
+
     console.log('[MissionBlocks] Custom blocks registered.');
+
 })();
