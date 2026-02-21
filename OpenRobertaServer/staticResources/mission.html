@@ -297,6 +297,71 @@
             background: rgba(233, 69, 96, 0.2);
             color: #e94560;
         }
+
+        /* ── World Builder Toolbar ── */
+        #world-builder-toolbar {
+            position: absolute;
+            top: 36px;
+            left: 0;
+            right: 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            background: rgba(15, 52, 96, 0.75);
+            backdrop-filter: blur(6px);
+            border-bottom: 1px solid rgba(233, 69, 96, 0.3);
+            z-index: 10;
+            flex-wrap: wrap;
+        }
+
+        #world-builder-toolbar span {
+            font-size: 0.68rem;
+            color: #a0a0c0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-right: 4px;
+            white-space: nowrap;
+        }
+
+        .wb-btn {
+            padding: 4px 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.08);
+            color: #dde;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+            white-space: nowrap;
+        }
+
+        .wb-btn:hover {
+            background: rgba(255, 255, 255, 0.18);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .wb-btn.active {
+            background: rgba(233, 69, 96, 0.35);
+            border-color: #e94560;
+            color: #fff;
+        }
+
+        .wb-btn-danger {
+            border-color: rgba(233, 69, 96, 0.4);
+            color: #f87171;
+        }
+
+        .wb-btn-danger:hover {
+            background: rgba(233, 69, 96, 0.2);
+        }
+
+        #wb-hint {
+            font-size: 0.7rem;
+            color: #6677aa;
+            margin-left: auto;
+            white-space: nowrap;
+        }
     </style>
 </head>
 
@@ -344,8 +409,19 @@
         </div>
 
         <!-- ── 3D Simulation ── -->
-        <div id="sim-panel">
+        <div id="sim-panel" style="position:relative">
             <span class="panel-label" style="color:rgba(255,255,255,0.3)">3D Simulation</span>
+
+            <!-- ── World Builder Toolbar ── -->
+            <div id="world-builder-toolbar">
+                <span>Weltbau:</span>
+                <button class="wb-btn" id="wbAddRamp">🌉 + Rampe</button>
+                <button class="wb-btn" id="wbAddObstacle">🧱 + Hindernis</button>
+                <button class="wb-btn" id="wbAddTarget">🎯 + Ziel</button>
+                <button class="wb-btn wb-btn-danger" id="wbClear">🗑 Alles löschen</button>
+                <span id="wb-hint">Objekte im 3D-Feld verschieben</span>
+            </div>
+
             <div id="sim3d-container"></div>
         </div>
     </div>

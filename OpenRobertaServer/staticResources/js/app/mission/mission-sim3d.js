@@ -84,9 +84,21 @@ window.MissionSim3D = (function () {
     // Track dynamically added objects to clear them on reset
     var dynamicMeshes = [];
 
+    // ════════════════════════════════════════════════════════════════
+    // WORLD BUILDER STATE
+    // ════════════════════════════════════════════════════════════════
+    // Each entry: { mesh, type:'obstacle'|'ramp'|'target'|'robot',
+    //               physicsData: (the obstacle/ramp record to update on drop) }
+    var worldObjects = [];      // all draggable objects
+    var raycaster = new THREE.Raycaster();
+    var groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0); // y=0 plane
+    var dragObject = null;      // currently dragged object record
+    var dragOffset = new THREE.Vector3(); // mouse-to-object-center offset on XZ
+    var isDraggingObject = false;
+
 
     // ════════════════════════════════════════════════════════════════
-    // INIT
+    // INITIALIZATION
     // ════════════════════════════════════════════════════════════════
     function init(containerId) {
         container = document.getElementById(containerId);
@@ -109,12 +121,76 @@ window.MissionSim3D = (function () {
         // ── Camera ─────────────────────────────────────────────────
         camera = new THREE.PerspectiveCamera(50, W / H, 0.1, 1000);
 
-        // ── Custom Orbit Controls ──────────────────────────────────
+        // ── Custom Orbit & Drag Controls ──────────────────────────────
         container.addEventListener('mousedown', function (e) {
+            // First: try to pick a world object (robot or placed objects)
+            var rect = renderer.domElement.getBoundingClientRect();
+            var mouse = new THREE.Vector2(
+                ((e.clientX - rect.left) / rect.width) * 2 - 1,
+                -((e.clientY - rect.top) / rect.height) * 2 + 1
+            );
+            raycaster.setFromCamera(mouse, camera);
+
+            // Collect all draggable meshes
+            var draggables = [robot];
+            for (var i = 0; i < worldObjects.length; i++) {
+                draggables.push(worldObjects[i].mesh);
+            }
+
+            var intersects = raycaster.intersectObjects(draggables, true);
+            if (intersects.length > 0) {
+                // Find the worldObject record for the hit mesh (or its ancestor)
+                var hitObject = intersects[0].object;
+                var record = null;
+
+                // Walk up to find if it's the robot group or a tracked object
+                var cur = hitObject;
+                while (cur) {
+                    if (cur === robot) { record = { mesh: robot, type: 'robot' }; break; }
+                    for (var j = 0; j < worldObjects.length; j++) {
+                        if (cur === worldObjects[j].mesh) { record = worldObjects[j]; break; }
+                    }
+                    if (record) break;
+                    cur = cur.parent;
+                }
+
+                if (record) {
+                    isDraggingObject = true;
+                    dragObject = record;
+                    // Compute where on the ground plane the ray hits
+                    var groundHit = new THREE.Vector3();
+                    raycaster.ray.intersectPlane(groundPlane, groundHit);
+                    dragOffset.set(
+                        record.mesh.position.x - groundHit.x,
+                        0,
+                        record.mesh.position.z - groundHit.z
+                    );
+                    e.stopPropagation();
+                    return;
+                }
+            }
+
+            // No object hit – start orbit
             isDragging = true;
             lastMousePos = { x: e.clientX, y: e.clientY };
         });
         window.addEventListener('mousemove', function (e) {
+            if (isDraggingObject && dragObject) {
+                var rect = renderer.domElement.getBoundingClientRect();
+                var mouse = new THREE.Vector2(
+                    ((e.clientX - rect.left) / rect.width) * 2 - 1,
+                    -((e.clientY - rect.top) / rect.height) * 2 + 1
+                );
+                raycaster.setFromCamera(mouse, camera);
+                var groundHit = new THREE.Vector3();
+                if (raycaster.ray.intersectPlane(groundPlane, groundHit)) {
+                    var newX = snapGrid(groundHit.x + dragOffset.x);
+                    var newZ = snapGrid(groundHit.z + dragOffset.z);
+                    dragObject.mesh.position.x = newX;
+                    dragObject.mesh.position.z = newZ;
+                }
+                return;
+            }
             if (!isDragging) return;
             var dx = e.clientX - lastMousePos.x;
             var dy = e.clientY - lastMousePos.y;
@@ -127,8 +203,36 @@ window.MissionSim3D = (function () {
             camAngleY = Math.max(0.1, Math.min(Math.PI / 2 - 0.05, camAngleY));
         });
         window.addEventListener('mouseup', function () {
+            if (isDraggingObject && dragObject) {
+                // Sync physics data to new position
+                var m = dragObject.mesh;
+                if (dragObject.type === 'robot') {
+                    START_X = m.position.x;
+                    START_Z = m.position.z;
+                    robotState.x = m.position.x;
+                    robotState.z = m.position.z;
+                } else if (dragObject.type === 'obstacle' && dragObject.physicsData) {
+                    var p = dragObject.physicsData;
+                    var hw = (p.maxX - p.minX) / 2;
+                    var hd = (p.maxZ - p.minZ) / 2;
+                    p.minX = m.position.x - hw;
+                    p.maxX = m.position.x + hw;
+                    p.minZ = m.position.z - hd;
+                    p.maxZ = m.position.z + hd;
+                } else if (dragObject.type === 'ramp' && dragObject.physicsData) {
+                    var pd = dragObject.physicsData;
+                    var ddx = m.position.x - (pd.x0 + pd.x1) / 2;
+                    var ddz = m.position.z - (pd.z0 + pd.z1) / 2;
+                    pd.x0 += ddx; pd.x1 += ddx;
+                    pd.z0 += ddz; pd.z1 += ddz;
+                }
+                isDraggingObject = false;
+                dragObject = null;
+                return;
+            }
             isDragging = false;
         });
+
         container.addEventListener('wheel', function (e) {
             e.preventDefault();
             camRadius += e.deltaY * 0.05;
@@ -852,6 +956,86 @@ window.MissionSim3D = (function () {
 
 
     // ════════════════════════════════════════════════════════════════
+    // WORLD BUILDER HELPERS
+    // ════════════════════════════════════════════════════════════════
+
+    function snapGrid(v) { return Math.round(v * 2) / 2; }  // snap to 0.5 grid
+
+    /**
+     * Spawn a draggable obstacle box at (x, z) in world space.
+     */
+    function spawnObstacle(x, z) {
+        x = x !== undefined ? x : 4;
+        z = z !== undefined ? z : 0;
+        var w = 2.5, h = 3, d = 2.5;
+        var mesh = addObstacle(x, z, w, d, h);
+        // Track last physics record (addObstacle pushes to obstacles[])
+        var physRec = obstacles[obstacles.length - 1];
+        worldObjects.push({ mesh: mesh, type: 'obstacle', physicsData: physRec });
+        console.log('[WorldBuilder] Obstacle spawned at', x, z);
+    }
+
+    /**
+     * Spawn a draggable ramp group at position (cx, cz) facing -Z.
+     */
+    function spawnRamp(cx, cz) {
+        cx = cx !== undefined ? cx : 0;
+        cz = cz !== undefined ? cz : -5;
+        var cfg = { x0: cx, y0: 0, z0: cz + 3, x1: cx, y1: 2.2, z1: cz - 3, width: 4.5 };
+        var mesh = addRamp(cfg);
+        // Track last ramp physics record
+        var physRec = ramps[ramps.length - 1];
+        worldObjects.push({ mesh: mesh, type: 'ramp', physicsData: physRec });
+        console.log('[WorldBuilder] Ramp spawned at', cx, cz);
+    }
+
+    /**
+     * Spawn a draggable target ring at (x, z).
+     */
+    function spawnTarget(x, z) {
+        x = x !== undefined ? x : 0;
+        z = z !== undefined ? z : -15;
+
+        // Build a simple group so we can drag it as one object
+        var group = new THREE.Group();
+        group.position.set(x, 0, z);
+
+        var ringGeo = new THREE.RingGeometry(1.5, 2.2, 24);
+        var ringMat = new THREE.MeshBasicMaterial({ color: 0x22c55e, side: THREE.DoubleSide });
+        var ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.y = 0.04;
+        group.add(ring);
+
+        var fillGeo = new THREE.CircleGeometry(1.4, 24);
+        var fillMat = new THREE.MeshBasicMaterial({ color: 0x22c55e, transparent: true, opacity: 0.2, side: THREE.DoubleSide });
+        var fill = new THREE.Mesh(fillGeo, fillMat);
+        fill.rotation.x = -Math.PI / 2;
+        fill.position.y = 0.05;
+        group.add(fill);
+
+        scene.add(group);
+        worldObjects.push({ mesh: group, type: 'target', physicsData: null });
+        console.log('[WorldBuilder] Target spawned at', x, z);
+    }
+
+    /**
+     * Remove all user-placed world objects (obstacles, ramps, targets).
+     * Does NOT reset the robot.
+     */
+    function clearWorldObjects() {
+        for (var i = 0; i < worldObjects.length; i++) {
+            scene.remove(worldObjects[i].mesh);
+        }
+        worldObjects = [];
+        // Also remove from physics arrays (keep permanent ones added in init)
+        obstacles = [];
+        ramps = [];
+        console.log('[WorldBuilder] All world objects cleared.');
+    }
+
+
+    // ════════════════════════════════════════════════════════════════
     // PUBLIC API
     // ════════════════════════════════════════════════════════════════
     return {
@@ -860,6 +1044,10 @@ window.MissionSim3D = (function () {
         runCommands: runCommands,
         stop: stop,
         addRamp: addRamp,
-        addObstacle: addObstacle
+        addObstacle: addObstacle,
+        spawnRamp: spawnRamp,
+        spawnObstacle: spawnObstacle,
+        spawnTarget: spawnTarget,
+        clearWorldObjects: clearWorldObjects
     };
 })();

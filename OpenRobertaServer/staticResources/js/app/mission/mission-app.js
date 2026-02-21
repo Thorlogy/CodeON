@@ -304,6 +304,29 @@
         document.getElementById('btnReset') && document.getElementById('btnReset').addEventListener('click', onReset);
         document.getElementById('btnTrash') && document.getElementById('btnTrash').addEventListener('click', onTrash);
 
+        // ── World Builder toolbar buttons ──────────────────────────
+        var wbAddRamp = document.getElementById('wbAddRamp');
+        var wbAddObstacle = document.getElementById('wbAddObstacle');
+        var wbAddTarget = document.getElementById('wbAddTarget');
+        var wbClear = document.getElementById('wbClear');
+
+        if (wbAddRamp) wbAddRamp.addEventListener('click', function () {
+            MissionSim3D.spawnRamp();
+            setStatus('🌉 Rampe hinzugefügt – im 3D-Feld verschieben.', '#a78bfa');
+        });
+        if (wbAddObstacle) wbAddObstacle.addEventListener('click', function () {
+            MissionSim3D.spawnObstacle();
+            setStatus('🧱 Hindernis hinzugefügt – im 3D-Feld verschieben.', '#a78bfa');
+        });
+        if (wbAddTarget) wbAddTarget.addEventListener('click', function () {
+            MissionSim3D.spawnTarget();
+            setStatus('🎯 Ziel hinzugefügt – im 3D-Feld verschieben.', '#4ade80');
+        });
+        if (wbClear) wbClear.addEventListener('click', function () {
+            MissionSim3D.clearWorldObjects();
+            setStatus('🗑 Alle Weltobjekte gelöscht.', '#f87171');
+        });
+
         setStatus('Bereit. Blöcke hinzufügen und auf „▶ Starten" drücken.');
         console.log('[MissionApp] Ready.');
     }
