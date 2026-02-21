@@ -102,7 +102,9 @@
                     inputs: { WAIT: 1000 }
                 }
             ]
+        }
     ];
+
 
 
     function addNumberBlock(parentBlock, inputName, value) {
