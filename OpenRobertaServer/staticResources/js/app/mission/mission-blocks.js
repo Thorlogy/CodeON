@@ -92,57 +92,5 @@
         };
     }
 
-    // ── robActions_build_ramp ──────────────────────────────────────
-    if (!Blockly.Blocks['robActions_build_ramp']) {
-        Blockly.Blocks['robActions_build_ramp'] = {
-            init: function () {
-                this.jsonInit({
-                    type: 'robActions_build_ramp',
-                    message0: '🌉 Baue Rampe | Start (X: %1 Y: %2 Z: %3) | Ende (X: %4 Y: %5 Z: %6) | Breite: %7',
-                    args0: [
-                        { type: 'input_value', name: 'X0', check: 'Number' },
-                        { type: 'input_value', name: 'Y0', check: 'Number' },
-                        { type: 'input_value', name: 'Z0', check: 'Number' },
-                        { type: 'input_value', name: 'X1', check: 'Number' },
-                        { type: 'input_value', name: 'Y1', check: 'Number' },
-                        { type: 'input_value', name: 'Z1', check: 'Number' },
-                        { type: 'input_value', name: 'WIDTH', check: 'Number' }
-                    ],
-                    inputsInline: false,
-                    previousStatement: null,
-                    nextStatement: null,
-                    colour: 260,
-                    tooltip: 'Baue eine 3D Rampe von (X0,Y0,Z0) nach (X1,Y1,Z1).',
-                    helpUrl: ''
-                });
-            }
-        };
-    }
-
-    // ── robActions_build_obstacle ──────────────────────────────────
-    if (!Blockly.Blocks['robActions_build_obstacle']) {
-        Blockly.Blocks['robActions_build_obstacle'] = {
-            init: function () {
-                this.jsonInit({
-                    type: 'robActions_build_obstacle',
-                    message0: '🧱 Baue Hindernis | Pos (X: %1 Z: %2) | Größe (B: %3 H: %4 T: %5)',
-                    args0: [
-                        { type: 'input_value', name: 'X', check: 'Number' },
-                        { type: 'input_value', name: 'Z', check: 'Number' },
-                        { type: 'input_value', name: 'WIDTH', check: 'Number' },
-                        { type: 'input_value', name: 'HEIGHT', check: 'Number' },
-                        { type: 'input_value', name: 'DEPTH', check: 'Number' }
-                    ],
-                    inputsInline: false,
-                    previousStatement: null,
-                    nextStatement: null,
-                    colour: 260,
-                    tooltip: 'Baue ein Hindernis (Quader).',
-                    helpUrl: ''
-                });
-            }
-        };
-    }
-
     console.log('[MissionBlocks] Custom blocks registered.');
 })();

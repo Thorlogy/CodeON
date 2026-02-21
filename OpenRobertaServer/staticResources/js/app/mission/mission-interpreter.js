@@ -61,26 +61,6 @@ window.MissionInterpreter = (function () {
             commands.push({ type: 'stop' });
             walkBlocks(block.getNextBlock(), commands);
 
-        } else if (type === 'robActions_build_ramp') {
-            var x0 = getNumberInput(block, 'X0', 0);
-            var y0 = getNumberInput(block, 'Y0', 0);
-            var z0 = getNumberInput(block, 'Z0', 5);
-            var x1 = getNumberInput(block, 'X1', 0);
-            var y1 = getNumberInput(block, 'Y1', 2);
-            var z1 = getNumberInput(block, 'Z1', 15);
-            var w = getNumberInput(block, 'WIDTH', 4);
-            commands.push({ type: 'build_ramp', x0: x0, y0: y0, z0: z0, x1: x1, y1: y1, z1: z1, width: w });
-            walkBlocks(block.getNextBlock(), commands);
-
-        } else if (type === 'robActions_build_obstacle') {
-            var oX = getNumberInput(block, 'X', 5);
-            var oZ = getNumberInput(block, 'Z', 5);
-            var oW = getNumberInput(block, 'WIDTH', 2);
-            var oH = getNumberInput(block, 'HEIGHT', 2);
-            var oD = getNumberInput(block, 'DEPTH', 2);
-            commands.push({ type: 'build_obstacle', x: oX, z: oZ, w: oW, h: oH, d: oD });
-            walkBlocks(block.getNextBlock(), commands);
-
         } else if (type === 'robControls_wait_time') {
             var ms = getNumberInput(block, 'WAIT', 1000);
             commands.push({ type: 'wait', ms: ms });
