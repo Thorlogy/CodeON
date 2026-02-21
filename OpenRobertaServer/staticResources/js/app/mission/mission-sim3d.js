@@ -68,7 +68,8 @@ window.MissionSim3D = (function () {
         omegaL: 0,               // left  wheel angular velocity (rad/s)
         omegaR: 0,               // right wheel angular velocity (rad/s)
         wheelPosL: 0,            // accumulated wheel angle for visual spin
-        wheelPosR: 0
+        wheelPosR: 0,
+        sensors: { ultrasonic: 255, color: 'none', touch: false }
     };
 
     // ── Obstacles ────────────────────────────────────────────────────
