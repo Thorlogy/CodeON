@@ -247,6 +247,7 @@ window.MissionSim3D = (function () {
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.innerHTML = '';
         container.appendChild(renderer.domElement);
+        initSensorHud();  // must be AFTER innerHTML='' so the HUD div isn't wiped
 
         // ── Lights ─────────────────────────────────────────────────
         scene.add(new THREE.AmbientLight(0xffffff, 0.6));
@@ -298,7 +299,6 @@ window.MissionSim3D = (function () {
         clock = new THREE.Clock();
         animate();
 
-        initSensorHud();
         window.addEventListener('resize', onResize);
         console.log('[MissionSim3D] Initialized (v2 Differential Drive)');
     }
