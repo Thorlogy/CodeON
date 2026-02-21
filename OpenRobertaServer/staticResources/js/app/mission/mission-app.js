@@ -93,7 +93,19 @@
             ]
         },
         {
+            category: 'Warten',
+            color: '#6ee7b7',
+            blocks: [
+                {
+                    label: '⏳ Warte 1 Sekunde',
+                    type: 'robControls_wait_time',
+                    inputs: { WAIT: 1000 }
+                }
+            ]
+        },
+        {
             category: 'Schleifen',
+
             color: '#c084fc',
             blocks: [
                 {
