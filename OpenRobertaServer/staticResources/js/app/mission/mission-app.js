@@ -353,18 +353,43 @@
         document.getElementById('btnTrash') && document.getElementById('btnTrash').addEventListener('click', onTrash);
 
         // ── World Builder toolbar buttons ──────────────────────────
-        var wbAddRamp = document.getElementById('wbAddRamp');
+        var wbAddRampUp = document.getElementById('wbAddRampUp');
+        var wbAddRampDown = document.getElementById('wbAddRampDown');
         var wbAddObstacle = document.getElementById('wbAddObstacle');
+        var wbAddLineTile = document.getElementById('wbAddLineTile');
+        var wbAddCurveTile = document.getElementById('wbAddCurveTile');
+        var wbAddIntersectionTile = document.getElementById('wbAddIntersectionTile');
+        var wbAddGreenMarker = document.getElementById('wbAddGreenMarker');
         var wbAddTarget = document.getElementById('wbAddTarget');
         var wbClear = document.getElementById('wbClear');
 
-        if (wbAddRamp) wbAddRamp.addEventListener('click', function () {
-            MissionSim3D.spawnRamp();
-            setStatus('🌉 Rampe hinzugefügt – im 3D-Feld verschieben.', '#a78bfa');
+        if (wbAddRampUp) wbAddRampUp.addEventListener('click', function () {
+            MissionSim3D.spawnRamp(undefined, undefined, 'up');
+            setStatus('🔼 Rampe hoch hinzugefügt – im 3D-Feld verschieben.', '#a78bfa');
+        });
+        if (wbAddRampDown) wbAddRampDown.addEventListener('click', function () {
+            MissionSim3D.spawnRamp(undefined, undefined, 'down');
+            setStatus('🔽 Rampe runter hinzugefügt – im 3D-Feld verschieben.', '#a78bfa');
         });
         if (wbAddObstacle) wbAddObstacle.addEventListener('click', function () {
             MissionSim3D.spawnObstacle();
-            setStatus('🧱 Hindernis hinzugefügt – im 3D-Feld verschieben.', '#a78bfa');
+            setStatus('⬛ Plattform hinzugefügt – im 3D-Feld verschieben.', '#a78bfa');
+        });
+        if (wbAddLineTile) wbAddLineTile.addEventListener('click', function () {
+            MissionSim3D.spawnLineTile();
+            setStatus('⬛ Linien-Kachel hinzugefügt – im 3D-Feld verschieben.', '#a78bfa');
+        });
+        if (wbAddCurveTile) wbAddCurveTile.addEventListener('click', function () {
+            MissionSim3D.spawnCurveTile();
+            setStatus('⤵️ Kurven-Kachel hinzugefügt – im 3D-Feld verschieben.', '#a78bfa');
+        });
+        if (wbAddIntersectionTile) wbAddIntersectionTile.addEventListener('click', function () {
+            MissionSim3D.spawnIntersectionTile();
+            setStatus('➕ Kreuzungs-Kachel hinzugefügt – im 3D-Feld verschieben.', '#a78bfa');
+        });
+        if (wbAddGreenMarker) wbAddGreenMarker.addEventListener('click', function () {
+            MissionSim3D.spawnGreenMarker();
+            setStatus('🟩 Grüner Marker hinzugefügt – im 3D-Feld verschieben.', '#a78bfa');
         });
         if (wbAddTarget) wbAddTarget.addEventListener('click', function () {
             MissionSim3D.spawnTarget();

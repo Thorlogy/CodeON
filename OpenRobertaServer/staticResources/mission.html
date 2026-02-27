@@ -415,8 +415,13 @@
             <!-- ── World Builder Toolbar ── -->
             <div id="world-builder-toolbar">
                 <span>Weltbau:</span>
-                <button class="wb-btn" id="wbAddRamp">🌉 + Rampe</button>
-                <button class="wb-btn" id="wbAddObstacle">🧱 + Hindernis</button>
+                <button class="wb-btn" id="wbAddRampUp">🔼 Rampe hoch</button>
+                <button class="wb-btn" id="wbAddRampDown">🔽 Rampe runter</button>
+                <button class="wb-btn" id="wbAddObstacle">⬛ Plattform</button>
+                <button class="wb-btn" id="wbAddLineTile">⬛ Linien-Kachel</button>
+                <button class="wb-btn" id="wbAddCurveTile">⤵️ Kurve</button>
+                <button class="wb-btn" id="wbAddIntersectionTile">➕ Kreuzung</button>
+                <button class="wb-btn" id="wbAddGreenMarker">🟩 Marker</button>
                 <button class="wb-btn" id="wbAddTarget">🎯 + Ziel</button>
                 <button class="wb-btn wb-btn-danger" id="wbClear">🗑 Alles löschen</button>
                 <span id="wb-hint">Objekte im 3D-Feld verschieben</span>
@@ -429,16 +434,18 @@
     <!-- ── Blockly toolbox (hidden – we use custom HTML toolbox instead) ── -->
 
     <!-- ── Libraries (loaded directly, no RequireJS) ── -->
-    <script src="/blockly/blockly_compressed.js"></script>
-    <script src="/blockly/blocks_compressed.js"></script>
-    <script src="/blockly/msg/js/de.js"></script>
-    <script src="/libs/three.min.js"></script>
+    <script src="./blockly/blockly_compressed.js"></script>
+    <script src="./blockly/blocks_compressed.js"></script>
+    <script src="./blockly/msg/js/de.js"></script>
+    <script src="./libs/three.min.js"></script>
+    <!-- Cannon-es physics engine (local, patched to expose window.CANNON) -->
+    <script src="./libs/cannon-es.js"></script>
 
     <!-- ── Mission App ── -->
-    <script src="/js/app/mission/mission-blocks.js"></script>
-    <script src="/js/app/mission/mission-interpreter.js"></script>
-    <script src="/js/app/mission/mission-sim3d.js"></script>
-    <script src="/js/app/mission/mission-app.js"></script>
+    <script src="js/app/mission/mission-blocks.js?v=5"></script>
+    <script src="js/app/mission/mission-interpreter.js?v=5"></script>
+    <script src="js/app/mission/mission-sim3d.js?v=5"></script>
+    <script src="js/app/mission/mission-app.js?v=5"></script>
 
 </body>
 
