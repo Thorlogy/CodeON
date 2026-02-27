@@ -78,6 +78,7 @@ window.MissionSim3D = (function () {
     var obstacles = [];
     var ROBOT_HW = 1.35;   // robot half-width  (collision box X)
     var ROBOT_HD = 1.8;    // robot half-depth  (collision box Z)
+    var lastHitLocalX = 0; // Tracks the lateral offset of the last collision (for asymmetric torque)
 
     // ── Ramps ─────────────────────────────────────────────────────────
     // Each ramp: { x0,z0=foot,  x1,z1=top,  height, width, slopeAngle,
@@ -91,8 +92,9 @@ window.MissionSim3D = (function () {
     // CANNON-ES PHYSICS
     // ════════════════════════════════════════════════════════════════
     var cannonWorld = null;     // CANNON.World
-    var robotBody = null;     // CANNON.Body (kinematic) for the robot
-    var staticBodies = [];     // CANNON.Body[] for obstacles, platforms, ramps
+    var robotBody = null;       // CANNON.Body for the robot chassis
+    var vehicle = null;         // CANNON.RaycastVehicle (used in Hard Mode)
+    var staticBodies = [];      // CANNON.Body[] for obstacles, platforms, ramps
 
     // ════════════════════════════════════════════════════════════════
     // WORLD BUILDER STATE
@@ -468,22 +470,23 @@ window.MissionSim3D = (function () {
         groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
         cannonWorld.addBody(groundBody);
 
-        // ─ Robot kinematic body ───────────────────────────────────
-        // We use DYNAMIC so Cannon moves it, but we drive it with velocity.
-        // linearDamping simulates ground friction / rolling resistance.
+        // ─ Robot Body (unified for both modes) ──────────────────
+        // Physics engine is always kinematic; Hard Mode effects are applied
+        // at the velocity/force level rather than via RaycastVehicle,
+        // because executeDrive controls velocity directly each frame.
         robotBody = new CANNON.Body({
             mass: 2,
             material: robotMat,
             shape: new CANNON.Box(new CANNON.Vec3(ROBOT_HW, 1.0, ROBOT_HD)),
-            linearDamping: 0.05,  // minimal – friction applied manually in physicsStep
-            angularDamping: 0.99  // prevent unwanted spinning
+            linearDamping: 0.05,
+            angularDamping: 0.99
         });
-        // Lock Y-axis movement and X/Z rotation (robot stays upright on flat ground)
-        robotBody.linearFactor.set(1, 0, 1);   // no vertical physics (we handle Y manually)
-        robotBody.angularFactor.set(0, 1, 0);  // only yaw rotation allowed
+        robotBody.linearFactor.set(1, 0, 1);
+        robotBody.angularFactor.set(0, 1, 0);
         robotBody.position.set(START_X, 1.0, START_Z);
         robotBody.quaternion.setFromEuler(0, robotState.theta, 0);
         cannonWorld.addBody(robotBody);
+        vehicle = null;
 
         cannonWorld._robotMat = robotMat;
         cannonWorld._wallMat = wallMat;
@@ -866,10 +869,11 @@ window.MissionSim3D = (function () {
 
         // ── Side-wall collision: two thin AABBs, one per side ────────────
         // This prevents the robot from clipping through the ramp side triangles
-        // We shrink the walls slightly at the ends (sideShrink) so the robot can
-        // enter the ramp even if it approaches slightly off-center (wheel on ramp, center off).
-        var sideThickness = 0.4;
-        var sideShrink = 1.0;
+        // We extend the walls the full length of the ramp (sideShrink = 0) and make them thick
+        // enough (sideThickness = 1.2) to intercept the robot's chassis bounding box before
+        // its wider mathematical wheels can hang off the edge of the ramp.
+        var sideThickness = 1.2;
+        var sideShrink = 0.0;
         var sideLen = Math.max(0, len - 2 * sideShrink);
         [-1, 1].forEach(function (s) {
             // Centre of this side wall in world XZ (midpoint along ramp, offset by +-w/2)
@@ -918,20 +922,57 @@ window.MissionSim3D = (function () {
 
         console.log('[MissionSim3D] Ramp added. slope=' + (slopeAngle * 180 / Math.PI).toFixed(1) + '° len=' + len.toFixed(1));
 
-        // ─ Cannon-es: No rigid body for ramp surface ──────────────────────
-        // The robot's Y position is driven manually by getRampState elevation.
-        // Physical collision on ramps is handled by the existing AABB obstacle arrays
-        // (side walls + front/back walls) which are used for Touch sensor detection.
-        // Adding Cannon bodies here causes blocking at the ramp entry point.
+        // ─ Cannon-es: Physics for ramps ───────────────────────────────────────
+        if (window.SIM_HARD_MODE && cannonWorld) {
+            // Rebuild the identical vertices for the Trimesh, but relative to the mid-point.
+            // The BufferGeometry positions array was flat. We can regenerate it.
+            var positions = [];
+            var lH = -w / 2, rH = w / 2;
+            function addV(al, wy, side) {
+                var lx = -midX + x0 + al * dirX - side * perpX;
+                var ly = wy - midY;
+                var lz = -midZ + z0 + al * dirZ - side * perpZ;
+                positions.push(lx, ly, lz);
+            }
+            // Top Slope (Triangles: left-bottom, right-bottom, right-top, left-top)
+            addV(0, y0, lH); addV(0, y0, rH); addV(len, y1, rH);
+            addV(0, y0, lH); addV(len, y1, rH); addV(len, y1, lH);
+
+            // Bottom Floor
+            addV(0, 0, rH); addV(0, 0, lH); addV(len, 0, lH);
+            addV(0, 0, rH); addV(len, 0, lH); addV(len, 0, rH);
+
+            // Left Wall
+            addV(0, 0, lH); addV(len, 0, lH); addV(len, y1, lH);
+            addV(0, 0, lH); addV(len, y1, lH); addV(0, y0, lH);
+
+            // Right Wall
+            addV(0, 0, rH); addV(0, y0, rH); addV(len, y1, rH);
+            addV(0, 0, rH); addV(len, y1, rH); addV(len, 0, rH);
+
+            var indices = [];
+            for (var i = 0; i < positions.length / 3; i++) indices.push(i);
+
+            var trimesh = new CANNON.Trimesh(positions, indices);
+            var rampBody = new CANNON.Body({ mass: 0, material: cannonWorld._groundMat });
+            rampBody.addShape(trimesh);
+            rampBody.position.set(midX, midY, midZ);
+            cannonWorld.addBody(rampBody);
+            staticBodies.push(rampBody);
+            console.log('[MissionSim3D] Added Cannon Trimesh for ramp.');
+        } else {
+            // The robot's Y position is driven manually by getRampState elevation.
+            // Physical collision on ramps is handled by the existing AABB obstacle arrays
+            // (side walls + front/back walls) which are used for Touch sensor detection.
+        }
 
         return rampGroup;
     }
 
     /**
-     * getRampState(x, z, theta) → { onRamp, elevation, slopeAngle, dirX, dirZ, speedFactor }
-     * For any world position, returns whether robot is on a ramp and relevant physics data.
+     * getRampState(x, z, theta, currentY, isPoint)
      */
-    function getRampState(x, z, theta, currentY) {
+    function getRampState(x, z, theta, currentY, isPoint) {
         var activeRamps = [];
         for (var i = 0; i < ramps.length; i++) {
             var r = ramps[i];
@@ -939,12 +980,16 @@ window.MissionSim3D = (function () {
             var along = relX * r.dirX + relZ * r.dirZ;
             var perp = relX * r.perpX + relZ * r.perpZ;
 
-            // Allow off-center driving: if robot center is off the ramp, but the wheel
-            // is still on it (distance <= width/2 + ROBOT_HW - 0.2), consider it on the ramp.
-            if (along >= -ROBOT_HD && along <= r.len + ROBOT_HD &&
-                Math.abs(perp) <= r.width / 2 + 1.2) {
+            var inBounds = false;
+            if (isPoint) {
+                // Strict point check: no padding. The wheel must mathematically touch the ramp surface.
+                inBounds = (along >= -0.1 && along <= r.len + 0.1 && Math.abs(perp) <= r.width / 2);
+            } else {
+                // Robot volume check: allow some off-center driving for the main body
+                inBounds = (along >= -ROBOT_HD && along <= r.len + ROBOT_HD && Math.abs(perp) <= r.width / 2 + 1.2);
+            }
 
-                // Calculate what the elevation WOULD be if we were on this ramp
+            if (inBounds) {
                 var t = Math.max(0, Math.min(along / r.len, 1));
                 if (along < 0 && r.y0 === 0) t = 0;
                 if (along > r.len && r.y1 === 0) t = 1;
@@ -956,8 +1001,7 @@ window.MissionSim3D = (function () {
                 if (r._platform && currentY !== undefined && currentY < r.y0 - 0.5) continue;
 
                 // Ignore ramps that are too high above our current elevation to mount,
-                // but ONLY if we are at the very bottom edge approaching it. If we are already
-                // mostly on it (along > 0.5), it's our current ramp so don't reject it.
+                // but ONLY if we are at the very bottom edge approaching it.
                 if (currentY !== undefined && along < 0.5 && testElev > currentY + 0.6) continue;
 
                 activeRamps.push({ r: r, along: along, testElev: testElev });
@@ -966,7 +1010,6 @@ window.MissionSim3D = (function () {
 
         if (activeRamps.length === 0) {
             window.__GET_ROBOT_STATE__ = function () { return robotState; };
-
             return { onRamp: false, elevation: 0, slopeAngle: 0, speedFactor: 1.0 };
         }
 
@@ -1060,10 +1103,10 @@ window.MissionSim3D = (function () {
 
 
     // ════════════════════════════════════════════════════════════════
-    function getTerrainElevation(rx, rz, theta, currentY) {
+    function getTerrainElevation(rx, rz, theta, currentY, isPoint) {
         if (currentY === undefined) currentY = 0;
 
-        var rs = getRampState(rx, rz, theta, currentY);
+        var rs = getRampState(rx, rz, theta, currentY, isPoint);
         if (rs.onRamp) return rs.elevation;
 
         var maxEl = 0;
@@ -1073,9 +1116,15 @@ window.MissionSim3D = (function () {
             // We want the robot to read the maxY of the platform it's driving on.
             if (o._rampOwner || o._rampSide || o._platformSide) continue;
 
-            if (rx + ROBOT_HW > o.minX && rx - ROBOT_HW < o.maxX &&
-                rz + ROBOT_HD > o.minZ && rz - ROBOT_HD < o.maxZ) {
+            var hit = false;
+            if (isPoint) {
+                hit = (rx > o.minX && rx < o.maxX && rz > o.minZ && rz < o.maxZ);
+            } else {
+                hit = (rx + ROBOT_HW > o.minX && rx - ROBOT_HW < o.maxX &&
+                    rz + ROBOT_HD > o.minZ && rz - ROBOT_HD < o.maxZ);
+            }
 
+            if (hit) {
                 // Only step up if the obstacle isn't too high to mount instantaneously
                 var oY = o.maxY || 0;
                 if (oY <= currentY + 0.6) {
@@ -1152,6 +1201,10 @@ window.MissionSim3D = (function () {
             var tx = ocx - x;
             var tz = ocz - z;
 
+            // Realism tracking: Where is the obstacle relative to our right-facing vector?
+            // If localX > 0, the obstacle is mainly on the right side of the robot.
+            lastHitLocalX = tx * ux + tz * uz;
+
             // SAT Test
             // Axis 1: World X
             if (Math.abs(tx) > ohw + ROBOT_HW * absUx + ROBOT_HD * absVx) continue;
@@ -1165,22 +1218,23 @@ window.MissionSim3D = (function () {
             // If we are overlapping (SAT failed to separate), check if we are moving strictly AWAY 
             // from the obstacle center. If so, permit the movement to allow extraction from snags
             // (e.g. the robot's long tail snagging a platform edge when dropping off).
-            // BUT do not bypass if we are hitting the SIDE of a platform and aren't on top of it!
+            // BUT do not bypass if we are hitting the SIDE of an obstacle and aren't on top of it!
             if (o._platformSide || o._rampSide || o._rampOwner) {
                 var oldTx = ocx - robotState.x;
                 var oldTz = ocz - robotState.z;
                 var oldDistSq = oldTx * oldTx + oldTz * oldTz;
                 var newDistSq = tx * tx + tz * tz;
 
-                // For platform sides, ONLY allow bypass if we are already securely ABOVE the base.
-                // Otherwise, driving through the wall's center will trigger this bypass maliciously.
+                // For ANY side wall (platform or ramp), ONLY allow bypass if we are already
+                // securely ABOVE the base. Otherwise, driving past the wall's center will 
+                // trigger this bypass maliciously and let the robot clip inside the ramp/platform.
                 var allowBypass = true;
-                if (o._platformSide && robot.position.y < (o.maxY || 0) - 0.1) {
+                if (robot.position.y < (o.maxY || 0) - 0.1) {
                     allowBypass = false;
                 }
 
                 if (allowBypass && newDistSq > oldDistSq + 1e-5) {
-                    continue; // Bypass this collision, we are sliding off
+                    continue; // Bypass this collision, we are sliding off safely from ABOVE
                 }
             }
 
@@ -1438,11 +1492,35 @@ window.MissionSim3D = (function () {
             var rampState = getRampState(robotState.x, robotState.z, robotState.theta);
             if (rampState.onRamp) {
                 omegaEff *= rampState.speedFactor;
+
+                // HARD MODE: Apply gravity resistance on slopes.
+                // g * sin(angle) ≈ deceleration force the motor must fight.
+                // On a ~20° ramp this subtracts roughly 30% of the motor's power.
+                if (window.SIM_HARD_MODE) {
+                    var G = 9.81 * 0.6; // scaled gravity (units/s²)
+                    var gravDecel = G * Math.sin(rampState.slopeAngle || 0.35) * fwdSign;
+                    // gravDecel > 0 means gravity helps going downhill, fights going uphill
+                    // When going forward (fwdSign=+1) up a ramp omegaEff should be reduced
+                    var gravOmegaLoss = gravDecel / WHEEL_RADIUS;
+                    omegaEff -= gravOmegaLoss;
+                }
             }
 
             var vL = omegaEff * WHEEL_RADIUS;
             var vR = omegaEff * WHEEL_RADIUS;
-            var v = (vL + vR) / 2;
+            var vTarget = (vL + vR) / 2;
+
+            var v;
+            if (window.SIM_HARD_MODE) {
+                // HARD MODE: Velocity Inertia – don't jump instantly to target speed.
+                // Lerp from current velocity magnitude to target with a time constant.
+                var currentV = Math.sqrt(robotState.vx * robotState.vx + robotState.vz * robotState.vz) * fwdSign;
+                // Inertia time constant: bigger = slower to accelerate (~0.3s to reach full speed)
+                var INERTIA_K = 3.5; // per-second convergence rate
+                v = currentV + (vTarget - currentV) * Math.min(1.0, INERTIA_K * 0.016);
+            } else {
+                v = vTarget;
+            }
 
             // Set the target velocities for the physics engine
             robotState.vx = v * (-Math.sin(robotState.theta));
@@ -1604,7 +1682,10 @@ window.MissionSim3D = (function () {
         var wMeshes = worldObjects.map(function (o) { return o.mesh; });
         var hits = sensorRaycaster.intersectObjects(wMeshes, true);
         if (hits.length > 0) {
-            robotState.sensors.ultrasonic = Math.round(hits[0].distance * UNITS_TO_CM);
+            var rawDist = hits[0].distance * UNITS_TO_CM;
+            // Realism: Ultrasonic Sensor Noise (1.0% to 1.5% random variance)
+            var noiseFactor = 1.0 + (Math.random() * 0.03 - 0.015);
+            robotState.sensors.ultrasonic = Math.round(rawDist * noiseFactor);
         } else {
             robotState.sensors.ultrasonic = 255;  // no object in range
         }
@@ -1656,19 +1737,31 @@ window.MissionSim3D = (function () {
     function physicsStep(dt) {
         if (!robot || !scene || !cannonWorld || !robotBody) return;
 
-        // ── Drive / Friction (manual, calibrated) ──────────────────────────
-        // When NOT actively driving (no motor command), apply GROUND_FRICTION
-        // decay so coasting matches the predictive-stop formula.
-        // executeDrive and executeTurn set omegaL and omegaR when driving.
+        // NOTE: Hard Mode effects are applied in executeDrive (inertia, slope gravity)
+        // and below (friction decay, sliding on ramps). There is no separate code path
+        // here for Hard Mode since both modes share the same Kinematic body pipeline.
+
         var isActivelyDriving = isRunning && (Math.abs(robotState.omegaL) > 0.01 || Math.abs(robotState.omegaR) > 0.01);
 
         if (!isActivelyDriving) {
-            var GROUND_FRICTION_DECAY = 4.0;
+            // HARD MODE: More friction drift = slower decay = longer slide
+            var GROUND_FRICTION_DECAY = window.SIM_HARD_MODE ? 1.8 : 4.0;
             robotState.vx -= robotState.vx * GROUND_FRICTION_DECAY * dt;
             robotState.vz -= robotState.vz * GROUND_FRICTION_DECAY * dt;
             robotState.vw -= robotState.vw * GROUND_FRICTION_DECAY * dt;
             if (Math.abs(robotState.vx) < 0.04) { robotState.vx = 0; robotState.vz = 0; }
             if (Math.abs(robotState.vw) < 0.02) robotState.vw = 0;
+
+            // HARD MODE: If coasting on a slope, apply gravitational slide downhill
+            if (window.SIM_HARD_MODE) {
+                var rampSlide = getRampState(robotState.x, robotState.z, robotState.theta);
+                if (rampSlide.onRamp && rampSlide.slopeAngle > 0.1) {
+                    var slideSpeed = 9.81 * 0.35 * Math.sin(rampSlide.slopeAngle) * dt;
+                    // dirX/dirZ points uphill; sliding goes in the opposite direction
+                    robotState.vx -= rampSlide.dirX * slideSpeed;
+                    robotState.vz -= rampSlide.dirZ * slideSpeed;
+                }
+            }
         }
 
         // ── Position integration with collidesAt sliding ───────────────────
@@ -1691,105 +1784,157 @@ window.MissionSim3D = (function () {
                 robotState.vx = 0;
                 robotState.vz = 0;
             }
+
+            // Realism: Asymmetric Collision Torque (Spin-out)
+            var isPushingForward = isRunning && (robotState.omegaL > 0.01 || robotState.omegaR > 0.01);
+            if (isPushingForward) {
+                if (lastHitLocalX > 0.4) {
+                    robotState.vw += 4.5 * dt;
+                } else if (lastHitLocalX < -0.4) {
+                    robotState.vw -= 4.5 * dt;
+                }
+            }
         }
         robotState.theta = newTheta;
 
         // ── Sync Cannon body to manual position (passively) ────────────────
-        // Cannon still detects collisions with static bodies (obstacles/platforms)
-        // but robot position is authority — we set Cannon body to match.
-        if (robotBody) {
+        if (robotBody && !window.SIM_HARD_MODE) {
             robotBody.position.x = robotState.x;
             robotBody.position.z = robotState.z;
             robotBody.velocity.set(robotState.vx, 0, robotState.vz);
             robotBody.quaternion.setFromEuler(0, robotState.theta, 0);
-            // Step world passively (for collision callbacks if needed in future)
             if (cannonWorld) cannonWorld.fixedStep(1 / 60, dt);
         }
 
-        // ── 3-Point Terrain Sampling & Orientation ─────────────────────────
-        // Define localized offsets for the suspension points
-        var halfTrack = WHEEL_BASE / 2;
-        var casterDist = -ROBOT_HD * 0.8;
-        var cos = Math.cos(robotState.theta);
-        var sin = Math.sin(robotState.theta);
+        // ══════════════════════════════════════════════════════════════
+        // 3-POINT CONTACT PHYSICS
+        // ══════════════════════════════════════════════════════════════
+        // Uses ANALYTICAL ramp heights (no AABB flicker) at the 3 wheel
+        // contact positions, then fits a plane through them to get:
+        //   (a) the robot's body Y  — via plane equation, NO max-clamping
+        //   (b) the surface normal  — via cross product (correctly captures
+        //       lateral tilt when straddling a ramp)
+        // Additionally: if the resulting lateral tilt exceeds the robot's
+        // stability limit (~35°), a smooth tip-over animation is triggered.
 
-        // World coords for Left wheel, Right wheel, Front caster
-        var lX = robotState.x + cos * (-halfTrack);
-        var lZ = robotState.z + -sin * (-halfTrack);
-        var rX = robotState.x + cos * (halfTrack);
-        var rZ = robotState.z + -sin * (halfTrack);
-        var fX = robotState.x + sin * casterDist;
-        var fZ = robotState.z + cos * casterDist;
+        var cosA = Math.cos(robotState.theta);
+        var sinA = Math.sin(robotState.theta);
 
-        var yL = getTerrainElevation(lX, lZ, robotState.theta, robot.position.y);
-        var yR = getTerrainElevation(rX, rZ, robotState.theta, robot.position.y);
-        var yF = getTerrainElevation(fX, fZ, robotState.theta, robot.position.y);
+        var HW = 1.58;  // Half track width
+        var WZ = 0.1;   // Drive wheel Z offset (slightly rearward)
+        var CZ = 1.4;   // Rear caster Z offset
 
-        // Rear axle center (midpoint of left/right wheels)
-        var cX = (lX + rX) / 2;
-        var cZ = (lZ + rZ) / 2;
-        var yRear = (yL + yR) / 2;
+        // Analytical ramp height at any XZ position (no AABB boundary issues)
+        function heightAt(x, z) {
+            for (var ri = 0; ri < ramps.length; ri++) {
+                var r = ramps[ri];
+                var relX = x - r.x0, relZ = z - r.z0;
+                var along = relX * r.dirX + relZ * r.dirZ;
+                var perp = relX * r.perpX + relZ * r.perpZ;
+                if (along >= -0.4 && along <= r.len + 0.4 && Math.abs(perp) <= r.width / 2 + 0.4) {
+                    var t = Math.max(0, Math.min(1, along / r.len));
+                    return r.y0 + t * (r.y1 - r.y0);
+                }
+            }
+            // Platform tops
+            for (var oi = 0; oi < obstacles.length; oi++) {
+                var o = obstacles[oi];
+                if (o._rampOwner || o._rampSide || o._platformSide || o._platformBase) continue;
+                if (x > o.minX && x < o.maxX && z > o.minZ && z < o.maxZ) {
+                    var oY = o.maxY || 0;
+                    if (oY > 0 && oY <= robot.position.y + 0.8) return oY;
+                }
+            }
+            return 0;
+        }
 
-        // Vector 1: Lateral slope (Right wheel minus Left wheel)
-        var vRight = new THREE.Vector3(rX - lX, yR - yL, rZ - lZ);
+        // 3 contact point world positions
+        var lX = robotState.x + cosA * (-HW) + sinA * WZ;
+        var lZ = robotState.z - sinA * (-HW) + cosA * WZ;
+        var rX = robotState.x + cosA * HW + sinA * WZ;
+        var rZ = robotState.z - sinA * HW + cosA * WZ;
+        var cX = robotState.x + sinA * CZ;
+        var cZ = robotState.z + cosA * CZ;
 
-        // Vector 2: Longitudinal slope (Front caster minus Rear axle center)
-        var vFwd = new THREE.Vector3(fX - cX, yF - yRear, fZ - cZ);
+        // Analytical heights at contact points
+        var yL = heightAt(lX, lZ);
+        var yR = heightAt(rX, rZ);
+        var yC = heightAt(cX, cZ);
 
-        // Cross product gives orthogonal UP vector without diagonal twisting
-        var nx = vRight.y * vFwd.z - vRight.z * vFwd.y;
-        var ny = vRight.z * vFwd.x - vRight.x * vFwd.z;
-        var nz = vRight.x * vFwd.y - vRight.y * vFwd.x;
+        // ── Surface normal via cross-product of the 3 contact triangle ──
+        // vA = Right wheel relative to Left wheel
+        // vB = Caster relative to Left wheel
+        var vAx = rX - lX, vAy = yR - yL, vAz = rZ - lZ;
+        var vBx = cX - lX, vBy = yC - yL, vBz = cZ - lZ;
+        // normal = vA × vB
+        var nx = vAy * vBz - vAz * vBy;
+        var ny = vAz * vBx - vAx * vBz;
+        var nz = vAx * vBy - vAy * vBx;
+        var nLen = Math.sqrt(nx * nx + ny * ny + nz * nz);
+        if (nLen > 0.001) { nx /= nLen; ny /= nLen; nz /= nLen; }
+        else { nx = 0; ny = 1; nz = 0; }
+        if (ny < 0) { nx = -nx; ny = -ny; nz = -nz; }  // always point up
 
-        // Normalize normal vector (must point up)
-        var len = Math.sqrt(nx * nx + ny * ny + nz * nz);
-        if (len > 0.001) { nx /= len; ny /= len; nz /= len; } else { nx = 0; ny = 1; nz = 0; }
-        if (ny < 0) { nx = -nx; ny = -ny; nz = -nz; }
+        // ── Body Y from plane equation through (lX, yL, lZ) ──────────
+        // Plane: nx*(X-lX) + ny*(Y-yL) + nz*(Z-lZ) = 0
+        // → Y = yL + (-nx*(mx-lX) - nz*(mz-lZ)) / ny
+        var targetBodyY = (yL + yR) / 2;  // fallback: axle mid-height
+        if (Math.abs(ny) > 0.05) {
+            targetBodyY = yL + (-nx * (robotState.x - lX) - nz * (robotState.z - lZ)) / ny;
+        }
+        // Clamp: body centre must sit at or above the average contact height
+        // (never BELOW, because that would sink into geometry)
+        var minSafeY = Math.max(0, (yL + yR + yC) / 3 - 0.2);
+        if (targetBodyY < minSafeY) targetBodyY = minSafeY;
 
-        // The robot center is precisely at the rear axle midpoint
-        var terrainY = yRear;
-
-        if (robot.position.y > terrainY + 0.05) {
+        // ── Gravity / Falling ─────────────────────────────────────────
+        if (robot.position.y > targetBodyY + 0.08 && !robotState.isTipping) {
             robotState.isFalling = true;
             robotState.vy -= 9.81 * dt;
             robot.position.y += robotState.vy * dt;
-            if (robot.position.y <= terrainY) {
-                robot.position.y = terrainY;
+            if (robot.position.y <= targetBodyY) {
+                robot.position.y = targetBodyY;
                 robotState.vy = 0;
                 robotState.isFalling = false;
             }
-            robot.rotation.x *= 0.9;
-            robot.rotation.z *= 0.9;
-        } else {
+        } else if (!robotState.isTipping) {
             robotState.isFalling = false;
             robotState.vy = 0;
-            robot.position.y = terrainY;
-
-            // Compute robust Quaternion alignment instead of Euler angles (which twist)
-            var normal = new THREE.Vector3(nx, ny, nz).normalize();
-            if (Math.abs(normal.y) < 0.1) normal.set(0, 1, 0); // fallback
-
-            // 1) Target forward direction purely based on theta (horizontal)
-            var fwdTarget = new THREE.Vector3(-Math.sin(robotState.theta), 0, -Math.cos(robotState.theta)).normalize();
-
-            // 2) Orthogonal "Right" vector = Forward x Normal
-            var right = new THREE.Vector3().crossVectors(fwdTarget, normal).normalize();
-
-            // 3) True "Forward" vector on the tilted plane = Normal x Right
-            var forward = new THREE.Vector3().crossVectors(normal, right).normalize();
-
-            // 4) Three.js +Z axis is visually "backwards"
-            var back = forward.clone().negate();
-
-            var m = new THREE.Matrix4();
-            m.makeBasis(right, normal, back);
-            robot.quaternion.setFromRotationMatrix(m);
+            robot.position.y = targetBodyY;
         }
 
-        // ── Three.js mesh sync ─────────────────────────────────────────────
+        // ── Orientation alignment ─────────────────────────────────────
+        // Clamp the surface normal: maximum tilt of 35° from vertical.
+        // This prevents the sinking/inversion bugs while still showing
+        // realistic lateral and longitudinal tilt on ramps.
+        var MAX_TILT = 0.61;  // 35 degrees in radians
+        var tiltAngle = Math.acos(Math.max(0.001, Math.min(1, ny)));
+        if (tiltAngle > MAX_TILT) {
+            // Scale normal back so tilt = MAX_TILT
+            var scale = Math.sin(MAX_TILT) / Math.sqrt(nx * nx + nz * nz + 0.0001);
+            nx *= scale; nz *= scale;
+            ny = Math.cos(MAX_TILT);
+        }
+
+        var upN = new THREE.Vector3(nx, ny, nz).normalize();
+        var fwdH = new THREE.Vector3(-sinA, 0, -cosA);
+        var rightV = new THREE.Vector3().crossVectors(fwdH, upN).normalize();
+        if (rightV.lengthSq() < 0.001) rightV.set(cosA, 0, -sinA);
+        var trueF = new THREE.Vector3().crossVectors(upN, rightV).normalize();
+
+        var m = new THREE.Matrix4();
+        m.makeBasis(rightV, upN, trueF.clone().negate());
+        var targetQ = new THREE.Quaternion().setFromRotationMatrix(m);
+
+        // Rate-limit: max 6°/frame to prevent oscillation, min snap for smoothness
+        var MAX_RAD_PER_FRAME = 6.0 * (Math.PI / 180);
+        var qAngle = robot.quaternion.angleTo(targetQ);
+        var slerpT = (qAngle > 0.001) ? Math.min(1.0, MAX_RAD_PER_FRAME / qAngle) : 1.0;
+        robot.quaternion.slerp(targetQ, slerpT);
+
+        // ── Three.js mesh sync ──────────────────────────────────────────
         robot.position.x = robotState.x;
         robot.position.z = robotState.z;
-        // Rotation is handled by quaternion above, no Euler assignment needed
     }
 
     function animate() {
