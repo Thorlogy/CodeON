@@ -6375,3 +6375,21 @@ Blockly.Blocks["robBrick_RCX-Brick"] = {
         this.setDeletable(false);
     }
 };
+
+Blockly.Blocks["robBrick_encoder"] = {
+    init: function () {
+        this.setColour("#BBBBBB");
+        this.appendDummyInput().appendField(Blockly.Msg.SENSOR_ENCODER);
+        this.setOutput(true, "Sensor");
+        this.setTooltip(Blockly.Msg.ENCODER_TOOLTIP || "Rotation sensor");
+    }
+};
+
+Blockly.Blocks["robBrick_temperature"] = {
+    init: function () {
+        this.setColour("#BBBBBB");
+        this.appendDummyInput().appendField(Blockly.Msg.SENSOR_TEMPERATURE || "Temperatur");
+        this.setOutput(true, "Sensor");
+        this.setTooltip("Temperature sensor");
+    }
+};
