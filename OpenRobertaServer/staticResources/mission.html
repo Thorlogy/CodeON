@@ -389,6 +389,11 @@
             <button class="btn btn-stop" id="btnStop">■ Stopp</button>
             <button class="btn btn-reset" id="btnReset">↺ Zurücksetzen</button>
         </div>
+
+        <div class="btn-group" style="margin-top: 15px;">
+            <button class="btn btn-reset" id="btnMenu" onclick="window.location.href='/'">🏠 Menü</button>
+            <button class="btn btn-reset" id="btnManual" onclick="window.open('https://jira.iais.fraunhofer.de/wiki/display/ORInfo', '_blank')">📖 Handbuch</button>
+        </div>
     </div>
 
     <!-- ── Main ── -->
@@ -414,6 +419,15 @@
 
             <!-- ── World Builder Toolbar ── -->
             <div id="world-builder-toolbar">
+                <select id="robotModelSelect" class="wb-btn"
+                    style="background: rgba(15, 52, 96, 0.9); margin-right: 15px; font-weight: bold;">
+                    <option value="ev3">🤖 EV3 Driving Base</option>
+                    <option value="spike">⚙️ Spike Prime</option>
+                    <option value="custom">📦 Custom Bot</option>
+                    <option value="mbot">🤖 mBot</option>
+                    <option value="edison">🧱 Edison</option>
+                </select>
+
                 <span>Weltbau:</span>
                 <button class="wb-btn" id="wbAddRampUp">🔼 Rampe hoch</button>
                 <button class="wb-btn" id="wbAddRampDown">🔽 Rampe runter</button>
@@ -424,7 +438,15 @@
                 <button class="wb-btn" id="wbAddGreenMarker">🟩 Marker</button>
                 <button class="wb-btn" id="wbAddTarget">🎯 + Ziel</button>
                 <button class="wb-btn wb-btn-danger" id="wbClear">🗑 Alles löschen</button>
-                <span id="wb-hint">Objekte im 3D-Feld verschieben</span>
+
+                <div style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+                    <label
+                        style="font-size: 0.75rem; color: #ffaa00; cursor: pointer; display: flex; align-items: center; gap: 4px; font-weight: bold;">
+                        <input type="checkbox" id="hardModeToggle">
+                        Physik: Simulation (Hard)
+                    </label>
+                    <span id="wb-hint">Objekte im 3D-Feld verschieben</span>
+                </div>
             </div>
 
             <div id="sim3d-container"></div>
@@ -444,8 +466,8 @@
     <!-- ── Mission App ── -->
     <script src="js/app/mission/mission-blocks.js?v=5"></script>
     <script src="js/app/mission/mission-interpreter.js?v=5"></script>
-    <script src="js/app/mission/mission-sim3d.js?v=5"></script>
-    <script src="js/app/mission/mission-app.js?v=5"></script>
+    <script src="js/app/mission/mission-sim3d.js?v=13"></script>
+    <script src="js/app/mission/mission-app.js?v=6"></script>
 
 </body>
 

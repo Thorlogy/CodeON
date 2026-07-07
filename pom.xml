@@ -40,6 +40,7 @@
         <module>OpenRobertaRobot</module>
         <module>RobotEV3</module>
         <module>RobotNXT</module>
+        <module>RobotRCX</module>
         <module>RobotArdu</module>
         <module>RobotNAO</module>
         <module>RobotMbed</module>
@@ -100,6 +101,11 @@
             <dependency>
                 <groupId>de.fhg.iais.openroberta</groupId>
                 <artifactId>RobotNXT</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>de.fhg.iais.openroberta</groupId>
+                <artifactId>RobotRCX</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

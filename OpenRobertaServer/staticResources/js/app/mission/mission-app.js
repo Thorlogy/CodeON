@@ -303,7 +303,8 @@
             return;
         }
 
-        MissionSim3D.reset();
+        // Don't reset position – robot continues from where it currently stands.
+        // Use the "Zurücksetzen" button to return to the starting position.
         MissionSim3D.runProgram(ast, function () {
             setStatus('✅ Programm fertig!', '#4ade80');
             showStop(false);
@@ -351,6 +352,40 @@
         document.getElementById('btnStop') && document.getElementById('btnStop').addEventListener('click', onStop);
         document.getElementById('btnReset') && document.getElementById('btnReset').addEventListener('click', onReset);
         document.getElementById('btnTrash') && document.getElementById('btnTrash').addEventListener('click', onTrash);
+
+        // ── Physics Hard Mode Toggle ──────────────────────────────
+        var hardModeToggle = document.getElementById('hardModeToggle');
+        if (hardModeToggle) {
+            // Default to false
+            window.SIM_HARD_MODE = false;
+            hardModeToggle.checked = false;
+
+            hardModeToggle.addEventListener('change', function (e) {
+                window.SIM_HARD_MODE = e.target.checked;
+                setStatus(
+                    window.SIM_HARD_MODE
+                        ? '🔥 Hard Mode aktiv: Reibung, Trägheit und Rampenrutschen!'
+                        : 'Arcade Mode aktiv: Präzise Fortbewegung.',
+                    window.SIM_HARD_MODE ? '#f59e0b' : '#3ab97a'
+                );
+                // Reset simulation so it rebuilds the robot body based on the new mode
+                if (window.MissionSim3D && typeof window.MissionSim3D.reset === 'function') {
+                    window.MissionSim3D.reset();
+                }
+            });
+        }
+
+        // ── Robot Model Selection ─────────────────────────────────────
+        var robotModelSelect = document.getElementById('robotModelSelect');
+        if (robotModelSelect) {
+            robotModelSelect.addEventListener('change', function (e) {
+                var selectedProfile = e.target.value;
+                if (window.MissionSim3D && typeof window.MissionSim3D.setRobotProfile === 'function') {
+                    window.MissionSim3D.setRobotProfile(selectedProfile);
+                    setStatus('🤖 Roboter-Modell gewechselt auf: ' + e.target.options[e.target.selectedIndex].text, '#3b82f6');
+                }
+            });
+        }
 
         // ── World Builder toolbar buttons ──────────────────────────
         var wbAddRampUp = document.getElementById('wbAddRampUp');

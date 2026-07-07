@@ -1,0 +1,90 @@
+package de.fhg.iais.roberta.worker.compile;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import org.apache.commons.lang3.SystemUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import de.fhg.iais.roberta.bean.CompilerSetupBean;
+import de.fhg.iais.roberta.components.Project;
+import de.fhg.iais.roberta.util.Key;
+import de.fhg.iais.roberta.util.Util;
+import de.fhg.iais.roberta.util.basic.Pair;
+import de.fhg.iais.roberta.util.dbc.DbcException;
+import de.fhg.iais.roberta.worker.ICompilerWorker;
+
+/**
+ * Kompiliert generierten NQC-Quellcode fuer den LEGO RCX mit dem klassischen
+ * nqc-Compiler (https://github.com/BrickBot/nqc).
+ *
+ * Aufruf-Muster (identisch zur Struktur des NxtCompilerWorker, der nbc aufruft):
+ *   nqc -Trcx2 -O<target>.rcx <source>.nqc
+ *
+ * Ablage des Binaries analog zum NXT-Muster:
+ *   - macOS:  <compilerResourcesDir>/osx/nqc
+ *   - Linux:  "nqc" im PATH
+ *   - Windows: <compilerResourcesDir>/windows/nqc.exe
+ *
+ * In rcx.properties muss stehen:
+ *   robot.plugin.fileExtension.source = nqc
+ *   robot.plugin.fileExtension.binary = rcx
+ */
+public class RcxCompilerWorker implements ICompilerWorker {
+
+    private static final Logger LOG = LoggerFactory.getLogger(RcxCompilerWorker.class);
+
+    @Override
+    public void execute(Project project) {
+        String programName = project.getProgramName();
+        String robot = project.getRobot();
+        Pair<Key, String> workflowResult = this.runBuild(project);
+        project.setResult(workflowResult.getFirst());
+        project.addResultParam("MESSAGE", workflowResult.getSecond());
+        if ( workflowResult.getFirst() == Key.COMPILERWORKFLOW_SUCCESS ) {
+            LOG.info("compile {} program {} successful", robot, programName);
+        } else {
+            LOG.error("compile {} program {} failed with {}", robot, programName, workflowResult);
+        }
+    }
+
+    private Pair<Key, String> runBuild(Project project) {
+        final String token = project.getToken();
+        final String mainFile = project.getProgramName();
+        final CompilerSetupBean compilerWorkflowBean = project.getWorkerResult(CompilerSetupBean.class);
+        final String compilerResourcesDir = compilerWorkflowBean.getCompilerResourcesDir();
+        final String tempDir = compilerWorkflowBean.getTempDir();
+        final String crosscompilerSource = project.getSourceCodeBuilder().toString();
+        Util.storeGeneratedProgram(tempDir, crosscompilerSource, token, mainFile, "." + project.getSourceCodeFileExtension());
+
+        Path path = Paths.get(compilerResourcesDir);
+        Path base = Paths.get("");
+
+        String nqcCompilerFileName;
+        if ( SystemUtils.IS_OS_WINDOWS ) {
+            nqcCompilerFileName = compilerResourcesDir + "/windows/nqc.exe";
+        } else if ( SystemUtils.IS_OS_LINUX ) {
+            nqcCompilerFileName = "nqc";
+        } else if ( SystemUtils.IS_OS_MAC ) {
+            nqcCompilerFileName = compilerResourcesDir + "/osx/nqc";
+        } else {
+            throw new DbcException("invalid operating system");
+        }
+
+        String sourceFile = tempDir + token + "/" + mainFile + "/source/" + mainFile + "." + project.getSourceCodeFileExtension();
+        String targetFile = tempDir + token + "/" + mainFile + "/target/" + mainFile + "." + project.getBinaryFileExtension();
+
+        String[] executableWithParameters =
+            {
+                nqcCompilerFileName,
+                "-Trcx2",              // Ziel: RCX mit Firmware 3.28 (2.0-Featureset)
+                "-O" + targetFile,     // nqc erwartet -O direkt vor dem Pfad, OHNE '='
+                "-I" + base.resolve(path).toAbsolutePath().normalize(), // Include-Pfad (optional)
+                sourceFile
+            };
+        Pair<Boolean, String> result = Util.runCrossCompiler(executableWithParameters, crosscompilerSource, project.isNativeEditorCode());
+        Key resultKey = result.getFirst() ? Key.COMPILERWORKFLOW_SUCCESS : Key.COMPILERWORKFLOW_ERROR_PROGRAM_COMPILE_FAILED;
+        return Pair.of(resultKey, result.getSecond());
+    }
+}

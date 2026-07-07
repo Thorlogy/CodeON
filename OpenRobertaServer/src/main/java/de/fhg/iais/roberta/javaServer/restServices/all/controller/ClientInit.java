@@ -137,6 +137,7 @@ public class ClientInit {
             UtilForREST.addSuccessInfo(response, Key.INIT_SUCCESS);
             return UtilForREST.responseWithFrontendInfo(response, httpSessionState, this.brickCommunicator);
         } catch ( Exception e ) {
+            LOG.error("INIT ERROR: ", e);
             return UtilForREST.makeBaseResponseForError(Key.SERVER_ERROR, httpSessionState, null); // TODO: redesign error ticker number and add then: append("parameters", errorTicketId);
         }
     }

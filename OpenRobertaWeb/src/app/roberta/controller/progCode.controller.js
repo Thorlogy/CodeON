@@ -8,7 +8,7 @@ import * as IMPORT_C from 'import.controller';
 import * as Blockly from 'blockly';
 import * as $ from 'jquery';
 import * as ACE_EDITOR from 'aceEditor';
-import { CodeToBlocksConverter } from '../../helper/codeToBlocks';
+import { CodeToBlocksConverter } from 'codeToBlocks';
 
 const INITIAL_WIDTH = 0.5;
 var blocklyWorkspace;

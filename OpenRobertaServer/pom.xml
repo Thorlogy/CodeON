@@ -102,6 +102,10 @@
         </dependency>
         <dependency>
             <groupId>de.fhg.iais.openroberta</groupId>
+            <artifactId>RobotRCX</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>de.fhg.iais.openroberta</groupId>
             <artifactId>RobotEdison</artifactId>
         </dependency>
         <dependency>

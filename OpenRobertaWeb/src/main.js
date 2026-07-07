@@ -55,6 +55,7 @@ require.config({
         'webots.wren': 'libs/webots/wrenjs',
         dapjs: 'libs/dapjs/dap.umd',
 
+        'codeToBlocks': 'js/helper/codeToBlocks',
         'startView.controller': 'js/app/roberta/controller/startView.controller',
         'confDelete.controller': 'js/app/roberta/controller/confDelete.controller',
         'configuration.controller': 'js/app/roberta/controller/configuration.controller',
@@ -112,6 +113,7 @@ require.config({
         'robot.rob3rta': 'js/app/simulation/simulationLogic/robot.rob3rta',
         'robot.ev3': 'js/app/simulation/simulationLogic/robot.ev3',
         'robot.nxt': 'js/app/simulation/simulationLogic/robot.nxt',
+        'robot.rcx': 'js/app/simulation/simulationLogic/robot.rcx',
         'robot.rcj': 'js/app/simulation/simulationLogic/robot.rcj',
         'robot.xnn': 'js/app/simulation/simulationLogic/robot.xnn',
         'robot.thymio': 'js/app/simulation/simulationLogic/robot.thymio',

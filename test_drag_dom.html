@@ -1,0 +1,1182 @@
+<!DOCTYPE html><html lang="de"><head>
+    <meta charset="utf-8">
+    <title>NEPO 3D</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ── Sidebar ── */
+        #sidebar {
+            width: 220px;
+            min-width: 220px;
+            background: linear-gradient(180deg, #16213e 0%, #0f3460 100%);
+            display: flex;
+            flex-direction: column;
+            padding: 20px 14px 14px;
+            border-right: 2px solid #e94560;
+            z-index: 20;
+        }
+
+        #sidebar h1 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #e94560;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .mission-badge {
+            display: inline-block;
+            background: #e94560;
+            color: white;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+        }
+
+        .goal-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .goal-card h3 {
+            font-size: 0.7rem;
+            color: #a0a0c0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .goal-card p {
+            font-size: 0.82rem;
+            line-height: 1.4;
+            color: #ccd;
+        }
+
+        #status-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-size: 0.78rem;
+            color: #88aaff;
+            margin-bottom: 12px;
+            min-height: 32px;
+            line-height: 1.4;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: auto;
+        }
+
+        .btn {
+            padding: 10px 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn-run {
+            background: linear-gradient(135deg, #00b09b, #96c93d);
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 176, 155, 0.35);
+        }
+
+        .btn-run:hover {
+            box-shadow: 0 6px 20px rgba(0, 176, 155, 0.5);
+        }
+
+        .btn-reset {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ccd;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-reset:hover {
+            background: rgba(255, 255, 255, 0.14);
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #e94560, #c62a47);
+            color: white;
+            box-shadow: 0 4px 15px rgba(233, 69, 96, 0.35);
+            display: none;
+        }
+
+        /* ── Main ── */
+        #main {
+            flex: 1;
+            display: flex;
+            min-width: 0;
+        }
+
+        /* ── Block editor area ── */
+        #editor-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            border-right: 2px solid #e94560;
+        }
+
+        #blockly-panel {
+            flex: 1;
+            min-height: 0;
+            position: relative;
+        }
+
+        #blocklyDiv {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 10;
+            pointer-events: auto !important;
+        }
+
+        /* ── Fix Blockly Toolbox position offset inside relative containers ── */
+        .blocklyToolboxDiv {
+            left: 0 !important;
+            background-color: #1e2a3a !important;
+            /* Match old custom toolbox background */
+            border-right: 2px solid #e94560;
+            color: #eee;
+        }
+
+        .blocklyTreeRow {
+            cursor: pointer;
+            margin-bottom: 2px;
+            padding: 4px 0;
+            transition: background 0.15s;
+        }
+
+        .blocklyTreeRow:hover {
+            background-color: rgba(255, 255, 255, 0.08) !important;
+        }
+
+        .blocklyTreeSelected {
+            background-color: rgba(233, 69, 96, 0.3) !important;
+        }
+
+        .blocklyTreeLabel {
+            font-family: 'Segoe UI', system-ui, sans-serif !important;
+            font-size: 0.85rem !important;
+            color: #eee !important;
+            letter-spacing: 0.5px;
+        }
+
+        .blocklyFlyoutBackground {
+            fill: #16213e !important;
+            fill-opacity: 0.95 !important;
+        }
+
+        /* ── Fix Blockly Drag & Drop Interaction ── */
+        .blocklySvg,
+        .blocklyFlyout,
+        .blocklyBlockCanvas,
+        .blocklyWidgetDiv {
+            touch-action: none !important;
+        }
+
+        /* ── 3D Sim ── */
+        #sim-panel {
+            flex: 0 0 45%;
+            min-height: 0;
+            position: relative;
+            background: #000;
+        }
+
+        #sim3d-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        /* Panel labels */
+        .panel-label {
+            position: absolute;
+            top: 6px;
+            right: 10px;
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: rgba(255, 255, 255, 0.2);
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        /* Trash button */
+        #btnTrash {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: rgba(255, 255, 255, 0.4);
+            border-radius: 6px;
+            width: 34px;
+            height: 34px;
+            font-size: 1rem;
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        #btnTrash:hover {
+            background: rgba(233, 69, 96, 0.2);
+            color: #e94560;
+        }
+
+        /* ── World Builder Toolbar ── */
+        #world-builder-toolbar {
+            position: absolute;
+            top: 36px;
+            left: 0;
+            right: 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            background: rgba(15, 52, 96, 0.75);
+            backdrop-filter: blur(6px);
+            border-bottom: 1px solid rgba(233, 69, 96, 0.3);
+            z-index: 10;
+            flex-wrap: wrap;
+        }
+
+        #world-builder-toolbar span {
+            font-size: 0.68rem;
+            color: #a0a0c0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-right: 4px;
+            white-space: nowrap;
+        }
+
+        .wb-btn {
+            padding: 4px 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.08);
+            color: #dde;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+            white-space: nowrap;
+        }
+
+        .wb-btn:hover {
+            background: rgba(255, 255, 255, 0.18);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .wb-btn.active {
+            background: rgba(233, 69, 96, 0.35);
+            border-color: #e94560;
+            color: #fff;
+        }
+
+        .wb-btn-danger {
+            border-color: rgba(233, 69, 96, 0.4);
+            color: #f87171;
+        }
+
+        .wb-btn-danger:hover {
+            background: rgba(233, 69, 96, 0.2);
+        }
+
+        #wb-hint {
+            font-size: 0.7rem;
+            color: #6677aa;
+            margin-left: auto;
+            white-space: nowrap;
+        }
+    </style>
+<style>.blocklyDraggable {}
+.blocklySvg {
+outline: none;
+}
+.blocklyWidgetDiv {
+display: none;
+position: absolute;
+z-index: 999;
+}
+.blocklyTooltipDiv {
+background-color: #333;
+border-radius: 2px;
+color: #fff;
+display: none;
+font-family: sans-serif;
+font-size: 9pt;
+opacity: 0.9;
+padding: 5px;
+position: absolute;
+z-index: 1000;
+}
+.blocklyResizeSE {
+cursor: se-resize;
+fill: #aaa;
+}
+.blocklyResizeSW {
+cursor: sw-resize;
+fill: #aaa;
+}
+.blocklyResizeLine {
+stroke: #888;
+stroke-width: 1;
+}
+.blocklyHighlightedConnectionPath {
+fill: #FFDC00;
+stroke: #FFDC00;
+stroke-width: 4px;
+}
+.blocklyPathLight {
+fill: none;
+stroke-linecap: round;
+stroke-width: 1;
+}
+.blocklySelected>.blocklyPath {
+stroke: #FFDC00;
+stroke-width: 3px;
+}
+.blocklySelected>.blocklyPathLight {
+display: none;
+}
+.blocklyDragging>.blocklyPath,
+.blocklyDragging>.blocklyPathLight {
+fill-opacity: .8;
+stroke-opacity: .8;
+}
+.blocklyDragging>.blocklyPathDark {
+display: none;
+}
+.blocklyDisabled>.blocklyPath {
+fill-opacity: .3;
+stroke-opacity: .3;
+}
+.blocklyDisabled>.blocklyPathLight,
+.blocklyDisabled>.blocklyPathDark {
+display: none;
+}
+.blocklyText {
+cursor: default;
+fill: #fff;
+font-family: sans-serif;
+font-size: 11pt;
+}
+.blocklyText.brick_label {
+fill: #000;
+font-weight: bold;
+font-size: 14pt;
+}
+.blocklyText.monospace {
+font-family: "Courier New", Courier, monospace;
+}
+.blocklyNonEditableText>text {
+pointer-events: none;
+}
+.blocklyNonEditableText>rect,
+.blocklyEditableText>rect {
+fill: #fff;
+fill-opacity: .6;
+}
+.blocklyNonEditableText>text,
+.blocklyEditableText>text {
+fill: #000;
+}
+.blocklyEditableText:hover>rect {
+stroke: #fff;
+stroke-width: 2;
+}
+.blocklyBubbleText {
+fill: #000;
+}
+.blocklySvg text {
+user-select: none;
+-moz-user-select: none;
+-webkit-user-select: none;
+cursor: inherit;
+}
+.blocklyHidden {
+display: none;
+}
+.blocklyFieldDropdown:not(.blocklyHidden) {
+display: block;
+}
+.blocklyIconGroup {
+cursor: default;
+}
+.blocklyIconGroup:not(:hover),
+.blocklyIconGroupReadonly:not(.no){
+opacity: .6;
+}
+.blocklyIconShape {
+stroke: #fff;
+stroke-width: 1px;
+}
+.blocklyIconSymbol {
+fill: #fff;
+}
+.blocklyIconBlocking {
+stroke-width: 0.5;
+fill: #fff;
+}
+.blocklyIconMarkWarningError {
+fill: #000;
+}
+g .blocklyIconGroup:hover path[class="blocklyIconMarkWarningError"] {
+fill: #fff;
+cursor: pointer
+}
+g .blocklyIconGroup:hover circle[class="blocklyIconMarkWarningError"] {
+fill: #fff;
+cursor: pointer
+}
+.blocklyIconMarkWarningError:hover {
+fill: #fff;
+}
+.blocklyMinimalBody {
+margin: 0;
+padding: 0;
+transform: none;
+}
+.blocklyCommentTextarea {
+background-color: #fff;
+border: 0;
+margin: 0;
+padding: 2px;
+resize: none;
+outline: 0 none
+}
+.blocklyHtmlInput {
+border: none;
+border-radius: 4px;
+font-family: sans-serif;
+height: 100%;
+margin: 0;
+outline: none;
+padding: 0 1px;
+width: 100%;
+line-height: normal;
+}
+.blocklyMainBackground {
+stroke-width: 1;
+stroke: #c6c6c6;
+}
+.blocklyMutatorBackground {
+fill: #fff;
+stroke: #ddd;
+stroke-width: 1;
+}
+.blocklyFlyoutBackground {
+fill-opacity: 1;
+}
+.blocklyCon {
+fill: #eee;
+fill-opacity: 1;
+}
+.blocklyConSelected {
+fill-opacity: .65;
+}
+.blocklyScrollbarBackground {
+opacity: 0;
+display: none;
+}
+.blocklyScrollbarKnob {
+display: none;
+}
+.blocklyScrollbarBackground:hover+.blocklyScrollbarKnob,
+.blocklyScrollbarKnob:hover {
+fill: #bbb;
+}
+.blocklyZoom>image {
+opacity: .4;
+}
+.blocklyZoom>image:hover {
+opacity: .6;
+}
+.blocklyZoom>image:active {
+opacity: .8;
+}
+rect[class="blocklyButtonBack"] { 
+fill: #fff;
+}
+g .robButtonHidden {
+display: none
+}
+g .robButton:hover rect[class="blocklyButtonBack"] {
+fill: #BACC1E;
+cursor: pointer
+}
+g .robButton:hover path[class="blocklyButtonPath"] {
+cursor: pointer
+}
+g .robButton.disabled {
+pointer-events: none;
+cursor: default;
+}
+g #runOnBrick.disabled {
+pointer-events: all;
+cursor: default;
+}
+g .robButton.disabled path[class="blocklyButtonPath"] {
+fill: #bbb
+}
+g #runOnBrick.disabled:hover rect[class="blocklyButtonBack"] {
+fill: #ffffff;
+cursor: default;
+}
+g #runOnBrick.disabled:hover path[class="blocklyButtonPath"] {
+cursor: default;
+}
+.blocklyFlyout .blocklyScrollbarKnob {
+fill: #bbb;
+}
+.blocklyFlyout .blocklyScrollbarBackground:hover+.blocklyScrollbarKnob,
+.blocklyFlyout .blocklyScrollbarKnob:hover {
+fill: #aaa;
+}
+.blocklyInvalidInput {
+background: #faa;
+}
+.blocklyAngleCircle {
+stroke: #444;
+stroke-width: 1;
+fill: #ddd;
+fill-opacity: .8;
+}
+.blocklyAngleMarks {
+stroke: #444;
+stroke-width: 1;
+}
+.blocklyAngleGauge {
+fill: #f88;
+fill-opacity: .8;
+}
+.blocklyAngleLine {
+stroke: #f00;
+stroke-width: 2;
+stroke-linecap: round;
+}
+.blocklyContextMenu {
+border-radius: 4px;
+}
+.blocklyDropdownMenu {
+padding: 0 !important;
+}
+.blocklyWidgetDiv .goog-option-selected .goog-menuitem-checkbox,
+.blocklyWidgetDiv .goog-option-selected .goog-menuitem-icon {
+background: url(../blockly/media/sprites.png) no-repeat -48px -16px !important;
+}
+.blocklyToolboxDiv {
+background-color: #eee;
+overflow-x: hidden;
+overflow-y: auto;
+position: absolute;
+}
+.blocklyTreeRoot {
+padding: 10px 0;
+}
+.blocklyTreeRoot:focus {
+outline: none;
+}
+.blocklyTreeRow {
+height: 40px;
+line-height: 0;
+margin-bottom: 6px;
+}
+.blocklyToolboxDiv.small .blocklyTreeRow {
+width: 55px;
+}
+.blocklyToolboxDiv.scroll.small .blocklyTreeRow {
+width: 70px;
+}
+.blocklyHorizontalTree {
+float: left;
+margin: 1px 5px 8px 0;
+}
+.blocklyHorizontalTreeRtl {
+float: right;
+margin: 1px 0 8px 5px;
+}
+.blocklyTreeRow:hover {
+cursor: pointer
+}
+.blocklyTreeRow:not(.blocklyTreeSelected):hover {
+background-color: #e4e4e4;
+cursor: pointer
+}
+.toolboxIcon {
+display: inline-block;
+position: relative;
+top: 20px;
+left: 8px;
+font-size: 24px;
+color: #fff;
+float: left;
+height: 0;
+visibility: hidden
+}
+.blocklyToolboxDiv.small .toolboxIcon {
+visibility: visible
+}
+.blocklyTreeSeparator {
+border-bottom: solid #e5e5e5 1px;
+height: 0;
+margin: 5px 0;
+}
+.blocklyTreeSeparatorHorizontal {
+border-right: solid #e5e5e5 1px;
+width: 0;
+padding: 5px 0;
+margin: 0 5px;
+}
+.blocklyTreeIcon {
+background-image: url(../blockly/media/sprites.png);
+height: 16px;
+vertical-align: middle;
+width: 16px;
+}
+.toolboxIcon.typcn:before {
+line-height:0
+}
+.blocklyTreeIconClosedLtr {
+background-position: -32px -1px;
+}
+.blocklyTreeIconClosedRtl {
+background-position: 0px -1px;
+}
+.blocklyTreeIconOpen {
+background-position: -16px -1px;
+}
+.blocklyTreeSelected>.blocklyTreeIconClosedLtr {
+background-position: -32px -17px;
+}
+.blocklyTreeSelected>.blocklyTreeIconClosedRtl {
+background-position: 0px -17px;
+}
+.blocklyTreeSelected>.blocklyTreeIconOpen {
+background-position: -16px -17px;
+}
+.blocklyTreeIconNone,
+.blocklyTreeSelected>.blocklyTreeIconNone {
+background-position: -48px -1px;
+}
+.blocklyTreeLabel {
+font-family: sans-serif;
+position: relative;
+top: 20px;
+float: left;
+font-size: 16pt;
+color: #fff;
+padding: 0 0 0 3px;
+}
+.blocklyTreeSub {
+  font-size: 10pt;
+}
+.blocklyToolboxDiv.small  .blocklyTreeLabel {
+visibility: hidden
+}
+.blocklyTreeRow::after {
+background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg"><g><path class="blocklyConSelected" fill="%23eee" d="M1,41 v-11 l7.8,0.5 l2.5-5.5 c3-10.7,0.3-16.3-10.3-15.7 v-10 h30v41h-30z"></path><path class="blocklyToolboxBackground" stroke="%23eee" stroke-width="2" fill="none" d="M1,40 v-10 l7.8,0.5 l2.5-5.5 c3-10.7,0.3-16.3-10.3-15.7 v-10"></path></g></svg>');
+content: "";
+width: 15px;
+height: 40px;
+float: right;
+display: inline-block;
+}
+.blocklyTreeRow.selected::after {
+background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg"><g><path class="blocklyConSelected" fill-opacity="0.7" fill="%23eee" d="M1,41 v-11 l7.8,0.5 l2.5-5.5 c3-10.7,0.3-16.3-10.3-15.7 v-10 h30v41h-30z"></path><path class="blocklyToolboxBackground" stroke="%23eee" stroke-width="2" fill="none" d="M1,40 v-10 l7.8,0.5 l2.5-5.5 c3-10.7,0.3-16.3-10.3-15.7 v-10"></path></g></svg>');
+}
+.blocklyToolboxDiv[dir="RTL"] .blocklyTreeRow .blocklyTreeLabel {
+float: right;
+padding: 0 3px 0 6px;
+}
+.blocklyToolboxDiv.scroll .blocklyTreeRow::after {
+width: 15px;
+}
+.blocklyToolboxDiv.scroll.small .blocklyTreeRow::after {
+width: 30px;
+}
+.blocklyToolboxDiv.scroll.small .blocklyTreeLabel {
+padding: 0 17px 0 3px;
+}
+.blocklyTreeSelected .blocklyTreeLabel {
+color: #fff;
+}
+.blocklyWidgetDiv .goog-palette {
+outline: none;
+cursor: default;
+}
+.blocklyWidgetDiv .goog-palette-table {
+border: 1px solid #666;
+border-collapse: collapse;
+}
+.blocklyWidgetDiv .goog-palette-cell {
+height: 13px;
+width: 15px;
+margin: 0;
+border: 0;
+text-align: center;
+vertical-align: middle;
+border-right: 1px solid #666;
+font-size: 1px;
+}
+.blocklyWidgetDiv .goog-palette-colorswatch {
+position: relative;
+height: 13px;
+width: 15px;
+border: 1px solid #666;
+}
+.blocklyWidgetDiv .goog-palette-cell-hover .goog-palette-colorswatch {
+border: 1px solid #FFF;
+}
+.blocklyWidgetDiv .goog-palette-cell-selected .goog-palette-colorswatch {
+border: 1px solid #000;
+color: #fff;
+}
+.blocklyWidgetDiv .goog-menu {
+background: #fff;
+border-color: #ccc #666 #666 #ccc;
+border-style: solid;
+border-width: 1px;
+cursor: default;
+font: normal 13px Arial, sans-serif;
+margin: 0;
+outline: none;
+padding: 4px 0;
+position: absolute;
+overflow-y: auto;
+overflow-x: hidden;
+max-height: 100%;
+z-index: 20000;
+}
+.blocklyWidgetDiv .goog-menuitem {
+color: #000;
+font: normal 13px Arial, sans-serif;
+list-style: none;
+margin: 0;
+padding: 4px 7em 4px 28px;
+white-space: nowrap;
+}
+.blocklyWidgetDiv .goog-menuitem.dropdownImage{
+padding: 4px 17px 4px 28px;
+}
+.blocklyWidgetDiv .goog-menuitem.goog-menuitem-rtl {
+padding-left: 7em;
+padding-right: 28px;
+}
+.blocklyWidgetDiv .goog-menu-nocheckbox .goog-menuitem,
+.blocklyWidgetDiv .goog-menu-noicon .goog-menuitem {
+padding-left: 12px;
+}
+.blocklyWidgetDiv .goog-menu-noaccel .goog-menuitem {
+padding-right: 20px;
+}
+.blocklyWidgetDiv .goog-menuitem-content {
+color: #000;
+font: normal 13px Arial, sans-serif;
+}
+.blocklyWidgetDiv .goog-menuitem-disabled .goog-menuitem-accel,
+.blocklyWidgetDiv .goog-menuitem-disabled .goog-menuitem-content {
+color: #ccc !important;
+}
+.blocklyWidgetDiv .goog-menuitem-disabled .goog-menuitem-icon {
+opacity: 0.3;
+-moz-opacity: 0.3;
+filter: alpha(opacity=30);
+}
+.blocklyWidgetDiv .goog-menuitem-highlight,
+.blocklyWidgetDiv .goog-menuitem-hover {
+background-color: #d6e9f8;
+border-color: #d6e9f8;
+border-style: dotted;
+border-width: 1px 0;
+padding-bottom: 3px;
+padding-top: 3px;
+}
+.blocklyWidgetDiv .goog-menuitem-checkbox,
+.blocklyWidgetDiv .goog-menuitem-icon {
+background-repeat: no-repeat;
+height: 16px;
+left: 6px;
+position: absolute;
+right: auto;
+vertical-align: middle;
+width: 16px;
+}
+.blocklyWidgetDiv .goog-menuitem-rtl .goog-menuitem-checkbox,
+.blocklyWidgetDiv .goog-menuitem-rtl .goog-menuitem-icon {
+left: auto;
+right: 6px;
+}
+.blocklyWidgetDiv .goog-option-selected .goog-menuitem-checkbox,
+.blocklyWidgetDiv .goog-option-selected .goog-menuitem-icon {
+background: url(//ssl.gstatic.com/editor/editortoolbar.png) no-repeat -512px 0;
+}
+.blocklyWidgetDiv .goog-menuitem-accel {
+color: #999;
+direction: ltr;
+left: auto;
+padding: 0 6px;
+position: absolute;
+right: 0;
+text-align: right;
+}
+.blocklyWidgetDiv .goog-menuitem-rtl .goog-menuitem-accel {
+left: 0;
+right: auto;
+text-align: left;
+}
+.blocklyWidgetDiv .goog-menuitem-mnemonic-hint {
+text-decoration: underline;
+}
+.blocklyWidgetDiv .goog-menuitem-mnemonic-separator {
+color: #999;
+font-size: 12px;
+padding-left: 4px;
+}
+.blocklyWidgetDiv .goog-menuseparator {
+border-top: 1px solid #ccc;
+margin: 4px 0;
+padding: 0;
+}
+</style></head>
+
+<body>
+
+    <!-- ── Sidebar ── -->
+    <div id="sidebar">
+        <h1>NEPO 3D</h1>
+        <span class="mission-badge">Mission 1</span>
+
+        <div class="goal-card">
+            <h3>🎯 Ziel</h3>
+            <p>Programmiere den Roboter so, dass er vorwärts fährt und dann eine Kurve macht!</p>
+        </div>
+
+        <div class="goal-card">
+            <h3>💡 Hinweis</h3>
+            <p>Klicke auf einen Block in der Toolbox (rechts neben dem Workspace), um ihn hinzuzufügen.</p>
+        </div>
+
+        <div id="status-box" style="color: rgb(136, 170, 255);">Bereit. Blöcke hinzufügen und auf „▶ Starten" drücken.</div>
+
+        <div class="btn-group">
+            <button class="btn btn-run" id="btnRun">▶ Starten</button>
+            <button class="btn btn-stop" id="btnStop">■ Stopp</button>
+            <button class="btn btn-reset" id="btnReset">↺ Zurücksetzen</button>
+        </div>
+    </div>
+
+    <!-- ── Main ── -->
+    <div id="main">
+
+        <!-- ── Blockly Workspace ── -->
+        <div id="editor-area">
+            <div id="blockly-panel">
+                <span class="panel-label">Blockly</span>
+                <div id="blocklyDiv" dir="LTR"><svg xmlns="http://www.w3.org/2000/svg" xmlns:html="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" class="blocklySvg" width="581px" height="720px"><defs><filter id="blocklyEmbossFilter6130773934743329"><feGaussianBlur in="SourceAlpha" stdDeviation="1" result="blur"></feGaussianBlur><feSpecularLighting in="blur" surfaceScale="1" specularConstant="0.5" specularExponent="10" lighting-color="white" result="specOut"><fePointLight x="-5000" y="-10000" z="20000"></fePointLight></feSpecularLighting><feComposite in="specOut" in2="SourceAlpha" operator="in" result="specOut"></feComposite><feComposite in="SourceGraphic" in2="specOut" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"></feComposite></filter><pattern id="blocklyDisabledPattern6130773934743329" patternUnits="userSpaceOnUse" width="10" height="10"><rect width="10" height="10" fill="#aaa"></rect><path d="M 0 0 L 10 10 M 10 0 L 0 10" stroke="#cc0"></path></pattern><pattern id="blocklyGridPattern6130773934743329" patternUnits="userSpaceOnUse" width="20" height="20" x="88" y="7.000000000000114"><line stroke="#2d3748" stroke-width="1" x1="9" y1="10.5" x2="12" y2="10.5"></line><line stroke="#2d3748" stroke-width="1" x1="10.5" y1="9" x2="10.5" y2="12"></line></pattern></defs><g class="blocklyWorkspace"><rect height="100%" width="100%" class="blocklyMainBackground" style="fill: url(&quot;#blocklyGridPattern6130773934743329&quot;);"></rect><g class="blocklyBlockCanvas" transform="translate(88,7.000000000000114) scale(1)"><g class="blocklyDraggable" transform="translate(60,60)"><path class="blocklyPath" fill="#E2001A" d="m 0,2 A 2,2 0 0,1 2,0 H 242.65625 v 25 H 30 h -3.5l -4, 4 -4, -4 h -3.5 H 2 a 2,2 0 0,1 -2,-2 z
+"></path><text class="blocklyText" y="12.5" transform="translate(37,5)">start</text><text class="blocklyText" y="12.5" transform="translate(75.515625,5)">&nbsp;&nbsp;</text><g class="blocklyEditableText" transform="translate(93.671875,5)" style="cursor: default;"><rect rx="2" ry="2" x="-5" y="0" height="16" width="14.078125"></rect><text class="blocklyText" y="12.5">&nbsp;</text><text class="blocklyText blocklyCheckbox" x="-3" y="14" style="display: none;">✓</text></g><g class="blocklyEditableText" transform="translate(117.75,5)" style="cursor: default;"><rect rx="2" ry="2" x="-5" y="0" height="16" width="124.90625"></rect><text class="blocklyText" y="12.5">show&nbsp;sensor&nbsp;data<tspan style="fill: rgb(226, 0, 26);"></tspan></text></g><g class="blocklyIconGroup" display="block" transform="translate(10,5)"><rect class="blocklyIconShape" height="16" width="16" fill-opacity="0" stroke-opacity="0"></rect><path class="blocklyIconSymbol" d="M18 10h-4v-4c0-1.104-.896-2-2-2s-2 .896-2 2l.071 4h-4.071c-1.104 0-2 .896-2 2s.896 2 2 2l4.071-.071-.071 4.071c0 1.104.896 2 2 2s2-.896 2-2v-4.071l4 .071c1.104 0 2-.896 2-2s-.896-2-2-2z" transform="scale(0.67)"></path></g></g></g><g class="blocklyBubbleCanvas" transform="translate(88,7.000000000000114) scale(1)"></g><rect height="15" width="15" class="blocklyScrollbarBackground" x="565.5" y="704.5"></rect><g class="blocklyScrollbarVertical" transform="translate(565.5,0.5)"><rect class="blocklyScrollbarBackground" width="15" height="704"></rect><rect class="blocklyScrollbarKnob" rx="5" ry="5" width="10" x="2.5" height="363.0945558739255" y="310.64756446991396"></rect></g><g class="blocklyScrollbarHorizontal" transform="translate(81.5,704.5)"><rect class="blocklyScrollbarBackground" height="15" width="484"></rect><rect class="blocklyScrollbarKnob" rx="5" ry="5" height="10" y="2.5" width="325.55597595325173" x="119.377306932358"></rect></g><g class="blocklyButtons" transform="translate(321,660)"><g class="robButton" transform="translate(50,0)" id="runOnBrick"><rect class="blocklyButtonBack" y="0" rx="2" ry="2" width="48" height="48"></rect><path class="blocklyButtonPath" d="M15.396 23.433c2.641-2.574 6.604-6.433 6.604-6.433s-3.963-3.859-6.604-6.433 c-.363-.349-.853-.567-1.396-.567-1.104 0-2 .896-2 2v10c0 1.104.896 2 2 2 .543 0 1.033-.218 1.396-.567z" transform="scale(1.5)" fill-rule="evenodd" stroke-width="0px" fill="#333"></path></g><g class="robButtonHidden" transform="translate(50,0)" id="stopBrick"><rect class="blocklyButtonBack" y="0" rx="2" ry="2" width="48" height="48"></rect><path class="blocklyButtonPath" d="M20 10h-8c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2v-8c0-1.1-.9-2-2 -2z" transform="scale(1.5)" fill-rule="evenodd" stroke-width="0px" fill="#333"></path></g><g class="robButton" transform="translate(50,0)" id="stopProgram" visibility="hidden"><rect class="blocklyButtonBack" y="0" rx="2" ry="2" width="48" height="48"></rect><path class="blocklyButtonPath" d="M20 10h-8c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2v-8c0-1.1-.9-2-2 -2z" transform="scale(1.5)" fill-rule="evenodd" stroke-width="0px" fill="#333"></path></g><g class="robButton" transform="translate(100,0)" id="saveProgram"><rect class="blocklyButtonBack" y="0" rx="2" ry="2" width="48" height="48"></rect><path class="blocklyButtonPath" d="M21 13 l-.351.015c-.825-2.377-3.062-4.015-5.649-4.015-3.309 0-6 2.691-6 6l.001.126c-1.724.445-3.001 2.013-3.001 3.874 0 2.206 1.794 4 4 4 h5v-4.586 l-1.293 1.293c-.195.195-.451.293-.707.293s-.512-.098-.707-.293c-.391-.391 -.391-1.023 0-1.414l2.999-2.999c.093-.093.203-.166.326-.217.244-.101.52 -.101.764 0 .123.051.233.124.326.217l2.999 2.999c.391.391.391 1.023 0 1.414 -.195.195-.451.293-.707.293s-.512-.098-.707-.293l-1.293-1.293v4.586h4c2.757 0 5-2.243 5-5s-2.243-5-5-5z" transform="scale(1.5)" fill-rule="evenodd" stroke-width="0px" fill="#333"></path></g><g class="robButton" transform="translate(150,0)"><rect class="blocklyButtonBack" y="0" rx="2" ry="2" width="48" height="48"></rect><path class="blocklyButtonPath" d="M17 8c-3.859 0-7 3.141-7 7 0 .763.127 1.495.354 2.183l-.749.75-.511.512 -1.008 1.045c-.562.557-.891 1.345-.891 2.185 0 1.727 1.404 3.131 3.13 3.131.757 0 1.504-.278 2.104-.784l.064-.055.061-.061 1.512-1.51.75-.749 c.688.226 1.421.353 2.184.353 3.859 0 7-3.141 7-7s-3.141-7-7-7zm0 12c -2.757 0-5-2.243-5-5s2.243-5 5-5 5 2.243 5 5-2.243 5-5 5zM17 11c-2.205 0-4 1.794-4 4s1.795 4 4 4 4-1.794 4-4-1.795-4-4-4zm0 7c-1.656 0-3-1.344-3-3s 1.344-3 3-3 3 1.344 3 3-1.344 3-3 3z" transform="scale(1.5)" fill-rule="evenodd" stroke-width="0px" fill="#333"></path></g><g class="robButtonHidden" transform="translate(150,0)"><rect class="blocklyButtonBack" y="0" rx="2" ry="2" width="48" height="48"></rect><path class="blocklyButtonPath" d="M18 16h-2v-2c0-.276-.224-.5-.5-.5s-.5.224-.5.5v2h-2c-.276 0-.5.224-.5.5 s.224.5.5.5h2v2c0 .276.224.5.5.5s.5-.224.5-.5v-2h2c.276 0 .5-.224.5-.5s -.224-.5-.5-.5zM23.432 19.97l-.536-.537-.749-.75c.227-.688.354-1.42.354 -2.183 0-3.859-3.141-7-7-7s-7 3.141-7 7 3.141 7 7 7c.763 0 1.496-.127 2.184-.354l.75.749 1.512 1.51.061.061.064.055c.601.506 1.348.784 2.104.784 1.726 0 3.13-1.404 3.13-3.131 0-.84-.328-1.628-.924-2.218l-.95-.986zm -12.932-3.47c0-2.757 2.243-5 5-5s5 2.243 5 5-2.243 5-5 5-5-2.243-5-5z" transform="scale(1.5)" fill-rule="evenodd" stroke-width="0px" fill="#333"></path></g><g class="robButtonHidden" transform="translate(150,-50)"><rect class="blocklyButtonBack" y="0" rx="2" ry="2" width="48" height="48"></rect><path class="blocklyButtonPath" d="M15 10.1C15.1 9 13.3 8.7 13 9.8 12.8 10.2 13.4 11.5 12.7 11.3 11.6 10.2 10.6 9.1 9.4 8.1 8.3 7.6 7.4 9.2 8.4 9.8 9.5 10.9 10.6 12 11.7 13.1 10.9 13.2 9.7 12.8 9.1 13.7 8.6 14.9 10.1 15.2 11 15c1.3 0 2.7 0 4 0 0-1.6 0-3.3 0-4.9zm8.7 12.2c-1.1-1.1-2.2-2.2-3.3-3.3 0.8-0.1 2.1 0.3 2.5-0.7 0.3-1.2 -1.1-1.5-2-1.3-1.3 0-2.6 0-3.9 0 0 1.8 0 3.5 0 5.3 0.2 1.1 2 0.9 2-0.2 0 -0.4-0.3-2 0.5-1.2 1 1 2 2.1 3.1 3 0.9 0.6 2-0.8 1.2-1.6l0 0 0 0c0 0 0 0 0 0zM10.1 17c-1.1-0.1-1.4 1.7-0.3 2 0.4 0.3 1.7-0.3 1.5 0.3-1.1 1.1-2.3 2.2 -3.3 3.3-0.5 1.1 1.1 2 1.8 1C10.9 22.5 12 21.4 13.1 20.3 13.2 21.1 12.8 22.3 13.7 22.9 14.9 23.4 15.2 21.9 15 21 15 19.7 15 18.3 15 17 13.4 17 11.7 17 10.1 17zM22.3 8.3C21.2 9.4 20.1 10.5 19 11.6 18.9 10.7 19.3 9.5 18.3 9 17.1 8.7 16.8 10.2 17 11.1 17 12.4 17 13.7 17 15c1.8 0 3.5 0 5.3 0C23.3 14.7 23.1 13 22 13 21.6 13 20 13.2 20.9 12.5 21.9 11.5 22.9 10.5 23.9 9.5 24.4 8.6 23.1 7.5 22.3 8.3L22.3 8.3 22.3 8.3z" transform="scale(1.5)" fill-rule="evenodd" stroke-width="0px" fill="#333"></path></g><g class="robButtonHidden" transform="translate(150,-100)"><rect class="blocklyButtonBack" y="0" rx="2" ry="2" width="48" height="48"></rect><path class="blocklyButtonPath" d="M18 16h-5c-.276 0-.5.224-.5.5s.224.5.5.5h5c.276 0 .5-.224.5-.5s-.224-.5-.5 -.5zM24.381 20.956l-.949-.986-.537-.537-.749-.75c.227-.688.354-1.42.354 -2.183 0-3.859-3.14-7-7-7s-7 3.141-7 7 3.14 7 7 7c.763 0 1.496-.127 2.184 -.354l.75.749 1.512 1.51.06.061.065.055c.601.506 1.348.784 2.104.784 1.726 0 3.13-1.404 3.13-3.131 0-.84-.328-1.628-.924-2.218zm-13.881-4.456c0-2.757 2.243-5 5-5s5 2.243 5 5-2.243 5-5 5-5-2.243-5-5z" transform="scale(1.5)" fill-rule="evenodd" stroke-width="0px" fill="#333"></path></g></g></g><g class="blocklyFlyout"><path class="blocklyFlyoutBackground"></path><g class="blocklyWorkspace"><g class="blocklyBlockCanvas"></g><g class="blocklyBubbleCanvas"></g><g class="blocklyScrollbarVertical"><rect class="blocklyScrollbarBackground" width="15"></rect><rect class="blocklyScrollbarKnob" rx="5" ry="5" width="10" x="2.5"></rect></g></g></g></svg></div>
+                <button id="btnTrash" title="Alle Blöcke löschen">🗑</button>
+            <div class="blocklyToolboxDiv" dir="LTR" style="left: 220px; height: 720px; top: 0px;"><div class="blocklyTreeRoot" id=":0" role="tree" aria-selected="false" aria-level="0" aria-labelledby=":0.label" aria-expanded="false" hidefocus="true" tabindex="0"><div class="blocklyTreeRow blocklyHidden" style="padding-left:0px;"><span style="display:inline-block;" class="" role="presentation"></span><span class="blocklyTreeLabel" id=":0.label"></span><span></span></div><div style="background-position:-100px 0;" role="group"><div class="" id=":1" role="treeitem" aria-selected="false" aria-level="1" aria-labelledby=":1.label" aria-setsize="8" aria-posinset="1"><div class="blocklyTreeRow" style="padding-left: 0px; background-color: rgb(242, 148, 0); border-left: none;"><span role="presentation"></span><span style="display:inline-block;" class="toolboxIcon typcn typcn-action" role="presentation"></span><span class="blocklyTreeLabel" id=":1.label">Action</span><span style="float: right;"></span></div><div style="background-position:0px 0;display:none;" role="group"></div></div><div class="" id=":2" role="treeitem" aria-selected="false" aria-level="1" aria-labelledby=":2.label" aria-setsize="8" aria-posinset="2"><div class="blocklyTreeRow" style="padding-left: 0px; background-color: rgb(143, 164, 2); border-left: none;"><span role="presentation"></span><span style="display:inline-block;" class="toolboxIcon typcn typcn-sensor" role="presentation"></span><span class="blocklyTreeLabel" id=":2.label">Sensors</span><span style="float: right;"></span></div><div style="background-position:0px 0;display:none;" role="group"></div></div><div class="" id=":3" role="treeitem" aria-selected="false" aria-level="1" aria-labelledby=":3.label" aria-setsize="8" aria-posinset="3"><div class="blocklyTreeRow" style="padding-left: 0px; background-color: rgb(235, 106, 10); border-left: none;"><span role="presentation"></span><span style="display:inline-block;" class="toolboxIcon typcn typcn-flow-children" role="presentation"></span><span class="blocklyTreeLabel" id=":3.label">Control</span><span style="float: right;"></span></div><div style="background-position:0px 0;display:none;" role="group"></div></div><div class="" id=":4" role="treeitem" aria-selected="false" aria-level="1" aria-labelledby=":4.label" aria-setsize="8" aria-posinset="4"><div class="blocklyTreeRow" style="padding-left: 0px; background-color: rgb(51, 184, 202); border-left: none;"><span role="presentation"></span><span style="display:inline-block;" class="toolboxIcon typcn typcn-logic" role="presentation"></span><span class="blocklyTreeLabel" id=":4.label">Logic</span><span style="float: right;"></span></div><div style="background-position:0px 0;display:none;" role="group"></div></div><div class="" id=":5" role="treeitem" aria-selected="false" aria-level="1" aria-labelledby=":5.label" aria-setsize="8" aria-posinset="5"><div class="blocklyTreeRow" style="padding-left: 0px; background-color: rgb(0, 90, 148); border-left: none;"><span role="presentation"></span><span style="display:inline-block;" class="toolboxIcon typcn typcn-math" role="presentation"></span><span class="blocklyTreeLabel" id=":5.label">Math</span><span style="float: right;"></span></div><div style="background-position:0px 0;display:none;" role="group"></div></div><div class="" id=":6" role="treeitem" aria-selected="false" aria-level="1" aria-labelledby=":6.label" aria-setsize="8" aria-posinset="6"><div class="blocklyTreeRow" style="padding-left: 0px; background-color: rgb(186, 204, 30); border-left: none;"><span role="presentation"></span><span style="display:inline-block;" class="toolboxIcon typcn typcn-sort-alphabetically-outline" role="presentation"></span><span class="blocklyTreeLabel" id=":6.label">Text</span><span style="float: right;"></span></div><div style="background-position:0px 0;display:none;" role="group"></div></div><div class="" id=":7" role="treeitem" aria-selected="false" aria-level="1" aria-labelledby=":7.label" aria-setsize="8" aria-posinset="7"><div class="blocklyTreeRow" style="padding-left: 0px; background-color: rgb(235, 195, 0); border-left: none;"><span role="presentation"></span><span style="display:inline-block;" class="toolboxIcon typcn typcn-brush" role="presentation"></span><span class="blocklyTreeLabel" id=":7.label">Colours</span><span style="float: right;"></span></div><div style="background-position:0px 0;display:none;" role="group"></div></div><div class="" id=":8" role="treeitem" aria-selected="false" aria-level="1" aria-labelledby=":8.label" aria-setsize="8" aria-posinset="8"><div class="blocklyTreeRow" style="padding-left: 0px; background-color: rgb(144, 133, 186); border-left: none;"><span role="presentation"></span><span style="display:inline-block;" class="toolboxIcon typcn typcn-variable" role="presentation"></span><span class="blocklyTreeLabel" id=":8.label">Variables</span><span style="float: right;"></span></div><div style="background-position:-100px 0;display:none;" role="group"></div></div></div></div></div></div>
+        </div>
+
+        <!-- ── Standard Open Roberta EV3 Beginner Toolbox ── -->
+        <xml id="toolbox" style="display: none">
+            <category name="TOOLBOX_ACTION" svg="true">
+                <block type="robActions_motorDiff_on_for">
+                    <value name="POWER">
+                        <block type="math_number">
+                            <field name="NUM">30</field>
+                        </block>
+                    </value>
+                    <value name="DISTANCE">
+                        <block type="math_number">
+                            <field name="NUM">20</field>
+                        </block>
+                    </value>
+                </block>
+                <block type="robActions_motorDiff_on">
+                    <value name="POWER">
+                        <block type="math_number">
+                            <field name="NUM">30</field>
+                        </block>
+                    </value>
+                </block>
+                <block type="robActions_motorDiff_stop">
+                <block type="robActions_motorDiff_turn_for">
+                    <value name="POWER">
+                        <block type="math_number">
+                            <field name="NUM">30</field>
+                        </block>
+                    </value>
+                    <value name="DEGREE">
+                        <block type="math_number">
+                            <field name="NUM">20</field>
+                        </block>
+                    </value>
+                </block>
+                <block type="robActions_motorDiff_turn">
+                    <value name="POWER">
+                        <block type="math_number">
+                            <field name="NUM">30</field>
+                        </block>
+                    </value>
+                </block>
+                <block type="robActions_motorDiff_curve_for">
+                    <value name="POWER_LEFT">
+                        <block type="math_number">
+                            <field name="NUM">10</field>
+                        </block>
+                    </value>
+                    <value name="POWER_RIGHT">
+                        <block type="math_number">
+                            <field name="NUM">30</field>
+                        </block>
+                    </value>
+                    <value name="DISTANCE">
+                        <block type="math_number">
+                            <field name="NUM">20</field>
+                        </block>
+                    </value>
+                </block>
+                <block type="robActions_motorDiff_curve">
+                    <value name="POWER_LEFT">
+                        <block type="math_number">
+                            <field name="NUM">10</field>
+                        </block>
+                    </value>
+                    <value name="POWER_RIGHT">
+                        <block type="math_number">
+                            <field name="NUM">30</field>
+                        </block>
+                    </value>
+                </block>
+                <block type="robActions_display_text">
+                    <value name="OUT">
+                        <block type="text">
+                            <field name="TEXT">Hallo</field>
+                        </block>
+                    </value>
+                    <value name="COL">
+                        <block type="math_number">
+                            <field name="NUM">0</field>
+                        </block>
+                    </value>
+                    <value name="ROW">
+                        <block type="math_number">
+                            <field name="NUM">0</field>
+                        </block>
+                    </value>
+                </block>
+                <block type="robActions_display_clear">
+                <block type="robActions_play_tone">
+                    <value name="FREQUENCE">
+                        <block type="math_number">
+                            <field name="NUM">300</field>
+                        </block>
+                    </value>
+                    <value name="DURATION">
+                        <block type="math_number">
+                            <field name="NUM">100</field>
+                        </block>
+                    </value>
+                </block>
+                <block type="robActions_play_setVolume">
+                    <value name="VOLUME">
+                        <block type="math_number">
+                            <field name="NUM">50</field>
+                        </block>
+                    </value>
+                </block>
+                <block type="robActions_sayText">
+                    <value name="OUT">
+                        <block type="text">
+                            <field name="TEXT">Hallo</field>
+                        </block>
+                    </value>
+                </block>
+                <block type="actions_bricklight_on_ev3">
+                <block type="actions_bricklight_off_ev3">
+                    <field name="MODE">OFF</field>
+                </block>
+                <block type="actions_bricklight_off_ev3">
+                    <field name="MODE">RESET</field>
+                </block>
+            </block></block></block></category>
+            <category name="TOOLBOX_SENSOR" svg="true">
+                <block type="robSensors_touch_getSample">
+                <block type="robSensors_ultrasonic_getSample">
+                    <field name="SENSORPORT">4</field>
+                </block>
+                <block type="robSensors_colour_getSample">
+                    <field name="SENSORPORT">3</field>
+                </block>
+                <block type="robSensors_infrared_getSample">
+                    <field name="SENSORPORT">4</field>
+                </block>
+                <block type="robSensors_encoder_reset">
+                    <field name="SENSORPORT">B</field>
+                </block>
+                <block type="robSensors_encoder_getSample">
+                    <field name="SENSORPORT">B</field>
+                </block>
+                <block type="robSensors_key_getSample">
+                <block type="robSensors_gyro_reset">
+                    <field name="SENSORPORT">2</field>
+                </block>
+                <block type="robSensors_gyro_getSample">
+                    <field name="SENSORPORT">2</field>
+                </block>
+                <block type="robSensors_timer_getSample">
+                <block type="robSensors_timer_reset">
+            </block></block></block></block></category>
+            <category name="TOOLBOX_CONTROL" svg="true">
+                <block type="robControls_if">
+                <block type="robControls_ifElse">
+                <block type="robControls_loopForever">
+                <block type="controls_repeat_ext">
+                    <value name="TIMES">
+                        <block type="math_number">
+                            <field name="NUM">10</field>
+                        </block>
+                    </value>
+                </block>
+                <block type="robControls_wait_time">
+                    <value name="WAIT">
+                        <block type="math_number">
+                            <field name="NUM">500</field>
+                        </block>
+                    </value>
+                </block>
+                <block type="robControls_wait_for">
+                    <value name="WAIT0">
+                        <block type="logic_compare">
+                            <value name="A">
+                                <block type="robSensors_getSample">
+                            </block></value>
+                            <value name="B">
+                                <block type="logic_boolean">
+                            </block></value>
+                        </block>
+                    </value>
+                </block>
+            </block></block></block></category>
+            <category name="TOOLBOX_LOGIC" svg="true">
+                <block type="logic_compare">
+                <block type="logic_operation">
+                <block type="logic_boolean">
+            </block></block></block></category>
+            <category name="TOOLBOX_MATH" svg="true">
+                <block type="math_number">
+                <block type="math_arithmetic">
+            </block></block></category>
+            <category name="TOOLBOX_TEXT" svg="true">
+                <block type="text">
+                <block type="text_comment">
+            </block></block></category>
+            <category name="TOOLBOX_COLOUR" svg="true">
+                <block type="robColour_picker">
+                    <field name="COLOUR">#585858</field>
+                </block>
+                <block type="robColour_picker">
+                    <field name="COLOUR">#000000</field>
+                </block>
+                <block type="robColour_picker">
+                    <field name="COLOUR">#0057a6</field>
+                </block>
+                <block type="robColour_picker">
+                    <field name="COLOUR">#00642e</field>
+                </block>
+                <block type="robColour_picker">
+                    <field name="COLOUR">#f7d117</field>
+                </block>
+                <block type="robColour_picker">
+                    <field name="COLOUR">#b30006</field>
+                </block>
+                <block type="robColour_picker">
+                    <field name="COLOUR">#FFFFFF</field>
+                </block>
+                <block type="robColour_picker">
+                    <field name="COLOUR">#532115</field>
+                </block>
+            </category>
+            <category name="TOOLBOX_VARIABLE" custom="VARIABLE" svg="true">
+        </category></xml>
+
+        <!-- ── 3D Simulation ── -->
+        <div id="sim-panel" style="position:relative">
+            <span class="panel-label" style="color:rgba(255,255,255,0.3)">3D Simulation</span>
+
+            <!-- ── World Builder Toolbar ── -->
+            <div id="world-builder-toolbar">
+                <span>Weltbau:</span>
+                <button class="wb-btn" id="wbAddRampUp">🔼 Rampe hoch</button>
+                <button class="wb-btn" id="wbAddRampDown">🔽 Rampe runter</button>
+                <button class="wb-btn" id="wbAddObstacle">⬛ Plattform</button>
+                <button class="wb-btn" id="wbAddLineTile">⬛ Linien-Kachel</button>
+                <button class="wb-btn" id="wbAddCurveTile">⤵️ Kurve</button>
+                <button class="wb-btn" id="wbAddIntersectionTile">➕ Kreuzung</button>
+                <button class="wb-btn" id="wbAddGreenMarker">🟩 Marker</button>
+                <button class="wb-btn" id="wbAddTarget">🎯 + Ziel</button>
+                <button class="wb-btn wb-btn-danger" id="wbClear">🗑 Alles löschen</button>
+                <span id="wb-hint">Objekte im 3D-Feld verschieben</span>
+            </div>
+
+            <div id="sim3d-container" style="position: relative;"><canvas width="477" height="720" style="display: block; width: 477px; height: 720px;"></canvas><div style="position: absolute; bottom: 8px; left: 8px; background: rgba(0, 0, 0, 0.55); color: rgb(160, 196, 255); font: 11px / 1.5 monospace; padding: 4px 8px; border-radius: 6px; pointer-events: none; white-space: pre; z-index: 20;">🔊 Abstand: 255 cm
+🎨 Farbe:   none
+👋 Taster:  nein</div></div>
+        </div>
+    </div>
+
+    <!-- ── Blockly toolbox (hidden – we use custom HTML toolbox instead) ── -->
+    <!-- ── Libraries (loaded directly, no RequireJS) ── -->
+    <script src="./blockly/blockly_compressed.js"></script>
+    <script src="./blockly/blocks_compressed.js"></script>
+    <script src="./blockly/msg/js/de.js"></script>
+    <script src="./libs/three.min.js"></script>
+
+    <!-- Mission App scripts (Loaded locally, cache-busted for rapid development) -->
+    <script src="js/app/mission/mission-app.js?v=31"></script>
+    <script src="js/app/mission/mission-sim3d.js?v=31"></script>
+    <script src="js/app/mission/mission-interpreter.js?v=31"></script>
+
+
+
+<div class="blocklyWidgetDiv"></div><div class="blocklyTooltipDiv"></div></body></html>

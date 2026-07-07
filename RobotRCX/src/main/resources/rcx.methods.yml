@@ -1,0 +1,40 @@
+include: "classpath:/common.methods.yml"
+
+POWER:
+  C: |
+    int MathPow(int firstValue, int secondValue) {
+        int result = 1;
+        for (int i = 0; i < abs(secondValue); i++) {
+            result = result * firstValue;
+        }
+        if (secondValue < 0) {
+            return 0;
+        } else {
+            return result;
+        }
+    }
+PRIME:
+  C: |
+    bool MathPrime(int number) {
+        if (number <= 1) return false;
+        if (number == 2) return true;
+        if (number % 2 == 0) return false;
+        for (int i = 3; i * i <= number; i += 2) {
+            if (number % i == 0)
+                return false;
+        }
+        return true;
+    }
+FACTORIAL:
+  C: |
+    int MathFactorial(int val) {
+        int result = val;
+        if (val <= 0) {
+            return 1;
+        } else {
+            for (int i = 1; i < val; i++) {
+                result = result * (val - i);
+            }
+            return result;
+        }
+    }

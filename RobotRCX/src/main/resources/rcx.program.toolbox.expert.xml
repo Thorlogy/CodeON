@@ -1,0 +1,182 @@
+<toolbox_set id="toolbox" style="display: none">
+    <category name="TOOLBOX_ACTION" svg="true">
+        <category name="TOOLBOX_MOVE" svg="true">
+            <block type="robActions_motor_on">
+                <field name="MOTORPORT">A</field>
+                <value name="POWER">
+                    <block type="math_number">
+                        <field name="NUM">30</field>
+                    </block>
+                </value>
+            </block>
+            <block type="robActions_motor_stop">
+                <field name="MOTORPORT">A</field>
+            </block>
+        </category>
+        <category name="TOOLBOX_DRIVE" svg="true">
+            <block type="robActions_motorDiff_on">
+                <value name="POWER">
+                    <block type="math_number">
+                        <field name="NUM">30</field>
+                    </block>
+                </value>
+            </block>
+            <block type="robActions_motorDiff_stop"/>
+            <block type="robActions_motorDiff_turn">
+                <value name="POWER">
+                    <block type="math_number">
+                        <field name="NUM">30</field>
+                    </block>
+                </value>
+            </block>
+        </category>
+        <category name="TOOLBOX_DISPLAY" svg="true">
+            <block type="robActions_display_text">
+                <value name="OUT">
+                    <block type="math_number">
+                        <field name="NUM">0</field>
+                    </block>
+                </value>
+            </block>
+            <block type="robActions_display_clear"/>
+        </category>
+        <category name="TOOLBOX_SOUND" svg="true">
+            <block type="robActions_play_tone">
+                <value name="FREQUENCE">
+                    <block type="math_number">
+                        <field name="NUM">300</field>
+                    </block>
+                </value>
+                <value name="DURATION">
+                    <block type="math_number">
+                        <field name="NUM">100</field>
+                    </block>
+                </value>
+            </block>
+            <block type="mbedActions_play_note"/>
+        </category>
+    </category>
+    <category name="TOOLBOX_SENSOR" svg="true">
+        <block type="robSensors_touch_getSample">
+            <field name="SENSORPORT">1</field>
+        </block>
+        <block type="robSensors_light_getSample">
+            <field name="SENSORPORT">2</field>
+        </block>
+        <block type="robSensors_encoder_reset">
+            <field name="SENSORPORT">3</field>
+        </block>
+        <block type="robSensors_encoder_getSample">
+            <field name="SENSORPORT">3</field>
+        </block>
+        <block type="robSensors_timer_getSample"/>
+        <block type="robSensors_timer_reset"/>
+    </category>
+    <category name="TOOLBOX_CONTROL" svg="true">
+        <category name="TOOLBOX_DECISION" svg="true">
+            <block type="robControls_if"/>
+            <block type="robControls_ifElse"/>
+        </category>
+        <category name="TOOLBOX_LOOP" svg="true">
+            <block type="robControls_loopForever"/>
+            <block type="controls_repeat_ext">
+                <value name="TIMES">
+                    <block type="math_number">
+                        <field name="NUM">10</field>
+                    </block>
+                </value>
+            </block>
+            <block type="controls_whileUntil"/>
+            <block type="robControls_for">
+                <value name="FROM">
+                    <block type="math_number">
+                        <field name="NUM">1</field>
+                    </block>
+                </value>
+                <value name="TO">
+                    <block type="math_number">
+                        <field name="NUM">10</field>
+                    </block>
+                </value>
+                <value name="BY">
+                    <block type="math_number">
+                        <field name="NUM">1</field>
+                    </block>
+                </value>
+            </block>
+            <block type="controls_flow_statements"/>
+        </category>
+        <category name="TOOLBOX_WAIT" svg="true">
+            <block type="robControls_wait"/>
+            <block type="robControls_wait_time">
+                <value name="WAIT">
+                    <block type="math_number">
+                        <field name="NUM">500</field>
+                    </block>
+                </value>
+            </block>
+            <block type="robControls_wait_for">
+                <value name="WAIT0">
+                    <block type="logic_compare">
+                        <value name="A">
+                            <block type="robSensors_getSample"/>
+                        </value>
+                        <value name="B">
+                            <block type="logic_boolean"/>
+                        </value>
+                    </block>
+                </value>
+            </block>
+        </category>
+    </category>
+    <category name="TOOLBOX_LOGIC" svg="true">
+        <block type="logic_compare"/>
+        <block type="logic_operation"/>
+        <block type="logic_negate"/>
+        <block type="logic_boolean"/>
+        <block type="logic_null"/>
+        <block type="logic_ternary"/>
+    </category>
+    <category name="TOOLBOX_MATH" svg="true">
+        <block type="math_number"/>
+        <block type="math_arithmetic"/>
+        <block type="math_number_property"/>
+        <block type="robMath_change">
+            <value name="DELTA">
+                <block type="math_number">
+                    <field name="NUM">1</field>
+                </block>
+            </value>
+        </block>
+        <block type="math_modulo"/>
+        <block type="math_constrain">
+            <value name="LOW">
+                <block type="math_number">
+                    <field name="NUM">1</field>
+                </block>
+            </value>
+            <value name="HIGH">
+                <block type="math_number">
+                    <field name="NUM">100</field>
+                </block>
+            </value>
+        </block>
+        <block type="math_random_int">
+            <value name="FROM">
+                <block type="math_number">
+                    <field name="NUM">1</field>
+                </block>
+            </value>
+            <value name="TO">
+                <block type="math_number">
+                    <field name="NUM">100</field>
+                </block>
+            </value>
+        </block>
+    </category>
+    <category name="TOOLBOX_TEXT" svg="true">
+        <block type="text_comment"/>
+    </category>
+    <category name="TOOLBOX_VARIABLE" custom="VARIABLE" svg="true"/>
+    <category name="TOOLBOX_PROCEDURE" custom="PROCEDURE" svg="true"/>
+</toolbox_set>

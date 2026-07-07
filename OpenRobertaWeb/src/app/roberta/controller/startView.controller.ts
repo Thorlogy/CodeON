@@ -30,6 +30,7 @@ export function init(callback: Function) {
     let r = GUISTATE_C.getRobots();
     robots = Object.keys(r).map(function (index) {
         let robot = r[index];
+        robot.extensions = robot.extensions || {};
         if (robot['sim']) {
             robot['extensions']['sim'] = true;
         } else {
@@ -41,6 +42,22 @@ export function init(callback: Function) {
     const iCalliopeNoBlue = robots.findIndex((robot, index) => {
         return robot.name === 'calliope2017NoBlue';
     });
+    
+    const ev3devIndex = robots.findIndex((robot) => robot.name === 'ev3dev');
+    if (ev3devIndex > -1) {
+        let ev3dev = robots.splice(ev3devIndex, 1)[0];
+        // Fix for EV3dev toolbox issue: Force sim to false to prevent UI overlay/interference
+        ev3dev.extensions.sim = false;
+        ev3dev.sim = false;
+        robots.unshift(ev3dev);
+    }
+    
+    const rcxIndex = robots.findIndex((robot) => robot.name === 'rcx');
+    if (rcxIndex > -1) {
+        let rcx = robots.splice(rcxIndex, 1)[0];
+        robots.unshift(rcx);
+    }
+
     const iCalliopeBlue: number = robots.findIndex((robot, index) => {
         return robot.name === 'calliope2017';
     });
