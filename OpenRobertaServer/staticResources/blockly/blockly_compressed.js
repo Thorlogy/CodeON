@@ -6355,3 +6355,23 @@ Blockly.setMainWorkspaceMetrics_ = function (a) {
     if (!this.scrollbar) throw "Attempt to set main workspace scroll without scrollbars."; var b = this.getMetrics(); "number" == typeof a.x && (this.scrollX = -b.contentWidth * a.x - b.contentLeft); "number" == typeof a.y && (this.scrollY = -b.contentHeight * a.y - b.contentTop); a = this.scrollX + b.absoluteLeft; b = this.scrollY + b.absoluteTop; this.translate(a, b); this.options.gridPattern && (this.options.gridPattern.setAttribute("x", a), this.options.gridPattern.setAttribute("y", b), goog.userAgent.IE &&
         this.updateGridPattern_())
 }; Blockly.addChangeListener = function (a) { console.warn("Deprecated call to Blockly.addChangeListener, use workspace.addChangeListener instead."); return Blockly.getMainWorkspace().addChangeListener(a) }; Blockly.getMainWorkspace = function () { return Blockly.mainWorkspace }; goog.global.Blockly || (goog.global.Blockly = {}); goog.global.Blockly.getMainWorkspace = Blockly.getMainWorkspace; goog.global.Blockly.addChangeListener = Blockly.addChangeListener;
+
+Blockly.Blocks["robBrick_RCX-Brick"] = {
+    init: function () {
+        this.setColour("#F2D900");
+        this.setInputsInline(false);
+        var a = new Blockly.FieldTextInput("5.6", Blockly.FieldTextInput.nonnegativeNumberValidator);
+        var b = new Blockly.FieldTextInput("11.5", Blockly.FieldTextInput.nonnegativeNumberValidator);
+        this.appendDummyInput().appendField(new Blockly.FieldLabel("RCX", "brick_label"));
+        this.appendDummyInput().appendField(Blockly.Msg.BRICK_WHEEL_DIAMETER).appendField(a, "WHEEL_DIAMETER").appendField("cm");
+        this.appendDummyInput().appendField(Blockly.Msg.BRICK_TRACK_WIDTH).appendField(b, "TRACK_WIDTH").appendField("cm");
+        this.appendValueInput("S1").appendField("Sensor 1").setAlign(Blockly.ALIGN_RIGHT).setCheck("Sensor");
+        this.appendValueInput("S2").appendField("Sensor 2").setAlign(Blockly.ALIGN_RIGHT).setCheck("Sensor");
+        this.appendValueInput("S3").appendField("Sensor 3").setAlign(Blockly.ALIGN_RIGHT).setCheck("Sensor");
+        this.appendValueInput("MA").appendField("Motor A").setAlign(Blockly.ALIGN_RIGHT).setCheck("Actor");
+        this.appendValueInput("MB").appendField("Motor B").setAlign(Blockly.ALIGN_RIGHT).setCheck("Actor");
+        this.appendValueInput("MC").appendField("Motor C").setAlign(Blockly.ALIGN_RIGHT).setCheck("Actor");
+        this.setTooltip("RCX Brick");
+        this.setDeletable(false);
+    }
+};

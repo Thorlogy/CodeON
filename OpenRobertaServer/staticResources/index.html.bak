@@ -2863,11 +2863,9 @@ limitations under the License.
             }, 50);
         })();
     </script>
-    <script data-main="js/main_v3.js" src="js/require.js"></script>
+
 
     <!-- Code-to-Blocks Converter -->
-    <script src="js/helper/codeToBlocks.js"></script>
-    <script src="js/helper/codeToBlocksIntegration.js"></script>
 </body>
 
 </html>

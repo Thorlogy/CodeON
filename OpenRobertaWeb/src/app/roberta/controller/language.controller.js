@@ -89,7 +89,7 @@ function switchLanguage(language) {
         return;
     }
 
-    var url = 'blockly/msg/js/' + language.toLowerCase() + '.js';
+    var url = 'blockly/msg/js/' + language.toLowerCase() + ".js?v=2";
     getCachedScript(url).done(function (data) {
         GUISTATE_C.setLanguage(language);
         translate();
