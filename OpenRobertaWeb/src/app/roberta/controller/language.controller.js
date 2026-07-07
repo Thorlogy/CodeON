@@ -51,7 +51,7 @@ function init() {
     } else if (navigator.language.indexOf('uk') > -1) {
         language = 'uk';
     } else {
-        language = 'en';
+        language = 'de';
     }
     if (language === 'de') {
         $('.EN').css('display', 'none');
