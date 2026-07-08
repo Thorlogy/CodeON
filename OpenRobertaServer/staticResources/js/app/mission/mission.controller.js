@@ -1,3 +1,136 @@
-define(["require","exports","blockly","jquery","robot.controller","guiState.controller","program.model","simulation.roberta"],(function(o,n,t,e,i,l,r,c){var a=function(){function o(){this.workspace=null}return o.getInstance=function(){return o.instance||(o.instance=new o),o.instance},o.prototype.init=function(){console.log("MissionController init");var o=this;this.initRobot("ev3Lejosv0.9.1").then((function(){o.initBlockly(),o.initSimulation(),o.initEvents()}))},o.prototype.initRobot=function(o){return new Promise((function(n){l.init("de").then((function(){i.init(o).then((function(){l.setRobot(o,{},!0),n(!0)}))}))}))},o.prototype.initBlockly=function(){console.log("Initializing Blockly"),this.workspace=t.inject("blocklyDiv",{toolbox:this.getSimpleToolbox(),trashcan:!0,scrollbars:!0});var o=(new DOMParser).parseFromString('<xml><block type="robControls_start" x="50" y="50"></block></xml>',"text/xml");t.Xml.domToWorkspace(o.documentElement,this.workspace)},o.prototype.initSimulation=function(){console.log("Initializing Simulation");c.SimulationRoberta.Instance},o.prototype.initEvents=function(){var o=this;e("#runMission").on("click",(function(){o.runMission()})),e(window).resize((function(){t.svgResize(o.workspace)}))},o.prototype.runMission=function(){console.log("Running Mission...");var o=t.Xml.workspaceToDom(this.workspace),n=t.Xml.domToText(o);r.runInSim("Mission1","EV3basis",n,"","de",(function(o){if("ok"===o.rc){console.log("Compilation success, starting sim...");var n=c.SimulationRoberta.Instance;n.init([o],!0,(function(){n.interpreterRunning=!0}))}else console.error("Compilation failed:",o),alert("Compilation failed: "+o.message)}))},o.prototype.getSimpleToolbox=function(){return'<xml id="toolbox" style="display: none"><category name="Aktion" colour="#F29400"><block type="robActions_motor_on_for"><value name="POWER"><block type="math_number"><field name="NUM">30</field></block></value><value name="VALUE"><block type="math_number"><field name="NUM">500</field></block></value></block><block type="robActions_motor_on"><value name="POWER"><block type="math_number"><field name="NUM">30</field></block></value></block><block type="robActions_motor_stop"></block></category><category name="Kontrolle" colour="#EB6A0A"><block type="robControls_wait_for"><value name="WAIT0"><block type="logic_boolean"></block></value></block><block type="robControls_loopForever"></block></category><category name="Logik" colour="#009999"><block type="logic_compare"></block><block type="logic_operation"></block><block type="logic_boolean"></block></category></xml>'},o}();n.MissionController=a,n.init=function(){return a.getInstance().init()}}));
-//# sourceMappingURL=mission.controller.js.map
-//# sourceMappingURL=mission.controller.js.map
+define([
+    'require',
+    'exports',
+    'blockly',
+    'jquery',
+    'robot.controller',
+    'guiState.controller',
+    'program.model',
+    'simulation.roberta'
+], function (require, exports, Blockly, $, ROBOT_C, GUISTATE_C, PROGRAM, SIM_ROBERTA) {
+    var MissionController = (function () {
+        function MissionController() {
+            this.workspace = null;
+        }
+        MissionController.getInstance = function () {
+            if (!MissionController.instance) {
+                MissionController.instance = new MissionController();
+            }
+            return MissionController.instance;
+        };
+        MissionController.prototype.init = function () {
+            console.log("MissionController init");
+            var that = this;
+            // Initialize basics (Language, Robot)
+            // We hardcode 'ev3' for now
+            this.initRobot('ev3Lejosv0.9.1').then(function () {
+                that.initBlockly();
+                that.initSimulation();
+                that.initEvents();
+            });
+        };
+        MissionController.prototype.initRobot = function (robotName) {
+            return new Promise(function (resolve) {
+                GUISTATE_C.init('de').then(function () {
+                    ROBOT_C.init(robotName).then(function () {
+                        GUISTATE_C.setRobot(robotName, {}, true);
+                        resolve(true);
+                    });
+                });
+            });
+        };
+        MissionController.prototype.initBlockly = function () {
+            console.log("Initializing Blockly");
+            this.workspace = Blockly.inject('blocklyDiv', {
+                toolbox: this.getSimpleToolbox(),
+                trashcan: true,
+                scrollbars: true
+            });
+            // Load a simple start block
+            var startXml = '<xml><block type="robControls_start" x="50" y="50"></block></xml>';
+            var parser = new DOMParser();
+            var xmlDoc = parser.parseFromString(startXml, "text/xml");
+            Blockly.Xml.domToWorkspace(xmlDoc.documentElement, this.workspace);
+        };
+        MissionController.prototype.initSimulation = function () {
+            console.log("Initializing Simulation");
+            // SimulationRoberta is a singleton
+            var sim = SIM_ROBERTA.SimulationRoberta.Instance;
+            // We need to trick the simulation into thinking it's in the right container.
+        };
+        MissionController.prototype.initEvents = function () {
+            var that = this;
+            $('#runMission').on('click', function () {
+                that.runMission();
+            });
+            $(window).resize(function () {
+                Blockly.svgResize(that.workspace);
+            });
+        };
+        MissionController.prototype.runMission = function () {
+            console.log("Running Mission...");
+            var that = this;
+            // 1. Get XML
+            var xml = Blockly.Xml.workspaceToDom(this.workspace);
+            var xmlText = Blockly.Xml.domToText(xml);
+            // 2. Compile/Run via Server or Program Model
+            PROGRAM.runInSim('Mission1', 'EV3basis', xmlText, '', 'de', function (result) {
+                if (result.rc === 'ok') {
+                    console.log("Compilation success, starting sim...");
+                    var sim = SIM_ROBERTA.SimulationRoberta.Instance;
+                    sim.init([result], true, function () {
+                        // On Loaded
+                        sim.interpreterRunning = true;
+                    });
+                }
+                else {
+                    console.error("Compilation failed:", result);
+                    alert("Compilation failed: " + result.message);
+                }
+            });
+        };
+        MissionController.prototype.getSimpleToolbox = function () {
+            return '' +
+                '<xml id="toolbox" style="display: none">' +
+                '<category name="Aktion" colour="#F29400">' +
+                '<block type="robActions_motor_on_for">' +
+                '<value name="POWER">' +
+                '<block type="math_number">' +
+                '<field name="NUM">30</field>' +
+                '</block>' +
+                '</value>' +
+                '<value name="VALUE">' +
+                '<block type="math_number">' +
+                '<field name="NUM">500</field>' +
+                '</block>' +
+                '</value>' +
+                '</block>' +
+                '<block type="robActions_motor_on">' +
+                '<value name="POWER">' +
+                '<block type="math_number">' +
+                '<field name="NUM">30</field>' +
+                '</block>' +
+                '</value>' +
+                '</block>' +
+                '<block type="robActions_motor_stop"></block>' +
+                '</category>' +
+                '<category name="Kontrolle" colour="#EB6A0A">' +
+                '<block type="robControls_wait_for">' +
+                '<value name="WAIT0">' +
+                '<block type="logic_boolean"></block>' +
+                '</value>' +
+                '</block>' +
+                '<block type="robControls_loopForever"></block>' +
+                '</category>' +
+                '<category name="Logik" colour="#009999">' +
+                '<block type="logic_compare"></block>' +
+                '<block type="logic_operation"></block>' +
+                '<block type="logic_boolean"></block>' +
+                '</category>' +
+                '</xml>';
+        };
+        return MissionController;
+    })();
+    exports.MissionController = MissionController;
+    exports.init = function () { return MissionController.getInstance().init(); };
+});

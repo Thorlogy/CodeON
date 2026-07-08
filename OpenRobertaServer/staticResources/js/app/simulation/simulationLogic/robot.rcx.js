@@ -1,3 +1,59 @@
-var __extends=this&&this.__extends||function(){var t=function(e,n){return t=Object.setPrototypeOf||{__proto__:[]}instanceof Array&&function(t,e){t.__proto__=e}||function(t,e){for(var n in e)Object.prototype.hasOwnProperty.call(e,n)&&(t[n]=e[n])},t(e,n)};return function(e,n){if("function"!=typeof n&&null!==n)throw new TypeError("Class extends value "+String(n)+" is not a constructor or null");function o(){this.constructor=e}t(e,n),e.prototype=null===n?Object.create(n):(o.prototype=n.prototype,new o)}}();define(["require","exports","robot.ev3","robot.actuators","robot.sensors"],(function(t,e,n,o,r){Object.defineProperty(e,"__esModule",{value:!0});var s=function(t){function e(){var e=null!==t&&t.apply(this,arguments)||this;return e.timer=new r.Timer(1),e}return __extends(e,t),e.prototype.configure=function(t){this.chassis=new o.NXTChassis(this.id,t,2,this.pose);var e=t.SENSORS,n=function(t){switch(e[t].TYPE){case"TOUCH":s[t]=new r.TouchSensor(t,25,0,s.chassis.geom.color);break;case"LIGHT":var n=[],o=s;Object.keys(s).forEach((function(t){o[t]&&o[t]instanceof r.LightSensor&&n.push(o[t])}));var i=10*(n.length+1)-5*(Object.keys(e).filter((function(t){return"LIGHT"==e[t].TYPE})).length+1);s[t]=new r.LightSensor(t,15,i,0,5)}},s=this;for(var i in e)n(i);this.buttons=new r.EV3Keys([],this.id)},e}(n.default);e.default=s}));
-//# sourceMappingURL=robot.rcx.js.map
-//# sourceMappingURL=robot.rcx.js.map
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+define(["require", "exports", "robot.ev3", "robot.actuators", "robot.sensors"], function (require, exports, robot_ev3_1, robot_actuators_1, robot_sensors_1) {
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var RobotRcx = /** @class */ (function (_super) {
+        __extends(RobotRcx, _super);
+        function RobotRcx() {
+            var _this = _super !== null && _super.apply(this, arguments) || this;
+            _this.timer = new robot_sensors_1.Timer(1);
+            return _this;
+        }
+        RobotRcx.prototype.configure = function (configuration) {
+            this.chassis = new robot_actuators_1.NXTChassis(this.id, configuration, 2, this.pose);
+            var sensors = configuration['SENSORS'];
+            var _loop_1 = function (c) {
+                switch (sensors[c]['TYPE']) {
+                    case 'TOUCH':
+                        this_1[c] = new robot_sensors_1.TouchSensor(c, 25, 0, this_1.chassis.geom.color);
+                        break;
+                    case 'LIGHT': {
+                        var myColorLightSensors_1 = [];
+                        var rcx_1 = this_1;
+                        Object.keys(this_1).forEach(function (x) {
+                            if (rcx_1[x] && rcx_1[x] instanceof robot_sensors_1.LightSensor) {
+                                myColorLightSensors_1.push(rcx_1[x]);
+                            }
+                        });
+                        var ord = myColorLightSensors_1.length + 1;
+                        var id = Object.keys(sensors).filter(function (sensor) { return sensors[sensor]['TYPE'] == 'LIGHT'; }).length;
+                        var y = ord * 10 - 5 * (id + 1);
+                        this_1[c] = new robot_sensors_1.LightSensor(c, 15, y, 0, 5);
+                        break;
+                    }
+                }
+            };
+            var this_1 = this;
+            for (var c in sensors) {
+                _loop_1(c);
+            }
+            var myButtons = [];
+            this.buttons = new robot_sensors_1.EV3Keys(myButtons, this.id);
+        };
+        return RobotRcx;
+    }(robot_ev3_1.default));
+    exports.default = RobotRcx;
+});

@@ -35,7 +35,6 @@
                 </block>
             </value>
         </block>
-        <block type="mbedActions_play_note"/>
     </category>
     <category name="TOOLBOX_SENSOR" svg="true">
         <block type="robSensors_touch_getSample">

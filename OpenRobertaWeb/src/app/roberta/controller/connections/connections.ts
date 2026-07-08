@@ -2136,3 +2136,4 @@ export class RcjConnection extends AbstractConnection {
 
     setState(): void {}
 }
+export class RcxConnection extends TokenConnection {}

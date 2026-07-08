@@ -53,7 +53,6 @@
                     </block>
                 </value>
             </block>
-            <block type="mbedActions_play_note"/>
         </category>
     </category>
     <category name="TOOLBOX_SENSOR" svg="true">

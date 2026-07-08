@@ -1,3 +1,318 @@
-define(["require","exports"],(function(e,o){var t,a,n;Object.defineProperty(o,"__esModule",{value:!0}),o.setCodeLanguage=o.setViewCode=o.setEditorCode=o.getEditorCode=o.setWasEditedByUser=o.getCurrentLanguage=o.wasEditedByUser=o.init=void 0;var s=!1,r=0,i=!1,l={getCompletions:function(e,o,t,a,n){n(null,[{caption:"hal.drawText",value:"hal.drawText(text, x, y)",meta:"EV3dev Display",score:1e3},{caption:"hal.drawPicture",value:"hal.drawPicture(picture, x, y)",meta:"EV3dev Display",score:1e3},{caption:"hal.clearDisplay",value:"hal.clearDisplay()",meta:"EV3dev Display",score:1e3},{caption:"hal.waitFor",value:"hal.waitFor(ms)",meta:"EV3dev Timing",score:1e3},{caption:"hal.rotateDirectionRegulated",value:"hal.rotateDirectionRegulated(port, direction, speed)",meta:"EV3dev Motor",score:1e3},{caption:"hal.rotateDirectionAngle",value:"hal.rotateDirectionAngle(port, direction, speed, angle)",meta:"EV3dev Motor",score:1e3},{caption:"hal.turnOnRegulatedMotor",value:"hal.turnOnRegulatedMotor(port, speed)",meta:"EV3dev Motor",score:1e3},{caption:"hal.setRegulatedMotorSpeed",value:"hal.setRegulatedMotorSpeed(port, speed)",meta:"EV3dev Motor",score:1e3},{caption:"hal.stopMotor",value:"hal.stopMotor(port, mode)",meta:"EV3dev Motor",score:1e3},{caption:"hal.isKeyPressed",value:"hal.isKeyPressed(key)",meta:"EV3dev Sensor",score:1e3},{caption:"hal.isPressed",value:"hal.isPressed(port)",meta:"EV3dev Sensor",score:1e3},{caption:"hal.getUltraSonicSensorDistance",value:"hal.getUltraSonicSensorDistance(port)",meta:"EV3dev Sensor",score:1e3},{caption:"hal.getColorSensorColour",value:"hal.getColorSensorColour(port)",meta:"EV3dev Sensor",score:1e3},{caption:"hal.getColorSensorRed",value:"hal.getColorSensorRed(port)",meta:"EV3dev Sensor",score:1e3},{caption:"hal.getGyroSensorAngle",value:"hal.getGyroSensorAngle(port)",meta:"EV3dev Sensor",score:1e3},{caption:"hal.getInfraredSensorDistance",value:"hal.getInfraredSensorDistance(port)",meta:"EV3dev Sensor",score:1e3},{caption:"hal.playTone",value:"hal.playTone(frequency, duration)",meta:"EV3dev Sound",score:1e3},{caption:"hal.playFile",value:"hal.playFile(filename)",meta:"EV3dev Sound",score:1e3},{caption:"hal.ledOn",value:"hal.ledOn(color, mode)",meta:"EV3dev LED",score:1e3},{caption:"hal.ledOff",value:"hal.ledOff()",meta:"EV3dev LED",score:1e3},{caption:"if",value:"if ${1:condition}:\n    ${2:pass}",meta:"Python",score:900},{caption:"while",value:"while ${1:condition}:\n    ${2:pass}",meta:"Python",score:900},{caption:"for",value:"for ${1:i} in range(${2:10}):\n    ${3:pass}",meta:"Python",score:900},{caption:"def",value:"def ${1:function_name}(${2:params}):\n    ${3:pass}",meta:"Python",score:900}])}};function c(e){e.session.setUseWrapMode(!0),e.setShowPrintMargin(!1)}function d(e){e.setHighlightActiveLine(!1),0==e.getSelectedText().length&&e.setHighlightActiveLine(!0)}function u(e){var o=0;return e.session.getAllFolds().forEach((function(e){var t=e.start.row,a=e.end.row;o+=a-t})),e.session.getLength()-o}function p(e){for(var o in e.session.getMarkers(!1))e.session.removeMarker(Number(o));for(var t=0;t<u(e);t++)t%2==1?(e.session.addGutterDecoration(t,"ace_lineBackgroundGrey"),e.session.highlightLines(t,t,"ace_lineBackgroundGrey",!1)):e.session.highlightLines(t,t,"ace_lineBackgroundWhite",!1)}o.init=function(){i||(i=!0,ace.require("ace/ext/language_tools"),c(t=ace.edit("codeContent")),t.setOptions({readOnly:!1,highlightActiveLine:!0,highlightGutterLine:!0,enableBasicAutocompletion:!0,enableSnippets:!0,enableLiveAutocompletion:!0}),ace.require("ace/ext/language_tools").addCompleter(l),c(a=ace.edit("aceEditor")),a.setOptions({enableBasicAutocompletion:!0,enableSnippets:!0,enableLiveAutocompletion:!0}),ace.require("ace/ext/language_tools").addCompleter(l),a.session.on("change",(function(){r!==a.session.getLength()&&(r=a.session.getLength(),d(a)),s=!0})),a.session.on("changeFold",(function(){d(a)})),a.selection.on("changeSelection",(function(){d(a)})),t.session.on("changeFold",(function(){p(t)})),$(window).resize((function(){t.resize(),a.resize()})))},o.wasEditedByUser=function(){return s},o.getCurrentLanguage=function(){return n},o.setWasEditedByUser=function(e){s=e},o.getEditorCode=function(){return a.getValue()},o.setEditorCode=function(e){a.setValue(e,0),a.clearSelection(),a.focus(),d(a)},o.setViewCode=function(e){t.setValue(e,0),t.clearSelection(),t.moveCursorTo(0,0),p(t)},o.setCodeLanguage=function(e){var o;switch(e){case"py":default:o="python";break;case"java":o="java";break;case"ino":case"nxc":case"cpp":o="c_cpp";break;case"json":o="json"}a.session.setMode("ace/mode/"+o),t.session.setMode("ace/mode/"+o),r=a.session.getLength(),n=o}}));
-//# sourceMappingURL=aceEditor.js.map
-//# sourceMappingURL=aceEditor.js.map
+/*
+ important note:
+    AceAjax types are incomplete some typing errors have to be suppressed with it-ignore
+*/
+define(["require", "exports"], function (require, exports) {
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.setCodeLanguage = exports.setViewCode = exports.setEditorCode = exports.getEditorCode = exports.setWasEditedByUser = exports.getCurrentLanguage = exports.wasEditedByUser = exports.init = void 0;
+    var codeView;
+    var editor;
+    var currentLanguage;
+    var wasEdited = false;
+    var previousLineCount = 0;
+    var initialized = false;
+    // EV3dev API Autocomplete Completer
+    var ev3devCompleter = {
+        getCompletions: function (editor, session, pos, prefix, callback) {
+            var completions = [
+                // Hal display methods
+                {
+                    caption: 'hal.drawText',
+                    value: 'hal.drawText(text, x, y)',
+                    meta: 'EV3dev Display',
+                    score: 1000
+                },
+                {
+                    caption: 'hal.drawPicture',
+                    value: 'hal.drawPicture(picture, x, y)',
+                    meta: 'EV3dev Display',
+                    score: 1000
+                },
+                {
+                    caption: 'hal.clearDisplay',
+                    value: 'hal.clearDisplay()',
+                    meta: 'EV3dev Display',
+                    score: 1000
+                },
+                // Hal timing methods
+                {
+                    caption: 'hal.waitFor',
+                    value: 'hal.waitFor(ms)',
+                    meta: 'EV3dev Timing',
+                    score: 1000
+                },
+                // Motor control methods
+                {
+                    caption: 'hal.rotateDirectionRegulated',
+                    value: 'hal.rotateDirectionRegulated(port, direction, speed)',
+                    meta: 'EV3dev Motor',
+                    score: 1000
+                },
+                {
+                    caption: 'hal.rotateDirectionAngle',
+                    value: 'hal.rotateDirectionAngle(port, direction, speed, angle)',
+                    meta: 'EV3dev Motor',
+                    score: 1000
+                },
+                {
+                    caption: 'hal.turnOnRegulatedMotor',
+                    value: 'hal.turnOnRegulatedMotor(port, speed)',
+                    meta: 'EV3dev Motor',
+                    score: 1000
+                },
+                {
+                    caption: 'hal.setRegulatedMotorSpeed',
+                    value: 'hal.setRegulatedMotorSpeed(port, speed)',
+                    meta: 'EV3dev Motor',
+                    score: 1000
+                },
+                {
+                    caption: 'hal.stopMotor',
+                    value: 'hal.stopMotor(port, mode)',
+                    meta: 'EV3dev Motor',
+                    score: 1000
+                },
+                // Sensor methods
+                {
+                    caption: 'hal.isKeyPressed',
+                    value: 'hal.isKeyPressed(key)',
+                    meta: 'EV3dev Sensor',
+                    score: 1000
+                },
+                {
+                    caption: 'hal.isPressed',
+                    value: 'hal.isPressed(port)',
+                    meta: 'EV3dev Sensor',
+                    score: 1000
+                },
+                {
+                    caption: 'hal.getUltraSonicSensorDistance',
+                    value: 'hal.getUltraSonicSensorDistance(port)',
+                    meta: 'EV3dev Sensor',
+                    score: 1000
+                },
+                {
+                    caption: 'hal.getColorSensorColour',
+                    value: 'hal.getColorSensorColour(port)',
+                    meta: 'EV3dev Sensor',
+                    score: 1000
+                },
+                {
+                    caption: 'hal.getColorSensorRed',
+                    value: 'hal.getColorSensorRed(port)',
+                    meta: 'EV3dev Sensor',
+                    score: 1000
+                },
+                {
+                    caption: 'hal.getGyroSensorAngle',
+                    value: 'hal.getGyroSensorAngle(port)',
+                    meta: 'EV3dev Sensor',
+                    score: 1000
+                },
+                {
+                    caption: 'hal.getInfraredSensorDistance',
+                    value: 'hal.getInfraredSensorDistance(port)',
+                    meta: 'EV3dev Sensor',
+                    score: 1000
+                },
+                // Sound methods
+                {
+                    caption: 'hal.playTone',
+                    value: 'hal.playTone(frequency, duration)',
+                    meta: 'EV3dev Sound',
+                    score: 1000
+                },
+                {
+                    caption: 'hal.playFile',
+                    value: 'hal.playFile(filename)',
+                    meta: 'EV3dev Sound',
+                    score: 1000
+                },
+                // LED methods
+                {
+                    caption: 'hal.ledOn',
+                    value: 'hal.ledOn(color, mode)',
+                    meta: 'EV3dev LED',
+                    score: 1000
+                },
+                {
+                    caption: 'hal.ledOff',
+                    value: 'hal.ledOff()',
+                    meta: 'EV3dev LED',
+                    score: 1000
+                },
+                // Common Python patterns
+                {
+                    caption: 'if',
+                    value: 'if ${1:condition}:\n    ${2:pass}',
+                    meta: 'Python',
+                    score: 900
+                },
+                {
+                    caption: 'while',
+                    value: 'while ${1:condition}:\n    ${2:pass}',
+                    meta: 'Python',
+                    score: 900
+                },
+                {
+                    caption: 'for',
+                    value: 'for ${1:i} in range(${2:10}):\n    ${3:pass}',
+                    meta: 'Python',
+                    score: 900
+                },
+                {
+                    caption: 'def',
+                    value: 'def ${1:function_name}(${2:params}):\n    ${3:pass}',
+                    meta: 'Python',
+                    score: 900
+                }
+            ];
+            callback(null, completions);
+        }
+    };
+    function init() {
+        if (initialized)
+            return;
+        initialized = true;
+        ace.require('ace/ext/language_tools');
+        codeView = ace.edit('codeContent');
+        applyDefaultSettings(codeView);
+        codeView.setOptions({
+            readOnly: false,
+            highlightActiveLine: true,
+            highlightGutterLine: true,
+            enableBasicAutocompletion: true,
+            enableSnippets: true,
+            enableLiveAutocompletion: true, // Added for live autocomplete
+        });
+        // Add custom EV3dev completer to codeView as well
+        // @ts-ignore
+        var langToolsForCodeView = ace.require('ace/ext/language_tools');
+        langToolsForCodeView.addCompleter(ev3devCompleter);
+        editor = ace.edit('aceEditor');
+        applyDefaultSettings(editor);
+        editor.setOptions({
+            enableBasicAutocompletion: true,
+            enableSnippets: true,
+            enableLiveAutocompletion: true,
+        });
+        // Add custom EV3dev completer
+        // @ts-ignore
+        var langTools = ace.require('ace/ext/language_tools');
+        langTools.addCompleter(ev3devCompleter);
+        editor.session.on('change', function () {
+            if (previousLineCount !== editor.session.getLength()) {
+                previousLineCount = editor.session.getLength();
+                resetActiveLine(editor);
+            }
+            wasEdited = true;
+        });
+        editor.session.on('changeFold', function () {
+            resetActiveLine(editor);
+        });
+        editor.selection.on('changeSelection', function () {
+            resetActiveLine(editor);
+        });
+        codeView.session.on('changeFold', function () {
+            highlightEverySecondLine(codeView);
+        });
+        $(window).resize(function () {
+            codeView.resize();
+            editor.resize();
+        });
+    }
+    exports.init = init;
+    function wasEditedByUser() {
+        return wasEdited;
+    }
+    exports.wasEditedByUser = wasEditedByUser;
+    function getCurrentLanguage() {
+        return currentLanguage;
+    }
+    exports.getCurrentLanguage = getCurrentLanguage;
+    function setWasEditedByUser(edited) {
+        wasEdited = edited;
+    }
+    exports.setWasEditedByUser = setWasEditedByUser;
+    function getEditorCode() {
+        return editor.getValue();
+    }
+    exports.getEditorCode = getEditorCode;
+    function setEditorCode(sourceCode) {
+        editor.setValue(sourceCode, 0);
+        editor.clearSelection();
+        editor.focus();
+        resetActiveLine(editor);
+    }
+    exports.setEditorCode = setEditorCode;
+    function setViewCode(sourceCode) {
+        codeView.setValue(sourceCode, 0);
+        codeView.clearSelection();
+        codeView.moveCursorTo(0, 0);
+        highlightEverySecondLine(codeView);
+    }
+    exports.setViewCode = setViewCode;
+    function setCodeLanguage(languageFileExtension) {
+        var langToSet;
+        switch (languageFileExtension) {
+            case 'py':
+                langToSet = 'python';
+                break;
+            case 'java':
+                langToSet = 'java';
+                break;
+            case 'ino':
+            case 'nxc':
+            case 'cpp':
+                langToSet = 'c_cpp';
+                break;
+            case 'json':
+                langToSet = 'json';
+                break;
+            default:
+                langToSet = 'python';
+        }
+        editor.session.setMode('ace/mode/' + langToSet);
+        codeView.session.setMode('ace/mode/' + langToSet);
+        previousLineCount = editor.session.getLength();
+        currentLanguage = langToSet;
+    }
+    exports.setCodeLanguage = setCodeLanguage;
+    function applyDefaultSettings(ed) {
+        ed.session.setUseWrapMode(true);
+        ed.setShowPrintMargin(false);
+    }
+    function resetActiveLine(ed) {
+        ed.setHighlightActiveLine(false);
+        // @ts-ignore
+        if (ed.getSelectedText().length == 0) {
+            ed.setHighlightActiveLine(true);
+        }
+    }
+    function getNumberOfVisibleRows(ed) {
+        var hiddenRows = 0;
+        //TODO add fold type once AceAjax typings are complete
+        //@ts-ignore
+        ed.session.getAllFolds().forEach(function (fold) {
+            var startRow = fold.start.row;
+            var endRow = fold.end.row;
+            hiddenRows += endRow - startRow;
+        });
+        return ed.session.getLength() - hiddenRows;
+    }
+    // Function to style every second line
+    function highlightEverySecondLine(ed) {
+        for (var id in ed.session.getMarkers(false)) {
+            ed.session.removeMarker(Number(id));
+        }
+        for (var i = 0; i < getNumberOfVisibleRows(ed); i++) {
+            if (i % 2 === 1) {
+                ed.session.addGutterDecoration(i, 'ace_lineBackgroundGrey');
+                ed.session.highlightLines(i, i, 'ace_lineBackgroundGrey', false);
+            }
+            else {
+                ed.session.highlightLines(i, i, 'ace_lineBackgroundWhite', false);
+            }
+        }
+    }
+});
