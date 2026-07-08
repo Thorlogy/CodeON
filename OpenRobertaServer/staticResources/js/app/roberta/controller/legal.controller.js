@@ -30,11 +30,14 @@ define(["require", "exports", "log", "guiState.controller", "jquery", "jquery-va
         $legalDiv = $('#legalDiv');
         $legalButton = $('#legalButton');
         $legalHeader = $legalDiv.children('#legalDivHeader');
-        var imprintDocumentType = 'imprint_', $imprintStorage = $legalDiv.children('#legalDivImprint'), $imprintLink = $legalHeader.children('[data-href="#legalDivImprint"]'), privacyPolicyDocumentType = 'privacy_policy_', $privacyPolicyStorage = $legalDiv.children('#legalDivPrivacyPolicy'), $privacyPolicyLink = $legalHeader.children('[data-href="#legalDivPrivacyPolicy"]'), termsOfUseDocumentType = 'terms_of_use_', $termsOfUseStorage = $legalDiv.children('#legalDivTermsOfUse'), $termsOfUseLink = $legalHeader.children('[data-href="#legalDivTermsOfUse"]');
-        storages[imprintDocumentType] = $imprintStorage;
+        var privacyPolicyDocumentType = 'privacy_policy_',
+            $privacyPolicyStorage = $legalDiv.children('#legalDivPrivacyPolicy'),
+            $privacyPolicyLink = $legalHeader.children('[data-href="#legalDivPrivacyPolicy"]'),
+            termsOfUseDocumentType = 'terms_of_use_',
+            $termsOfUseStorage = $legalDiv.children('#legalDivTermsOfUse'),
+            $termsOfUseLink = $legalHeader.children('[data-href="#legalDivTermsOfUse"]');
         storages[privacyPolicyDocumentType] = $privacyPolicyStorage;
         storages[termsOfUseDocumentType] = $termsOfUseStorage;
-        links[imprintDocumentType] = $imprintLink;
         links[privacyPolicyDocumentType] = $privacyPolicyLink;
         links[termsOfUseDocumentType] = $termsOfUseLink;
         loadLegalTexts();
