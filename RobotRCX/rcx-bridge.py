@@ -105,7 +105,7 @@ def transfer_rcx(rcx_bytes, program_slot=1, run_after=False):
         #   -run          : direkt nach dem Download starten
         cmd = [nqc]
         cmd += nqc_serial_args()
-        cmd += ["-b", "-pgm", str(program_slot), "-d", rcx_path]
+        cmd += ["-b", rcx_path, "-pgm", str(program_slot), "-d"]
         if run_after:
             cmd += ["-run"]
 
