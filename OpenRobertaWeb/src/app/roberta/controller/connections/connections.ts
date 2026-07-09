@@ -2136,4 +2136,66 @@ export class RcjConnection extends AbstractConnection {
 
     setState(): void {}
 }
-export class RcxConnection extends TokenConnection {}
+export class RcxConnection extends TokenConnection {
+    private readonly bridgeUrl: string = 'http://127.0.0.1:2222';
+
+    constructor() {
+        super();
+    }
+
+    public run(result: any): void {
+        if (result.rc !== 'ok') {
+            GUISTATE_C.setState(result);
+            MSG.displayInformation(result, result.message, result.message, GUISTATE_C.getProgramName(), GUISTATE_C.getRobot());
+            GUISTATE_C.setConnectionState('error');
+            return;
+        }
+
+        if (!result.compiledCode) {
+            MSG.displayMessage('MESSAGE_COMPILE_ERROR', 'POPUP', '', GUISTATE_C.getProgramName(), null);
+            GUISTATE_C.setConnectionState('error');
+            return;
+        }
+
+        $('body>.pace').show();
+
+        fetch(this.bridgeUrl + '/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                compiledCode: result.compiledCode,
+                slot: 1,
+                run: false
+            })
+        })
+        .then(resp => resp.json().catch(() => ({ ok: resp.ok, message: '' })))
+        .then(data => {
+            $('body>.pace').fadeOut();
+            if (data && data.ok) {
+                result.message = 'MESSAGE_RESTART_APP_TITLE';
+                MSG.displayMessage('POPUP_DOWNLOAD_STEP_1', 'TOAST', '', GUISTATE_C.getProgramName(), null);
+                GUISTATE_C.setConnectionState('wait');
+            } else {
+                this._bridgeError((data && data.message) || 'Unbekannter Fehler bei der Uebertragung.');
+            }
+        })
+        .catch(err => {
+            $('body>.pace').fadeOut();
+            this._bridgeError(
+                'Die RCX-Bridge ist nicht erreichbar. Bitte starte sie zuerst mit ' +
+                '"python3 rcx-bridge.py" und stelle sicher, dass der USB-Tower ' +
+                'eingesteckt und der RCX eingeschaltet ist.\n\nTechnisch: ' + err);
+        });
+    }
+
+    private _bridgeError(msg: string): void {
+        const fauxResult = { rc: 'error', message: msg };
+        MSG.displayInformation(fauxResult, msg, msg, GUISTATE_C.getProgramName(), null);
+        GUISTATE_C.setConnectionState('error');
+    }
+
+    public probe(): Promise<any> {
+        return fetch(this.bridgeUrl + '/probe')
+            .then(r => r.json());
+    }
+}

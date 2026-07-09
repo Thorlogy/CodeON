@@ -230,3 +230,13 @@ We use BrowserStack for Cross-Browser Testing
 [<img src="https://github.com/OpenRoberta/openroberta-lab/blob/develop/Resources/images/browserstack-logo-600x315.png" width="150">](http://browserstack.com/)
 
 #### Have a look at the notes in LICENCE and NOTICE
+
+### CodeON - RCX Integration
+Dieses Projekt (CodeON) beinhaltet eine Integration des LEGO Mindstorms RCX.
+Weil WebUSB unter macOS stark durch Security-Policies eingeschränkt ist, nutzt die RCX-Übertragung eine lokale Python-Bridge.
+Um Programme auf den RCX zu übertragen:
+1. Starte die RCX-Bridge: `python3 RobotRCX/tools/rcx-bridge/rcx-bridge.py`
+2. Schließe den LEGO USB-Infrarot-Tower an deinen Mac an.
+3. Platziere den eingeschalteten RCX-Brick vor dem Tower.
+4. Klicke im CodeON Lab auf "Ausführen".
+Das Programm wird serverseitig in NQC kompiliert, an die Bridge geschickt und via `nqc` an den RCX übertragen.
