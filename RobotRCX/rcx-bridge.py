@@ -103,15 +103,13 @@ def transfer_rcx(rcx_bytes, program_slot=1, run_after=False):
         #   -pgm <slot>   : Programmplatz 1..5 auf dem RCX
         #   -d            : an den RCX senden (download)
         #   -run          : direkt nach dem Download starten
-        # Korrekte Syntax für NQC 4.1.0 zum Flashen von .rcx-Binärdateien via USB
-        cmd = [nqc, "-Susb"]
+        # Korrekte Syntax für NQC 4.1.0 zum Flashen von .rcx-Binärdateien via USB:
+        # options: -Susb, -b (binary mode)
+        # actions: -pgm (program slot), -d (download), -run (optional execution)
+        cmd = [nqc, "-Susb", "-b", rcx_path, "-pgm", str(program_slot), "-d"]
 
         if run_after:
-            # Lädt das Binary hoch und startet es sofort auf dem RCX (-r)
-            cmd += ["-r", rcx_path]
-        else:
-            # Lädt das Binary nur hoch, ohne es direkt zu starten (-b)
-            cmd += ["-b", rcx_path]
+            cmd += ["-run"]
 
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
         out = (proc.stdout or "") + (proc.stderr or "")
