@@ -104,8 +104,10 @@ def transfer_rcx(rcx_bytes, program_slot=1, run_after=False):
         #   -d            : an den RCX senden (download)
         #   -run          : direkt nach dem Download starten
         cmd = [nqc]
-        cmd += nqc_serial_args()
-        cmd += ["-b", rcx_path, "-pgm", str(program_slot), "-d"]
+        cmd += nqc_serial_args() # Fügt -Susb hinzu
+        
+        # Minimalistische Syntax: nqc -Susb -b programm.rcx -d
+        cmd += ["-b", rcx_path, "-d"]
         if run_after:
             cmd += ["-run"]
 
