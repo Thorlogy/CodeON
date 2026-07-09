@@ -104,7 +104,8 @@ def transfer_rcx(rcx_bytes, program_slot=1, run_after=False):
         #   -d            : an den RCX senden (download)
         #   -run          : direkt nach dem Download starten
         # Korrekte Array-Übergabe für Python subprocess ohne String-Leerzeichen
-        cmd = [nqc, "-Susb", "-b", rcx_path, "-pgm", str(program_slot), "-d"]
+        # Datei (rcx_path) ganz am Ende platziert für robuste NQC-Argumenten-Auswertung
+        cmd = [nqc, "-Susb", "-pgm", str(program_slot), "-d", "-b", rcx_path]
 
         if run_after:
             cmd += ["-run"]
