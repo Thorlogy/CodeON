@@ -46,6 +46,7 @@ import de.fhg.iais.roberta.syntax.sensor.generic.LightSensor;
 import de.fhg.iais.roberta.syntax.sensor.generic.TimerReset;
 import de.fhg.iais.roberta.syntax.sensor.generic.TimerSensor;
 import de.fhg.iais.roberta.syntax.sensor.generic.TouchSensor;
+import de.fhg.iais.roberta.syntax.sensor.generic.TemperatureSensor;
 import de.fhg.iais.roberta.typecheck.BlocklyType;
 import de.fhg.iais.roberta.util.dbc.DbcException;
 import de.fhg.iais.roberta.util.syntax.FunctionNames;
@@ -512,6 +513,12 @@ public final class RcxNqcVisitor extends AbstractCppVisitor implements IRcxVisit
     @Override
     public Void visitEncoderReset(EncoderReset encoderReset) {
         this.src.add("ClearSensor(", sensorMacroForUserPort(encoderReset.sensorPort), ");");
+        return null;
+    }
+
+    @Override
+    public Void visitTemperatureSensor(TemperatureSensor temperatureSensor) {
+        this.src.add(sensorMacroForUserPort(temperatureSensor.getUserDefinedPort()));
         return null;
     }
 

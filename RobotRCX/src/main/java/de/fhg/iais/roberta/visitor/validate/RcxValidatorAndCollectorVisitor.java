@@ -30,6 +30,7 @@ import de.fhg.iais.roberta.syntax.sensor.generic.LightSensor;
 import de.fhg.iais.roberta.syntax.sensor.generic.TimerReset;
 import de.fhg.iais.roberta.syntax.sensor.generic.TimerSensor;
 import de.fhg.iais.roberta.syntax.sensor.generic.TouchSensor;
+import de.fhg.iais.roberta.syntax.sensor.generic.TemperatureSensor;
 import de.fhg.iais.roberta.util.syntax.SC;
 import de.fhg.iais.roberta.visitor.IRcxVisitor;
 
@@ -146,6 +147,13 @@ public class RcxValidatorAndCollectorVisitor extends CommonNepoAndMotorValidator
     public Void visitTouchSensor(TouchSensor touchSensor) {
         checkSensorPort(touchSensor);
         usedHardwareBuilder.addUsedSensor(new UsedSensor(touchSensor.getUserDefinedPort(), SC.TOUCH, touchSensor.getMode()));
+        return null;
+    }
+
+    @Override
+    public Void visitTemperatureSensor(TemperatureSensor temperatureSensor) {
+        checkSensorPort(temperatureSensor);
+        usedHardwareBuilder.addUsedSensor(new UsedSensor(temperatureSensor.getUserDefinedPort(), SC.TEMPERATURE, temperatureSensor.getMode()));
         return null;
     }
 

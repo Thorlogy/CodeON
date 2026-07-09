@@ -16,6 +16,7 @@ import de.fhg.iais.roberta.syntax.sensor.generic.LightSensor;
 import de.fhg.iais.roberta.syntax.sensor.generic.TimerReset;
 import de.fhg.iais.roberta.syntax.sensor.generic.TimerSensor;
 import de.fhg.iais.roberta.syntax.sensor.generic.TouchSensor;
+import de.fhg.iais.roberta.syntax.sensor.generic.TemperatureSensor;
 
 public interface IRcxVisitor<V> extends IVisitor<V> {
 
@@ -50,4 +51,6 @@ public interface IRcxVisitor<V> extends IVisitor<V> {
     V visitToneAction(ToneAction toneAction);
 
     V visitTouchSensor(TouchSensor touchSensor);
+
+    V visitTemperatureSensor(TemperatureSensor temperatureSensor);
 }

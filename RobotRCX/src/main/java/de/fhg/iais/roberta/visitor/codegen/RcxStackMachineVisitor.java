@@ -29,6 +29,7 @@ import de.fhg.iais.roberta.syntax.sensor.generic.LightSensor;
 import de.fhg.iais.roberta.syntax.sensor.generic.TimerReset;
 import de.fhg.iais.roberta.syntax.sensor.generic.TimerSensor;
 import de.fhg.iais.roberta.syntax.sensor.generic.TouchSensor;
+import de.fhg.iais.roberta.syntax.sensor.generic.TemperatureSensor;
 import de.fhg.iais.roberta.util.basic.C;
 import de.fhg.iais.roberta.util.dbc.Assert;
 import de.fhg.iais.roberta.util.syntax.MotorDuration;
@@ -199,6 +200,14 @@ public class RcxStackMachineVisitor extends AbstractStackMachineVisitor implemen
     public Void visitTimerReset(TimerReset timerReset) {
         String port = timerReset.sensorPort;
         JSONObject o = makeNode(C.TIMER_SENSOR_RESET).put(C.PORT, port).put(C.NAME, "ev3");
+        return add(o);
+    }
+
+    @Override
+    public Void visitTemperatureSensor(TemperatureSensor temperatureSensor) {
+        String mode = temperatureSensor.getMode().toLowerCase();
+        String port = temperatureSensor.getUserDefinedPort().toLowerCase();
+        JSONObject o = makeNode(C.GET_SAMPLE).put(C.GET_SAMPLE, C.TEMPERATURE).put(C.MODE, mode).put(C.PORT, port).put(C.NAME, "ev3");
         return add(o);
     }
 }
