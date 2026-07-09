@@ -103,16 +103,18 @@ def transfer_rcx(rcx_bytes, program_slot=1, run_after=False):
         #   -pgm <slot>   : Programmplatz 1..5 auf dem RCX
         #   -d            : an den RCX senden (download)
         #   -run          : direkt nach dem Download starten
-        # Korrekte Syntax für NQC 4.1.0 zum Flashen von .rcx-Binärdateien via USB:
-        # options: -Susb, -b (binary mode)
-        # actions: -pgm (program slot), -d (download), -run (optional execution)
+        # Korrekte Array-Übergabe für Python subprocess ohne String-Leerzeichen
         cmd = [nqc, "-Susb", "-b", rcx_path, "-pgm", str(program_slot), "-d"]
 
         if run_after:
             cmd += ["-run"]
 
+        print("[RCX-Bridge] Running command:", " ".join(cmd))
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
         out = (proc.stdout or "") + (proc.stderr or "")
+        print("[RCX-Bridge] NQC exit code:", proc.returncode)
+        print("[RCX-Bridge] NQC output:", out.strip())
+        
         if proc.returncode == 0:
             msg = "Programm erfolgreich auf den RCX uebertragen."
             if not run_after:
