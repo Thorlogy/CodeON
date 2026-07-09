@@ -93,17 +93,11 @@ def transfer_rcx(rcx_bytes, program_slot=1, run_after=False):
 
     tmpdir = tempfile.mkdtemp(prefix="rcx-bridge-")
     rcx_path = os.path.join(tmpdir, "programm.rcx")
+    proc = None
     try:
         with open(rcx_path, "wb") as f:
             f.write(rcx_bytes)
 
-        # nqc-Kommando zusammenbauen:
-        #   nqc -Susb -b -pgm <slot> -d programm.rcx   (und optional -run)
-        #   -b            : Eingabedatei ist bereits Binaerdatei (nicht kompilieren)
-        #   -pgm <slot>   : Programmplatz 1..5 auf dem RCX
-        #   -d            : an den RCX senden (download)
-        #   -run          : direkt nach dem Download starten
-        # Korrekte Array-Übergabe für Python subprocess ohne String-Leerzeichen
         # Korrekte Syntax für NQC 4.1.0 zum Flashen von .rcx-Binärdateien via USB:
         # options: -Susb
         # action: -d (download)
@@ -115,25 +109,43 @@ def transfer_rcx(rcx_bytes, program_slot=1, run_after=False):
             cmd += ["-run"]
 
         print("[RCX-Bridge] Running command:", " ".join(cmd))
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-        out = (proc.stdout or "") + (proc.stderr or "")
-        print("[RCX-Bridge] NQC exit code:", proc.returncode)
+        
+        # Popen verwenden, um den Prozess bei Timeout sauber beenden zu koennen
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try:
+            stdout_bytes, stderr_bytes = proc.communicate(timeout=20)
+            returncode = proc.returncode
+            out = (stdout_bytes or b"").decode("utf-8", errors="replace") + (stderr_bytes or b"").decode("utf-8", errors="replace")
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            stdout_bytes, stderr_bytes = proc.communicate()
+            returncode = proc.returncode or 253
+            out = "Zeitueberschreitung bei der Kommunikation mit dem Infrarot-Turm."
+            
+        print("[RCX-Bridge] NQC exit code:", returncode)
         print("[RCX-Bridge] NQC output:", out.strip())
         
-        if proc.returncode == 0:
+        if returncode == 0:
             msg = "Programm erfolgreich auf den RCX uebertragen."
             if not run_after:
                 msg += " Gruenen Run-Knopf am RCX druecken."
             return True, msg + ("\n" + out.strip() if out.strip() else "")
+        elif returncode == 253:
+            return False, (
+                "Übertragung fehlgeschlagen: Der RCX-Roboter hat nicht geantwortet (NQC-Fehler 253).\n\n"
+                "Bitte stelle sicher, dass:\n"
+                "1. der RCX eingeschaltet ist (LCD zeigt Zahlen),\n"
+                "2. die Firmware auf dem RCX geladen ist (falls nicht, 'Firmware übertragen' klicken),\n"
+                "3. der Infrarot-Turm direkt auf das Empfängerfenster des RCX zeigt (Sichtlinie frei),\n"
+                "4. die Batterien des RCX nicht zu schwach sind."
+            )
         else:
             return False, ("Uebertragung fehlgeschlagen (nqc-Code %d).\n%s"
-                           % (proc.returncode, out.strip()))
-    except subprocess.TimeoutExpired:
-        return False, ("Zeitueberschreitung. Ist der RCX eingeschaltet, hat er "
-                       "Firmware und steht er direkt vor dem Tower?")
+                           % (returncode, out.strip()))
     except Exception as e:
-        return False, "Interner Fehler: %s" % e
+        return False, "Interner Fehler bei der Übertragung: %s" % e
     finally:
+        # Sicheres Loeschen der temporaeren Datei und des Verzeichnisses
         shutil.rmtree(tmpdir, ignore_errors=True)
 
 
@@ -206,7 +218,6 @@ class BridgeHandler(BaseHTTPRequestHandler):
                 {"ok": False, "message": "Ungueltige Anfrage: %s" % e}).encode())
             return
 
-        # Das Frontend schickt die kompilierte .rcx als base64 im Feld "compiledCode".
         b64 = data.get("compiledCode") or data.get("data")
         slot = int(data.get("slot", 1))
         run_after = bool(data.get("run", False))
@@ -226,7 +237,8 @@ class BridgeHandler(BaseHTTPRequestHandler):
             return
 
         ok, msg = transfer_rcx(rcx_bytes, program_slot=slot, run_after=run_after)
-        send_cors(self, 200 if ok else 500)
+        # Immer 200 OK senden, damit das JSON-Fehlerobjekt im Browser verarbeitet werden kann
+        send_cors(self, 200)
         self.wfile.write(json.dumps({"ok": ok, "message": msg}).encode("utf-8"))
 
 
