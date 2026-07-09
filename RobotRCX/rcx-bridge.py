@@ -104,11 +104,14 @@ def transfer_rcx(rcx_bytes, program_slot=1, run_after=False):
         #   -d            : an den RCX senden (download)
         #   -run          : direkt nach dem Download starten
         # Korrekte Array-Übergabe für Python subprocess ohne String-Leerzeichen
-        # Datei (rcx_path) ganz am Ende platziert für robuste NQC-Argumenten-Auswertung
-        cmd = [nqc, "-Susb", "-pgm", str(program_slot), "-d", "-b", rcx_path]
+        # Das Aktionsflag "-run" MUSS vor dem Dateipfad stehen
+        cmd = [nqc, "-Susb", "-pgm", str(program_slot), "-d"]
 
         if run_after:
             cmd += ["-run"]
+
+        # Erst ganz am Ende kommen der Typ und der Pfad
+        cmd += ["-b", rcx_path]
 
         print("[RCX-Bridge] Running command:", " ".join(cmd))
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
