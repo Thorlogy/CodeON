@@ -62,7 +62,9 @@ define(["require", "exports", "guiState.controller"], function (require, exports
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        getConnectionInstance().terminate();
+                        if (getConnectionInstance()) {
+                            getConnectionInstance().terminate();
+                        }
                         return [4 /*yield*/, setConnection(robotName)];
                     case 1:
                         _a.sent();

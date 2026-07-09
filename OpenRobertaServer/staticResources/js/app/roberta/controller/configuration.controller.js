@@ -354,13 +354,15 @@ define(["require", "exports", "log", "util.roberta", "message", "guiState.contro
     }
     exports.changeRobotSvg = changeRobotSvg;
     function resetView() {
-        bricklyWorkspace.setDevice({
-            group: GUISTATE_C.getRobotGroup(),
-            robot: GUISTATE_C.getRobot(),
-        });
-        initConfigurationEnvironment();
-        var toolbox = GUISTATE_C.getConfigurationToolbox();
-        bricklyWorkspace.updateToolbox(toolbox);
+        if (bricklyWorkspace) {
+            bricklyWorkspace.setDevice({
+                group: GUISTATE_C.getRobotGroup(),
+                robot: GUISTATE_C.getRobot(),
+            });
+            initConfigurationEnvironment();
+            var toolbox = GUISTATE_C.getConfigurationToolbox();
+            bricklyWorkspace.updateToolbox(toolbox);
+        }
     }
     exports.resetView = resetView;
     function isVisible() {

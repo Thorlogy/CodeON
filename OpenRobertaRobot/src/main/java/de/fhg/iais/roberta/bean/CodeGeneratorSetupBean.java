@@ -97,13 +97,14 @@ public class CodeGeneratorSetupBean implements IProjectBean {
             case "cpp":
             case "ino":
             case "nxc":
+            case "nqc":
                 return Language.C;
             case "json":
                 return Language.JSON;
             case "aesl":
                 return Language.ASEBA;
             default:
-                throw new DbcException("File extension not implemented!");
+                throw new DbcException("File extension not implemented: " + ext);
         }
     }
 }

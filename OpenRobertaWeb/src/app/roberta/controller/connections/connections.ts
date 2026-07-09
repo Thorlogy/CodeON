@@ -2136,12 +2136,14 @@ export class RcjConnection extends AbstractConnection {
 
     setState(): void {}
 }
-export class RcxConnection extends TokenConnection {
+export class RcxConnection extends AbstractPromptConnection {
     private readonly bridgeUrl: string = 'http://127.0.0.1:2222';
 
     constructor() {
         super();
     }
+
+    public setState(): void {}
 
     public run(result: any): void {
         if (result.rc !== 'ok') {

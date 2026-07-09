@@ -13,7 +13,9 @@ export async function initConnection(robotName: string) {
 }
 
 export async function switchConnection(robotName: string) {
-    getConnectionInstance().terminate();
+    if (getConnectionInstance()) {
+        getConnectionInstance().terminate();
+    }
     await setConnection(robotName);
 }
 

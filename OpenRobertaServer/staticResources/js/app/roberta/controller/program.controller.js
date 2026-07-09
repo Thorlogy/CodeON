@@ -610,13 +610,15 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
     }
     exports.reloadView = reloadView;
     function resetView() {
-        blocklyWorkspace.setDevice({
-            group: GUISTATE_C.getRobotGroup(),
-            robot: GUISTATE_C.getRobot(),
-        });
-        initProgramEnvironment();
-        var toolbox = GUISTATE_C.getProgramToolbox();
-        blocklyWorkspace.updateToolbox(toolbox);
+        if (blocklyWorkspace) {
+            blocklyWorkspace.setDevice({
+                group: GUISTATE_C.getRobotGroup(),
+                robot: GUISTATE_C.getRobot(),
+            });
+            initProgramEnvironment();
+            var toolbox = GUISTATE_C.getProgramToolbox();
+            blocklyWorkspace.updateToolbox(toolbox);
+        }
     }
     exports.resetView = resetView;
     function loadToolbox(level) {

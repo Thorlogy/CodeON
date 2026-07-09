@@ -387,13 +387,15 @@ function changeRobotSvg() {
 }
 
 function resetView() {
-    bricklyWorkspace.setDevice({
-        group: GUISTATE_C.getRobotGroup(),
-        robot: GUISTATE_C.getRobot(),
-    });
-    initConfigurationEnvironment();
-    var toolbox = GUISTATE_C.getConfigurationToolbox();
-    bricklyWorkspace.updateToolbox(toolbox);
+    if (bricklyWorkspace) {
+        bricklyWorkspace.setDevice({
+            group: GUISTATE_C.getRobotGroup(),
+            robot: GUISTATE_C.getRobot(),
+        });
+        initConfigurationEnvironment();
+        var toolbox = GUISTATE_C.getConfigurationToolbox();
+        bricklyWorkspace.updateToolbox(toolbox);
+    }
 }
 
 function isVisible() {
