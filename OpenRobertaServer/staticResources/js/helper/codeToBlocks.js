@@ -2,9 +2,33 @@
  * Code-to-Blocks Converter
  * Converts Python code (EV3dev API) back to Blockly blocks using pattern matching
  */
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 define(["require", "exports"], function (require, exports) {
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.CodeToBlocksConverter = void 0;
+    var NqcConversionError = /** @class */ (function (_super) {
+        __extends(NqcConversionError, _super);
+        function NqcConversionError(line, statement, detail) {
+            var _this = _super.call(this, "NQC-Zeile ".concat(line, ": ").concat(detail, " (").concat(statement, ")")) || this;
+            _this.name = 'NqcConversionError';
+            return _this;
+        }
+        return NqcConversionError;
+    }(Error));
     /**
      * Display Text Pattern: hal.drawText('text', x, y)
      */
@@ -205,9 +229,7 @@ define(["require", "exports"], function (require, exports) {
                 new MotorStopPattern(),
             ];
         }
-        /**
-         * Convert Python code to Blockly XML
-         */
+        /** Convert Python code to Blockly XML. */
         CodeToBlocksConverter.prototype.convertToXML = function (pythonCode) {
             var lines = pythonCode.split('\n');
             var blocks = [];
@@ -234,7 +256,128 @@ define(["require", "exports"], function (require, exports) {
                     }
                 }
             }
-            return this.generateXML(blocks);
+            return this.generateXML(this.chainBlocks(blocks));
+        };
+        /**
+         * Converts the deliberately small, generated subset of NQC back to RCX
+         * blocks. This is intentionally strict: silently dropping an unfamiliar
+         * native command would produce a different robot program.
+         */
+        CodeToBlocksConverter.prototype.convertNqcToXML = function (nqcCode) {
+            var statements = this.getNqcStatements(nqcCode);
+            var blocks = [];
+            var powerByPort = {};
+            for (var index = 0; index < statements.length; index++) {
+                var statement = statements[index];
+                var match = void 0;
+                if ((match = statement.text.match(/^SetPower\((OUT_[ABC](?:\+OUT_[ABC])?),\s*NEPO_PWR\((-?\d+)\)\)$/))) {
+                    powerByPort[match[1]] = Number(match[2]);
+                    continue;
+                }
+                if ((match = statement.text.match(/^On(Fwd|Rev)\((OUT_[ABC](?:\+OUT_[ABC])?)\)$/))) {
+                    var direction = match[1];
+                    var port = match[2];
+                    var power = powerByPort[port];
+                    if (power === undefined) {
+                        throw new NqcConversionError(statement.line, statement.text, 'SetPower mit gleichem Motoranschluss fehlt');
+                    }
+                    delete powerByPort[port];
+                    if (port.indexOf('+') >= 0) {
+                        blocks.push(this.driveBlock(direction === 'Fwd' ? 'FOREWARD' : 'BACKWARD', power));
+                    }
+                    else if (direction === 'Fwd') {
+                        blocks.push(this.singleMotorBlock(port.substring(4), power));
+                    }
+                    else {
+                        throw new NqcConversionError(statement.line, statement.text, 'OnRev für einen einzelnen Motor kann nicht eindeutig in einen Block übersetzt werden');
+                    }
+                    continue;
+                }
+                if ((match = statement.text.match(/^(Off|Float)\((OUT_[ABC](?:\+OUT_[ABC])?)\)$/))) {
+                    var port = match[2];
+                    if (port.indexOf('+') >= 0) {
+                        blocks.push({ type: 'robActions_motorDiff_stop' });
+                    }
+                    else {
+                        blocks.push({ type: 'robActions_motor_stop', fields: { MOTORPORT: port.substring(4) } });
+                    }
+                    continue;
+                }
+                if ((match = statement.text.match(/^Wait\(\((-?\d+)\)\s*\/\s*10\)$/))) {
+                    blocks.push(this.waitBlock(Number(match[1])));
+                    continue;
+                }
+                if ((match = statement.text.match(/^PlayTone\((-?\d+),\s*\((-?\d+)\)\s*\/\s*10\)$/))) {
+                    blocks.push(this.toneBlock(Number(match[1]), Number(match[2])));
+                    // The NQC generator emits a matching Wait directly afterwards.
+                    var following = statements[index + 1];
+                    if (following && following.text === "Wait((".concat(match[2], ") / 10)")) {
+                        index++;
+                    }
+                    continue;
+                }
+                if ((match = statement.text.match(/^SetUserDisplay\((-?\d+),\s*0\)$/))) {
+                    blocks.push({ type: 'robActions_display_text', values: { OUT: this.numberBlock(Number(match[1])) } });
+                    continue;
+                }
+                if (statement.text === 'SelectDisplay(DISPLAY_WATCH)') {
+                    blocks.push({ type: 'robActions_display_clear' });
+                    continue;
+                }
+                if (statement.text === 'ClearTimer(0)') {
+                    blocks.push({ type: 'robSensors_timer_reset' });
+                    continue;
+                }
+                throw new NqcConversionError(statement.line, statement.text, 'nicht unterstützte NQC-Anweisung');
+            }
+            if (Object.keys(powerByPort).length > 0) {
+                throw new Error('NQC enthält SetPower ohne nachfolgendes OnFwd oder OnRev. Die Blöcke wurden nicht verändert.');
+            }
+            if (blocks.length === 0) {
+                throw new Error('Im task main wurden keine in Blöcke übersetzbaren NQC-Anweisungen gefunden.');
+            }
+            return this.generateXML(this.chainBlocks(blocks));
+        };
+        CodeToBlocksConverter.prototype.getNqcStatements = function (code) {
+            var main = code.match(/task\s+main\s*\(\s*\)\s*\{([\s\S]*?)\}/);
+            if (!main || main.index === undefined) {
+                throw new Error('NQC benötigt einen task main() { ... }-Block.');
+            }
+            var bodyStartLine = code.substring(0, main.index + main[0].indexOf('{') + 1).split('\n').length;
+            var body = main[1].replace(/\/\/.*$/gm, '');
+            var result = [];
+            body.split(';').forEach(function (part) {
+                var text = part.trim().replace(/\s+/g, ' ');
+                if (text) {
+                    var offset = body.indexOf(part);
+                    result.push({ line: bodyStartLine + body.substring(0, offset).split('\n').length - 1, text: text });
+                }
+            });
+            return result;
+        };
+        CodeToBlocksConverter.prototype.numberBlock = function (value) {
+            return { type: 'math_number', fields: { NUM: value } };
+        };
+        CodeToBlocksConverter.prototype.driveBlock = function (direction, power) {
+            return { type: 'robActions_motorDiff_on', fields: { DIRECTION: direction }, values: { POWER: this.numberBlock(power) } };
+        };
+        CodeToBlocksConverter.prototype.singleMotorBlock = function (port, power) {
+            return { type: 'robActions_motor_on', fields: { MOTORPORT: port }, values: { POWER: this.numberBlock(power) } };
+        };
+        CodeToBlocksConverter.prototype.waitBlock = function (milliseconds) {
+            return { type: 'robControls_wait_time', values: { WAIT: this.numberBlock(milliseconds) } };
+        };
+        CodeToBlocksConverter.prototype.toneBlock = function (frequency, duration) {
+            return {
+                type: 'robActions_play_tone',
+                values: { FREQUENCE: this.numberBlock(frequency), DURATION: this.numberBlock(duration) }
+            };
+        };
+        CodeToBlocksConverter.prototype.chainBlocks = function (blocks) {
+            for (var index = 0; index < blocks.length - 1; index++) {
+                blocks[index].next = blocks[index + 1];
+            }
+            return blocks.length ? [blocks[0]] : [];
         };
         /**
          * Generate Blockly XML from block definitions

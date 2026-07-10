@@ -13,6 +13,10 @@ let initialized: boolean = false;
 // EV3dev API Autocomplete Completer
 const ev3devCompleter = {
     getCompletions: function (editor: any, session: any, pos: any, prefix: string, callback: any) {
+        if (currentLanguage !== 'python') {
+            callback(null, []);
+            return;
+        }
         const completions = [
             // Hal display methods
             {
@@ -170,6 +174,31 @@ const ev3devCompleter = {
     }
 };
 
+// NQC is C-like, but its RCX commands are not part of Ace's C/C++ vocabulary.
+// Keep this completer separate from the EV3dev/Python proposals so an RCX user
+// never receives commands for a different robot platform.
+const nqcCompleter = {
+    getCompletions: function (editor: any, session: any, pos: any, prefix: string, callback: any) {
+        if (currentLanguage !== 'nqc') {
+            callback(null, []);
+            return;
+        }
+        callback(null, [
+            { caption: 'task main', value: 'task main() {\n    \n}', meta: 'NQC program', score: 1000 },
+            { caption: 'SetPower', value: 'SetPower(OUT_A+OUT_C, NEPO_PWR(30));', meta: 'NQC motor power', score: 1000 },
+            { caption: 'OnFwd', value: 'OnFwd(OUT_A+OUT_C);', meta: 'NQC motor forward', score: 1000 },
+            { caption: 'OnRev', value: 'OnRev(OUT_A+OUT_C);', meta: 'NQC motor reverse', score: 1000 },
+            { caption: 'Off', value: 'Off(OUT_A+OUT_C);', meta: 'NQC stop motors', score: 1000 },
+            { caption: 'Float', value: 'Float(OUT_A+OUT_C);', meta: 'NQC release motors', score: 950 },
+            { caption: 'Wait', value: 'Wait((500) / 10);', meta: 'NQC wait (10 ms ticks)', score: 1000 },
+            { caption: 'PlayTone', value: 'PlayTone(440, (500) / 10);', meta: 'NQC sound', score: 1000 },
+            { caption: 'SetUserDisplay', value: 'SetUserDisplay(0, 0);', meta: 'NQC RCX display', score: 950 },
+            { caption: 'ClearTimer', value: 'ClearTimer(0);', meta: 'NQC timer', score: 900 },
+            { caption: 'SetSensor', value: 'SetSensor(SENSOR_1, SENSOR_TOUCH);', meta: 'NQC sensor', score: 900 },
+        ]);
+    }
+};
+
 export function init() {
     if (initialized) return;
 
@@ -191,6 +220,7 @@ export function init() {
     // @ts-ignore
     const langToolsForCodeView = ace.require('ace/ext/language_tools');
     langToolsForCodeView.addCompleter(ev3devCompleter);
+    langToolsForCodeView.addCompleter(nqcCompleter);
 
     editor = ace.edit('aceEditor');
     applyDefaultSettings(editor);
@@ -204,6 +234,7 @@ export function init() {
     // @ts-ignore
     const langTools = ace.require('ace/ext/language_tools');
     langTools.addCompleter(ev3devCompleter);
+    langTools.addCompleter(nqcCompleter);
 
     editor.session.on('change', function () {
         if (previousLineCount !== editor.session.getLength()) {
@@ -272,6 +303,7 @@ export function setCodeLanguage(languageFileExtension: string) {
             break;
         case 'ino':
         case 'nxc':
+        case 'nqc':
         case 'cpp':
             langToSet = 'c_cpp';
             break;
@@ -285,7 +317,7 @@ export function setCodeLanguage(languageFileExtension: string) {
     codeView.session.setMode('ace/mode/' + langToSet);
     previousLineCount = editor.session.getLength();
 
-    currentLanguage = langToSet;
+    currentLanguage = languageFileExtension === 'nqc' ? 'nqc' : langToSet;
 }
 
 function applyDefaultSettings(ed: AceAjax.Editor) {

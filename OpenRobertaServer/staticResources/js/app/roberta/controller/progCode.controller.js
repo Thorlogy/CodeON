@@ -75,25 +75,37 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
             event.stopPropagation();
             PROGRUN_C.runNative(ACE_EDITOR.getEditorCode());
         }, 'code run clicked');
-        // Import to Blocks button - convert code back to blocks
+        // Import to Blocks button - convert source code back to blocks.
         $('#codeImportToBlocks').onWrap('click', function (event) {
             event.stopPropagation();
             importCodeToBlocks();
         }, 'import to blocks clicked');
     }
     /**
-     * Import Python code back to Blockly blocks
+     * Import source code back to Blockly blocks. For RCX this is a deliberately
+     * strict NQC subset so an unfamiliar command cannot silently disappear.
      */
     function importCodeToBlocks() {
         var code = ACE_EDITOR.getEditorCode();
         var converter = new codeToBlocks_1.CodeToBlocksConverter();
         try {
-            var xml = converter.convertToXML(code);
+            var isNqc = GUISTATE_C.getSourceCodeFileExtension() === 'nqc';
+            var xml = isNqc ? converter.convertNqcToXML(code) : converter.convertToXML(code);
             var dom = Blockly.Xml.textToDom(xml);
-            // Clear workspace
-            blocklyWorkspace.clear();
-            // Load new blocks
+            // Validate the source before touching the workspace. Keep the mandatory
+            // start block and replace only its following program chain.
+            var startBlock_1 = blocklyWorkspace.getAllBlocks().find(function (block) { return block.type === 'robControls_start'; });
+            if (!startBlock_1) {
+                throw new Error('Der Startblock wurde nicht gefunden. Die Blöcke wurden nicht verändert.');
+            }
+            var blocksToDispose = blocklyWorkspace.getAllBlocks().filter(function (block) { return block !== startBlock_1; });
+            blocksToDispose.forEach(function (block) { return block.dispose(false); });
             Blockly.Xml.domToWorkspace(dom, blocklyWorkspace);
+            var importedBlock = blocklyWorkspace.getTopBlocks(false).find(function (block) { return block !== startBlock_1; });
+            if (!importedBlock || !startBlock_1.nextConnection || !importedBlock.previousConnection) {
+                throw new Error('Die importierten Blöcke konnten nicht mit dem Startblock verbunden werden.');
+            }
+            startBlock_1.nextConnection.connect(importedBlock.previousConnection);
             // Reset edit flag
             ACE_EDITOR.setWasEditedByUser(false);
             // Show success message

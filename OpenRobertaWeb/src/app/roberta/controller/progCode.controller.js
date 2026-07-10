@@ -132,7 +132,7 @@ function initEvents() {
         'code run clicked'
     );
 
-    // Import to Blocks button - convert code back to blocks
+    // Import to Blocks button - convert source code back to blocks.
     $('#codeImportToBlocks').onWrap(
         'click',
         function (event) {
@@ -144,21 +144,33 @@ function initEvents() {
 }
 
 /**
- * Import Python code back to Blockly blocks
+ * Import source code back to Blockly blocks. For RCX this is a deliberately
+ * strict NQC subset so an unfamiliar command cannot silently disappear.
  */
 function importCodeToBlocks() {
     const code = ACE_EDITOR.getEditorCode();
     const converter = new CodeToBlocksConverter();
 
     try {
-        const xml = converter.convertToXML(code);
+        const isNqc = GUISTATE_C.getSourceCodeFileExtension() === 'nqc';
+        const xml = isNqc ? converter.convertNqcToXML(code) : converter.convertToXML(code);
         const dom = Blockly.Xml.textToDom(xml);
 
-        // Clear workspace
-        blocklyWorkspace.clear();
-
-        // Load new blocks
+        // Validate the source before touching the workspace. Keep the mandatory
+        // start block and replace only its following program chain.
+        const startBlock = blocklyWorkspace.getAllBlocks().find((block) => block.type === 'robControls_start');
+        if (!startBlock) {
+            throw new Error('Der Startblock wurde nicht gefunden. Die Blöcke wurden nicht verändert.');
+        }
+        const blocksToDispose = blocklyWorkspace.getAllBlocks().filter((block) => block !== startBlock);
+        blocksToDispose.forEach((block) => block.dispose(false));
         Blockly.Xml.domToWorkspace(dom, blocklyWorkspace);
+
+        const importedBlock = blocklyWorkspace.getTopBlocks(false).find((block) => block !== startBlock);
+        if (!importedBlock || !startBlock.nextConnection || !importedBlock.previousConnection) {
+            throw new Error('Die importierten Blöcke konnten nicht mit dem Startblock verbunden werden.');
+        }
+        startBlock.nextConnection.connect(importedBlock.previousConnection);
 
         // Reset edit flag
         ACE_EDITOR.setWasEditedByUser(false);

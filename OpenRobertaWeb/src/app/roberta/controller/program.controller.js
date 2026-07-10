@@ -277,7 +277,14 @@ function initEvents() {
 
     $('#syncButton').onWrap('click', function (e) {
         e.preventDefault();
-        alert("Reverse synchronization (Python -> Blocks) is not yet supported. This feature will use AI to reconstruct blocks from code.");
+        // The source-code controller owns the conversion because it has the
+        // current Ace content and knows the active robot language (NQC, Python,
+        // ...). Opening the editor first avoids generating over a user's code.
+        if (!$('#codeButton').hasClass('rightActive')) {
+            $('#codeButton').trigger('click');
+            return;
+        }
+        $('#codeImportToBlocks').trigger('click');
     });
 
     bindControl();
