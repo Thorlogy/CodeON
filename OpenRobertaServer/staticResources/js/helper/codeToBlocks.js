@@ -380,15 +380,18 @@ define(["require", "exports"], function (require, exports) {
             return blocks.length ? [blocks[0]] : [];
         };
         /**
-         * Generate Blockly XML from block definitions
+         * Generate Open Roberta Blockly XML from block definitions.
+         * This Blockly build expects a block_set root, not the newer <xml> root.
          */
         CodeToBlocksConverter.prototype.generateXML = function (blocks) {
-            var xml = '<xml xmlns="https://developers.google.com/blockly/xml">\n';
+            var xml = '<block_set xmlns="http://de.fhg.iais.roberta.blockly" robottype="rcx" xmlversion="3.1" description="" tags="">\n';
+            xml += '  <instance x="100" y="100">\n';
             for (var _i = 0, blocks_1 = blocks; _i < blocks_1.length; _i++) {
                 var block = blocks_1[_i];
-                xml += this.blockToXML(block, 1);
+                xml += this.blockToXML(block, 2);
             }
-            xml += '</xml>';
+            xml += '  </instance>\n';
+            xml += '</block_set>';
             return xml;
         };
         /**

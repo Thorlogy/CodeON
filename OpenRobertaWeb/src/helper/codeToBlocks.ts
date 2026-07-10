@@ -390,16 +390,19 @@ export class CodeToBlocksConverter {
     }
 
     /**
-     * Generate Blockly XML from block definitions
+     * Generate Open Roberta Blockly XML from block definitions.
+     * This Blockly build expects a block_set root, not the newer <xml> root.
      */
     private generateXML(blocks: BlockDefinition[]): string {
-        let xml = '<xml xmlns="https://developers.google.com/blockly/xml">\n';
+        let xml = '<block_set xmlns="http://de.fhg.iais.roberta.blockly" robottype="rcx" xmlversion="3.1" description="" tags="">\n';
+        xml += '  <instance x="100" y="100">\n';
 
         for (const block of blocks) {
-            xml += this.blockToXML(block, 1);
+            xml += this.blockToXML(block, 2);
         }
 
-        xml += '</xml>';
+        xml += '  </instance>\n';
+        xml += '</block_set>';
         return xml;
     }
 
