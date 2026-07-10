@@ -176,7 +176,7 @@ function importCodeToBlocks() {
     try {
         const isNqc = isNqcSource();
         const xml = isNqc ? converter.convertNqcToXML(code) : converter.convertToXML(code);
-        const dom = Blockly.Xml.textToDom(xml);
+        const dom = Blockly.Xml.textToDom(xml, blocklyWorkspace);
 
         // Validate the source before touching the workspace. Keep the mandatory
         // start block and replace only its following program chain.
@@ -207,8 +207,18 @@ function importCodeToBlocks() {
         $('#blocklyDiv').closeRightView();
     } catch (error) {
         console.error('Code to blocks conversion error:', error);
-        MSG.displayMessage(error.message || 'Code konnte nicht in Blöcke umgewandelt werden.', 'POPUP', '');
+        MSG.displayMessage(getErrorMessage(error), 'POPUP', '');
     }
+}
+
+function getErrorMessage(error) {
+    if (error && error.message) {
+        return error.message;
+    }
+    if (error !== undefined && error !== null) {
+        return String(error);
+    }
+    return 'Code konnte nicht in Blöcke umgewandelt werden.';
 }
 
 function toggleCode($button) {
