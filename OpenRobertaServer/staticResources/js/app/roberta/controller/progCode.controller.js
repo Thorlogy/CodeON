@@ -119,7 +119,10 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
             if (!startBlock_1) {
                 throw new Error('Der Startblock wurde nicht gefunden. Die Blöcke wurden nicht verändert.');
             }
-            var blocksToDispose = blocklyWorkspace.getAllBlocks().filter(function (block) { return block !== startBlock_1; });
+            if (startBlock_1.nextConnection && startBlock_1.nextConnection.isConnected()) {
+                startBlock_1.nextConnection.disconnect();
+            }
+            var blocksToDispose = blocklyWorkspace.getTopBlocks(false).filter(function (block) { return block !== startBlock_1; });
             blocksToDispose.forEach(function (block) { return block.dispose(false); });
             Blockly.Xml.domToWorkspace(dom, blocklyWorkspace);
             var importedBlock = blocklyWorkspace.getTopBlocks(false).find(function (block) { return block !== startBlock_1; });
@@ -136,7 +139,7 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
         }
         catch (error) {
             console.error('Code to blocks conversion error:', error);
-            MSG.displayMessage('CODE_TO_BLOCKS_ERROR', 'POPUP', error.message || 'Conversion failed');
+            MSG.displayMessage(error.message || 'Code konnte nicht in Blöcke umgewandelt werden.', 'POPUP', '');
         }
     }
     function toggleCode($button) {

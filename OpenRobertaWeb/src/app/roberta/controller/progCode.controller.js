@@ -184,7 +184,10 @@ function importCodeToBlocks() {
         if (!startBlock) {
             throw new Error('Der Startblock wurde nicht gefunden. Die Blöcke wurden nicht verändert.');
         }
-        const blocksToDispose = blocklyWorkspace.getAllBlocks().filter((block) => block !== startBlock);
+        if (startBlock.nextConnection && startBlock.nextConnection.isConnected()) {
+            startBlock.nextConnection.disconnect();
+        }
+        const blocksToDispose = blocklyWorkspace.getTopBlocks(false).filter((block) => block !== startBlock);
         blocksToDispose.forEach((block) => block.dispose(false));
         Blockly.Xml.domToWorkspace(dom, blocklyWorkspace);
 
@@ -204,7 +207,7 @@ function importCodeToBlocks() {
         $('#blocklyDiv').closeRightView();
     } catch (error) {
         console.error('Code to blocks conversion error:', error);
-        MSG.displayMessage('CODE_TO_BLOCKS_ERROR', 'POPUP', error.message || 'Conversion failed');
+        MSG.displayMessage(error.message || 'Code konnte nicht in Blöcke umgewandelt werden.', 'POPUP', '');
     }
 }
 
