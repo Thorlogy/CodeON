@@ -62,6 +62,16 @@ define(["require", "exports", "log", "util.roberta", "message", "guiState.contro
                 bricklyWorkspace.setVisible(false);
             }
             $(window).resize();
+            Blockly.svgResize(bricklyWorkspace);
+            var blocks = bricklyWorkspace.getTopBlocks(true);
+            var x = $(window).width() / 5;
+            var y = 50;
+            for (var i = 0; i < blocks.length; i++) {
+                var coordBlock = blocks[i].getRelativeToSurfaceXY();
+                if (coordBlock.x === 0 && coordBlock.y === 0) {
+                    blocks[i].moveBy(x, y);
+                }
+            }
             UTIL.clearAnnotations(bricklyWorkspace);
             if (GUISTATE_C.confAnnos !== undefined) {
                 UTIL.annotateBlocks(bricklyWorkspace, GUISTATE_C.confAnnos);

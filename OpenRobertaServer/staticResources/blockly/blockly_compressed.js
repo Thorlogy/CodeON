@@ -6452,9 +6452,16 @@ Blockly.Blocks["robBrick_temperature"] = {
         ports: [[' 1', '1']]
     };
 
+    sensors.temperature.rcx = {
+        title: 'TEMPERATURE',
+        modes: [{ name: 'VALUE', type: 'Number', unit: 'DEGREE', value: 20 }],
+        ports: [['Port 1', '1'], ['Port 2', '2'], ['Port 3', '3']],
+        standardPort: '3'
+    };
+
     // Wird vom generischen robSensors_getSample-Block benutzt
     // (steckt u.a. im "warte bis"-Block der Kategorie "Kontrolle").
-    sensorsAll.rcx = [sensors.touch.rcx, sensors.light.rcx, sensors.encoder.rcx, sensors.timer.rcx];
+    sensorsAll.rcx = [sensors.touch.rcx, sensors.light.rcx, sensors.encoder.rcx, sensors.timer.rcx, sensors.temperature.rcx];
 
     // robSensors_encoder_reset zeigt ohne Geraete-Sonderfall die
     // Motorport-Auswahl A-D. Fuer den RCX auf Sensorports 1-3 umstellen.
