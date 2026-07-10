@@ -79,24 +79,7 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
                     }
                 }
                 // 1. Inject categorystyle into the Toolbox XML
-                if (toolbox) {
-                    try {
-                        var parser = new DOMParser();
-                        var xmlDoc = parser.parseFromString(toolbox, "text/xml");
-                        var categories = xmlDoc.getElementsByTagName("category");
-                        for (var i = 0; i < categories.length; i++) {
-                            var catName = categories[i].getAttribute("name");
-                            if (catName && categoryStyles[catName]) {
-                                categories[i].setAttribute("categorystyle", catName);
-                            }
-                        }
-                        var serializer = new XMLSerializer();
-                        toolbox = serializer.serializeToString(xmlDoc);
-                    }
-                    catch (e) {
-                        console.error("Error patching toolbox XML:", e);
-                    }
-                }
+                toolbox = injectThemeCategoryStyles(toolbox);
             }
             // Define standard block styles using theme colors
             if (serverTheme.category) {
@@ -625,7 +608,7 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
         GUISTATE_C.setProgramToolboxLevel(level);
         var xml = GUISTATE_C.getToolbox(level);
         if (xml) {
-            blocklyWorkspace.updateToolbox(xml);
+            blocklyWorkspace.updateToolbox(injectThemeCategoryStyles(xml));
         }
         if (level === 'beginner') {
             $('.help.expert').hide();
@@ -637,10 +620,63 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
     exports.loadToolbox = loadToolbox;
     function loadExternalToolbox(toolbox) {
         if (toolbox) {
-            blocklyWorkspace.updateToolbox(toolbox);
+            blocklyWorkspace.updateToolbox(injectThemeCategoryStyles(toolbox));
         }
     }
     exports.loadExternalToolbox = loadExternalToolbox;
+    function injectThemeCategoryStyles(xmlString) {
+        if (!xmlString) return xmlString;
+        var serverTheme = GUISTATE_C.getTheme();
+        if (!serverTheme || !serverTheme.category) return xmlString;
+        var catMap = {
+            "TOOLBOX_ACTION": "CAT_ACTION_RGB",
+            "TOOLBOX_SENSOR": "CAT_SENSOR_RGB",
+            "TOOLBOX_CONTROL": "CAT_CONTROL_RGB",
+            "TOOLBOX_LOGIC": "CAT_LOGIC_RGB",
+            "TOOLBOX_MATH": "CAT_MATH_RGB",
+            "TOOLBOX_TEXT": "CAT_TEXT_RGB",
+            "TOOLBOX_LIST": "CAT_LIST_RGB",
+            "TOOLBOX_COLOUR": "CAT_COLOUR_RGB",
+            "TOOLBOX_VARIABLE": "CAT_VARIABLE_RGB",
+            "TOOLBOX_PROCEDURE": "CAT_PROCEDURE_RGB",
+            "TOOLBOX_COMMUNICATION": "CAT_COMMUNICATION_RGB",
+            "TOOLBOX_IMAGE": "CAT_IMAGE_RGB",
+            "TOOLBOX_DAEMON": "CAT_DAEMON_RGB",
+            "TOOLBOX_DRIVE": "CAT_ACTION_RGB",
+            "TOOLBOX_MOVE": "CAT_ACTION_RGB",
+            "TOOLBOX_DISPLAY": "CAT_ACTION_RGB",
+            "TOOLBOX_SOUND": "CAT_ACTION_RGB",
+            "TOOLBOX_LIGHT": "CAT_ACTION_RGB",
+            "TOOLBOX_PIN": "CAT_ACTION_RGB",
+            "TOOLBOX_WAIT": "CAT_CONTROL_RGB",
+            "TOOLBOX_DECISION": "CAT_CONTROL_RGB",
+            "TOOLBOX_LOOP": "CAT_CONTROL_RGB"
+        };
+        var categoryStyles = {};
+        for (var key in catMap) {
+            if (serverTheme.category[catMap[key]]) {
+                categoryStyles[key] = {
+                    "colour": serverTheme.category[catMap[key]]
+                };
+            }
+        }
+        try {
+            var parser = new DOMParser();
+            var xmlDoc = parser.parseFromString(xmlString, "text/xml");
+            var categories = xmlDoc.getElementsByTagName("category");
+            for (var i = 0; i < categories.length; i++) {
+                var catName = categories[i].getAttribute("name");
+                if (catName && categoryStyles[catName]) {
+                    categories[i].setAttribute("categorystyle", catName);
+                }
+            }
+            var serializer = new XMLSerializer();
+            return serializer.serializeToString(xmlDoc);
+        } catch (e) {
+            console.error("Error patching toolbox XML:", e);
+            return xmlString;
+        }
+    }
     function isVisible() {
         return GUISTATE_C.getView() == 'tabProgram';
     }
