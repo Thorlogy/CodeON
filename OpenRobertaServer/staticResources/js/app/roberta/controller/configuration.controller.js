@@ -90,7 +90,7 @@ define(["require", "exports", "log", "util.roberta", "message", "guiState.contro
                     blocks.forEach(function(b) {
                         var xy = b.getRelativeToSurfaceXY();
                         var svgXY = Blockly.getSvgXY_(b.svgGroup_, bricklyWorkspace);
-                        console.log("DEBUG: Block ID:", b.id, "type:", b.type, "surfaceXY:", xy, "svgXY:", svgXY, "isVisible:", b.isVisible());
+                        console.log("DEBUG: Block ID:", b.id, "type:", b.type, "surfaceXY:", xy, "svgXY:", svgXY);
                     });
                     console.log("DEBUG: workspace metrics:", bricklyWorkspace.getMetrics());
                 }
