@@ -584,7 +584,7 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
             var xml = Blockly.Xml.domToText(dom);
             programToBlocklyWorkspace(xml);
             var toolbox = GUISTATE_C.getProgramToolbox();
-            blocklyWorkspace.updateToolbox(toolbox);
+            blocklyWorkspace.updateToolbox(injectThemeCategoryStyles(toolbox));
             seen = true;
         }
         else {
@@ -600,7 +600,7 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
             });
             initProgramEnvironment();
             var toolbox = GUISTATE_C.getProgramToolbox();
-            blocklyWorkspace.updateToolbox(toolbox);
+            blocklyWorkspace.updateToolbox(injectThemeCategoryStyles(toolbox));
         }
     }
     exports.resetView = resetView;
