@@ -35,14 +35,17 @@ define(["require", "exports", "util.roberta", "message", "guiState.model", "prog
                     .done(function (data) {
                     // store new theme properties (only colors so far)
                     GUISTATE.server.theme = data;
+                    ready.resolve();
                 })
                     .fail(function (e, r) {
                     // this should not happen
                     console.error('"' + themePath + '" is not a valid json file! The reason is probably a', r);
                     GUISTATE.server.theme = 'default';
+                    ready.resolve();
                 });
+            } else {
+                ready.resolve();
             }
-            ready.resolve();
         });
         return ready.promise();
     }
