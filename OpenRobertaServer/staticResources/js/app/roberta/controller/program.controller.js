@@ -251,7 +251,7 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
                 $('#codeButton').trigger('click');
                 return;
             }
-            $('#codeImportToBlocks').trigger('click');
+            $('#codeSynchronize').trigger('click');
         });
         bindControl();
         blocklyWorkspace.addChangeListener(function (event) {

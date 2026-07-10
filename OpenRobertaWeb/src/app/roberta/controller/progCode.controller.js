@@ -77,6 +77,10 @@ function initEvents() {
         'click',
         function (event) {
             event.stopPropagation();
+            if (isNqcSource()) {
+                importCodeToBlocks();
+                return;
+            }
             var dom = Blockly.Xml.workspaceToDom(blocklyWorkspace);
             var xmlProgram = Blockly.Xml.domToText(dom);
 
@@ -143,6 +147,24 @@ function initEvents() {
     );
 }
 
+function isNqcSource() {
+    return GUISTATE_C.getSourceCodeFileExtension() === 'nqc';
+}
+
+function updateCodeToolbarForSourceLanguage() {
+    if (isNqcSource()) {
+        $('#codeSynchronize')
+            .attr('title', 'NQC-Code in Blöcke übernehmen')
+            .attr('data-bs-original-title', 'NQC-Code in Blöcke übernehmen');
+        $('#codeRefresh')
+            .attr('title', 'NQC aus Blöcken neu erzeugen')
+            .attr('data-bs-original-title', 'NQC aus Blöcken neu erzeugen');
+        $('#codeImportToBlocks').hide();
+    } else {
+        $('#codeImportToBlocks').show();
+    }
+}
+
 /**
  * Import source code back to Blockly blocks. For RCX this is a deliberately
  * strict NQC subset so an unfamiliar command cannot silently disappear.
@@ -152,7 +174,7 @@ function importCodeToBlocks() {
     const converter = new CodeToBlocksConverter();
 
     try {
-        const isNqc = GUISTATE_C.getSourceCodeFileExtension() === 'nqc';
+        const isNqc = isNqcSource();
         const xml = isNqc ? converter.convertNqcToXML(code) : converter.convertToXML(code);
         const dom = Blockly.Xml.textToDom(xml);
 
@@ -230,6 +252,7 @@ function toggleCode($button) {
                     ACE_EDITOR.setEditorCode(result.sourceCode);
                     // TODO change javaSource to source on server
                     GUISTATE_C.setProgramSource(result.sourceCode);
+                    updateCodeToolbarForSourceLanguage();
                     $button.openRightView($('#codeDiv'), INITIAL_WIDTH);
                 } else {
                     MSG.displayInformation(result, result.message, result.message, result.parameters);

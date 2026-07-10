@@ -284,7 +284,7 @@ function initEvents() {
             $('#codeButton').trigger('click');
             return;
         }
-        $('#codeImportToBlocks').trigger('click');
+        $('#codeSynchronize').trigger('click');
     });
 
     bindControl();

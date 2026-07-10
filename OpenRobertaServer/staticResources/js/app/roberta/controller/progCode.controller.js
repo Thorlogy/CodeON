@@ -43,6 +43,10 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
         // Synchronize button - import code from blocks (replaces refresh for editable mode)
         $('#codeSynchronize').onWrap('click', function (event) {
             event.stopPropagation();
+            if (isNqcSource()) {
+                importCodeToBlocks();
+                return;
+            }
             var dom = Blockly.Xml.workspaceToDom(blocklyWorkspace);
             var xmlProgram = Blockly.Xml.domToText(dom);
             var isNamedConfig = !GUISTATE_C.isConfigurationStandard() && !GUISTATE_C.isConfigurationAnonymous();
@@ -81,6 +85,23 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
             importCodeToBlocks();
         }, 'import to blocks clicked');
     }
+    function isNqcSource() {
+        return GUISTATE_C.getSourceCodeFileExtension() === 'nqc';
+    }
+    function updateCodeToolbarForSourceLanguage() {
+        if (isNqcSource()) {
+            $('#codeSynchronize')
+                .attr('title', 'NQC-Code in Blöcke übernehmen')
+                .attr('data-bs-original-title', 'NQC-Code in Blöcke übernehmen');
+            $('#codeRefresh')
+                .attr('title', 'NQC aus Blöcken neu erzeugen')
+                .attr('data-bs-original-title', 'NQC aus Blöcken neu erzeugen');
+            $('#codeImportToBlocks').hide();
+        }
+        else {
+            $('#codeImportToBlocks').show();
+        }
+    }
     /**
      * Import source code back to Blockly blocks. For RCX this is a deliberately
      * strict NQC subset so an unfamiliar command cannot silently disappear.
@@ -89,7 +110,7 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
         var code = ACE_EDITOR.getEditorCode();
         var converter = new codeToBlocks_1.CodeToBlocksConverter();
         try {
-            var isNqc = GUISTATE_C.getSourceCodeFileExtension() === 'nqc';
+            var isNqc = isNqcSource();
             var xml = isNqc ? converter.convertNqcToXML(code) : converter.convertToXML(code);
             var dom = Blockly.Xml.textToDom(xml);
             // Validate the source before touching the workspace. Keep the mandatory
@@ -155,6 +176,7 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
                     ACE_EDITOR.setEditorCode(result.sourceCode);
                     // TODO change javaSource to source on server
                     GUISTATE_C.setProgramSource(result.sourceCode);
+                    updateCodeToolbarForSourceLanguage();
                     $button.openRightView($('#codeDiv'), INITIAL_WIDTH);
                 }
                 else {
