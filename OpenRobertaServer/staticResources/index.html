@@ -96,11 +96,15 @@ you may not use this file except
         }
 
         #sim3dToggle {
+            align-items: center;
+            display: inline-flex;
             font-size: 16px;
             font-weight: 700;
-            line-height: 48px;
+            justify-content: center;
+            line-height: 1;
             padding: 0;
             text-align: center;
+            vertical-align: top;
         }
 
         #sim3dToggle.active {
@@ -840,7 +844,7 @@ you may not use this file except
                     <button class='blbtn typcn typcn-chart-line-outline' data-bs-original-title='' id='simTrail'
                         lkey='Blockly.Msg.MENU_SIM_TRAIL_TOOLTIP' rel='tooltip' title='' type='button'></button>
                     <button class='blbtn simNotWebots' data-bs-original-title='' id='sim3dToggle'
-                        rel='tooltip' title='3D simulation' type='button'>3D</button>
+                        rel='tooltip' title='3D-Ansicht: ziehen zum Drehen, Mausrad zum Zoomen, rechte Maustaste zum Verschieben' type='button'>3D</button>
                     <button class='blbtn typcn typcn-upload' data-bs-original-title='' id='simImport'
                         lkey='Blockly.Msg.MENU_SIM_IMPORT_TOOLTIP' rel='tooltip' title='' type='button'></button>
                     <button class='blbtn typcn typcn-download-outline' data-bs-original-title='' id='simDownloadConfig'

@@ -2193,7 +2193,9 @@ export class RcxConnection extends AbstractPromptConnection {
     private _bridgeError(msg: string): void {
         const fauxResult = { rc: 'error', message: msg };
         MSG.displayInformation(fauxResult, msg, msg, GUISTATE_C.getProgramName(), null);
-        GUISTATE_C.setConnectionState('error');
+        // The IR tower has no persistent connection state. A failed upload must
+        // leave the Run action available so the transfer can be retried.
+        GUISTATE_C.setConnectionState('wait');
     }
 
     public probe(): Promise<any> {

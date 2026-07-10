@@ -697,12 +697,25 @@ function loadToolbox(level) {
     var xml = GUISTATE_C.getToolbox(level);
     if (xml) {
         blocklyWorkspace.updateToolbox(xml);
+        refreshToolboxCategoryAppearance();
     }
     if (level === 'beginner') {
         $('.help.expert').hide();
     } else {
         $('.help.expert').show();
     }
+}
+
+function refreshToolboxCategoryAppearance() {
+    window.requestAnimationFrame(function () {
+        $('#program .blocklyTreeRow').each(function () {
+            var colour = window.getComputedStyle(this).borderLeftColor;
+            if (colour && colour !== 'rgba(0, 0, 0, 0)') {
+                this.style.backgroundColor = colour;
+                $(this).find('.blocklyTreeLabel').css('color', '#fff');
+            }
+        });
+    });
 }
 
 function loadExternalToolbox(toolbox) {

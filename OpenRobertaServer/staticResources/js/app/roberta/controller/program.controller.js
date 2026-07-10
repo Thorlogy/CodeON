@@ -640,6 +640,7 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
         var xml = GUISTATE_C.getToolbox(level);
         if (xml) {
             blocklyWorkspace.updateToolbox(injectThemeCategoryStyles(xml));
+            refreshToolboxCategoryAppearance();
         }
         if (level === 'beginner') {
             $('.help.expert').hide();
@@ -649,6 +650,17 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
         }
     }
     exports.loadToolbox = loadToolbox;
+    function refreshToolboxCategoryAppearance() {
+        window.requestAnimationFrame(function () {
+            $('#program .blocklyTreeRow').each(function () {
+                var colour = window.getComputedStyle(this).borderLeftColor;
+                if (colour && colour !== 'rgba(0, 0, 0, 0)') {
+                    this.style.backgroundColor = colour;
+                    $(this).find('.blocklyTreeLabel').css('color', '#fff');
+                }
+            });
+        });
+    }
     function loadExternalToolbox(toolbox) {
         if (toolbox) {
             blocklyWorkspace.updateToolbox(injectThemeCategoryStyles(toolbox));

@@ -11,6 +11,8 @@
     var fieldMesh;
     var lastWidth = 0;
     var lastHeight = 0;
+    var orbit = { yaw: 0.55, pitch: 0.78, distance: 29, targetX: 0, targetZ: 0 };
+    var drag = null;
 
     function getElement(id) {
         return document.getElementById(id);
@@ -78,6 +80,56 @@
         return group;
     }
 
+    function updateCamera() {
+        if (!camera) return;
+        var horizontal = Math.cos(orbit.pitch) * orbit.distance;
+        camera.position.set(
+            orbit.targetX + Math.sin(orbit.yaw) * horizontal,
+            Math.sin(orbit.pitch) * orbit.distance,
+            orbit.targetZ + Math.cos(orbit.yaw) * horizontal
+        );
+        camera.lookAt(orbit.targetX, 0, orbit.targetZ);
+    }
+
+    function attachNavigation() {
+        var canvas = renderer.domElement;
+        canvas.style.touchAction = 'none';
+        canvas.addEventListener('contextmenu', function (event) { event.preventDefault(); });
+        canvas.addEventListener('pointerdown', function (event) {
+            if (!enabled) return;
+            drag = { x: event.clientX, y: event.clientY, pan: event.button === 2 || event.shiftKey };
+            canvas.setPointerCapture(event.pointerId);
+        });
+        canvas.addEventListener('pointermove', function (event) {
+            if (!drag) return;
+            var dx = event.clientX - drag.x;
+            var dy = event.clientY - drag.y;
+            drag.x = event.clientX;
+            drag.y = event.clientY;
+            if (drag.pan) {
+                var panScale = orbit.distance / 800;
+                orbit.targetX -= dx * panScale;
+                orbit.targetZ += dy * panScale;
+            } else {
+                orbit.yaw -= dx * 0.012;
+                orbit.pitch = Math.max(0.18, Math.min(1.48, orbit.pitch - dy * 0.012));
+            }
+            updateCamera();
+        });
+        function stopDrag(event) {
+            if (drag && canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+            drag = null;
+        }
+        canvas.addEventListener('pointerup', stopDrag);
+        canvas.addEventListener('pointercancel', stopDrag);
+        canvas.addEventListener('wheel', function (event) {
+            if (!enabled) return;
+            event.preventDefault();
+            orbit.distance = Math.max(8, Math.min(60, orbit.distance * (event.deltaY > 0 ? 1.1 : 0.9)));
+            updateCamera();
+        }, { passive: false });
+    }
+
     function init() {
         if (initialized) return;
         var container = getElement('sim3dDiv');
@@ -87,8 +139,7 @@
         scene.background = new THREE.Color(0xf3f5f7);
 
         camera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
-        camera.position.set(0, 22, 20);
-        camera.lookAt(0, 0, 0);
+        updateCamera();
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setPixelRatio(window.devicePixelRatio || 1);
@@ -113,6 +164,7 @@
         robotMesh = buildRobot();
         scene.add(robotMesh);
 
+        attachNavigation();
         initialized = true;
         resize();
         animate();
@@ -127,6 +179,7 @@
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
         renderer.setSize(width, height);
+        updateCamera();
     }
 
     function syncRobotPose() {
@@ -155,6 +208,13 @@
         renderer.render(scene, camera);
     }
 
+    function restore2dLayout() {
+        var simScene = getSimulationScene();
+        if (simScene && typeof simScene.centerBackground === 'function') {
+            simScene.centerBackground(false);
+        }
+    }
+
     function setMode(nextEnabled) {
         enabled = nextEnabled;
         var canvasDiv = getElement('canvasDiv');
@@ -162,14 +222,19 @@
         var toggle = getElement('sim3dToggle');
         if (enabled) {
             init();
+            if (!initialized) {
+                enabled = false;
+                return;
+            }
             if (canvasDiv) canvasDiv.style.display = 'none';
             if (sim3dDiv) sim3dDiv.style.display = 'block';
             if (toggle) toggle.classList.add('active');
-            resize();
+            requestAnimationFrame(resize);
         } else {
-            if (canvasDiv) canvasDiv.style.display = 'block';
             if (sim3dDiv) sim3dDiv.style.display = 'none';
+            if (canvasDiv) canvasDiv.style.display = '';
             if (toggle) toggle.classList.remove('active');
+            requestAnimationFrame(restore2dLayout);
         }
     }
 
@@ -179,7 +244,7 @@
 
     document.addEventListener('click', function (event) {
         var target = event.target;
-        if (!target || target.id !== 'sim3dToggle') return;
+        if (!target || !target.closest || !target.closest('#sim3dToggle')) return;
         event.preventDefault();
         toggle();
     });

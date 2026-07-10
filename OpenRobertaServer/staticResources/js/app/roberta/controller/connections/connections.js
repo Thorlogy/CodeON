@@ -2640,7 +2640,8 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
         RcxConnection.prototype._bridgeError = function (msg) {
             var fauxResult = { rc: 'error', message: msg };
             MSG.displayInformation(fauxResult, msg, msg, GUISTATE_C.getProgramName(), null);
-            GUISTATE_C.setConnectionState('error');
+            // Keep Run enabled after a failed upload so that the transfer can be retried.
+            GUISTATE_C.setConnectionState('wait');
         };
         RcxConnection.prototype.probe = function () {
             return fetch(this.bridgeUrl + '/probe')
