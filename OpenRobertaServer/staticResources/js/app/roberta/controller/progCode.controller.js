@@ -130,12 +130,20 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
                 throw new Error('Die importierten Blöcke konnten nicht mit dem Startblock verbunden werden.');
             }
             startBlock_1.nextConnection.connect(importedBlock.previousConnection);
+            var updatedDom = Blockly.Xml.workspaceToDom(blocklyWorkspace);
+            GUISTATE_C.setProgramXML(Blockly.Xml.domToText(updatedDom));
+            GUISTATE_C.setProgramSaved(false);
+            startBlock_1.render();
+            importedBlock.render();
+            Blockly.svgResize(blocklyWorkspace);
             // Reset edit flag
             ACE_EDITOR.setWasEditedByUser(false);
             // Show success message
             MSG.displayMessage('CODE_TO_BLOCKS_SUCCESS', 'TOAST', '');
-            // Close code panel
-            $('#blocklyDiv').closeRightView();
+            // Close code panel and resize Blockly after the animation changed widths.
+            $('#blocklyDiv').closeRightView(function () {
+                Blockly.svgResize(blocklyWorkspace);
+            });
         }
         catch (error) {
             console.error('Code to blocks conversion error:', error);

@@ -398,7 +398,11 @@ export class CodeToBlocksConverter {
         xml += '  <instance x="100" y="100">\n';
 
         for (const block of blocks) {
-            xml += this.blockToXML(block, 2);
+            let current: BlockDefinition | undefined = block;
+            while (current) {
+                xml += this.blockToXML(current, 2, false);
+                current = current.next;
+            }
         }
 
         xml += '  </instance>\n';
@@ -409,7 +413,7 @@ export class CodeToBlocksConverter {
     /**
      * Convert a single block definition to XML
      */
-    private blockToXML(block: BlockDefinition, indent: number): string {
+    private blockToXML(block: BlockDefinition, indent: number, includeNext = true): string {
         const indentStr = '  '.repeat(indent);
         let xml = `${indentStr}<block type="${block.type}"`;
 
@@ -436,7 +440,7 @@ export class CodeToBlocksConverter {
         }
 
         // Add next block
-        if (block.next) {
+        if (includeNext && block.next) {
             xml += `${indentStr}  <next>\n`;
             xml += this.blockToXML(block.next, indent + 2);
             xml += `${indentStr}  </next>\n`;

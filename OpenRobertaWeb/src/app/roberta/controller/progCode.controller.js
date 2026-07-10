@@ -197,14 +197,23 @@ function importCodeToBlocks() {
         }
         startBlock.nextConnection.connect(importedBlock.previousConnection);
 
+        const updatedDom = Blockly.Xml.workspaceToDom(blocklyWorkspace);
+        GUISTATE_C.setProgramXML(Blockly.Xml.domToText(updatedDom));
+        GUISTATE_C.setProgramSaved(false);
+        startBlock.render();
+        importedBlock.render();
+        Blockly.svgResize(blocklyWorkspace);
+
         // Reset edit flag
         ACE_EDITOR.setWasEditedByUser(false);
 
         // Show success message
         MSG.displayMessage('CODE_TO_BLOCKS_SUCCESS', 'TOAST', '');
 
-        // Close code panel
-        $('#blocklyDiv').closeRightView();
+        // Close code panel and resize Blockly after the animation changed widths.
+        $('#blocklyDiv').closeRightView(function () {
+            Blockly.svgResize(blocklyWorkspace);
+        });
     } catch (error) {
         console.error('Code to blocks conversion error:', error);
         MSG.displayMessage(getErrorMessage(error), 'POPUP', '');

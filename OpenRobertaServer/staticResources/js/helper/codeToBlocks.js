@@ -388,7 +388,11 @@ define(["require", "exports"], function (require, exports) {
             xml += '  <instance x="100" y="100">\n';
             for (var _i = 0, blocks_1 = blocks; _i < blocks_1.length; _i++) {
                 var block = blocks_1[_i];
-                xml += this.blockToXML(block, 2);
+                var current = block;
+                while (current) {
+                    xml += this.blockToXML(current, 2, false);
+                    current = current.next;
+                }
             }
             xml += '  </instance>\n';
             xml += '</block_set>';
@@ -397,7 +401,8 @@ define(["require", "exports"], function (require, exports) {
         /**
          * Convert a single block definition to XML
          */
-        CodeToBlocksConverter.prototype.blockToXML = function (block, indent) {
+        CodeToBlocksConverter.prototype.blockToXML = function (block, indent, includeNext) {
+            if (includeNext === void 0) { includeNext = true; }
             var indentStr = '  '.repeat(indent);
             var xml = "".concat(indentStr, "<block type=\"").concat(block.type, "\"");
             if (block.x !== undefined && block.y !== undefined) {
@@ -421,7 +426,7 @@ define(["require", "exports"], function (require, exports) {
                 }
             }
             // Add next block
-            if (block.next) {
+            if (includeNext && block.next) {
                 xml += "".concat(indentStr, "  <next>\n");
                 xml += this.blockToXML(block.next, indent + 2);
                 xml += "".concat(indentStr, "  </next>\n");
