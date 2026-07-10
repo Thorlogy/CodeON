@@ -37,10 +37,41 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
         var toolbox = GUISTATE_C.getProgramToolbox();
         var serverTheme = GUISTATE_C.getTheme();
         var blocklyTheme;
-        // Determine the active Blockly instance.
-        // If running V10, window.Blockly should be set and have Theme support.
-        // Otherwise, use the imported Blockly (legacy).
         var activeBlockly = (typeof window !== 'undefined' && window.Blockly && window.Blockly.Theme) ? window.Blockly : Blockly;
+        if (serverTheme && serverTheme.category) {
+            var catMap = {
+                "TOOLBOX_ACTION": "CAT_ACTION_RGB",
+                "TOOLBOX_SENSOR": "CAT_SENSOR_RGB",
+                "TOOLBOX_CONTROL": "CAT_CONTROL_RGB",
+                "TOOLBOX_LOGIC": "CAT_LOGIC_RGB",
+                "TOOLBOX_MATH": "CAT_MATH_RGB",
+                "TOOLBOX_TEXT": "CAT_TEXT_RGB",
+                "TOOLBOX_LIST": "CAT_LIST_RGB",
+                "TOOLBOX_COLOUR": "CAT_COLOUR_RGB",
+                "TOOLBOX_VARIABLE": "CAT_VARIABLE_RGB",
+                "TOOLBOX_PROCEDURE": "CAT_PROCEDURE_RGB",
+                "TOOLBOX_COMMUNICATION": "CAT_COMMUNICATION_RGB",
+                "TOOLBOX_IMAGE": "CAT_IMAGE_RGB",
+                "TOOLBOX_DAEMON": "CAT_DAEMON_RGB",
+                // Expert categories
+                "TOOLBOX_DRIVE": "CAT_ACTION_RGB",
+                "TOOLBOX_MOVE": "CAT_ACTION_RGB",
+                "TOOLBOX_DISPLAY": "CAT_ACTION_RGB",
+                "TOOLBOX_SOUND": "CAT_ACTION_RGB",
+                "TOOLBOX_LIGHT": "CAT_ACTION_RGB",
+                "TOOLBOX_PIN": "CAT_ACTION_RGB",
+                "TOOLBOX_WAIT": "CAT_CONTROL_RGB",
+                "TOOLBOX_DECISION": "CAT_CONTROL_RGB",
+                "TOOLBOX_LOOP": "CAT_CONTROL_RGB"
+            };
+            for (var key in catMap) {
+                var themeKey = catMap[key];
+                if (serverTheme.category[themeKey]) {
+                    var blocklyColorKey = "CAT_" + key.toUpperCase().replace("TOOLBOX_", "") + "_RGB";
+                    activeBlockly[blocklyColorKey] = serverTheme.category[themeKey];
+                }
+            }
+        }
         if (serverTheme && activeBlockly.Theme) {
             var categoryStyles = {};
             var blockStyles = {};
