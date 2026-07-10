@@ -30,6 +30,24 @@ Diese Dokumentation fasst die Ursachen und vorgenommenen Anpassungen zusammen, u
 
 ---
 
+## 2a. RCX lädt keine EV3-Standardkonfiguration mehr
+**Problem:** Beim Robotertyp `rcx` durfte keine EV3-Standardkonfiguration geladen werden. Erwartet wurde, dass `GUISTATE_C.getConfigurationConf()` eine RCX-Konfiguration mit `robottype="rcx"` und `robBrick_RCX-Brick` enthält.
+
+**Ursache:**
+- Die RCX-Default-Konfiguration musste explizit abgesichert werden, damit sie nicht versehentlich durch eine EV3-Basis-Konfiguration ersetzt wird.
+- Zusätzlich war der aktive `#configuration`-Tab im laufenden Browser zwar geladen, lag aber visuell hinter `#main-section`. Dadurch war der RCX-Konfigurationsblock vorhanden, aber nicht sichtbar.
+
+**Lösung:**
+- Ein Regressionstest in `RobotRCX/src/test/java/de/fhg/iais/roberta/rcx/RcxConfigurationDefaultTest.java` prüft, dass die RCX-Default-Konfiguration `robottype="rcx"` und `robBrick_RCX-Brick` enthält und keine EV3-Konfiguration lädt.
+- In `OpenRobertaServer/staticResources/index.html` und `application/staticResources/index.html` wird `#configuration.active` sichtbar über der Hauptfläche positioniert; nicht aktive Konfigurationstabs bleiben ausgeblendet.
+
+**Lokale Verifikation:**
+- Der sichtbare Server auf `http://localhost:1999/` lief aus `/Users/tleimbach/.gemini/antigravity/scratch/CodeON`, nicht aus dem Codex-Checkout.
+- Der gleiche minimale Layout-Fix wurde deshalb zusätzlich in dieser laufenden lokalen Kopie eingetragen und anschließend im Browser bestätigt: Der RCX-Konfigurationsblock bleibt sichtbar.
+- Maven konnte im Codex-Checkout nicht vollständig laufen, weil externe Fraunhofer/JFrog-Abhängigkeiten wegen Zertifikatsproblemen nicht geladen werden konnten.
+
+---
+
 ## 3. Kompilierungs-Fehler (Backend) beim Klick auf "Run"
 **Problem:** Der Server brach beim Versuch, den generierten NQC-Code zu kompilieren ab. Die GUI zeigte "Run" an, jedoch wurde das Programm nicht kompiliert.
 
