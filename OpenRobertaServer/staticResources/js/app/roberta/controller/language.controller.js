@@ -115,6 +115,11 @@ define(["require", "exports", "log", "jquery", "guiState.controller", "blockly",
      * Translate the web page
      */
     function translate($domElement) {
+        if (typeof Blockly !== 'undefined' && Blockly.Msg) {
+            if (!Blockly.Msg.CODE_TO_BLOCKS_TOOLTIP) {
+                Blockly.Msg.CODE_TO_BLOCKS_TOOLTIP = "Code in Blöcke importieren";
+            }
+        }
         if (!$domElement || typeof $domElement !== 'object' || !$domElement.length) {
             $domElement = $(document.body);
         }
