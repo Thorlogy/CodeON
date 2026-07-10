@@ -652,22 +652,14 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
             "TOOLBOX_DECISION": "CAT_CONTROL_RGB",
             "TOOLBOX_LOOP": "CAT_CONTROL_RGB"
         };
-        var categoryStyles = {};
-        for (var key in catMap) {
-            if (serverTheme.category[catMap[key]]) {
-                categoryStyles[key] = {
-                    "colour": serverTheme.category[catMap[key]]
-                };
-            }
-        }
         try {
             var parser = new DOMParser();
             var xmlDoc = parser.parseFromString(xmlString, "text/xml");
             var categories = xmlDoc.getElementsByTagName("category");
             for (var i = 0; i < categories.length; i++) {
                 var catName = categories[i].getAttribute("name");
-                if (catName && categoryStyles[catName]) {
-                    categories[i].setAttribute("categorystyle", catName);
+                if (catName && catMap[catName] && serverTheme.category[catMap[catName]]) {
+                    categories[i].setAttribute("colour", serverTheme.category[catMap[catName]]);
                 }
             }
             var serializer = new XMLSerializer();
