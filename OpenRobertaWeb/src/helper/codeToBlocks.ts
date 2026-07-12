@@ -17,6 +17,12 @@ interface PatternMatcher {
     generateBlock(line: string): BlockDefinition | null;
 }
 
+interface NqcMotorConfiguration {
+    port: string;
+    side: 'LEFT' | 'RIGHT';
+    reversed: boolean;
+}
+
 class NqcConversionError extends Error {
     constructor(line: number, statement: string, detail: string) {
         super(`NQC-Zeile ${line}: ${detail} (${statement})`);
@@ -41,17 +47,17 @@ class DisplayTextPattern implements PatternMatcher {
             values: {
                 OUT: {
                     type: 'text',
-                    fields: { TEXT: match[1] }
+                    fields: { TEXT: match[1] },
                 },
                 COL: {
                     type: 'math_number',
-                    fields: { NUM: match[2] }
+                    fields: { NUM: match[2] },
                 },
                 ROW: {
                     type: 'math_number',
-                    fields: { NUM: match[3] }
-                }
-            }
+                    fields: { NUM: match[3] },
+                },
+            },
         };
     }
 }
@@ -66,7 +72,7 @@ class ClearDisplayPattern implements PatternMatcher {
 
     generateBlock(line: string): BlockDefinition | null {
         return {
-            type: 'robActions_display_clear'
+            type: 'robActions_display_clear',
         };
     }
 }
@@ -88,13 +94,13 @@ class PlayTonePattern implements PatternMatcher {
             values: {
                 FREQUENCY: {
                     type: 'math_number',
-                    fields: { NUM: match[1] }
+                    fields: { NUM: match[1] },
                 },
                 DURATION: {
                     type: 'math_number',
-                    fields: { NUM: match[2] }
-                }
-            }
+                    fields: { NUM: match[2] },
+                },
+            },
         };
     }
 }
@@ -116,9 +122,9 @@ class WaitPattern implements PatternMatcher {
             values: {
                 WAIT: {
                     type: 'math_number',
-                    fields: { NUM: match[1] }
-                }
-            }
+                    fields: { NUM: match[1] },
+                },
+            },
         };
     }
 }
@@ -138,18 +144,18 @@ class MotorOnForPattern implements PatternMatcher {
         return {
             type: 'robActions_motor_on_for',
             fields: {
-                MOTORPORT: match[1]
+                MOTORPORT: match[1],
             },
             values: {
                 POWER: {
                     type: 'math_number',
-                    fields: { NUM: match[2] }
+                    fields: { NUM: match[2] },
                 },
                 DEGREE: {
                     type: 'math_number',
-                    fields: { NUM: match[3] }
-                }
-            }
+                    fields: { NUM: match[3] },
+                },
+            },
         };
     }
 }
@@ -169,14 +175,14 @@ class MotorOnPattern implements PatternMatcher {
         return {
             type: 'robActions_motor_on',
             fields: {
-                MOTORPORT: match[1]
+                MOTORPORT: match[1],
             },
             values: {
                 POWER: {
                     type: 'math_number',
-                    fields: { NUM: match[2] }
-                }
-            }
+                    fields: { NUM: match[2] },
+                },
+            },
         };
     }
 }
@@ -196,8 +202,8 @@ class MotorStopPattern implements PatternMatcher {
         return {
             type: 'robActions_motor_stop',
             fields: {
-                MOTORPORT: match[1]
-            }
+                MOTORPORT: match[1],
+            },
         };
     }
 }
@@ -257,10 +263,12 @@ export class CodeToBlocksConverter {
      * blocks. This is intentionally strict: silently dropping an unfamiliar
      * native command would produce a different robot program.
      */
-    convertNqcToXML(nqcCode: string): string {
+    convertNqcToXML(nqcCode: string, configurationXml?: string): string {
         const statements = this.getNqcStatements(nqcCode);
         const blocks: BlockDefinition[] = [];
         const powerByPort: { [port: string]: number } = {};
+        const directionByPowerPort: { [powerPort: string]: { [port: string]: boolean } } = {};
+        const motorConfiguration = this.getNqcMotorConfiguration(configurationXml);
 
         for (let index = 0; index < statements.length; index++) {
             const statement = statements[index];
@@ -272,19 +280,41 @@ export class CodeToBlocksConverter {
             }
 
             if ((match = statement.text.match(/^On(Fwd|Rev)\((OUT_[ABC](?:\+OUT_[ABC])?)\)$/))) {
-                const direction = match[1];
+                const electricalForward = match[1] === 'Fwd';
                 const port = match[2];
-                const power = powerByPort[port];
+                const powerPort =
+                    powerByPort[port] !== undefined ? port : Object.keys(powerByPort).find((candidate) => this.outputPorts(candidate).indexOf(port) >= 0);
+                const power = powerPort === undefined ? undefined : powerByPort[powerPort];
                 if (power === undefined) {
                     throw new NqcConversionError(statement.line, statement.text, 'SetPower mit gleichem Motoranschluss fehlt');
                 }
-                delete powerByPort[port];
-                if (port.indexOf('+') >= 0) {
-                    blocks.push(this.driveBlock(direction === 'Fwd' ? 'FOREWARD' : 'BACKWARD', power));
-                } else if (direction === 'Fwd') {
-                    blocks.push(this.singleMotorBlock(port.substring(4), power));
-                } else {
-                    throw new NqcConversionError(statement.line, statement.text, 'OnRev für einen einzelnen Motor kann nicht eindeutig in einen Block übersetzt werden');
+                const poweredPorts = this.outputPorts(powerPort);
+                const directions = directionByPowerPort[powerPort] || {};
+                this.outputPorts(port).forEach((outputPort) => {
+                    if (poweredPorts.indexOf(outputPort) < 0) {
+                        throw new NqcConversionError(statement.line, statement.text, `Motoranschluss ${outputPort} ist nicht in ${powerPort} enthalten`);
+                    }
+                    directions[outputPort] = electricalForward;
+                });
+                directionByPowerPort[powerPort] = directions;
+
+                if (poweredPorts.every((outputPort) => directions[outputPort] !== undefined)) {
+                    delete powerByPort[powerPort];
+                    delete directionByPowerPort[powerPort];
+                    if (poweredPorts.length === 1) {
+                        const motor = motorConfiguration.find((candidate) => candidate.port === poweredPorts[0].substring(4));
+                        const logicalForward = directions[poweredPorts[0]] !== (motor ? motor.reversed : false);
+                        if (!logicalForward) {
+                            throw new NqcConversionError(
+                                statement.line,
+                                statement.text,
+                                'Rückwärtslauf eines einzelnen Motors kann nicht eindeutig in einen Block übersetzt werden'
+                            );
+                        }
+                        blocks.push(this.singleMotorBlock(poweredPorts[0].substring(4), power));
+                    } else {
+                        blocks.push(this.differentialMotorBlock(poweredPorts, directions, power, motorConfiguration, statement));
+                    }
                 }
                 continue;
             }
@@ -363,8 +393,66 @@ export class CodeToBlocksConverter {
         return { type: 'math_number', fields: { NUM: value } };
     }
 
+    private outputPorts(portExpression: string): string[] {
+        return portExpression.split('+');
+    }
+
+    private getNqcMotorConfiguration(configurationXml?: string): NqcMotorConfiguration[] {
+        if (!configurationXml) {
+            return [];
+        }
+        const document = new DOMParser().parseFromString(configurationXml, 'text/xml');
+        const result: NqcMotorConfiguration[] = [];
+        Array.from(document.getElementsByTagName('value')).forEach((value) => {
+            const name = value.getAttribute('name') || '';
+            const portMatch = name.match(/^M([ABC])$/);
+            if (!portMatch) {
+                return;
+            }
+            const motor = Array.from(value.children).find((child) => child.tagName.toLowerCase() === 'block');
+            if (!motor || motor.getAttribute('type') !== 'robBrick_motor_big') {
+                return;
+            }
+            const fields: { [name: string]: string } = {};
+            Array.from(motor.children).forEach((child) => {
+                if (child.tagName.toLowerCase() === 'field') {
+                    fields[child.getAttribute('name') || ''] = (child.textContent || '').trim();
+                }
+            });
+            if (fields.MOTOR_DRIVE === 'LEFT' || fields.MOTOR_DRIVE === 'RIGHT') {
+                result.push({ port: portMatch[1], side: fields.MOTOR_DRIVE, reversed: fields.MOTOR_REVERSE === 'ON' });
+            }
+        });
+        return result;
+    }
+
+    private differentialMotorBlock(
+        poweredPorts: string[],
+        directions: { [port: string]: boolean },
+        power: number,
+        configuration: NqcMotorConfiguration[],
+        statement: { line: number; text: string }
+    ): BlockDefinition {
+        const motors = poweredPorts.map((outputPort) => configuration.find((motor) => motor.port === outputPort.substring(4)));
+        const left = motors.find((motor) => motor && motor.side === 'LEFT');
+        const right = motors.find((motor) => motor && motor.side === 'RIGHT');
+        if (!left || !right) {
+            throw new NqcConversionError(statement.line, statement.text, 'linker und rechter Motor fehlen in der Roboterkonfiguration');
+        }
+        const leftForward = directions[`OUT_${left.port}`] !== left.reversed;
+        const rightForward = directions[`OUT_${right.port}`] !== right.reversed;
+        if (leftForward === rightForward) {
+            return this.driveBlock(leftForward ? 'FOREWARD' : 'BACKWARD', power);
+        }
+        return this.turnBlock(leftForward ? 'RIGHT' : 'LEFT', power);
+    }
+
     private driveBlock(direction: string, power: number): BlockDefinition {
         return { type: 'robActions_motorDiff_on', fields: { DIRECTION: direction }, values: { POWER: this.numberBlock(power) } };
+    }
+
+    private turnBlock(direction: string, power: number): BlockDefinition {
+        return { type: 'robActions_motorDiff_turn', fields: { DIRECTION: direction }, values: { POWER: this.numberBlock(power) } };
     }
 
     private singleMotorBlock(port: string, power: number): BlockDefinition {
@@ -378,7 +466,7 @@ export class CodeToBlocksConverter {
     private toneBlock(frequency: number, duration: number): BlockDefinition {
         return {
             type: 'robActions_play_tone',
-            values: { FREQUENCE: this.numberBlock(frequency), DURATION: this.numberBlock(duration) }
+            values: { FREQUENCE: this.numberBlock(frequency), DURATION: this.numberBlock(duration) },
         };
     }
 

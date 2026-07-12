@@ -47,17 +47,17 @@ define(["require", "exports"], function (require, exports) {
                 values: {
                     OUT: {
                         type: 'text',
-                        fields: { TEXT: match[1] }
+                        fields: { TEXT: match[1] },
                     },
                     COL: {
                         type: 'math_number',
-                        fields: { NUM: match[2] }
+                        fields: { NUM: match[2] },
                     },
                     ROW: {
                         type: 'math_number',
-                        fields: { NUM: match[3] }
-                    }
-                }
+                        fields: { NUM: match[3] },
+                    },
+                },
             };
         };
         return DisplayTextPattern;
@@ -73,7 +73,7 @@ define(["require", "exports"], function (require, exports) {
         };
         ClearDisplayPattern.prototype.generateBlock = function (line) {
             return {
-                type: 'robActions_display_clear'
+                type: 'robActions_display_clear',
             };
         };
         return ClearDisplayPattern;
@@ -96,13 +96,13 @@ define(["require", "exports"], function (require, exports) {
                 values: {
                     FREQUENCY: {
                         type: 'math_number',
-                        fields: { NUM: match[1] }
+                        fields: { NUM: match[1] },
                     },
                     DURATION: {
                         type: 'math_number',
-                        fields: { NUM: match[2] }
-                    }
-                }
+                        fields: { NUM: match[2] },
+                    },
+                },
             };
         };
         return PlayTonePattern;
@@ -125,9 +125,9 @@ define(["require", "exports"], function (require, exports) {
                 values: {
                     WAIT: {
                         type: 'math_number',
-                        fields: { NUM: match[1] }
-                    }
-                }
+                        fields: { NUM: match[1] },
+                    },
+                },
             };
         };
         return WaitPattern;
@@ -148,18 +148,18 @@ define(["require", "exports"], function (require, exports) {
             return {
                 type: 'robActions_motor_on_for',
                 fields: {
-                    MOTORPORT: match[1]
+                    MOTORPORT: match[1],
                 },
                 values: {
                     POWER: {
                         type: 'math_number',
-                        fields: { NUM: match[2] }
+                        fields: { NUM: match[2] },
                     },
                     DEGREE: {
                         type: 'math_number',
-                        fields: { NUM: match[3] }
-                    }
-                }
+                        fields: { NUM: match[3] },
+                    },
+                },
             };
         };
         return MotorOnForPattern;
@@ -180,14 +180,14 @@ define(["require", "exports"], function (require, exports) {
             return {
                 type: 'robActions_motor_on',
                 fields: {
-                    MOTORPORT: match[1]
+                    MOTORPORT: match[1],
                 },
                 values: {
                     POWER: {
                         type: 'math_number',
-                        fields: { NUM: match[2] }
-                    }
-                }
+                        fields: { NUM: match[2] },
+                    },
+                },
             };
         };
         return MotorOnPattern;
@@ -208,8 +208,8 @@ define(["require", "exports"], function (require, exports) {
             return {
                 type: 'robActions_motor_stop',
                 fields: {
-                    MOTORPORT: match[1]
-                }
+                    MOTORPORT: match[1],
+                },
             };
         };
         return MotorStopPattern;
@@ -263,35 +263,53 @@ define(["require", "exports"], function (require, exports) {
          * blocks. This is intentionally strict: silently dropping an unfamiliar
          * native command would produce a different robot program.
          */
-        CodeToBlocksConverter.prototype.convertNqcToXML = function (nqcCode) {
+        CodeToBlocksConverter.prototype.convertNqcToXML = function (nqcCode, configurationXml) {
+            var _this = this;
             var statements = this.getNqcStatements(nqcCode);
             var blocks = [];
             var powerByPort = {};
-            for (var index = 0; index < statements.length; index++) {
+            var directionByPowerPort = {};
+            var motorConfiguration = this.getNqcMotorConfiguration(configurationXml);
+            var _loop_1 = function (index) {
                 var statement = statements[index];
                 var match = void 0;
                 if ((match = statement.text.match(/^SetPower\((OUT_[ABC](?:\+OUT_[ABC])?),\s*NEPO_PWR\((-?\d+)\)\)$/))) {
                     powerByPort[match[1]] = Number(match[2]);
-                    continue;
+                    return out_index_1 = index, "continue";
                 }
                 if ((match = statement.text.match(/^On(Fwd|Rev)\((OUT_[ABC](?:\+OUT_[ABC])?)\)$/))) {
-                    var direction = match[1];
-                    var port = match[2];
-                    var power = powerByPort[port];
+                    var electricalForward_1 = match[1] === 'Fwd';
+                    var port_1 = match[2];
+                    var powerPort_1 = powerByPort[port_1] !== undefined ? port_1 : Object.keys(powerByPort).find(function (candidate) { return _this.outputPorts(candidate).indexOf(port_1) >= 0; });
+                    var power = powerPort_1 === undefined ? undefined : powerByPort[powerPort_1];
                     if (power === undefined) {
                         throw new NqcConversionError(statement.line, statement.text, 'SetPower mit gleichem Motoranschluss fehlt');
                     }
-                    delete powerByPort[port];
-                    if (port.indexOf('+') >= 0) {
-                        blocks.push(this.driveBlock(direction === 'Fwd' ? 'FOREWARD' : 'BACKWARD', power));
+                    var poweredPorts_1 = this_1.outputPorts(powerPort_1);
+                    var directions_1 = directionByPowerPort[powerPort_1] || {};
+                    this_1.outputPorts(port_1).forEach(function (outputPort) {
+                        if (poweredPorts_1.indexOf(outputPort) < 0) {
+                            throw new NqcConversionError(statement.line, statement.text, "Motoranschluss ".concat(outputPort, " ist nicht in ").concat(powerPort_1, " enthalten"));
+                        }
+                        directions_1[outputPort] = electricalForward_1;
+                    });
+                    directionByPowerPort[powerPort_1] = directions_1;
+                    if (poweredPorts_1.every(function (outputPort) { return directions_1[outputPort] !== undefined; })) {
+                        delete powerByPort[powerPort_1];
+                        delete directionByPowerPort[powerPort_1];
+                        if (poweredPorts_1.length === 1) {
+                            var motor = motorConfiguration.find(function (candidate) { return candidate.port === poweredPorts_1[0].substring(4); });
+                            var logicalForward = directions_1[poweredPorts_1[0]] !== (motor ? motor.reversed : false);
+                            if (!logicalForward) {
+                                throw new NqcConversionError(statement.line, statement.text, 'Rückwärtslauf eines einzelnen Motors kann nicht eindeutig in einen Block übersetzt werden');
+                            }
+                            blocks.push(this_1.singleMotorBlock(poweredPorts_1[0].substring(4), power));
+                        }
+                        else {
+                            blocks.push(this_1.differentialMotorBlock(poweredPorts_1, directions_1, power, motorConfiguration, statement));
+                        }
                     }
-                    else if (direction === 'Fwd') {
-                        blocks.push(this.singleMotorBlock(port.substring(4), power));
-                    }
-                    else {
-                        throw new NqcConversionError(statement.line, statement.text, 'OnRev für einen einzelnen Motor kann nicht eindeutig in einen Block übersetzt werden');
-                    }
-                    continue;
+                    return out_index_1 = index, "continue";
                 }
                 if ((match = statement.text.match(/^(Off|Float)\((OUT_[ABC](?:\+OUT_[ABC])?)\)$/))) {
                     var port = match[2];
@@ -301,34 +319,40 @@ define(["require", "exports"], function (require, exports) {
                     else {
                         blocks.push({ type: 'robActions_motor_stop', fields: { MOTORPORT: port.substring(4) } });
                     }
-                    continue;
+                    return out_index_1 = index, "continue";
                 }
                 if ((match = statement.text.match(/^Wait\(\((-?\d+)\)\s*\/\s*10\)$/))) {
-                    blocks.push(this.waitBlock(Number(match[1])));
-                    continue;
+                    blocks.push(this_1.waitBlock(Number(match[1])));
+                    return out_index_1 = index, "continue";
                 }
                 if ((match = statement.text.match(/^PlayTone\((-?\d+),\s*\((-?\d+)\)\s*\/\s*10\)$/))) {
-                    blocks.push(this.toneBlock(Number(match[1]), Number(match[2])));
+                    blocks.push(this_1.toneBlock(Number(match[1]), Number(match[2])));
                     // The NQC generator emits a matching Wait directly afterwards.
                     var following = statements[index + 1];
                     if (following && following.text === "Wait((".concat(match[2], ") / 10)")) {
                         index++;
                     }
-                    continue;
+                    return out_index_1 = index, "continue";
                 }
                 if ((match = statement.text.match(/^SetUserDisplay\((-?\d+),\s*0\)$/))) {
-                    blocks.push({ type: 'robActions_display_text', values: { OUT: this.numberBlock(Number(match[1])) } });
-                    continue;
+                    blocks.push({ type: 'robActions_display_text', values: { OUT: this_1.numberBlock(Number(match[1])) } });
+                    return out_index_1 = index, "continue";
                 }
                 if (statement.text === 'SelectDisplay(DISPLAY_WATCH)') {
                     blocks.push({ type: 'robActions_display_clear' });
-                    continue;
+                    return out_index_1 = index, "continue";
                 }
                 if (statement.text === 'ClearTimer(0)') {
                     blocks.push({ type: 'robSensors_timer_reset' });
-                    continue;
+                    return out_index_1 = index, "continue";
                 }
                 throw new NqcConversionError(statement.line, statement.text, 'nicht unterstützte NQC-Anweisung');
+                out_index_1 = index;
+            };
+            var this_1 = this, out_index_1;
+            for (var index = 0; index < statements.length; index++) {
+                _loop_1(index);
+                index = out_index_1;
             }
             if (Object.keys(powerByPort).length > 0) {
                 throw new Error('NQC enthält SetPower ohne nachfolgendes OnFwd oder OnRev. Die Blöcke wurden nicht verändert.');
@@ -358,8 +382,56 @@ define(["require", "exports"], function (require, exports) {
         CodeToBlocksConverter.prototype.numberBlock = function (value) {
             return { type: 'math_number', fields: { NUM: value } };
         };
+        CodeToBlocksConverter.prototype.outputPorts = function (portExpression) {
+            return portExpression.split('+');
+        };
+        CodeToBlocksConverter.prototype.getNqcMotorConfiguration = function (configurationXml) {
+            if (!configurationXml) {
+                return [];
+            }
+            var document = new DOMParser().parseFromString(configurationXml, 'text/xml');
+            var result = [];
+            Array.from(document.getElementsByTagName('value')).forEach(function (value) {
+                var name = value.getAttribute('name') || '';
+                var portMatch = name.match(/^M([ABC])$/);
+                if (!portMatch) {
+                    return;
+                }
+                var motor = Array.from(value.children).find(function (child) { return child.tagName.toLowerCase() === 'block'; });
+                if (!motor || motor.getAttribute('type') !== 'robBrick_motor_big') {
+                    return;
+                }
+                var fields = {};
+                Array.from(motor.children).forEach(function (child) {
+                    if (child.tagName.toLowerCase() === 'field') {
+                        fields[child.getAttribute('name') || ''] = (child.textContent || '').trim();
+                    }
+                });
+                if (fields.MOTOR_DRIVE === 'LEFT' || fields.MOTOR_DRIVE === 'RIGHT') {
+                    result.push({ port: portMatch[1], side: fields.MOTOR_DRIVE, reversed: fields.MOTOR_REVERSE === 'ON' });
+                }
+            });
+            return result;
+        };
+        CodeToBlocksConverter.prototype.differentialMotorBlock = function (poweredPorts, directions, power, configuration, statement) {
+            var motors = poweredPorts.map(function (outputPort) { return configuration.find(function (motor) { return motor.port === outputPort.substring(4); }); });
+            var left = motors.find(function (motor) { return motor && motor.side === 'LEFT'; });
+            var right = motors.find(function (motor) { return motor && motor.side === 'RIGHT'; });
+            if (!left || !right) {
+                throw new NqcConversionError(statement.line, statement.text, 'linker und rechter Motor fehlen in der Roboterkonfiguration');
+            }
+            var leftForward = directions["OUT_".concat(left.port)] !== left.reversed;
+            var rightForward = directions["OUT_".concat(right.port)] !== right.reversed;
+            if (leftForward === rightForward) {
+                return this.driveBlock(leftForward ? 'FOREWARD' : 'BACKWARD', power);
+            }
+            return this.turnBlock(leftForward ? 'RIGHT' : 'LEFT', power);
+        };
         CodeToBlocksConverter.prototype.driveBlock = function (direction, power) {
             return { type: 'robActions_motorDiff_on', fields: { DIRECTION: direction }, values: { POWER: this.numberBlock(power) } };
+        };
+        CodeToBlocksConverter.prototype.turnBlock = function (direction, power) {
+            return { type: 'robActions_motorDiff_turn', fields: { DIRECTION: direction }, values: { POWER: this.numberBlock(power) } };
         };
         CodeToBlocksConverter.prototype.singleMotorBlock = function (port, power) {
             return { type: 'robActions_motor_on', fields: { MOTORPORT: port }, values: { POWER: this.numberBlock(power) } };
@@ -370,7 +442,7 @@ define(["require", "exports"], function (require, exports) {
         CodeToBlocksConverter.prototype.toneBlock = function (frequency, duration) {
             return {
                 type: 'robActions_play_tone',
-                values: { FREQUENCE: this.numberBlock(frequency), DURATION: this.numberBlock(duration) }
+                values: { FREQUENCE: this.numberBlock(frequency), DURATION: this.numberBlock(duration) },
             };
         };
         CodeToBlocksConverter.prototype.chainBlocks = function (blocks) {

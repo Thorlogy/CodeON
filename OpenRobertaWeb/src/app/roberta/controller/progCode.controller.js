@@ -153,12 +153,8 @@ function isNqcSource() {
 
 function updateCodeToolbarForSourceLanguage() {
     if (isNqcSource()) {
-        $('#codeSynchronize')
-            .attr('title', 'NQC-Code in Blöcke übernehmen')
-            .attr('data-bs-original-title', 'NQC-Code in Blöcke übernehmen');
-        $('#codeRefresh')
-            .attr('title', 'NQC aus Blöcken neu erzeugen')
-            .attr('data-bs-original-title', 'NQC aus Blöcken neu erzeugen');
+        $('#codeSynchronize').attr('title', 'NQC-Code in Blöcke übernehmen').attr('data-bs-original-title', 'NQC-Code in Blöcke übernehmen');
+        $('#codeRefresh').attr('title', 'NQC aus Blöcken neu erzeugen').attr('data-bs-original-title', 'NQC aus Blöcken neu erzeugen');
         $('#codeImportToBlocks').hide();
     } else {
         $('#codeImportToBlocks').show();
@@ -175,7 +171,7 @@ function importCodeToBlocks() {
 
     try {
         const isNqc = isNqcSource();
-        const xml = isNqc ? converter.convertNqcToXML(code) : converter.convertToXML(code);
+        const xml = isNqc ? converter.convertNqcToXML(code, GUISTATE_C.getConfigurationXML()) : converter.convertToXML(code);
         const dom = Blockly.Xml.textToDom(xml, blocklyWorkspace);
 
         // Validate the source before touching the workspace. Keep the mandatory

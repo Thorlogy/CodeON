@@ -107,6 +107,19 @@ Projekte werden bewusst nicht automatisch veraendert, da deren Motoren anders
 verkabelt oder montiert sein koennen. Bei einem bestehenden Projekt ist einmalig
 zu pruefen, ob Motor C in der Roboterkonfiguration auf **umgekehrt** stehen muss.
 
+## NQC-Adapterschicht zu Programmblöcken
+
+Beim Übernehmen von bearbeitetem NQC-Code wertet die Adapterschicht eine
+Motoraktion als zusammengehörige Folge aus: `SetPower` und die anschließenden
+`OnFwd`-/`OnRev`-Anweisungen. Sie liest zusätzlich **Seite** und
+**Drehrichtung** der Motoren aus der aktuellen Roboterkonfiguration. Dadurch
+können auch getrennte Richtungsbefehle wie
+`OnFwd(OUT_A); OnRev(OUT_C);` wieder eindeutig als Fahren oder Drehen in
+Programmblöcke übersetzt werden.
+
+Nicht unterstützte oder unvollständige NQC-Folgen werden weiterhin mit einer
+Fehlermeldung abgewiesen, bevor vorhandene Programmblöcke verändert werden.
+
 ## Bewusste Einschraenkungen
 
 Der RCX und NQC unterstuetzen nicht alle allgemeinen CodeON-Bloecke. Derzeit
