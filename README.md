@@ -157,12 +157,16 @@ support is needed.
 Now use one of the following commands to start the server
 
     ./admin.sh -git-mode  start-from-git     # writes logging to ./admin
-    ./ora.sh  start-from-git                 # writes logging to the console
+    ./ora.sh  start-from-git                 # console logging; also starts the local RCX bridge when nqc is installed
 
 If you did not install the crosscompiler resources, everything works fine (programming, simulation, code generation, user management, ...), except of generation
 of binaries for robot systems.
 
 The URL for your browser is [http://localhost:1999](http://localhost:1999) That's it!
+
+For the RCX plugin, `ora.sh start-from-git` also starts the local bridge on
+`127.0.0.1:2222` with the same NQC binary used by the server. See
+`RobotRCX/README.md` for the one-time NQC installation and troubleshooting.
 
 ### Creating an installation outside of the git repo
 

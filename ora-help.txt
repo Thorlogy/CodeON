@@ -21,6 +21,8 @@ Commands of the ora.sh script:
 
   start-from-git [-rdbg] [{path-to-crosscompiler-resources}]
               if a developer wants to start the server from a Git working tree in embedded mode (that is fine for tests), use this command.
+              If an RCX nqc compiler is available, the local RCX bridge on port 2222 is started and stopped together with the server.
+              The bridge log is written to admin/logs/rcx-bridge.log. See RobotRCX/README.md for details.
               Note, that running the server from an IDE as eclipse is EASIER.
               A mvn build must been executed. If a valid database is not found, an empty one is created. An existing datatbase is NOT overwritten.
               If '-rdbg' is used, a remote debug session (e.g. from an IDE as Eclipse) can be attached to the server (on port 8000).

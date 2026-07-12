@@ -22,7 +22,35 @@ Die Bridge sucht `nqc` in dieser Reihenfolge:
 `nqc` wird nicht mit CodeON ausgeliefert. Bei einer eigenen Distribution sind
 die Lizenzbedingungen des NQC-Projekts zu beachten.
 
-## Bridge starten
+## CodeON und Bridge gemeinsam starten
+
+Beim normalen Entwicklungsstart wird die RCX-Bridge automatisch mitgestartet:
+
+```bash
+./ora.sh start-from-git
+```
+
+Der Befehl startet damit:
+
+- den CodeON-Server auf `http://localhost:1999`
+- die RCX-Bridge auf `http://127.0.0.1:2222`
+- die Bridge mit derselben `nqc`-Binary, die der Server zum Kompilieren nutzt
+
+Eine bereits laufende Bridge wird erkannt und nicht ein zweites Mal gestartet.
+Wenn `ora.sh` die Bridge selbst gestartet hat, beendet es sie beim Herunterfahren
+des Servers wieder. Die Bridge schreibt ihr Laufzeitprotokoll nach
+`admin/logs/rcx-bridge.log`.
+
+Auf macOS erwartet der gemeinsame Start die Binary hier:
+
+```text
+../ora-cc-rsc/RobotRCX/osx/nqc
+```
+
+Der Pfad ist relativ zum CodeON-Repository und entspricht dem Pfad, den auch
+der RCX-Compiler-Worker verwendet. Auf Linux wird `nqc` aus dem `PATH` genutzt.
+
+## Bridge einzeln starten
 
 Die offizielle Bridge liegt in `RobotRCX/rcx-bridge.py`:
 
@@ -32,6 +60,9 @@ python3 RobotRCX/rcx-bridge.py
 
 Der bisherige Pfad `RobotRCX/tools/rcx-bridge/rcx-bridge.py` bleibt als
 Kompatibilitaetsstarter erhalten und ruft dieselbe Bridge auf.
+
+Der Einzelstart ist nur fuer Diagnosezwecke notwendig; im normalen Betrieb
+reicht `./ora.sh start-from-git`.
 
 Status und Verbindung lassen sich lokal pruefen:
 
@@ -104,3 +135,28 @@ kann nur mit Tower und RCX vollstaendig abgenommen werden.
 - **Linux:** bevorzugt `/dev/usb/legousbtower0`, andernfalls `-Susb`; eventuell
   sind passende `udev`-Rechte erforderlich
 - **Windows:** USB-Tower mit passendem LEGO-/WinUSB-Treiber und `nqc.exe`
+
+## Wiederherstellung der lokalen NQC-Werkzeuge (macOS)
+
+Am 12. Juli 2026 schlug die RCX-Ausfuehrung mit `exception when calling the
+cross compiler` fehl. Der Server suchte
+`../ora-cc-rsc/RobotRCX/osx/nqc`, die frueher verwendete lokale Binary war aber
+nicht mehr vorhanden. Zur Wiederherstellung wurde NQC 4.1.0 aus dem offiziellen
+Repository `https://github.com/BrickBot/nqc` gebaut.
+
+Auf diesem Rechner waren Homebrew-Bison und -Flex bereits installiert. Der
+funktionierende Build-Aufruf war:
+
+```bash
+git clone --depth 1 https://github.com/BrickBot/nqc.git work/nqc-source
+make -C work/nqc-source \
+  YACC='/usr/local/opt/bison/bin/bison -y' \
+  FLEX=/usr/local/opt/flex/bin/flex
+mkdir -p work/ora-cc-rsc/RobotRCX/osx
+install -m 755 work/nqc-source/build/bin/nqc \
+  work/ora-cc-rsc/RobotRCX/osx/nqc
+```
+
+Anschliessend wurden eine Testdatei erfolgreich zu `.rcx` kompiliert, CodeON
+auf Port 1999 gestartet, die Bridge auf Port 2222 gestartet und eine echte
+Uebertragung auf den RCX erfolgreich bestaetigt.
