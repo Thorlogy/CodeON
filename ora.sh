@@ -63,6 +63,28 @@ function _stopRcxBridge {
   fi
 }
 
+function _syncRcxPlugin {
+  local sourceJar
+  local targetJar
+  sourceJar=$(find RobotRCX/target -maxdepth 1 -type f -name 'RobotRCX-*.jar' ! -name '*-sources.jar' ! -name '*-javadoc.jar' | head -n 1)
+  if [[ -z "$sourceJar" ]]
+  then
+    return 0
+  fi
+
+  # Maven can leave both a versioned and an unversioned plugin JAR in the
+  # server classpath. Keep every existing copy identical so Java cannot load
+  # an older RCX implementation depending on classpath order.
+  for targetJar in "$JAVA_LIB_DIR"/RobotRCX*.jar
+  do
+    if [[ -e "$targetJar" ]] && ! cmp -s "$sourceJar" "$targetJar"
+    then
+      cp "$sourceJar" "$targetJar"
+      echo "updated RCX plugin: $targetJar"
+    fi
+  done
+}
+
 function _startRcxBridge {
   if curl --silent --fail --max-time 1 http://127.0.0.1:2222/status >/dev/null 2>&1
   then
@@ -160,6 +182,7 @@ start-from-git) if [[ ! -d $DB_PARENTDIR ]]; then
                    echo "No database found. An empty database will be created."
                    java -cp ${JAVA_LIB_DIR}/\* de.fhg.iais.roberta.main.Administration create-empty-db jdbc:hsqldb:file:$DB_PARENTDIR/$DB_NAME
                 fi
+                _syncRcxPlugin
                 _startRcxBridge
                 java $RDBG -cp OpenRobertaServer/src/main/resources:${JAVA_LIB_DIR}/\* de.fhg.iais.roberta.main.ServerStarter \
                      -d database.mode=embedded \

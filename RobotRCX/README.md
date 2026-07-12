@@ -64,6 +64,11 @@ Kompatibilitaetsstarter erhalten und ruft dieselbe Bridge auf.
 Der Einzelstart ist nur fuer Diagnosezwecke notwendig; im normalen Betrieb
 reicht `./ora.sh start-from-git`.
 
+Beim Start gleicht das Skript außerdem vorhandene RCX-Plugin-JARs im
+Server-Verzeichnis mit dem zuletzt gebauten RCX-Modul ab. So kann nicht
+versehentlich eine ältere Plugin-Kopie geladen werden. Nach Änderungen am
+Java-Code muss das Modul weiterhin einmal mit Maven gebaut werden.
+
 Status und Verbindung lassen sich lokal pruefen:
 
 ```bash
