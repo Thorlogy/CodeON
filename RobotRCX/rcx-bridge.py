@@ -33,11 +33,14 @@ import subprocess
 import sys
 import tempfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import urlsplit
 
 # ----------------------------------------------------------------------------
 # Konfiguration
 # ----------------------------------------------------------------------------
 BRIDGE_PORT = 2222
+MAX_REQUEST_BYTES = 1024 * 1024
+MAX_PROGRAM_BYTES = 256 * 1024
 
 # Reihenfolge der Kandidaten, wo nqc gesucht wird. Der erste Treffer gewinnt.
 # 1. Umgebungsvariable NQC_PATH (falls gesetzt)
@@ -103,7 +106,7 @@ def transfer_rcx(rcx_bytes, program_slot=1, run_after=False):
         # action: -d (download)
         # file: rcx_path
         # actions after file: -pgm (program slot), -run (optional execution)
-        cmd = [nqc, "-Susb", "-d", rcx_path, "-pgm", str(program_slot)]
+        cmd = [nqc] + nqc_serial_args() + ["-d", rcx_path, "-pgm", str(program_slot)]
 
         if run_after:
             cmd += ["-run"]
@@ -166,11 +169,27 @@ def probe_rcx():
 # ----------------------------------------------------------------------------
 # HTTP-Server
 # ----------------------------------------------------------------------------
-# CORS-Header, damit das Lab (anderer Port) die Bridge aufrufen darf.
+# Standardmaessig duerfen nur lokal ausgelieferte CodeON-Seiten zugreifen.
+# Weitere Urspruenge koennen kommasepariert freigegeben werden, zum Beispiel:
+# RCX_BRIDGE_ALLOWED_ORIGINS=https://codeon.example.org
+def origin_is_allowed(origin):
+    if not origin:
+        return True
+    parsed = urlsplit(origin)
+    if parsed.scheme in ("http", "https") and parsed.hostname in ("127.0.0.1", "localhost", "::1"):
+        return True
+    configured = os.environ.get("RCX_BRIDGE_ALLOWED_ORIGINS", "")
+    return origin in {item.strip() for item in configured.split(",") if item.strip()}
+
+
+# CORS-Header, damit ein freigegebenes Lab (anderer Port) die Bridge aufrufen darf.
 def send_cors(handler, status=200, ctype="application/json"):
     handler.send_response(status)
     handler.send_header("Content-Type", ctype)
-    handler.send_header("Access-Control-Allow-Origin", "*")
+    origin = handler.headers.get("Origin")
+    if origin and origin_is_allowed(origin):
+        handler.send_header("Access-Control-Allow-Origin", origin)
+        handler.send_header("Vary", "Origin")
     handler.send_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
     handler.send_header("Access-Control-Allow-Headers", "Content-Type")
     handler.end_headers()
@@ -181,12 +200,13 @@ class BridgeHandler(BaseHTTPRequestHandler):
         sys.stdout.write("[RCX-Bridge] " + (fmt % args) + "\n")
 
     def do_OPTIONS(self):
-        send_cors(self, 204)
+        send_cors(self, 204 if origin_is_allowed(self.headers.get("Origin")) else 403)
 
     def do_GET(self):
         # /status  -> Bridge lebt, ist nqc da?
         # /probe   -> RCX-Versionsabfrage (Verbindungstest)
-        if self.path.startswith("/status"):
+        path = urlsplit(self.path).path
+        if path == "/status":
             payload = {
                 "ok": True,
                 "nqc": find_nqc(),
@@ -195,7 +215,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
             }
             send_cors(self)
             self.wfile.write(json.dumps(payload).encode("utf-8"))
-        elif self.path.startswith("/probe"):
+        elif path == "/probe":
             ok, msg = probe_rcx()
             send_cors(self)
             self.wfile.write(json.dumps({"ok": ok, "message": msg}).encode("utf-8"))
@@ -204,12 +224,18 @@ class BridgeHandler(BaseHTTPRequestHandler):
             self.wfile.write(b'{"ok":false,"message":"unknown endpoint"}')
 
     def do_POST(self):
-        if not self.path.startswith("/upload"):
+        if not origin_is_allowed(self.headers.get("Origin")):
+            send_cors(self, 403)
+            self.wfile.write(b'{"ok":false,"message":"origin not allowed"}')
+            return
+        if urlsplit(self.path).path != "/upload":
             send_cors(self, 404)
             self.wfile.write(b'{"ok":false,"message":"unknown endpoint"}')
             return
         try:
             length = int(self.headers.get("Content-Length", 0))
+            if length <= 0 or length > MAX_REQUEST_BYTES:
+                raise ValueError("Anfrage ist leer oder zu gross")
             raw = self.rfile.read(length)
             data = json.loads(raw.decode("utf-8"))
         except Exception as e:
@@ -219,17 +245,27 @@ class BridgeHandler(BaseHTTPRequestHandler):
             return
 
         b64 = data.get("compiledCode") or data.get("data")
-        slot = int(data.get("slot", 1))
-        run_after = bool(data.get("run", False))
+        try:
+            slot = int(data.get("slot", 1))
+        except (TypeError, ValueError):
+            slot = 0
+        run_after = data.get("run", False)
 
         if not b64:
             send_cors(self, 400)
             self.wfile.write(json.dumps(
                 {"ok": False, "message": "Kein compiledCode in der Anfrage."}).encode())
             return
+        if slot not in range(1, 6) or not isinstance(run_after, bool):
+            send_cors(self, 400)
+            self.wfile.write(json.dumps(
+                {"ok": False, "message": "Programmplatz muss 1 bis 5 sein; run muss true oder false sein."}).encode())
+            return
 
         try:
-            rcx_bytes = base64.b64decode(b64)
+            rcx_bytes = base64.b64decode(b64, validate=True)
+            if not rcx_bytes or len(rcx_bytes) > MAX_PROGRAM_BYTES:
+                raise ValueError("Programm ist leer oder zu gross")
         except Exception as e:
             send_cors(self, 400)
             self.wfile.write(json.dumps(

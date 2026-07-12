@@ -1,137 +1,106 @@
-# CodeON – RCX über den Infrarot-Tower ausführen (Bridge-Integration)
+# CodeON – LEGO Mindstorms RCX
 
-Dieses Paket macht den **„Ausführen"-Knopf** im CodeON-Lab für den LEGO RCX
-funktionsfähig: Ein Klick kompiliert das Programm und spielt es über den
-Infrarot-Tower auf den RCX.
+Das RCX-Plugin erzeugt NQC-Code, kompiliert ihn zu einer `.rcx`-Datei und
+uebertraegt das Programm ueber eine lokale Bridge und den Infrarot-Tower.
 
-## Warum eine Bridge?
-
-Ein Browser darf keine Programme auf deinem Rechner starten (Sicherheit).
-WebUSB scheitert auf macOS am blockierten `controlTransferIn`. Das klassische
-Tool **`nqc`** spricht den USB-Tower dagegen über den nativen
-Betriebssystem-Treiber an. Die **RCX-Bridge** ist ein winziger lokaler Dienst,
-der genau diese Lücke schließt: Das Lab schickt die kompilierte `.rcx` an die
-Bridge, die Bridge ruft `nqc` auf.
-
-```
-[Browser: CodeON-Lab]  --(.rcx, base64)-->  [rcx-bridge.py :2222]  --nqc -Susb-->  [IR-Tower] ))) [RCX]
+```text
+[CodeON im Browser] -> [RCX-Bridge auf 127.0.0.1:2222] -> [nqc] -> [IR-Tower] -> [RCX]
 ```
 
-## Paketinhalt
+## Voraussetzungen
 
-| Datei | Zweck | Wohin |
-|-------|-------|-------|
-| `rcx-bridge.py` | Der lokale Bridge-Dienst | bleibt als Startskript |
-| `bin/nqc` | Der Übertrager (musst du selbst herkopieren, s.u.) | neben `rcx-bridge.py` |
-| `RcxConnection.run.js` | Ersetzt die leere RcxConnection im Frontend | in `connections.js` einbauen |
-| `RcxCompilerWorker.java.patched` | Server: legt die .rcx in die Antwort | ersetzt das Original |
-| `rcx.properties.patched` | Server: `run`-Workflow ohne `transfer` | ersetzt das Original |
-| `*.original` | Die unveränderten Originale zum Vergleich | nur zur Sicherheit |
+- Python 3
+- eine ausfuehrbare `nqc`-Binary
+- RCX mit Firmware und ein kompatibler IR-Tower
 
-## Einrichtung (einmalig)
+Die Bridge sucht `nqc` in dieser Reihenfolge:
 
-### 1. nqc-Binary ins Paket legen
+1. Pfad aus `NQC_PATH`
+2. `RobotRCX/bin/nqc`
+3. System-`PATH`
 
-Du hast `nqc` bereits gebaut. Kopiere die Binary hierher:
+`nqc` wird nicht mit CodeON ausgeliefert. Bei einer eigenen Distribution sind
+die Lizenzbedingungen des NQC-Projekts zu beachten.
+
+## Bridge starten
+
+Die offizielle Bridge liegt in `RobotRCX/rcx-bridge.py`:
 
 ```bash
-mkdir -p bin
-cp ~/Downloads/nqc/build/bin/nqc bin/nqc
-chmod +x bin/nqc
+python3 RobotRCX/rcx-bridge.py
 ```
 
-(Alternativ kannst du die Umgebungsvariable `NQC_PATH` auf den Pfad deiner
-nqc-Binary setzen, dann findet die Bridge sie auch ohne `bin/`.)
+Der bisherige Pfad `RobotRCX/tools/rcx-bridge/rcx-bridge.py` bleibt als
+Kompatibilitaetsstarter erhalten und ruft dieselbe Bridge auf.
 
-### 2. Server-Dateien patchen
-
-Im CodeON-Quellbaum diese zwei Dateien durch die gepatchten Versionen ersetzen
-(die Originale liegen als `*.original` bei):
-
-```
-RobotRCX/src/main/java/de/fhg/iais/roberta/worker/compile/RcxCompilerWorker.java
-   ← RcxCompilerWorker.java.patched
-
-RobotRCX/src/main/resources/rcx.properties
-   ← rcx.properties.patched
-```
-
-Danach den Server neu bauen/starten (wie gewohnt via `ora.sh` bzw. Maven).
-
-### 3. Frontend patchen
-
-In `OpenRobertaServer/staticResources/js/app/roberta/controller/connections/connections.js`
-die bestehende (leere) `RcxConnection`-Definition ersetzen. Sie sieht im
-Original so aus:
-
-```js
-    var RcxConnection = /** @class */ (function (_super) {
-        __extends(RcxConnection, _super);
-        function RcxConnection() {
-            return _super !== null && _super.apply(this, arguments) || this;
-        }
-        return RcxConnection;
-    }(TokenConnection));
-    exports.RcxConnection = RcxConnection;
-```
-
-Ersetze **genau diesen Block** durch den Inhalt von `RcxConnection.run.js`
-(ohne den Kommentarkopf, ab `var RcxConnection`). Achte auf die Einrückung –
-der Block steht innerhalb der `define(...)`-Funktion, also mit vier Leerzeichen
-eingerückt wie das Original.
-
-> Hinweis: `connections.js` ist die kompilierte (transpilierte) Datei. Wenn du
-> den TypeScript-Quellbaum baust, gehört die Änderung sauber in die
-> entsprechende `.ts` – für den lokalen Betrieb reicht das direkte Editieren
-> der `.js`.
-
-## Benutzung
-
-1. **Bridge starten** (ein Terminal-Fenster, offen lassen):
-   ```bash
-   python3 rcx-bridge.py
-   ```
-   Ausgabe zeigt, ob `nqc` gefunden wurde und auf welchem Port die Bridge läuft.
-
-2. **CodeON-Lab starten** (wie gewohnt) und im Browser öffnen.
-
-3. RCX einschalten (Ziffer im Display = Firmware da), vor den Tower stellen,
-   Tower einstecken.
-
-4. Im Lab Programm bauen → **Ausführen** klicken. Die .rcx wird übertragen;
-   danach den grünen **Run**-Knopf am RCX drücken.
-
-### Verbindung testen (optional)
-
-Bei laufender Bridge im Browser oder per curl:
+Status und Verbindung lassen sich lokal pruefen:
 
 ```bash
-curl http://127.0.0.1:2222/status    # lebt die Bridge? ist nqc da?
-curl http://127.0.0.1:2222/probe     # antwortet der RCX? (Versionsabfrage)
+curl http://127.0.0.1:2222/status
+curl http://127.0.0.1:2222/probe
 ```
 
-## Optionen anpassen
+Anschliessend in CodeON ein Programm bauen und **Ausfuehren** waehlen. Das
+Programm wird standardmaessig auf Programmplatz 1 uebertragen und nicht
+automatisch gestartet.
 
-In `rcx-bridge.py` oben:
+## Zugriffsschutz
 
-- **Programm direkt starten** statt „Run drücken": Im Frontend
-  `RcxConnection.run.js` das Feld `run: false` auf `run: true` setzen.
-- **Programmplatz** (1–5): Feld `slot` in `RcxConnection.run.js`.
-- **Serieller Tower** statt USB: In `rcx-bridge.py` die Funktion
-  `nqc_serial_args()` anpassen (Beispiele stehen dort als Kommentar).
-- **Port** der Bridge: `BRIDGE_PORT` in `rcx-bridge.py` und `bridgeUrl` in
-  `RcxConnection.run.js` müssen übereinstimmen.
+Die Bridge lauscht ausschliesslich auf `127.0.0.1`. Browserzugriffe sind
+standardmaessig nur von `localhost`, `127.0.0.1` und `::1` erlaubt. Wird CodeON
+von einer anderen vertrauenswuerdigen Adresse geladen, muss sie explizit
+freigegeben werden:
 
-## Plattform-Hinweise
+```bash
+RCX_BRIDGE_ALLOWED_ORIGINS=https://codeon.example.org python3 RobotRCX/rcx-bridge.py
+```
 
-- **macOS:** USB-Tower über `-Susb` (getestet). Kein Treiber nötig.
-- **Linux:** USB-Tower über `/dev/usb/legousbtower0` (Kernel-Modul
-  `legousbtower`), sonst `-Susb`. Ggf. `udev`-Rechte setzen.
-- **Windows:** USB-Tower braucht den WinUSB-/LEGO-Treiber; `nqc.exe` mit `-Susb`.
+Mehrere Adressen werden durch Kommas getrennt. Die Bridge begrenzt ausserdem
+Anfrage- und Programmgroesse, akzeptiert nur Programmplaetze 1 bis 5 und
+validiert die Base64-Daten strikt.
 
-## Lizenz
+## Standardkonfiguration der Fahrmotoren
 
-`nqc` stammt aus dem BrickBot/nqc-Projekt (eigene Lizenz, siehe dortiges Repo).
-Die Bridge und die Patches sind für CodeON geschrieben und können unter der
-Lizenz von CodeON weitergegeben werden. Bei Weitergabe der nqc-Binary die
-Lizenzhinweise von BrickBot/nqc beilegen.
+Die Standardkonfiguration verwendet Motor A links und Motor C rechts. Weil die
+beiden Motoren bei einem typischen Differentialantrieb spiegelbildlich montiert
+sind, ist der rechte Motor standardmaessig auf **umgekehrt** gestellt. Der
+NQC-Generator beruecksichtigt diese Einstellung beim Fahren und Drehen.
+
+Die neue Vorgabe gilt fuer neu angelegte Konfigurationen. Bereits gespeicherte
+Projekte werden bewusst nicht automatisch veraendert, da deren Motoren anders
+verkabelt oder montiert sein koennen. Bei einem bestehenden Projekt ist einmalig
+zu pruefen, ob Motor C in der Roboterkonfiguration auf **umgekehrt** stehen muss.
+
+## Bewusste Einschraenkungen
+
+Der RCX und NQC unterstuetzen nicht alle allgemeinen CodeON-Bloecke. Derzeit
+nicht freigegeben sind insbesondere:
+
+- Motorlauf mit Rotations- oder Zeitangabe
+- Fahren mit Distanzangabe
+- Drehen um eine Gradzahl
+- Arrays und `for each`
+
+Diese Faelle werden vom Validator oder Generator mit einer Fehlermeldung
+abgewiesen und nicht stillschweigend anders ausgefuehrt.
+
+## Hardware-Abnahme
+
+Vor einer RCX-Freigabe sollte mit echter Hardware geprueft werden:
+
+1. Motor A einzeln vorwaerts und Motor C einzeln vorwaerts
+2. Differentialantrieb vorwaerts und rueckwaerts
+3. Drehen nach links und rechts
+4. Kompilieren, Uebertragen und Starten auf dem RCX
+5. NQC-Code anzeigen, in Bloecke uebernehmen, speichern und neu laden
+
+Automatische Tests sichern die Standardkonfiguration und die logische
+Umrechnung von Fahrtrichtung und Motorumkehr ab. Der IR-Uebertragungsweg selbst
+kann nur mit Tower und RCX vollstaendig abgenommen werden.
+
+## Plattformhinweise
+
+- **macOS:** USB-Tower ueber `-Susb`
+- **Linux:** bevorzugt `/dev/usb/legousbtower0`, andernfalls `-Susb`; eventuell
+  sind passende `udev`-Rechte erforderlich
+- **Windows:** USB-Tower mit passendem LEGO-/WinUSB-Treiber und `nqc.exe`

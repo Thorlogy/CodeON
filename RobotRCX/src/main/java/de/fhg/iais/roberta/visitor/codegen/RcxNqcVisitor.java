@@ -94,9 +94,13 @@ public final class RcxNqcVisitor extends AbstractCppVisitor implements IRcxVisit
         return "ON".equals(motor.getOptProperty(SC.MOTOR_REVERSE));
     }
 
-    private String motorOnCommand(ConfigurationComponent motor, boolean logicalForward) {
-        boolean electricalForward = logicalForward != isMotorReversed(motor);
+    static String motorOnCommand(boolean motorReversed, boolean logicalForward) {
+        boolean electricalForward = logicalForward != motorReversed;
         return electricalForward ? "OnFwd" : "OnRev";
+    }
+
+    private String motorOnCommand(ConfigurationComponent motor, boolean logicalForward) {
+        return motorOnCommand(isMotorReversed(motor), logicalForward);
     }
 
     /** "S1" / "1" -> "SENSOR_1" (NQC-Makro). */
