@@ -22,7 +22,7 @@
             <value name="MC">
                 <block type="robBrick_motor_big" id="6" intask="true">
                     <field name="MOTOR_REGULATION">FALSE</field>
-                    <field name="MOTOR_REVERSE">OFF</field>
+                    <field name="MOTOR_REVERSE">ON</field>
                     <field name="MOTOR_DRIVE">RIGHT</field>
                 </block>
             </value>

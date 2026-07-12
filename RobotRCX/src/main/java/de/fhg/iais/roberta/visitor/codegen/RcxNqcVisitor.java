@@ -90,6 +90,15 @@ public final class RcxNqcVisitor extends AbstractCppVisitor implements IRcxVisit
         return this.brickConfiguration.getActors().stream().anyMatch(a -> a.userDefinedPortName.equals(port));
     }
 
+    private boolean isMotorReversed(ConfigurationComponent motor) {
+        return "ON".equals(motor.getOptProperty(SC.MOTOR_REVERSE));
+    }
+
+    private String motorOnCommand(ConfigurationComponent motor, boolean logicalForward) {
+        boolean electricalForward = logicalForward != isMotorReversed(motor);
+        return electricalForward ? "OnFwd" : "OnRev";
+    }
+
     /** "S1" / "1" -> "SENSOR_1" (NQC-Makro). */
     private String sensorMacro(String internalOrUserPort) {
         String digits = internalOrUserPort.replaceAll("\\D", "");
@@ -384,13 +393,19 @@ public final class RcxNqcVisitor extends AbstractCppVisitor implements IRcxVisit
         String l = left.userDefinedPortName;
         String r = right.userDefinedPortName;
         // Enum-Vergleich wie in der Vorlage (NICHT toString()!):
-        boolean backward = driveAction.direction == DriveDirection.BACKWARD;
-        String cmd = backward ? "OnRev" : "OnFwd";
+        boolean logicalForward = driveAction.direction != DriveDirection.BACKWARD;
+        String leftCmd = motorOnCommand(left, logicalForward);
+        String rightCmd = motorOnCommand(right, logicalForward);
         this.src.add("SetPower(OUT_", l, "+OUT_", r, ", NEPO_PWR(");
         driveAction.param.getSpeed().accept(this);
         this.src.add("));");
         nlIndent();
-        this.src.add(cmd, "(OUT_", l, "+OUT_", r, ");");
+        if ( leftCmd.equals(rightCmd) ) {
+            this.src.add(leftCmd, "(OUT_", l, "+OUT_", r, ");");
+        } else {
+            this.src.add(leftCmd, "(OUT_", l, "); ");
+            this.src.add(rightCmd, "(OUT_", r, ");");
+        }
         if ( driveAction.param.getDuration() != null ) {
             throw new DbcException("Fahren mit Distanzangabe wird vom RCX nicht unterstuetzt");
         }
@@ -404,15 +419,14 @@ public final class RcxNqcVisitor extends AbstractCppVisitor implements IRcxVisit
         String l = left.userDefinedPortName;
         String r = right.userDefinedPortName;
         boolean turnLeft = turnAction.direction == TurnDirection.LEFT;
+        String leftCmd = motorOnCommand(left, !turnLeft);
+        String rightCmd = motorOnCommand(right, turnLeft);
         this.src.add("SetPower(OUT_", l, "+OUT_", r, ", NEPO_PWR(");
         turnAction.param.getSpeed().accept(this);
         this.src.add("));");
         nlIndent();
-        if ( turnLeft ) {
-            this.src.add("OnRev(OUT_", l, "); OnFwd(OUT_", r, ");");
-        } else {
-            this.src.add("OnFwd(OUT_", l, "); OnRev(OUT_", r, ");");
-        }
+        this.src.add(leftCmd, "(OUT_", l, "); ");
+        this.src.add(rightCmd, "(OUT_", r, ");");
         if ( turnAction.param.getDuration() != null ) {
             throw new DbcException("Drehen um Gradzahl wird vom RCX nicht unterstuetzt");
         }
