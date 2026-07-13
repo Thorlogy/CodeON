@@ -30,7 +30,62 @@ var __assign = (this && this.__assign) || function () {
 };
 define(["require", "exports"], function (require, exports) {
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.CodeToBlocksConverter = void 0;
+    exports.CodeToBlocksConverter = exports.ensureNqcSensorSetup = void 0;
+    /**
+     * Add or correct the SetSensor statements that the graphical RCX generator
+     * normally emits from the active robot configuration.
+     */
+    function ensureNqcSensorSetup(code, configurationXml) {
+        if (!configurationXml || !/task\s+main\s*\(\s*\)\s*\{/m.test(code))
+            return code;
+        var configuration = new DOMParser().parseFromString(configurationXml, 'text/xml');
+        var sensorModes = {
+            robBrick_touch: 'SENSOR_TOUCH',
+            robBrick_light: 'SENSOR_LIGHT',
+            robBrick_encoder: 'SENSOR_ROTATION',
+            robBrick_temperature: 'SENSOR_CELSIUS',
+        };
+        var configuredModes = {};
+        Array.from(configuration.getElementsByTagName('value')).forEach(function (value) {
+            var port = (value.getAttribute('name') || '').match(/^S([123])$/);
+            if (!port)
+                return;
+            var block = Array.from(value.children).find(function (child) { return child.tagName.toLowerCase() === 'block'; });
+            var mode = block && sensorModes[block.getAttribute('type') || ''];
+            if (mode)
+                configuredModes[port[1]] = mode;
+        });
+        var searchableCode = code.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+        var usedPorts = [];
+        var sensorReference = /\bSENSOR_([123])\b/g;
+        var sensorMatch;
+        while ((sensorMatch = sensorReference.exec(searchableCode)) !== null) {
+            if (usedPorts.indexOf(sensorMatch[1]) < 0)
+                usedPorts.push(sensorMatch[1]);
+        }
+        var normalized = code;
+        var missing = [];
+        usedPorts.forEach(function (port) {
+            var mode = configuredModes[port];
+            if (!mode)
+                return;
+            var setup = "SetSensor(SENSOR_".concat(port, ", ").concat(mode, ");");
+            var existing = new RegExp("(^[\\t ]*)SetSensor\\(\\s*SENSOR_".concat(port, "\\s*,\\s*SENSOR_(?:TOUCH|LIGHT|ROTATION|CELSIUS)\\s*\\);"), 'im');
+            if (existing.test(normalized)) {
+                normalized = normalized.replace(existing, function (_statement, indentation) { return "".concat(indentation).concat(setup); });
+            }
+            else {
+                missing.push("    ".concat(setup));
+            }
+        });
+        if (missing.length === 0)
+            return normalized;
+        var main = /task\s+main\s*\(\s*\)\s*\{/m.exec(normalized);
+        var insertionPoint = main.index + main[0].length;
+        var remainder = normalized.substring(insertionPoint);
+        return normalized.substring(0, insertionPoint) + '\n' + missing.join('\n') + (remainder.startsWith('\n') ? '' : '\n') + remainder;
+    }
+    exports.ensureNqcSensorSetup = ensureNqcSensorSetup;
     var NqcConversionError = /** @class */ (function (_super) {
         __extends(NqcConversionError, _super);
         function NqcConversionError(line, statement, detail) {

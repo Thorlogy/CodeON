@@ -32,7 +32,11 @@ Block mit der NQC-Ausgabe, der Vorschlagsliste und dem Rückweg in Blockly.
 | Allgemeiner Sensorwert | jeweilige konkrete `SENSOR_n`-Form | konkreter Sensorblock |
 
 Sensorwerte sind Ausdrücke. Ihr Vorschlag wird deshalb an der Cursorposition
-eingesetzt und nicht als alleinstehende Programmzeile eingefügt.
+eingesetzt und nicht als alleinstehende Programmzeile eingefügt. Sobald ein
+`SENSOR_n` im NQC-Programm verwendet wird, ergänzt die Adapterschicht das zur
+Roboterkonfiguration passende `SetSensor(SENSOR_n, SENSOR_...);` im
+`task main()`-Block. Vorhandene Initialisierungen werden nicht dupliziert und
+bei einem abweichenden konfigurierten Sensortyp korrigiert.
 
 ## Steuerung
 
@@ -77,4 +81,5 @@ Die Vorschlagsliste zeigt nur Einträge mit einem grafischen Rückweg als
 `NQC ↔ Block`. `OpenRobertaWeb/test/codeToBlocks.roundtrip.test.js` prüft 23
 Roundtrip-Fälle und das Vorhandensein aller 43 kuratierten Vorschläge, darunter
 verschachtelte Kontrollstrukturen und Ausdrücke. Ein Fehler verändert den
-vorhandenen Blockly-Workspace nicht.
+vorhandenen Blockly-Workspace nicht. Zusätzliche Assertions prüfen die
+konfigurationsabhängige, duplikatfreie und idempotente Sensorinitialisierung.

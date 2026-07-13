@@ -3,9 +3,11 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
     exports.init = void 0;
     var INITIAL_WIDTH = 0.5;
     var blocklyWorkspace;
+    var nqcSensorSetupTimer;
     function init() {
         blocklyWorkspace = GUISTATE_C.getBlocklyWorkspace();
         initEvents();
+        ACE_EDITOR.setViewCodeChangeHandler(scheduleNqcSensorSetup);
     }
     exports.init = init;
     function initEvents() {
@@ -16,7 +18,7 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
         });
         $('#codeDownload').onWrap('click', function (event) {
             var filename = GUISTATE_C.getProgramName() + '.' + GUISTATE_C.getSourceCodeFileExtension();
-            UTIL.download(filename, ACE_EDITOR.getViewCode());
+            UTIL.download(filename, prepareNqcCode());
             MSG.displayMessage('MENU_MESSAGE_DOWNLOAD', 'TOAST', filename);
         }, 'codeDownload clicked');
         $('#codeRefresh').onWrap('click', function (event) {
@@ -80,7 +82,7 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
         // Run button - execute the code
         $('#codeRun').onWrap('click', function (event) {
             event.stopPropagation();
-            PROGRUN_C.runNative(ACE_EDITOR.getViewCode());
+            PROGRUN_C.runNative(prepareNqcCode());
         }, 'code run clicked');
         // Import to Blocks button - convert source code back to blocks.
         $('#codeImportToBlocks').onWrap('click', function (event) {
@@ -90,6 +92,23 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
     }
     function isNqcSource() {
         return GUISTATE_C.getSourceCodeFileExtension() === 'nqc';
+    }
+    function scheduleNqcSensorSetup() {
+        if (!isNqcSource())
+            return;
+        window.clearTimeout(nqcSensorSetupTimer);
+        nqcSensorSetupTimer = window.setTimeout(prepareNqcCode, 180);
+    }
+    function prepareNqcCode() {
+        var code = ACE_EDITOR.getViewCode();
+        if (!isNqcSource())
+            return code;
+        var normalized = (0, codeToBlocks_1.ensureNqcSensorSetup)(code, GUISTATE_C.getConfigurationXML());
+        if (normalized !== code) {
+            ACE_EDITOR.updateViewCodePreservingCursor(normalized);
+            GUISTATE_C.setProgramSource(normalized);
+        }
+        return normalized;
     }
     function updateCodeToolbarForSourceLanguage() {
         if (isNqcSource()) {
@@ -106,7 +125,7 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
      * strict NQC subset so an unfamiliar command cannot silently disappear.
      */
     function importCodeToBlocks() {
-        var code = ACE_EDITOR.getViewCode();
+        var code = prepareNqcCode();
         var converter = new codeToBlocks_1.CodeToBlocksConverter();
         var workspace;
         var originalProgramXml;

@@ -18,9 +18,27 @@ function motorValue(port, side, reversed) {
     };
 }
 
+function sensorValue(port, type) {
+    const block = {
+        tagName: 'block',
+        children: [],
+        getAttribute: (attribute) => (attribute === 'type' ? type : null),
+    };
+    return {
+        children: [block],
+        getAttribute: (attribute) => (attribute === 'name' ? `S${port}` : null),
+    };
+}
+
 global.DOMParser = class {
     parseFromString() {
-        const values = [motorValue('A', 'LEFT', false), motorValue('C', 'RIGHT', true)];
+        const values = [
+            sensorValue('1', 'robBrick_touch'),
+            sensorValue('2', 'robBrick_light'),
+            sensorValue('3', 'robBrick_encoder'),
+            motorValue('A', 'LEFT', false),
+            motorValue('C', 'RIGHT', true),
+        ];
         return { getElementsByTagName: (name) => (name === 'value' ? values : []) };
     }
 };
@@ -38,6 +56,25 @@ eval(fs.readFileSync(converterPath, 'utf8'));
 const configuration = '<block_set robottype="rcx" />';
 const wrap = (body) => `task main() {\n${body}\n}`;
 const convert = (body) => new converterModule.CodeToBlocksConverter().convertNqcToXML(wrap(body), configuration);
+
+const sensorSetup = converterModule.ensureNqcSensorSetup(
+    wrap('if (SENSOR_1) {\n}\nvalue = SENSOR_2;\nangle = SENSOR_3;'),
+    configuration
+);
+assert(sensorSetup.includes('SetSensor(SENSOR_1, SENSOR_TOUCH);'), 'touch setup must be inserted');
+assert(sensorSetup.includes('SetSensor(SENSOR_2, SENSOR_LIGHT);'), 'light setup must be inserted');
+assert(sensorSetup.includes('SetSensor(SENSOR_3, SENSOR_ROTATION);'), 'rotation setup must be inserted');
+assert.strictEqual((sensorSetup.match(/SetSensor\(SENSOR_1/g) || []).length, 1, 'sensor setup must not be duplicated');
+assert.strictEqual(
+    converterModule.ensureNqcSensorSetup(sensorSetup, configuration),
+    sensorSetup,
+    'sensor setup normalization must be idempotent'
+);
+const correctedSensorSetup = converterModule.ensureNqcSensorSetup(
+    wrap('SetSensor(SENSOR_1, SENSOR_LIGHT);\nif (SENSOR_1) {\n}'),
+    configuration
+);
+assert(correctedSensorSetup.includes('SetSensor(SENSOR_1, SENSOR_TOUCH);'), 'wrong setup must follow the robot configuration');
 
 const cases = [
     ['SetPower', 'SetPower(OUT_A, NEPO_PWR(30));', ['robActions_motor_setPower', '<field name="MOTORPORT">A</field>', '<field name="NUM">30</field>']],

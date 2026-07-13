@@ -1173,8 +1173,8 @@ define(["require", "exports", "interpreter.constants", "simulation.math", "guiSt
             };
             _this.topView = '<svg id="brick' +
                 _this.id +
-                '" xmlns="http://www.w3.org/2000/svg" width="300px" height="400px" viewBox="0 0 1086 1448" preserveAspectRatio="xMidYMid meet">' +
-                '<image href="/css/img/rcx-brick.png" width="1086" height="1448" preserveAspectRatio="xMidYMid meet" />' +
+                '" xmlns="http://www.w3.org/2000/svg" width="300px" height="458px" viewBox="0 0 708 1080" preserveAspectRatio="xMidYMid meet">' +
+                '<image href="/css/img/rcx-brick.png?v=rcx-front-20260713" width="708" height="1080" preserveAspectRatio="xMidYMid meet" />' +
                 '</svg>';
             $('#simRobotContent').append(_this.topView);
             $('#simRobotWindow button').removeClass('btn-close-white');

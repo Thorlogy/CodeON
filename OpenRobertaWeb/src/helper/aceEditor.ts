@@ -9,6 +9,7 @@ let currentLanguage: string;
 let wasEdited: boolean = false;
 let previousLineCount: number = 0;
 let initialized: boolean = false;
+let viewCodeChangeHandler: (() => void) | undefined;
 
 // EV3dev API Autocomplete Completer
 const ev3devCompleter = {
@@ -292,6 +293,7 @@ export function init() {
     codeView.session.on('change', function () {
         wasEdited = true;
         startNqcAutocompleteForCurrentWord(codeView);
+        if (viewCodeChangeHandler) viewCodeChangeHandler();
     });
 
     editor = ace.edit('aceEditor');
@@ -347,6 +349,10 @@ export function setWasEditedByUser(edited: boolean) {
     wasEdited = edited;
 }
 
+export function setViewCodeChangeHandler(handler: () => void) {
+    viewCodeChangeHandler = handler;
+}
+
 export function getEditorCode() {
     return editor.getValue();
 }
@@ -367,6 +373,17 @@ export function setViewCode(sourceCode: string) {
     codeView.setValue(sourceCode, 0);
     codeView.clearSelection();
     codeView.moveCursorTo(0, 0);
+    highlightEverySecondLine(codeView);
+}
+
+/** Update generated additions without throwing the user's cursor back to line 1. */
+export function updateViewCodePreservingCursor(sourceCode: string) {
+    const oldLineCount = codeView.session.getLength();
+    const cursor = codeView.getCursorPosition();
+    codeView.setValue(sourceCode, -1);
+    const addedLines = codeView.session.getLength() - oldLineCount;
+    codeView.moveCursorTo(Math.max(0, cursor.row + addedLines), cursor.column);
+    codeView.clearSelection();
     highlightEverySecondLine(codeView);
 }
 

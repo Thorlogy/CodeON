@@ -4,13 +4,14 @@
 */
 define(["require", "exports"], function (require, exports) {
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.setCodeLanguage = exports.setViewCode = exports.setEditorCode = exports.getViewCode = exports.getEditorCode = exports.setWasEditedByUser = exports.getCurrentLanguage = exports.wasEditedByUser = exports.init = void 0;
+    exports.setCodeLanguage = exports.updateViewCodePreservingCursor = exports.setViewCode = exports.setEditorCode = exports.getViewCode = exports.getEditorCode = exports.setViewCodeChangeHandler = exports.setWasEditedByUser = exports.getCurrentLanguage = exports.wasEditedByUser = exports.init = void 0;
     var codeView;
     var editor;
     var currentLanguage;
     var wasEdited = false;
     var previousLineCount = 0;
     var initialized = false;
+    var viewCodeChangeHandler;
     // EV3dev API Autocomplete Completer
     var ev3devCompleter = {
         getCompletions: function (editor, session, pos, prefix, callback) {
@@ -288,6 +289,8 @@ define(["require", "exports"], function (require, exports) {
         codeView.session.on('change', function () {
             wasEdited = true;
             startNqcAutocompleteForCurrentWord(codeView);
+            if (viewCodeChangeHandler)
+                viewCodeChangeHandler();
         });
         editor = ace.edit('aceEditor');
         applyDefaultSettings(editor);
@@ -336,6 +339,10 @@ define(["require", "exports"], function (require, exports) {
         wasEdited = edited;
     }
     exports.setWasEditedByUser = setWasEditedByUser;
+    function setViewCodeChangeHandler(handler) {
+        viewCodeChangeHandler = handler;
+    }
+    exports.setViewCodeChangeHandler = setViewCodeChangeHandler;
     function getEditorCode() {
         return editor.getValue();
     }
@@ -359,6 +366,17 @@ define(["require", "exports"], function (require, exports) {
         highlightEverySecondLine(codeView);
     }
     exports.setViewCode = setViewCode;
+    /** Update generated additions without throwing the user's cursor back to line 1. */
+    function updateViewCodePreservingCursor(sourceCode) {
+        var oldLineCount = codeView.session.getLength();
+        var cursor = codeView.getCursorPosition();
+        codeView.setValue(sourceCode, -1);
+        var addedLines = codeView.session.getLength() - oldLineCount;
+        codeView.moveCursorTo(Math.max(0, cursor.row + addedLines), cursor.column);
+        codeView.clearSelection();
+        highlightEverySecondLine(codeView);
+    }
+    exports.updateViewCodePreservingCursor = updateViewCodePreservingCursor;
     function setCodeLanguage(languageFileExtension) {
         var langToSet;
         switch (languageFileExtension) {

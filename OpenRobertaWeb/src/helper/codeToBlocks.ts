@@ -35,6 +35,58 @@ interface NqcMotorConfiguration {
     reversed: boolean;
 }
 
+/**
+ * Add or correct the SetSensor statements that the graphical RCX generator
+ * normally emits from the active robot configuration.
+ */
+export function ensureNqcSensorSetup(code: string, configurationXml?: string): string {
+    if (!configurationXml || !/task\s+main\s*\(\s*\)\s*\{/m.test(code)) return code;
+
+    const configuration = new DOMParser().parseFromString(configurationXml, 'text/xml');
+    const sensorModes: { [blockType: string]: string } = {
+        robBrick_touch: 'SENSOR_TOUCH',
+        robBrick_light: 'SENSOR_LIGHT',
+        robBrick_encoder: 'SENSOR_ROTATION',
+        robBrick_temperature: 'SENSOR_CELSIUS',
+    };
+    const configuredModes: { [port: string]: string } = {};
+    Array.from(configuration.getElementsByTagName('value')).forEach((value) => {
+        const port = (value.getAttribute('name') || '').match(/^S([123])$/);
+        if (!port) return;
+        const block = Array.from(value.children).find((child) => child.tagName.toLowerCase() === 'block');
+        const mode = block && sensorModes[block.getAttribute('type') || ''];
+        if (mode) configuredModes[port[1]] = mode;
+    });
+
+    const searchableCode = code.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+    const usedPorts: string[] = [];
+    const sensorReference = /\bSENSOR_([123])\b/g;
+    let sensorMatch: RegExpExecArray | null;
+    while ((sensorMatch = sensorReference.exec(searchableCode)) !== null) {
+        if (usedPorts.indexOf(sensorMatch[1]) < 0) usedPorts.push(sensorMatch[1]);
+    }
+    let normalized = code;
+    const missing: string[] = [];
+
+    usedPorts.forEach((port) => {
+        const mode = configuredModes[port];
+        if (!mode) return;
+        const setup = `SetSensor(SENSOR_${port}, ${mode});`;
+        const existing = new RegExp(`(^[\\t ]*)SetSensor\\(\\s*SENSOR_${port}\\s*,\\s*SENSOR_(?:TOUCH|LIGHT|ROTATION|CELSIUS)\\s*\\);`, 'im');
+        if (existing.test(normalized)) {
+            normalized = normalized.replace(existing, (_statement, indentation) => `${indentation}${setup}`);
+        } else {
+            missing.push(`    ${setup}`);
+        }
+    });
+
+    if (missing.length === 0) return normalized;
+    const main = /task\s+main\s*\(\s*\)\s*\{/m.exec(normalized)!;
+    const insertionPoint = main.index + main[0].length;
+    const remainder = normalized.substring(insertionPoint);
+    return normalized.substring(0, insertionPoint) + '\n' + missing.join('\n') + (remainder.startsWith('\n') ? '' : '\n') + remainder;
+}
+
 class NqcConversionError extends Error {
     constructor(line: number, statement: string, detail: string) {
         super(`NQC-Zeile ${line}: ${detail} (${statement})`);

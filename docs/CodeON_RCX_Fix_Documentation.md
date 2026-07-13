@@ -115,7 +115,7 @@ Auf `localhost:1999` wurde folgender Roundtrip geprüft:
 
 Da der vom Benutzer beobachtete alte Ablauf (keine Blockänderung, Fenster
 schließt) exakt zu einem zwischengespeicherten älteren Controller passt, besitzt
-die Startseite nun die Web-Version `rcx-nqc-control-coverage-20260713`. RequireJS hängt sie
+die Startseite nun mindestens die Web-Version `rcx-sensor-assets-20260713`. RequireJS hängt sie
 an alle Webmodule an und lädt nach einem Seiten-Reload garantiert die aktuelle
 NQC-Adapterschicht.
 
@@ -132,8 +132,10 @@ einen geprüften grafischen Rückweg. Neben den RCX-Aktionen gehören dazu nun
 `continue`, Variablen, Sensorwerte sowie Logik- und Mathematikausdrücke. Die
 Adapterschicht erkennt verschachtelte runde und geschweifte Klammern und baut
 daraus verschachtelte Blockly-Strukturen. Nicht grafisch repräsentierte
-Initialisierungsbefehle wie `SetSensor` werden weiterhin nicht aktiv
-vorgeschlagen.
+Initialisierungsbefehle wie `SetSensor` werden weiterhin nicht aktiv als
+eigenständige Benutzerbefehle vorgeschlagen. Sie werden stattdessen bei einer
+Sensorverwendung automatisch und passend zur Roboterkonfiguration ergänzt
+(siehe Abschnitt 10).
 
 Für `SetPower` wurde die RCX-Expert-Toolbox um
 `robActions_motor_setPower` erweitert. Der Importer bewahrt außerdem
@@ -158,3 +160,35 @@ Die LEGO-Firmware ist nicht Teil des Repositorys. Sie wird über
 `RCX_FIRMWARE_PATH` oder unter `RobotRCX/firmware/` bereitgestellt. Ist keine
 Datei vorhanden, erfolgt keine Änderung am RCX und es erscheint ein konkreter
 Konfigurationshinweis.
+
+## 10. Automatische Sensorinitialisierung und aktualisierte Oberfläche
+
+Wird im sichtbaren NQC-Editor ein konfigurierter Sensor verwendet, ergänzt die
+Adapterschicht die notwendige Initialisierung direkt im `task main()`-Block.
+Beispielsweise erzeugt `if (SENSOR_1)` bei einem an Anschluss 1 konfigurierten
+Berührungssensor automatisch:
+
+```nqc
+SetSensor(SENSOR_1, SENSOR_TOUCH);
+```
+
+Unterstützt werden Berührungs-, Licht-, Dreh- und Temperatursensoren. Eine
+bereits vorhandene korrekte Zeile wird nicht dupliziert; ein zur aktuellen
+Roboterkonfiguration unpassender Sensortyp wird korrigiert. Die Normalisierung
+läuft beim Bearbeiten sowie sicherheitshalber vor Blockimport, Download und
+Übertragung.
+
+Zusätzlich verwendet die SIM-Systemansicht nun das neue RCX-Frontbild
+`rcx-brick.png`. Das Kopflogo wurde durch das originale CodeON-Logo ersetzt und
+behält durch automatische Breitenberechnung sein Seitenverhältnis. Die
+Startseite trägt dafür die Web-Version `rcx-sensor-assets-20260713`, damit die
+neuen Module und Bilder nach einem Reload zuverlässig geladen werden.
+
+Direkt auf `localhost:1999` verifiziert:
+
+1. `if (SENSOR_1)` ergänzt genau einmal `SENSOR_TOUCH` aus der aktiven
+   RCX-Konfiguration.
+2. Das CodeON-Logo lädt mit den Quelldimensionen 1224 × 290 und wird
+   unverzerrt mit 169 × 40 Pixeln dargestellt.
+3. Die geöffnete SIM-Systemansicht lädt `rcx-brick.png` mit dem Viewport
+   708 × 1080 und zeigt es mit 300 × 458 Pixeln an.

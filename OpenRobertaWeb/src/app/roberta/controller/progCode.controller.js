@@ -8,14 +8,16 @@ import * as IMPORT_C from 'import.controller';
 import * as Blockly from 'blockly';
 import * as $ from 'jquery';
 import * as ACE_EDITOR from 'aceEditor';
-import { CodeToBlocksConverter } from 'codeToBlocks';
+import { CodeToBlocksConverter, ensureNqcSensorSetup } from 'codeToBlocks';
 
 const INITIAL_WIDTH = 0.5;
 var blocklyWorkspace;
+var nqcSensorSetupTimer;
 
 function init() {
     blocklyWorkspace = GUISTATE_C.getBlocklyWorkspace();
     initEvents();
+    ACE_EDITOR.setViewCodeChangeHandler(scheduleNqcSensorSetup);
 }
 
 export { init };
@@ -30,7 +32,7 @@ function initEvents() {
         'click',
         function (event) {
             var filename = GUISTATE_C.getProgramName() + '.' + GUISTATE_C.getSourceCodeFileExtension();
-            UTIL.download(filename, ACE_EDITOR.getViewCode());
+            UTIL.download(filename, prepareNqcCode());
             MSG.displayMessage('MENU_MESSAGE_DOWNLOAD', 'TOAST', filename);
         },
         'codeDownload clicked'
@@ -134,7 +136,7 @@ function initEvents() {
         'click',
         function (event) {
             event.stopPropagation();
-            PROGRUN_C.runNative(ACE_EDITOR.getViewCode());
+            PROGRUN_C.runNative(prepareNqcCode());
         },
         'code run clicked'
     );
@@ -154,6 +156,23 @@ function isNqcSource() {
     return GUISTATE_C.getSourceCodeFileExtension() === 'nqc';
 }
 
+function scheduleNqcSensorSetup() {
+    if (!isNqcSource()) return;
+    window.clearTimeout(nqcSensorSetupTimer);
+    nqcSensorSetupTimer = window.setTimeout(prepareNqcCode, 180);
+}
+
+function prepareNqcCode() {
+    const code = ACE_EDITOR.getViewCode();
+    if (!isNqcSource()) return code;
+    const normalized = ensureNqcSensorSetup(code, GUISTATE_C.getConfigurationXML());
+    if (normalized !== code) {
+        ACE_EDITOR.updateViewCodePreservingCursor(normalized);
+        GUISTATE_C.setProgramSource(normalized);
+    }
+    return normalized;
+}
+
 function updateCodeToolbarForSourceLanguage() {
     if (isNqcSource()) {
         $('#codeSynchronize').attr('title', 'NQC-Code in Blöcke übernehmen').attr('data-bs-original-title', 'NQC-Code in Blöcke übernehmen');
@@ -169,7 +188,7 @@ function updateCodeToolbarForSourceLanguage() {
  * strict NQC subset so an unfamiliar command cannot silently disappear.
  */
 function importCodeToBlocks() {
-    const code = ACE_EDITOR.getViewCode();
+    const code = prepareNqcCode();
     const converter = new CodeToBlocksConverter();
     let workspace;
     let originalProgramXml;
