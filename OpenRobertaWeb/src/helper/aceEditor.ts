@@ -24,155 +24,155 @@ const ev3devCompleter = {
                 caption: 'hal.drawText',
                 value: 'hal.drawText(text, x, y)',
                 meta: 'EV3dev Display',
-                score: 1000
+                score: 1000,
             },
             {
                 caption: 'hal.drawPicture',
                 value: 'hal.drawPicture(picture, x, y)',
                 meta: 'EV3dev Display',
-                score: 1000
+                score: 1000,
             },
             {
                 caption: 'hal.clearDisplay',
                 value: 'hal.clearDisplay()',
                 meta: 'EV3dev Display',
-                score: 1000
+                score: 1000,
             },
             // Hal timing methods
             {
                 caption: 'hal.waitFor',
                 value: 'hal.waitFor(ms)',
                 meta: 'EV3dev Timing',
-                score: 1000
+                score: 1000,
             },
             // Motor control methods
             {
                 caption: 'hal.rotateDirectionRegulated',
                 value: 'hal.rotateDirectionRegulated(port, direction, speed)',
                 meta: 'EV3dev Motor',
-                score: 1000
+                score: 1000,
             },
             {
                 caption: 'hal.rotateDirectionAngle',
                 value: 'hal.rotateDirectionAngle(port, direction, speed, angle)',
                 meta: 'EV3dev Motor',
-                score: 1000
+                score: 1000,
             },
             {
                 caption: 'hal.turnOnRegulatedMotor',
                 value: 'hal.turnOnRegulatedMotor(port, speed)',
                 meta: 'EV3dev Motor',
-                score: 1000
+                score: 1000,
             },
             {
                 caption: 'hal.setRegulatedMotorSpeed',
                 value: 'hal.setRegulatedMotorSpeed(port, speed)',
                 meta: 'EV3dev Motor',
-                score: 1000
+                score: 1000,
             },
             {
                 caption: 'hal.stopMotor',
                 value: 'hal.stopMotor(port, mode)',
                 meta: 'EV3dev Motor',
-                score: 1000
+                score: 1000,
             },
             // Sensor methods
             {
                 caption: 'hal.isKeyPressed',
                 value: 'hal.isKeyPressed(key)',
                 meta: 'EV3dev Sensor',
-                score: 1000
+                score: 1000,
             },
             {
                 caption: 'hal.isPressed',
                 value: 'hal.isPressed(port)',
                 meta: 'EV3dev Sensor',
-                score: 1000
+                score: 1000,
             },
             {
                 caption: 'hal.getUltraSonicSensorDistance',
                 value: 'hal.getUltraSonicSensorDistance(port)',
                 meta: 'EV3dev Sensor',
-                score: 1000
+                score: 1000,
             },
             {
                 caption: 'hal.getColorSensorColour',
                 value: 'hal.getColorSensorColour(port)',
                 meta: 'EV3dev Sensor',
-                score: 1000
+                score: 1000,
             },
             {
                 caption: 'hal.getColorSensorRed',
                 value: 'hal.getColorSensorRed(port)',
                 meta: 'EV3dev Sensor',
-                score: 1000
+                score: 1000,
             },
             {
                 caption: 'hal.getGyroSensorAngle',
                 value: 'hal.getGyroSensorAngle(port)',
                 meta: 'EV3dev Sensor',
-                score: 1000
+                score: 1000,
             },
             {
                 caption: 'hal.getInfraredSensorDistance',
                 value: 'hal.getInfraredSensorDistance(port)',
                 meta: 'EV3dev Sensor',
-                score: 1000
+                score: 1000,
             },
             // Sound methods
             {
                 caption: 'hal.playTone',
                 value: 'hal.playTone(frequency, duration)',
                 meta: 'EV3dev Sound',
-                score: 1000
+                score: 1000,
             },
             {
                 caption: 'hal.playFile',
                 value: 'hal.playFile(filename)',
                 meta: 'EV3dev Sound',
-                score: 1000
+                score: 1000,
             },
             // LED methods
             {
                 caption: 'hal.ledOn',
                 value: 'hal.ledOn(color, mode)',
                 meta: 'EV3dev LED',
-                score: 1000
+                score: 1000,
             },
             {
                 caption: 'hal.ledOff',
                 value: 'hal.ledOff()',
                 meta: 'EV3dev LED',
-                score: 1000
+                score: 1000,
             },
             // Common Python patterns
             {
                 caption: 'if',
                 value: 'if ${1:condition}:\n    ${2:pass}',
                 meta: 'Python',
-                score: 900
+                score: 900,
             },
             {
                 caption: 'while',
                 value: 'while ${1:condition}:\n    ${2:pass}',
                 meta: 'Python',
-                score: 900
+                score: 900,
             },
             {
                 caption: 'for',
                 value: 'for ${1:i} in range(${2:10}):\n    ${3:pass}',
                 meta: 'Python',
-                score: 900
+                score: 900,
             },
             {
                 caption: 'def',
                 value: 'def ${1:function_name}(${2:params}):\n    ${3:pass}',
                 meta: 'Python',
-                score: 900
-            }
+                score: 900,
+            },
         ];
         callback(null, completions);
-    }
+    },
 };
 
 // NQC is C-like, but its RCX commands are not part of Ace's C/C++ vocabulary.
@@ -188,13 +188,13 @@ const nqcCompleter = {
             { caption: 'SetPower', value: 'SetPower(OUT_A, NEPO_PWR(30));', meta: 'NQC ↔ Block: Motorleistung', score: 1000 },
             {
                 caption: 'OnFwd',
-                value: 'SetPower(OUT_A+OUT_C, NEPO_PWR(30));\nOnFwd(OUT_A); OnRev(OUT_C);',
+                snippet: 'SetPower(OUT_A+OUT_C, NEPO_PWR(${1:30}));\nOnFwd(OUT_A); OnRev(OUT_C);',
                 meta: 'NQC ↔ Block: Motor vorwärts',
                 score: 1000,
             },
             {
                 caption: 'OnRev',
-                value: 'SetPower(OUT_A+OUT_C, NEPO_PWR(30));\nOnRev(OUT_A); OnFwd(OUT_C);',
+                snippet: 'SetPower(OUT_A+OUT_C, NEPO_PWR(${1:30}));\nOnRev(OUT_A); OnFwd(OUT_C);',
                 meta: 'NQC ↔ Block: Motor rückwärts',
                 score: 1000,
             },
@@ -202,20 +202,20 @@ const nqcCompleter = {
             { caption: 'Float', value: 'Float(OUT_A);', meta: 'NQC ↔ Block: Motor frei auslaufen', score: 950 },
             {
                 caption: 'turn left',
-                value: 'SetPower(OUT_A+OUT_C, NEPO_PWR(30));\nOnRev(OUT_A); OnRev(OUT_C);',
+                snippet: 'SetPower(OUT_A+OUT_C, NEPO_PWR(${1:30}));\nOnRev(OUT_A); OnRev(OUT_C);',
                 meta: 'NQC ↔ Block: Links drehen (Standardkonfiguration)',
                 score: 900,
             },
             {
                 caption: 'turn right',
-                value: 'SetPower(OUT_A+OUT_C, NEPO_PWR(30));\nOnFwd(OUT_A); OnFwd(OUT_C);',
+                snippet: 'SetPower(OUT_A+OUT_C, NEPO_PWR(${1:30}));\nOnFwd(OUT_A); OnFwd(OUT_C);',
                 meta: 'NQC ↔ Block: Rechts drehen (Standardkonfiguration)',
                 score: 900,
             },
             { caption: 'Wait', value: 'Wait((500) / 10);', meta: 'NQC ↔ Block: Warten', score: 1000 },
             {
                 caption: 'PlayTone',
-                value: 'PlayTone(440, (500) / 10);\nWait((500) / 10);',
+                snippet: 'PlayTone(${1:440}, (${2:500}) / 10);\nWait((${2:500}) / 10);',
                 meta: 'NQC ↔ Block: Ton',
                 score: 1000,
             },
@@ -228,12 +228,27 @@ const nqcCompleter = {
             { caption: 'SENSOR_3', value: 'SENSOR_3', meta: 'NQC ↔ Block: Sensor an Anschluss 3', score: 900 },
             { caption: 'FastTimer', value: '(FastTimer(0) * 10)', meta: 'NQC ↔ Block: Timerwert', score: 900 },
             { caption: 'encoder degrees', value: '(SENSOR_3 * 360 / 16)', meta: 'NQC ↔ Block: Drehwinkel', score: 850 },
-            { caption: 'if', value: 'if (SENSOR_1) {\n    \n}', meta: 'NQC ↔ Block: Wenn', score: 1000 },
-            { caption: 'if … else', value: 'if (SENSOR_1) {\n    \n} else {\n    \n}', meta: 'NQC ↔ Block: Wenn / sonst', score: 1000 },
-            { caption: 'for', value: 'for (int i = 0; i < 10; i += 1) {\n    \n}', meta: 'NQC ↔ Block: Zählschleife', score: 1000 },
-            { caption: 'repeat', value: 'for (int k0 = 0; k0 < 10; k0 += 1) {\n    \n}', meta: 'NQC ↔ Block: Wiederhole n-mal', score: 950 },
-            { caption: 'while', value: 'while (SENSOR_1) {\n    \n}', meta: 'NQC ↔ Block: Solange', score: 1000 },
-            { caption: 'forever', value: 'while (true) {\n    \n}', meta: 'NQC ↔ Block: Wiederhole unendlich', score: 950 },
+            { caption: 'if', snippet: 'if (${1:SENSOR_1}) {\n\t${0}\n}', meta: 'NQC ↔ Block: Wenn', score: 1000 },
+            {
+                caption: 'if … else',
+                snippet: 'if (${1:SENSOR_1}) {\n\t${2}\n} else {\n\t${0}\n}',
+                meta: 'NQC ↔ Block: Wenn / sonst',
+                score: 1000,
+            },
+            {
+                caption: 'for',
+                snippet: 'for (int ${1:i} = ${2:0}; ${1:i} < ${3:10}; ${1:i} += ${4:1}) {\n\t${0}\n}',
+                meta: 'NQC ↔ Block: Zählschleife',
+                score: 1000,
+            },
+            {
+                caption: 'repeat',
+                snippet: 'for (int ${1:k0} = 0; ${1:k0} < ${2:10}; ${1:k0} += 1) {\n\t${0}\n}',
+                meta: 'NQC ↔ Block: Wiederhole n-mal',
+                score: 950,
+            },
+            { caption: 'while', snippet: 'while (${1:SENSOR_1}) {\n\t${0}\n}', meta: 'NQC ↔ Block: Solange', score: 1000 },
+            { caption: 'forever', snippet: 'while (true) {\n\t${0}\n}', meta: 'NQC ↔ Block: Wiederhole unendlich', score: 950 },
             { caption: 'break', value: 'break;', meta: 'NQC ↔ Block: Schleife abbrechen', score: 900 },
             { caption: 'continue', value: 'continue;', meta: 'NQC ↔ Block: Nächster Schleifendurchlauf', score: 900 },
             { caption: 'variable =', value: 'wert = 0;', meta: 'NQC ↔ Block: Variable setzen', score: 850 },
@@ -253,18 +268,18 @@ const nqcCompleter = {
             { caption: 'comment', value: '// Kommentar', meta: 'NQC: Kommentar', score: 750 },
             {
                 caption: 'wait until',
-                value: 'while (true) {\n    if (SENSOR_1) {\n        break;\n    }\n    Wait(1);\n}',
+                snippet: 'while (true) {\n\tif (${1:SENSOR_1}) {\n\t\tbreak;\n\t}\n\tWait(1);\n}',
                 meta: 'NQC ↔ Blöcke: Warte bis',
                 score: 900,
             },
             {
                 caption: 'wait with action',
-                value: 'while (true) {\n    if (SENSOR_1) {\n        Off(OUT_A+OUT_C);\n        break;\n    }\n    Wait(1);\n}',
+                snippet: 'while (true) {\n\tif (${1:SENSOR_1}) {\n\t\t${2:Off(OUT_A+OUT_C);}\n\t\tbreak;\n\t}\n\tWait(1);\n}',
                 meta: 'NQC ↔ Block: Warte mit Aktion',
                 score: 850,
             },
         ]);
-    }
+    },
 };
 
 export function init() {
@@ -276,12 +291,12 @@ export function init() {
     codeView = ace.edit('codeContent');
     applyDefaultSettings(codeView);
     codeView.setOptions({
-        readOnly: false,  // Changed from true to false to enable editing
-        highlightActiveLine: true,  // Changed from false to enable active line highlighting
-        highlightGutterLine: true,  // Changed from false to enable gutter line highlighting
-        enableBasicAutocompletion: true,  // Added for autocomplete
-        enableSnippets: true,  // Added for snippets
-        enableLiveAutocompletion: true,  // Added for live autocomplete
+        readOnly: false, // Changed from true to false to enable editing
+        highlightActiveLine: true, // Changed from false to enable active line highlighting
+        highlightGutterLine: true, // Changed from false to enable gutter line highlighting
+        enableBasicAutocompletion: true, // Added for autocomplete
+        enableSnippets: true, // Added for snippets
+        enableLiveAutocompletion: true, // Added for live autocomplete
     });
 
     // Add custom EV3dev completer to codeView as well
@@ -398,9 +413,11 @@ export function setCodeLanguage(languageFileExtension: string) {
             break;
         case 'ino':
         case 'nxc':
-        case 'nqc':
         case 'cpp':
             langToSet = 'c_cpp';
+            break;
+        case 'nqc':
+            langToSet = 'nqc';
             break;
         case 'json':
             langToSet = 'json';
@@ -408,11 +425,22 @@ export function setCodeLanguage(languageFileExtension: string) {
         default:
             langToSet = 'python';
     }
+    if (languageFileExtension === 'nqc') {
+        // The NQC mode is maintained by CodeON and needs an explicit asset
+        // version because Ace loads modes outside RequireJS.
+        // @ts-ignore Ace's bundled typings do not expose config.setModuleUrl.
+        ace.config.setModuleUrl('ace/mode/nqc', '/libs/ace/mode-nqc.js?v=rcx-nqc-editor-20260713-3');
+    }
     editor.session.setMode('ace/mode/' + langToSet);
     codeView.session.setMode('ace/mode/' + langToSet);
     previousLineCount = editor.session.getLength();
 
     currentLanguage = languageFileExtension === 'nqc' ? 'nqc' : langToSet;
+
+    if (currentLanguage === 'nqc') {
+        applyNqcCodeConventions(editor);
+        applyNqcCodeConventions(codeView);
+    }
 
     // Ace's default text completer repeats arbitrary words from the current
     // source (for example OUT_A or "Open" from the generated header). In NQC
@@ -426,6 +454,13 @@ export function setCodeLanguage(languageFileExtension: string) {
     codeView.completers = completers;
     // @ts-ignore Ace's Editor typings do not expose the completers property.
     editor.completers = completers;
+}
+
+/** NQC follows the CodeON C-style convention: four spaces and K&R braces. */
+function applyNqcCodeConventions(ed: AceAjax.Editor) {
+    ed.session.setTabSize(4);
+    ed.session.setUseSoftTabs(true);
+    ed.setBehavioursEnabled(true);
 }
 
 function applyDefaultSettings(ed: AceAjax.Editor) {

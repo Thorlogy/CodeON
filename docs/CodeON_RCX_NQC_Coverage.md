@@ -83,3 +83,7 @@ Roundtrip-Fälle und das Vorhandensein aller 43 kuratierten Vorschläge, darunte
 verschachtelte Kontrollstrukturen und Ausdrücke. Ein Fehler verändert den
 vorhandenen Blockly-Workspace nicht. Zusätzliche Assertions prüfen die
 konfigurationsabhängige, duplikatfreie und idempotente Sensorinitialisierung.
+Die mehrzeiligen Kontrollvorschläge werden außerdem als einrückbare Snippets
+geprüft. Beide Auslieferungsverzeichnisse müssen denselben eigenständigen
+NQC-Syntaxmodus enthalten; die Oberfläche erzwingt vier Leerzeichen und Soft
+Tabs.

@@ -192,3 +192,30 @@ Direkt auf `localhost:1999` verifiziert:
    unverzerrt mit 169 × 40 Pixeln dargestellt.
 3. Die geöffnete SIM-Systemansicht lädt `rcx-brick.png` mit dem Viewport
    708 × 1080 und zeigt es mit 300 × 458 Pixeln an.
+
+## 11. NQC-Einrückung, Syntaxhervorhebung und Konventionen
+
+Mehrzeilige NQC-Vorschläge werden als echte Ace-Snippets eingesetzt. Dadurch
+übernimmt jede neue Zeile die aktuelle Verschachtelungsebene; innere Blöcke
+werden zusätzlich eingerückt und schließende Klammern automatisch wieder
+ausgerückt. Dies gilt auch für mehrzeilige Motor- und Tonvorlagen.
+
+Der neue eigenständige Ace-Modus `nqc` hebt unter anderem folgende Elemente
+unterschiedlich hervor:
+
+- NQC- und Kontrollschlüsselwörter wie `task`, `if`, `for` und `while`
+- RCX-Funktionen wie `SetPower`, `OnFwd` und `SetSensor`
+- Anschlüsse, Sensorarten und Konstanten wie `OUT_A`, `SENSOR_1` und
+  `SENSOR_TOUCH`
+- Typen, Zahlen, Kommentare, Zeichenketten, Operatoren und Klammern
+
+Die verbindlichen CodeON-NQC-Konventionen sind vier Leerzeichen pro Ebene,
+keine Tabulatorzeichen und K&R-Klammern (`if (...) {`). Der NQC-Modus wird mit
+einer eigenen Asset-Version geladen und ist nicht von der vorherigen Auswahl
+einer anderen C-ähnlichen Sprache abhängig.
+
+Auf `localhost:1999` wurde sowohl eine Autovervollständigung als auch manuelle
+Klammer-Eingabe geprüft. Die Einrückung der Zeilen `task`, `if`, innere `}` und
+äußere `}` betrug dabei erwartungsgemäß 0, 4, 4 und 0 Leerzeichen. Zusätzlich
+wurden die tatsächlich erzeugten Ace-Syntaxklassen im sichtbaren Editor
+kontrolliert.
