@@ -126,6 +126,10 @@ Codeansicht geöffnet. Der Import ersetzt die bisherige Programmkette
 transaktional; schlägt Einfügen oder Verbinden fehl, wird der vorherige
 Workspace wiederhergestellt.
 
+Technisch verwendet die Seitenansicht `<>` einen eigenen Ace-Editor. Erzeugen,
+Bearbeiten, Übernehmen, Ausführen und Herunterladen greifen deshalb gezielt auf
+diesen sichtbaren Editor zu und nicht auf den separaten Quellcode-Tab.
+
 ## Bewusste Einschraenkungen
 
 Der RCX und NQC unterstuetzen nicht alle allgemeinen CodeON-Bloecke. Derzeit

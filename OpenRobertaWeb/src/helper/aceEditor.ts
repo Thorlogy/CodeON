@@ -222,6 +222,10 @@ export function init() {
     langToolsForCodeView.addCompleter(ev3devCompleter);
     langToolsForCodeView.addCompleter(nqcCompleter);
 
+    codeView.session.on('change', function () {
+        wasEdited = true;
+    });
+
     editor = ace.edit('aceEditor');
     applyDefaultSettings(editor);
     editor.setOptions({
@@ -276,6 +280,11 @@ export function setWasEditedByUser(edited: boolean) {
 
 export function getEditorCode() {
     return editor.getValue();
+}
+
+/** Return the code shown in the editable <> side panel. */
+export function getViewCode() {
+    return codeView.getValue();
 }
 
 export function setEditorCode(sourceCode: string) {

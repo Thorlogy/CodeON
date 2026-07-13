@@ -4,7 +4,7 @@
 */
 define(["require", "exports"], function (require, exports) {
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.setCodeLanguage = exports.setViewCode = exports.setEditorCode = exports.getEditorCode = exports.setWasEditedByUser = exports.getCurrentLanguage = exports.wasEditedByUser = exports.init = void 0;
+    exports.setCodeLanguage = exports.setViewCode = exports.setEditorCode = exports.getViewCode = exports.getEditorCode = exports.setWasEditedByUser = exports.getCurrentLanguage = exports.wasEditedByUser = exports.init = void 0;
     var codeView;
     var editor;
     var currentLanguage;
@@ -218,6 +218,9 @@ define(["require", "exports"], function (require, exports) {
         var langToolsForCodeView = ace.require('ace/ext/language_tools');
         langToolsForCodeView.addCompleter(ev3devCompleter);
         langToolsForCodeView.addCompleter(nqcCompleter);
+        codeView.session.on('change', function () {
+            wasEdited = true;
+        });
         editor = ace.edit('aceEditor');
         applyDefaultSettings(editor);
         editor.setOptions({
@@ -268,6 +271,11 @@ define(["require", "exports"], function (require, exports) {
         return editor.getValue();
     }
     exports.getEditorCode = getEditorCode;
+    /** Return the code shown in the editable <> side panel. */
+    function getViewCode() {
+        return codeView.getValue();
+    }
+    exports.getViewCode = getViewCode;
     function setEditorCode(sourceCode) {
         editor.setValue(sourceCode, 0);
         editor.clearSelection();

@@ -16,7 +16,7 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
         });
         $('#codeDownload').onWrap('click', function (event) {
             var filename = GUISTATE_C.getProgramName() + '.' + GUISTATE_C.getSourceCodeFileExtension();
-            UTIL.download(filename, ACE_EDITOR.getEditorCode());
+            UTIL.download(filename, ACE_EDITOR.getViewCode());
             MSG.displayMessage('MENU_MESSAGE_DOWNLOAD', 'TOAST', filename);
         }, 'codeDownload clicked');
         $('#codeRefresh').onWrap('click', function (event) {
@@ -33,7 +33,7 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
                 PROG_C.reloadProgram(result, true);
                 if (result.rc == 'ok') {
                     GUISTATE_C.setState(result);
-                    ACE_EDITOR.setEditorCode(result.sourceCode);
+                    ACE_EDITOR.setViewCode(result.sourceCode);
                     GUISTATE_C.setProgramSource(result.sourceCode);
                     ACE_EDITOR.setWasEditedByUser(false);
                 }
@@ -60,7 +60,7 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
                 PROG_C.reloadProgram(result, true);
                 if (result.rc == 'ok') {
                     GUISTATE_C.setState(result);
-                    ACE_EDITOR.setEditorCode(result.sourceCode);
+                    ACE_EDITOR.setViewCode(result.sourceCode);
                     GUISTATE_C.setProgramSource(result.sourceCode);
                     ACE_EDITOR.setWasEditedByUser(false);
                 }
@@ -73,14 +73,14 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
         $('#codeUpload').onWrap('click', function (event) {
             event.stopPropagation();
             IMPORT_C.importSourceCode(function (name, source) {
-                ACE_EDITOR.setEditorCode(source);
+                ACE_EDITOR.setViewCode(source);
                 ACE_EDITOR.setWasEditedByUser(true);
             });
         }, 'code upload clicked');
         // Run button - execute the code
         $('#codeRun').onWrap('click', function (event) {
             event.stopPropagation();
-            PROGRUN_C.runNative(ACE_EDITOR.getEditorCode());
+            PROGRUN_C.runNative(ACE_EDITOR.getViewCode());
         }, 'code run clicked');
         // Import to Blocks button - convert source code back to blocks.
         $('#codeImportToBlocks').onWrap('click', function (event) {
@@ -106,7 +106,7 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
      * strict NQC subset so an unfamiliar command cannot silently disappear.
      */
     function importCodeToBlocks() {
-        var code = ACE_EDITOR.getEditorCode();
+        var code = ACE_EDITOR.getViewCode();
         var converter = new codeToBlocks_1.CodeToBlocksConverter();
         var workspace;
         var originalProgramXml;
@@ -218,7 +218,7 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
                 PROG_C.reloadProgram(result);
                 if (result.rc == 'ok') {
                     GUISTATE_C.setState(result);
-                    ACE_EDITOR.setEditorCode(result.sourceCode);
+                    ACE_EDITOR.setViewCode(result.sourceCode);
                     ACE_EDITOR.setWasEditedByUser(false);
                     // TODO change javaSource to source on server
                     GUISTATE_C.setProgramSource(result.sourceCode);

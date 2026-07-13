@@ -30,7 +30,7 @@ function initEvents() {
         'click',
         function (event) {
             var filename = GUISTATE_C.getProgramName() + '.' + GUISTATE_C.getSourceCodeFileExtension();
-            UTIL.download(filename, ACE_EDITOR.getEditorCode());
+            UTIL.download(filename, ACE_EDITOR.getViewCode());
             MSG.displayMessage('MENU_MESSAGE_DOWNLOAD', 'TOAST', filename);
         },
         'codeDownload clicked'
@@ -62,7 +62,7 @@ function initEvents() {
                     PROG_C.reloadProgram(result, true);
                     if (result.rc == 'ok') {
                         GUISTATE_C.setState(result);
-                        ACE_EDITOR.setEditorCode(result.sourceCode);
+                        ACE_EDITOR.setViewCode(result.sourceCode);
                         GUISTATE_C.setProgramSource(result.sourceCode);
                         ACE_EDITOR.setWasEditedByUser(false);
                     } else {
@@ -104,7 +104,7 @@ function initEvents() {
                     PROG_C.reloadProgram(result, true);
                     if (result.rc == 'ok') {
                         GUISTATE_C.setState(result);
-                        ACE_EDITOR.setEditorCode(result.sourceCode);
+                        ACE_EDITOR.setViewCode(result.sourceCode);
                         GUISTATE_C.setProgramSource(result.sourceCode);
                         ACE_EDITOR.setWasEditedByUser(false);
                     } else {
@@ -122,7 +122,7 @@ function initEvents() {
         function (event) {
             event.stopPropagation();
             IMPORT_C.importSourceCode(function (name, source) {
-                ACE_EDITOR.setEditorCode(source);
+                ACE_EDITOR.setViewCode(source);
                 ACE_EDITOR.setWasEditedByUser(true);
             });
         },
@@ -134,7 +134,7 @@ function initEvents() {
         'click',
         function (event) {
             event.stopPropagation();
-            PROGRUN_C.runNative(ACE_EDITOR.getEditorCode());
+            PROGRUN_C.runNative(ACE_EDITOR.getViewCode());
         },
         'code run clicked'
     );
@@ -169,7 +169,7 @@ function updateCodeToolbarForSourceLanguage() {
  * strict NQC subset so an unfamiliar command cannot silently disappear.
  */
 function importCodeToBlocks() {
-    const code = ACE_EDITOR.getEditorCode();
+    const code = ACE_EDITOR.getViewCode();
     const converter = new CodeToBlocksConverter();
     let workspace;
     let originalProgramXml;
@@ -296,7 +296,7 @@ function toggleCode($button) {
                 PROG_C.reloadProgram(result);
                 if (result.rc == 'ok') {
                     GUISTATE_C.setState(result);
-                    ACE_EDITOR.setEditorCode(result.sourceCode);
+                    ACE_EDITOR.setViewCode(result.sourceCode);
                     ACE_EDITOR.setWasEditedByUser(false);
                     // TODO change javaSource to source on server
                     GUISTATE_C.setProgramSource(result.sourceCode);
