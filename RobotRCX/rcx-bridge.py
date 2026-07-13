@@ -42,7 +42,7 @@ BRIDGE_PORT = 2222
 MAX_REQUEST_BYTES = 1024 * 1024
 MAX_PROGRAM_BYTES = 256 * 1024
 PROGRAM_TRANSFER_TIMEOUT_SECONDS = 20
-FIRMWARE_TRANSFER_TIMEOUT_SECONDS = 300
+FIRMWARE_TRANSFER_TIMEOUT_SECONDS = 600
 
 # Reihenfolge der Kandidaten, wo nqc gesucht wird. Der erste Treffer gewinnt.
 # 1. Umgebungsvariable NQC_PATH (falls gesetzt)
