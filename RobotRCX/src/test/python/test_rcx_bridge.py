@@ -69,6 +69,13 @@ class RcxBridgeTest(unittest.TestCase):
             ["/usr/bin/nqc", "-S/test-tower", "-firmware", "/tmp/FIRM0332.LGO"],
             run.call_args.args[0],
         )
+        self.assertEqual(
+            RCX_BRIDGE.FIRMWARE_TRANSFER_TIMEOUT_SECONDS,
+            run.call_args.kwargs["timeout"],
+        )
+
+    def test_firmware_timeout_allows_slow_ir_transfer(self):
+        self.assertGreaterEqual(RCX_BRIDGE.FIRMWARE_TRANSFER_TIMEOUT_SECONDS, 300)
 
     def test_status_explains_missing_optional_and_required_components(self):
         with patch.object(RCX_BRIDGE, "find_nqc", return_value=None), \

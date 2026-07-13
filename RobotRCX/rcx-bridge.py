@@ -41,6 +41,8 @@ from urllib.parse import urlsplit
 BRIDGE_PORT = 2222
 MAX_REQUEST_BYTES = 1024 * 1024
 MAX_PROGRAM_BYTES = 256 * 1024
+PROGRAM_TRANSFER_TIMEOUT_SECONDS = 20
+FIRMWARE_TRANSFER_TIMEOUT_SECONDS = 300
 
 # Reihenfolge der Kandidaten, wo nqc gesucht wird. Der erste Treffer gewinnt.
 # 1. Umgebungsvariable NQC_PATH (falls gesetzt)
@@ -131,7 +133,7 @@ def transfer_rcx(rcx_bytes, program_slot=1, run_after=False):
         # Popen verwenden, um den Prozess bei Timeout sauber beenden zu koennen
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         try:
-            stdout_bytes, stderr_bytes = proc.communicate(timeout=20)
+            stdout_bytes, stderr_bytes = proc.communicate(timeout=PROGRAM_TRANSFER_TIMEOUT_SECONDS)
             returncode = proc.returncode
             out = (stdout_bytes or b"").decode("utf-8", errors="replace") + (stderr_bytes or b"").decode("utf-8", errors="replace")
         except subprocess.TimeoutExpired:
@@ -200,13 +202,16 @@ def install_firmware():
     cmd = [nqc] + nqc_serial_args() + ["-firmware", firmware]
     try:
         print("[RCX-Bridge] Installing firmware:", " ".join(cmd))
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=FIRMWARE_TRANSFER_TIMEOUT_SECONDS)
         out = ((proc.stdout or "") + (proc.stderr or "")).strip()
         if proc.returncode == 0:
             return True, "Firmware erfolgreich auf den RCX übertragen." + ("\n" + out if out else "")
         return False, "Firmwareübertragung fehlgeschlagen (nqc-Code %d).\n%s" % (proc.returncode, out)
     except subprocess.TimeoutExpired:
-        return False, "Zeitüberschreitung bei der Firmwareübertragung."
+        return False, (
+            "Zeitüberschreitung bei der Firmwareübertragung nach %d Sekunden."
+            % FIRMWARE_TRANSFER_TIMEOUT_SECONDS
+        )
     except Exception as e:
         return False, "Interner Fehler bei der Firmwareübertragung: %s" % e
 
