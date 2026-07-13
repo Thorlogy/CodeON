@@ -106,39 +106,45 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
         var code = ACE_EDITOR.getEditorCode();
         var converter = new codeToBlocks_1.CodeToBlocksConverter();
         try {
+            // The program workspace is replaced when another robot or program is
+            // loaded. Do not use the reference captured during controller startup.
+            var workspace_1 = GUISTATE_C.getBlocklyWorkspace();
+            if (!workspace_1) {
+                throw new Error('Der aktuelle Programmbereich wurde nicht gefunden. Die Blöcke wurden nicht verändert.');
+            }
             var isNqc = isNqcSource();
             var xml = isNqc ? converter.convertNqcToXML(code, GUISTATE_C.getConfigurationXML()) : converter.convertToXML(code);
-            var dom = Blockly.Xml.textToDom(xml, blocklyWorkspace);
+            var dom = Blockly.Xml.textToDom(xml, workspace_1);
             // Validate the source before touching the workspace. Keep the mandatory
             // start block and replace only its following program chain.
-            var startBlock_1 = blocklyWorkspace.getAllBlocks().find(function (block) { return block.type === 'robControls_start'; });
+            var startBlock_1 = workspace_1.getAllBlocks().find(function (block) { return block.type === 'robControls_start'; });
             if (!startBlock_1) {
                 throw new Error('Der Startblock wurde nicht gefunden. Die Blöcke wurden nicht verändert.');
             }
             if (startBlock_1.nextConnection && startBlock_1.nextConnection.isConnected()) {
                 startBlock_1.nextConnection.disconnect();
             }
-            var blocksToDispose = blocklyWorkspace.getTopBlocks(false).filter(function (block) { return block !== startBlock_1; });
+            var blocksToDispose = workspace_1.getTopBlocks(false).filter(function (block) { return block !== startBlock_1; });
             blocksToDispose.forEach(function (block) { return block.dispose(false); });
-            Blockly.Xml.domToWorkspace(dom, blocklyWorkspace);
-            var importedBlock = blocklyWorkspace.getTopBlocks(false).find(function (block) { return block !== startBlock_1; });
+            Blockly.Xml.domToWorkspace(dom, workspace_1);
+            var importedBlock = workspace_1.getTopBlocks(false).find(function (block) { return block !== startBlock_1; });
             if (!importedBlock || !startBlock_1.nextConnection || !importedBlock.previousConnection) {
                 throw new Error('Die importierten Blöcke konnten nicht mit dem Startblock verbunden werden.');
             }
             startBlock_1.nextConnection.connect(importedBlock.previousConnection);
-            var updatedDom = Blockly.Xml.workspaceToDom(blocklyWorkspace);
+            var updatedDom = Blockly.Xml.workspaceToDom(workspace_1);
             GUISTATE_C.setProgramXML(Blockly.Xml.domToText(updatedDom));
             GUISTATE_C.setProgramSaved(false);
             startBlock_1.render();
             importedBlock.render();
-            Blockly.svgResize(blocklyWorkspace);
+            Blockly.svgResize(workspace_1);
             // Reset edit flag
             ACE_EDITOR.setWasEditedByUser(false);
             // Show success message
             MSG.displayMessage('CODE_TO_BLOCKS_SUCCESS', 'TOAST', '');
             // Close code panel and resize Blockly after the animation changed widths.
             $('#blocklyDiv').closeRightView(function () {
-                Blockly.svgResize(blocklyWorkspace);
+                Blockly.svgResize(workspace_1);
             });
         }
         catch (error) {

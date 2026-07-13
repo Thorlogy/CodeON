@@ -170,35 +170,41 @@ function importCodeToBlocks() {
     const converter = new CodeToBlocksConverter();
 
     try {
+        // The program workspace is replaced when another robot or program is
+        // loaded. Do not use the reference captured during controller startup.
+        const workspace = GUISTATE_C.getBlocklyWorkspace();
+        if (!workspace) {
+            throw new Error('Der aktuelle Programmbereich wurde nicht gefunden. Die Blöcke wurden nicht verändert.');
+        }
         const isNqc = isNqcSource();
         const xml = isNqc ? converter.convertNqcToXML(code, GUISTATE_C.getConfigurationXML()) : converter.convertToXML(code);
-        const dom = Blockly.Xml.textToDom(xml, blocklyWorkspace);
+        const dom = Blockly.Xml.textToDom(xml, workspace);
 
         // Validate the source before touching the workspace. Keep the mandatory
         // start block and replace only its following program chain.
-        const startBlock = blocklyWorkspace.getAllBlocks().find((block) => block.type === 'robControls_start');
+        const startBlock = workspace.getAllBlocks().find((block) => block.type === 'robControls_start');
         if (!startBlock) {
             throw new Error('Der Startblock wurde nicht gefunden. Die Blöcke wurden nicht verändert.');
         }
         if (startBlock.nextConnection && startBlock.nextConnection.isConnected()) {
             startBlock.nextConnection.disconnect();
         }
-        const blocksToDispose = blocklyWorkspace.getTopBlocks(false).filter((block) => block !== startBlock);
+        const blocksToDispose = workspace.getTopBlocks(false).filter((block) => block !== startBlock);
         blocksToDispose.forEach((block) => block.dispose(false));
-        Blockly.Xml.domToWorkspace(dom, blocklyWorkspace);
+        Blockly.Xml.domToWorkspace(dom, workspace);
 
-        const importedBlock = blocklyWorkspace.getTopBlocks(false).find((block) => block !== startBlock);
+        const importedBlock = workspace.getTopBlocks(false).find((block) => block !== startBlock);
         if (!importedBlock || !startBlock.nextConnection || !importedBlock.previousConnection) {
             throw new Error('Die importierten Blöcke konnten nicht mit dem Startblock verbunden werden.');
         }
         startBlock.nextConnection.connect(importedBlock.previousConnection);
 
-        const updatedDom = Blockly.Xml.workspaceToDom(blocklyWorkspace);
+        const updatedDom = Blockly.Xml.workspaceToDom(workspace);
         GUISTATE_C.setProgramXML(Blockly.Xml.domToText(updatedDom));
         GUISTATE_C.setProgramSaved(false);
         startBlock.render();
         importedBlock.render();
-        Blockly.svgResize(blocklyWorkspace);
+        Blockly.svgResize(workspace);
 
         // Reset edit flag
         ACE_EDITOR.setWasEditedByUser(false);
@@ -208,7 +214,7 @@ function importCodeToBlocks() {
 
         // Close code panel and resize Blockly after the animation changed widths.
         $('#blocklyDiv').closeRightView(function () {
-            Blockly.svgResize(blocklyWorkspace);
+            Blockly.svgResize(workspace);
         });
     } catch (error) {
         console.error('Code to blocks conversion error:', error);
