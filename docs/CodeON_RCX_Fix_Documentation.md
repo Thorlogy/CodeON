@@ -115,7 +115,7 @@ Auf `localhost:1999` wurde folgender Roundtrip geprüft:
 
 Da der vom Benutzer beobachtete alte Ablauf (keine Blockänderung, Fenster
 schließt) exakt zu einem zwischengespeicherten älteren Controller passt, besitzt
-die Startseite nun die Web-Version `rcx-nqc-firmware-20260713`. RequireJS hängt sie
+die Startseite nun die Web-Version `rcx-nqc-control-coverage-20260713`. RequireJS hängt sie
 an alle Webmodule an und lädt nach einem Seiten-Reload garantiert die aktuelle
 NQC-Adapterschicht.
 
@@ -127,21 +127,24 @@ automatisch aus dem Dokument gelesenen Wörtern. Dadurch wirkten beispielsweise
 lokale Wort-Vervollständiger nun deaktiviert.
 
 Die verbleibenden Einträge tragen die Kennzeichnung `NQC ↔ Block` und besitzen
-alle einen geprüften grafischen Rückweg: `SetPower`, `OnFwd`, `OnRev`, `Off`,
-`Wait`, `PlayTone`, `SetUserDisplay`, `SelectDisplay`, `ClearTimer`,
-`ClearSensor` und `while`. Die Adapterschicht erkennt nun verschachtelte
-Klammern und übernimmt `while (true) { ... }` als grafischen
-**wiederhole unendlich**-Block einschließlich seines Inhalts. Nicht grafisch repräsentierte Initialisierungsbefehle wie
-`SetSensor` werden nicht mehr aktiv vorgeschlagen.
+einen geprüften grafischen Rückweg. Neben den RCX-Aktionen gehören dazu nun
+`if`, `if ... else`, `for`, bedingtes `while`, Wiederholungen, `break`,
+`continue`, Variablen, Sensorwerte sowie Logik- und Mathematikausdrücke. Die
+Adapterschicht erkennt verschachtelte runde und geschweifte Klammern und baut
+daraus verschachtelte Blockly-Strukturen. Nicht grafisch repräsentierte
+Initialisierungsbefehle wie `SetSensor` werden weiterhin nicht aktiv
+vorgeschlagen.
 
 Für `SetPower` wurde die RCX-Expert-Toolbox um
 `robActions_motor_setPower` erweitert. Der Importer bewahrt außerdem
 `Float(...)` verlustfrei als einzelne Motor-Stopp-Blöcke mit dem Modus
 `FLOAT`, falls solcher nativer Code manuell eingegeben wird.
 
-Der neue Test `OpenRobertaWeb/test/codeToBlocks.roundtrip.test.js` führt dreizehn
-Abnahmen aus: elf Vorschläge, wiederholte Motoraktionen mit fortbestehender
-Leistung und einen bewusst fehlerhaften unvollständigen Differentialbefehl.
+Der Test `OpenRobertaWeb/test/codeToBlocks.roundtrip.test.js` führt jetzt 23
+Abnahmen aus und kontrolliert zusätzlich alle 43 kuratierten Vorschläge. Er
+prüft neben Aktionen auch Kontrollstrukturen, verschachtelte Logik, Mathematik,
+Sensorwerte, Kommentare, Warteblöcke, fortbestehende Motorleistung und einen
+bewusst fehlerhaften Differentialbefehl.
 
 ## 9. Optionale Firmwareübertragung vor dem Programm
 

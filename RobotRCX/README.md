@@ -140,12 +140,19 @@ grafischer Rückweg existiert. Beliebige Wörter aus dem aktuellen Quelltext
 (`OUT_A`, `Open` usw.) werden nicht mehr als scheinbare NQC-Befehle angeboten.
 Alle Einträge sind in der Vorschlagsliste mit `NQC ↔ Block` gekennzeichnet.
 
-Abgedeckt sind `SetPower`, `OnFwd`, `OnRev`, `Off`, `Wait`, `PlayTone`,
-`SetUserDisplay`, `SelectDisplay`, `ClearTimer`, `ClearSensor` und `while`.
-`while (true) { ... }` wird als grafischer **wiederhole unendlich**-Block mit
-seinen enthaltenen Aktionen übernommen. Die
-eingefügten Motor- und Ton-Vorlagen enthalten jeweils alle NQC-Zeilen, die für
-die semantisch entsprechende grafische Aktion erforderlich sind.
+Abgedeckt sind die Aktionen, Sensorwerte, Kontrollstrukturen, Logik- und
+Mathematikausdrücke der festen RCX-Toolbox. Insbesondere werden nun `if`,
+`if ... else`, bedingtes `while`, `for`, Wiederholungen, `break`, `continue`,
+Variablenzuweisungen und die vom Generator erzeugten Warte-Schleifen wieder in
+grafische Blöcke übersetzt. Sensoranschlüsse werden anhand der aktuellen
+Roboterkonfiguration als Berührungs-, Licht-, Dreh- oder Temperatursensor
+rekonstruiert.
+
+Die Vorschlagsliste enthält sowohl vollständige Anweisungen als auch
+Ausdrucksvorlagen, die innerhalb einer Bedingung oder Zuweisung eingesetzt
+werden. Wertblöcke wie Vergleiche oder Rechenoperationen sind in NQC keine
+eigenständigen Anweisungen; sie werden deshalb an der Cursorposition eingefügt.
+Die vollständige Zuordnung steht in `docs/CodeON_RCX_NQC_Coverage.md`.
 
 Die Expert-Toolbox enthält zusätzlich den Block **Motorleistung setzen**
 (`robActions_motor_setPower`). Ein einzelnes `SetPower` wird deshalb nicht mehr
@@ -191,7 +198,7 @@ diesen sichtbaren Editor zu und nicht auf den separaten Quellcode-Tab.
 
 Damit Browser nach einem lokalen Update nicht weiter eine ältere Version dieser
 Adapterschicht aus dem Cache verwenden, trägt die Startseite die Web-Version
-`rcx-nqc-firmware-20260713` ein. RequireJS hängt diese Version an alle geladenen
+`rcx-nqc-control-coverage-20260713` ein. RequireJS hängt diese Version an alle geladenen
 Module an. Nach einem Update genügt dadurch ein normales Neuladen der Seite;
 der aktuelle Controller für „NQC-Code in Blöcke übernehmen“ wird neu geladen.
 

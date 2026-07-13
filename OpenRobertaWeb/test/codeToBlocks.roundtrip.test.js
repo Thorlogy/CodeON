@@ -63,6 +63,52 @@ const cases = [
         'while (true) {\nWait((500) / 10);\nOff(OUT_A+OUT_C);\n}',
         ['robControls_loopForever', '<statement name="DO">', 'robControls_wait_time', 'robActions_motorDiff_stop'],
     ],
+    ['if', 'if (SENSOR_1) {\nOff(OUT_A+OUT_C);\n}', ['robControls_if', 'robSensors_touch_getSample', '<statement name="DO0">']],
+    [
+        'if else',
+        'if (SENSOR_1 == true) {\nOff(OUT_A+OUT_C);\n} else {\nWait((100) / 10);\n}',
+        ['robControls_ifElse', '<mutation else="1"></mutation>', '<repetitions>', 'logic_compare', '<statement name="ELSE">'],
+    ],
+    [
+        'while condition',
+        'while (SENSOR_1) {\nWait((100) / 10);\n}',
+        ['controls_whileUntil', '<field name="MODE">WHILE</field>', 'robSensors_touch_getSample'],
+    ],
+    [
+        'for',
+        'for (int i = 0; i < 10; i += 1) {\nWait((100) / 10);\n}',
+        ['robControls_for', '<field name="VAR">i</field>', '<value name="FROM">', '<value name="TO">', '<value name="BY">'],
+    ],
+    [
+        'repeat',
+        'for (int k0 = 0; k0 < 5; k0 += 1) {\nOff(OUT_A+OUT_C);\n}',
+        ['controls_repeat_ext', '<value name="TIMES">', '<field name="NUM">5</field>'],
+    ],
+    [
+        'flow statements',
+        'while (true) {\nif (SENSOR_1) { break; }\ncontinue;\n}',
+        ['controls_flow_statements', '<field name="FLOW">BREAK</field>', '<field name="FLOW">CONTINUE</field>'],
+    ],
+    [
+        'logic and arithmetic expressions',
+        'if ((SENSOR_2 > 20) && !(SENSOR_1 == true)) {\nwert = (3 + 4) * 2;\nwert += 1;\n}',
+        ['logic_operation', 'logic_compare', 'logic_negate', 'math_arithmetic', 'variables_set', 'robMath_change'],
+    ],
+    [
+        'wait until',
+        'while (true) {\nif (SENSOR_1) {\nbreak;\n}\nWait(1);\n}',
+        ['robControls_wait_for', '<value name="WAIT0">', 'robSensors_touch_getSample'],
+    ],
+    [
+        'sensors and math functions',
+        'timer = (FastTimer(0) * 10);\nangle = (SENSOR_3 * 360 / 16);\nlimited = MIN(MAX(timer, 1), 100);\nrandomValue = Random((100) - (1)) + (1);',
+        ['robSensors_timer_getSample', 'robSensors_encoder_getSample', 'math_constrain', 'math_random_int'],
+    ],
+    [
+        'ternary and comment',
+        '// Entscheidung\nwert = (SENSOR_1 ? 1 : 0);',
+        ['text_comment', '<field name="TEXT">Entscheidung</field>', 'logic_ternary', '<value name="THEN">', '<value name="ELSE">'],
+    ],
 ];
 
 for (const [name, source, expectedFragments] of cases) {
@@ -83,4 +129,54 @@ assert.throws(
     'partial differential direction must not silently change the program'
 );
 
-console.log(`NQC roundtrip coverage: ${cases.length + 2} cases passed`);
+const aceSource = fs.readFileSync(path.join(__dirname, '../src/helper/aceEditor.ts'), 'utf8');
+const expectedCaptions = [
+    'SetPower',
+    'OnFwd',
+    'OnRev',
+    'Off',
+    'Float',
+    'turn left',
+    'turn right',
+    'Wait',
+    'PlayTone',
+    'SetUserDisplay',
+    'SelectDisplay',
+    'ClearTimer',
+    'ClearSensor',
+    'SENSOR_1',
+    'SENSOR_2',
+    'SENSOR_3',
+    'FastTimer',
+    'encoder degrees',
+    'if',
+    'if … else',
+    'for',
+    'repeat',
+    'while',
+    'forever',
+    'break',
+    'continue',
+    'variable =',
+    'variable +=',
+    'true',
+    'false',
+    'null',
+    'ternary',
+    'logic AND',
+    'logic OR',
+    'logic NOT',
+    'compare',
+    'arithmetic',
+    'modulo',
+    'constrain',
+    'Random',
+    'comment',
+    'wait until',
+    'wait with action',
+];
+for (const caption of expectedCaptions) {
+    assert(aceSource.includes(`caption: '${caption}'`), `missing NQC completion: ${caption}`);
+}
+
+console.log(`NQC roundtrip coverage: ${cases.length + 2} cases passed; ${expectedCaptions.length} curated proposals present`);
