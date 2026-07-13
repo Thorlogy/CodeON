@@ -34,6 +34,40 @@ Im entpackten Ordner ausführen:
 ./start-codeon-rcx.sh
 ```
 
+## 2a. Beim nächsten Mal denselben stabilen Stand starten
+
+Starte immer den CodeON-Ordner, in dem diese Dateien und Ordner direkt
+nebeneinander liegen:
+
+```text
+CodeON-RCX-starten.command
+start-codeon-rcx.sh
+start-codeon-rcx.py
+OpenRobertaServer/
+RobotRCX/
+```
+
+Auf diesem Laptop ist das der aktuelle CodeON-Arbeitsordner. Nicht den alten
+`application`-Ordner separat starten.
+
+Am einfachsten:
+
+1. Diesen CodeON-Ordner im Finder öffnen.
+2. `CodeON-RCX-starten.command` doppelt anklicken.
+3. Das Terminalfenster offen lassen.
+4. Im Browser `http://127.0.0.1:1999/` öffnen.
+
+Wenn im Terminal `RCX-Bridge läuft: http://127.0.0.1:2222` und
+`CodeON läuft bereits: http://localhost:1999` oder `[LÄUFT] CodeON-Server`
+steht, laufen CodeON und die RCX-Bridge aus dem richtigen Stand.
+
+Alternativ im Terminal:
+
+```bash
+cd /pfad/zum/CodeON-Ordner
+./start-codeon-rcx.sh
+```
+
 ## 3. Hinweise des Startassistenten beachten
 
 Der Assistent zeigt für jede Komponente einen verständlichen Zustand:
