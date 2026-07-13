@@ -266,8 +266,13 @@ export class CodeToBlocksConverter {
     convertNqcToXML(nqcCode: string, configurationXml?: string): string {
         const statements = this.getNqcStatements(nqcCode);
         const blocks: BlockDefinition[] = [];
-        const powerByPort: { [port: string]: number } = {};
-        const directionByPowerPort: { [powerPort: string]: { [port: string]: boolean } } = {};
+        const powerStateByPort: {
+            [port: string]: { group: string; ports: string[]; power: number };
+        } = {};
+        // NQC keeps SetPower active until it is changed. Directions are only
+        // pending for one graphical action; the associated power state persists.
+        const pendingDirectionsByGroup: { [group: string]: { [port: string]: boolean } } = {};
+        const pendingPowerGroups: { [group: string]: boolean } = {};
         const motorConfiguration = this.getNqcMotorConfiguration(configurationXml);
 
         for (let index = 0; index < statements.length; index++) {
@@ -275,32 +280,48 @@ export class CodeToBlocksConverter {
             let match: RegExpMatchArray | null;
 
             if ((match = statement.text.match(/^SetPower\((OUT_[ABC](?:\+OUT_[ABC])?),\s*NEPO_PWR\((-?\d+)\)\)$/))) {
-                powerByPort[match[1]] = Number(match[2]);
+                const ports = this.outputPorts(match[1]);
+                const group = ports.slice().sort().join('+');
+                const powerState = { group, ports, power: Number(match[2]) };
+                ports.forEach((port) => (powerStateByPort[port] = powerState));
+                pendingDirectionsByGroup[group] = {};
+                pendingPowerGroups[group] = true;
                 continue;
             }
 
             if ((match = statement.text.match(/^On(Fwd|Rev)\((OUT_[ABC](?:\+OUT_[ABC])?)\)$/))) {
                 const electricalForward = match[1] === 'Fwd';
-                const port = match[2];
-                const powerPort =
-                    powerByPort[port] !== undefined ? port : Object.keys(powerByPort).find((candidate) => this.outputPorts(candidate).indexOf(port) >= 0);
-                const power = powerPort === undefined ? undefined : powerByPort[powerPort];
-                if (power === undefined) {
+                const commandPorts = this.outputPorts(match[2]);
+                const powerStates = commandPorts.map((port) => powerStateByPort[port]);
+                if (powerStates.some((state) => state === undefined)) {
                     throw new NqcConversionError(statement.line, statement.text, 'SetPower mit gleichem Motoranschluss fehlt');
                 }
-                const poweredPorts = this.outputPorts(powerPort);
-                const directions = directionByPowerPort[powerPort] || {};
-                this.outputPorts(port).forEach((outputPort) => {
+                const powerState = powerStates[0];
+                if (powerStates.some((state) => state.group !== powerState.group)) {
+                    throw new NqcConversionError(
+                        statement.line,
+                        statement.text,
+                        'Motoranschlüsse gehören zu unterschiedlichen SetPower-Gruppen'
+                    );
+                }
+                const directions = pendingDirectionsByGroup[powerState.group] || {};
+                commandPorts.forEach((outputPort) => {
+                    const poweredPorts = powerState.ports;
                     if (poweredPorts.indexOf(outputPort) < 0) {
-                        throw new NqcConversionError(statement.line, statement.text, `Motoranschluss ${outputPort} ist nicht in ${powerPort} enthalten`);
+                        throw new NqcConversionError(
+                            statement.line,
+                            statement.text,
+                            `Motoranschluss ${outputPort} ist nicht in ${powerState.group} enthalten`
+                        );
                     }
                     directions[outputPort] = electricalForward;
                 });
-                directionByPowerPort[powerPort] = directions;
+                pendingDirectionsByGroup[powerState.group] = directions;
 
-                if (poweredPorts.every((outputPort) => directions[outputPort] !== undefined)) {
-                    delete powerByPort[powerPort];
-                    delete directionByPowerPort[powerPort];
+                if (powerState.ports.every((outputPort) => directions[outputPort] !== undefined)) {
+                    delete pendingDirectionsByGroup[powerState.group];
+                    delete pendingPowerGroups[powerState.group];
+                    const poweredPorts = powerState.ports;
                     if (poweredPorts.length === 1) {
                         const motor = motorConfiguration.find((candidate) => candidate.port === poweredPorts[0].substring(4));
                         const logicalForward = directions[poweredPorts[0]] !== (motor ? motor.reversed : false);
@@ -311,9 +332,11 @@ export class CodeToBlocksConverter {
                                 'Rückwärtslauf eines einzelnen Motors kann nicht eindeutig in einen Block übersetzt werden'
                             );
                         }
-                        blocks.push(this.singleMotorBlock(poweredPorts[0].substring(4), power));
+                        blocks.push(this.singleMotorBlock(poweredPorts[0].substring(4), powerState.power));
                     } else {
-                        blocks.push(this.differentialMotorBlock(poweredPorts, directions, power, motorConfiguration, statement));
+                        blocks.push(
+                            this.differentialMotorBlock(poweredPorts, directions, powerState.power, motorConfiguration, statement)
+                        );
                     }
                 }
                 continue;
@@ -362,8 +385,11 @@ export class CodeToBlocksConverter {
             throw new NqcConversionError(statement.line, statement.text, 'nicht unterstützte NQC-Anweisung');
         }
 
-        if (Object.keys(powerByPort).length > 0) {
+        if (Object.keys(pendingPowerGroups).length > 0) {
             throw new Error('NQC enthält SetPower ohne nachfolgendes OnFwd oder OnRev. Die Blöcke wurden nicht verändert.');
+        }
+        if (Object.keys(pendingDirectionsByGroup).some((group) => Object.keys(pendingDirectionsByGroup[group]).length > 0)) {
+            throw new Error('NQC enthält unvollständige Motor-Richtungsbefehle. Die Blöcke wurden nicht verändert.');
         }
         if (blocks.length === 0) {
             throw new Error('Im task main wurden keine in Blöcke übersetzbaren NQC-Anweisungen gefunden.');

@@ -117,6 +117,21 @@ können auch getrennte Richtungsbefehle wie
 `OnFwd(OUT_A); OnRev(OUT_C);` wieder eindeutig als Fahren oder Drehen in
 Programmblöcke übersetzt werden.
 
+`SetPower` wird dabei wie auf dem echten RCX als **anhaltender Motorzustand**
+behandelt. Die Leistung bleibt pro Motorgruppe gespeichert, bis ein neues
+`SetPower` diese Gruppe ändert. Deshalb können nach einer einmaligen
+Leistungsangabe mehrere Richtungszeilen folgen:
+
+```nqc
+SetPower(OUT_A+OUT_C, NEPO_PWR(30));
+OnFwd(OUT_A); OnRev(OUT_C);
+OnFwd(OUT_A); OnRev(OUT_C);
+```
+
+Diese Folge erzeugt zwei grafische Fahrblöcke mit Tempo 30. Unvollständige
+Richtungsgruppen – beispielsweise nur ein Befehl für Motor A, obwohl A und C
+gemeinsam mit Leistung versorgt wurden – werden weiterhin abgewiesen.
+
 Nicht unterstützte oder unvollständige NQC-Folgen werden weiterhin mit einer
 Fehlermeldung abgewiesen, bevor vorhandene Programmblöcke verändert werden.
 
@@ -132,7 +147,7 @@ diesen sichtbaren Editor zu und nicht auf den separaten Quellcode-Tab.
 
 Damit Browser nach einem lokalen Update nicht weiter eine ältere Version dieser
 Adapterschicht aus dem Cache verwenden, trägt die Startseite die Web-Version
-`rcx-roundtrip-20260713` ein. RequireJS hängt diese Version an alle geladenen
+`rcx-stateful-nqc-20260713` ein. RequireJS hängt diese Version an alle geladenen
 Module an. Nach einem Update genügt dadurch ein normales Neuladen der Seite;
 der aktuelle Controller für „NQC-Code in Blöcke übernehmen“ wird neu geladen.
 
@@ -144,6 +159,8 @@ Verifiziert wurde der vollständige Ablauf auf `http://localhost:1999/`:
 3. Im Blockly-Workspace erscheint der entsprechende Fahr-/Drehblock mit
    `Tempo 42`.
 4. Die Codeansicht bleibt während und nach der Übernahme geöffnet.
+5. Eine zusätzliche Richtungszeile ohne erneutes `SetPower` erzeugt einen
+   zusätzlichen grafischen Fahr-/Drehblock mit derselben Leistung.
 
 ## Bewusste Einschraenkungen
 

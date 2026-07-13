@@ -95,6 +95,14 @@ auf „NQC-Code in Blöcke übernehmen“ wird die Programmkette im Blockly-Work
 ersetzt; das Codefenster bleibt geöffnet. Ein fehlgeschlagener Import stellt
 den vorherigen Workspace wieder her.
 
+Seit der zustandsbehafteten Erweiterung entspricht `SetPower` der RCX-/NQC-
+Semantik: Die gesetzte Leistung bleibt pro Motorgruppe aktiv. Weitere
+`OnFwd`-/`OnRev`-Paare benötigen daher kein wiederholtes `SetPower`. Jedes
+vollständige Richtungspaar wird als eigener grafischer Fahr- oder Drehblock
+eingefügt. Die zuvor gemeldete Meldung „SetPower mit gleichem Motoranschluss
+fehlt“ erscheint nur noch, wenn für den betreffenden Anschluss tatsächlich nie
+eine Leistung gesetzt wurde.
+
 Auf `localhost:1999` wurde folgender Roundtrip geprüft:
 
 1. NQC-Code automatisch aus dem leeren Startprogramm anzeigen.
@@ -102,9 +110,11 @@ Auf `localhost:1999` wurde folgender Roundtrip geprüft:
 3. Code übernehmen.
 4. Sichtbarer grafischer Fahr-/Drehblock mit `Tempo 42` entsteht.
 5. Das Codefenster bleibt geöffnet.
+6. Eine zweite Zeile `OnFwd(OUT_A); OnRev(OUT_C);` ohne neues `SetPower`
+   erzeugt einen zweiten grafischen Fahrblock mit derselben Leistung.
 
 Da der vom Benutzer beobachtete alte Ablauf (keine Blockänderung, Fenster
 schließt) exakt zu einem zwischengespeicherten älteren Controller passt, besitzt
-die Startseite nun die Web-Version `rcx-roundtrip-20260713`. RequireJS hängt sie
+die Startseite nun die Web-Version `rcx-stateful-nqc-20260713`. RequireJS hängt sie
 an alle Webmodule an und lädt nach einem Seiten-Reload garantiert die aktuelle
 NQC-Adapterschicht.

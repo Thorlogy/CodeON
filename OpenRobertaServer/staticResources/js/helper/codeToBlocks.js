@@ -264,49 +264,60 @@ define(["require", "exports"], function (require, exports) {
          * native command would produce a different robot program.
          */
         CodeToBlocksConverter.prototype.convertNqcToXML = function (nqcCode, configurationXml) {
-            var _this = this;
             var statements = this.getNqcStatements(nqcCode);
             var blocks = [];
-            var powerByPort = {};
-            var directionByPowerPort = {};
+            var powerStateByPort = {};
+            // NQC keeps SetPower active until it is changed. Directions are only
+            // pending for one graphical action; the associated power state persists.
+            var pendingDirectionsByGroup = {};
+            var pendingPowerGroups = {};
             var motorConfiguration = this.getNqcMotorConfiguration(configurationXml);
             var _loop_1 = function (index) {
                 var statement = statements[index];
                 var match = void 0;
                 if ((match = statement.text.match(/^SetPower\((OUT_[ABC](?:\+OUT_[ABC])?),\s*NEPO_PWR\((-?\d+)\)\)$/))) {
-                    powerByPort[match[1]] = Number(match[2]);
+                    var ports = this_1.outputPorts(match[1]);
+                    var group = ports.slice().sort().join('+');
+                    var powerState_1 = { group: group, ports: ports, power: Number(match[2]) };
+                    ports.forEach(function (port) { return (powerStateByPort[port] = powerState_1); });
+                    pendingDirectionsByGroup[group] = {};
+                    pendingPowerGroups[group] = true;
                     return out_index_1 = index, "continue";
                 }
                 if ((match = statement.text.match(/^On(Fwd|Rev)\((OUT_[ABC](?:\+OUT_[ABC])?)\)$/))) {
                     var electricalForward_1 = match[1] === 'Fwd';
-                    var port_1 = match[2];
-                    var powerPort_1 = powerByPort[port_1] !== undefined ? port_1 : Object.keys(powerByPort).find(function (candidate) { return _this.outputPorts(candidate).indexOf(port_1) >= 0; });
-                    var power = powerPort_1 === undefined ? undefined : powerByPort[powerPort_1];
-                    if (power === undefined) {
+                    var commandPorts = this_1.outputPorts(match[2]);
+                    var powerStates = commandPorts.map(function (port) { return powerStateByPort[port]; });
+                    if (powerStates.some(function (state) { return state === undefined; })) {
                         throw new NqcConversionError(statement.line, statement.text, 'SetPower mit gleichem Motoranschluss fehlt');
                     }
-                    var poweredPorts_1 = this_1.outputPorts(powerPort_1);
-                    var directions_1 = directionByPowerPort[powerPort_1] || {};
-                    this_1.outputPorts(port_1).forEach(function (outputPort) {
-                        if (poweredPorts_1.indexOf(outputPort) < 0) {
-                            throw new NqcConversionError(statement.line, statement.text, "Motoranschluss ".concat(outputPort, " ist nicht in ").concat(powerPort_1, " enthalten"));
+                    var powerState_2 = powerStates[0];
+                    if (powerStates.some(function (state) { return state.group !== powerState_2.group; })) {
+                        throw new NqcConversionError(statement.line, statement.text, 'Motoranschlüsse gehören zu unterschiedlichen SetPower-Gruppen');
+                    }
+                    var directions_1 = pendingDirectionsByGroup[powerState_2.group] || {};
+                    commandPorts.forEach(function (outputPort) {
+                        var poweredPorts = powerState_2.ports;
+                        if (poweredPorts.indexOf(outputPort) < 0) {
+                            throw new NqcConversionError(statement.line, statement.text, "Motoranschluss ".concat(outputPort, " ist nicht in ").concat(powerState_2.group, " enthalten"));
                         }
                         directions_1[outputPort] = electricalForward_1;
                     });
-                    directionByPowerPort[powerPort_1] = directions_1;
-                    if (poweredPorts_1.every(function (outputPort) { return directions_1[outputPort] !== undefined; })) {
-                        delete powerByPort[powerPort_1];
-                        delete directionByPowerPort[powerPort_1];
+                    pendingDirectionsByGroup[powerState_2.group] = directions_1;
+                    if (powerState_2.ports.every(function (outputPort) { return directions_1[outputPort] !== undefined; })) {
+                        delete pendingDirectionsByGroup[powerState_2.group];
+                        delete pendingPowerGroups[powerState_2.group];
+                        var poweredPorts_1 = powerState_2.ports;
                         if (poweredPorts_1.length === 1) {
                             var motor = motorConfiguration.find(function (candidate) { return candidate.port === poweredPorts_1[0].substring(4); });
                             var logicalForward = directions_1[poweredPorts_1[0]] !== (motor ? motor.reversed : false);
                             if (!logicalForward) {
                                 throw new NqcConversionError(statement.line, statement.text, 'Rückwärtslauf eines einzelnen Motors kann nicht eindeutig in einen Block übersetzt werden');
                             }
-                            blocks.push(this_1.singleMotorBlock(poweredPorts_1[0].substring(4), power));
+                            blocks.push(this_1.singleMotorBlock(poweredPorts_1[0].substring(4), powerState_2.power));
                         }
                         else {
-                            blocks.push(this_1.differentialMotorBlock(poweredPorts_1, directions_1, power, motorConfiguration, statement));
+                            blocks.push(this_1.differentialMotorBlock(poweredPorts_1, directions_1, powerState_2.power, motorConfiguration, statement));
                         }
                     }
                     return out_index_1 = index, "continue";
@@ -354,8 +365,11 @@ define(["require", "exports"], function (require, exports) {
                 _loop_1(index);
                 index = out_index_1;
             }
-            if (Object.keys(powerByPort).length > 0) {
+            if (Object.keys(pendingPowerGroups).length > 0) {
                 throw new Error('NQC enthält SetPower ohne nachfolgendes OnFwd oder OnRev. Die Blöcke wurden nicht verändert.');
+            }
+            if (Object.keys(pendingDirectionsByGroup).some(function (group) { return Object.keys(pendingDirectionsByGroup[group]).length > 0; })) {
+                throw new Error('NQC enthält unvollständige Motor-Richtungsbefehle. Die Blöcke wurden nicht verändert.');
             }
             if (blocks.length === 0) {
                 throw new Error('Im task main wurden keine in Blöcke übersetzbaren NQC-Anweisungen gefunden.');
