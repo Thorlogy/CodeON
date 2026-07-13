@@ -39,7 +39,8 @@ function initEvents() {
         'click',
         function (event) {
             event.stopPropagation();
-            var dom = Blockly.Xml.workspaceToDom(blocklyWorkspace);
+            var workspace = GUISTATE_C.getBlocklyWorkspace();
+            var dom = Blockly.Xml.workspaceToDom(workspace);
             var xmlProgram = Blockly.Xml.domToText(dom);
             var xmlConfiguration = GUISTATE_C.getConfigurationXML();
 
@@ -63,6 +64,7 @@ function initEvents() {
                         GUISTATE_C.setState(result);
                         ACE_EDITOR.setEditorCode(result.sourceCode);
                         GUISTATE_C.setProgramSource(result.sourceCode);
+                        ACE_EDITOR.setWasEditedByUser(false);
                     } else {
                         MSG.displayInformation(result, result.message, result.message, result.parameters);
                     }
@@ -81,7 +83,8 @@ function initEvents() {
                 importCodeToBlocks();
                 return;
             }
-            var dom = Blockly.Xml.workspaceToDom(blocklyWorkspace);
+            var workspace = GUISTATE_C.getBlocklyWorkspace();
+            var dom = Blockly.Xml.workspaceToDom(workspace);
             var xmlProgram = Blockly.Xml.domToText(dom);
 
             var isNamedConfig = !GUISTATE_C.isConfigurationStandard() && !GUISTATE_C.isConfigurationAnonymous();
@@ -168,14 +171,17 @@ function updateCodeToolbarForSourceLanguage() {
 function importCodeToBlocks() {
     const code = ACE_EDITOR.getEditorCode();
     const converter = new CodeToBlocksConverter();
+    let workspace;
+    let originalProgramXml;
 
     try {
         // The program workspace is replaced when another robot or program is
         // loaded. Do not use the reference captured during controller startup.
-        const workspace = GUISTATE_C.getBlocklyWorkspace();
+        workspace = GUISTATE_C.getBlocklyWorkspace();
         if (!workspace) {
             throw new Error('Der aktuelle Programmbereich wurde nicht gefunden. Die Blöcke wurden nicht verändert.');
         }
+        originalProgramXml = Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(workspace));
         const isNqc = isNqcSource();
         const xml = isNqc ? converter.convertNqcToXML(code, GUISTATE_C.getConfigurationXML()) : converter.convertToXML(code);
         const dom = Blockly.Xml.textToDom(xml, workspace);
@@ -189,11 +195,22 @@ function importCodeToBlocks() {
         if (startBlock.nextConnection && startBlock.nextConnection.isConnected()) {
             startBlock.nextConnection.disconnect();
         }
-        const blocksToDispose = workspace.getTopBlocks(false).filter((block) => block !== startBlock);
-        blocksToDispose.forEach((block) => block.dispose(false));
+
+        // Removing only the first top block can leave the rest of the old
+        // statement chain behind. Dispose top blocks repeatedly until the
+        // mandatory start block is the only remaining program block.
+        let blocksToDispose = workspace.getTopBlocks(false).filter((block) => block !== startBlock);
+        while (blocksToDispose.length > 0) {
+            blocksToDispose.forEach((block) => block.dispose(false));
+            blocksToDispose = workspace.getTopBlocks(false).filter((block) => block !== startBlock);
+        }
         Blockly.Xml.domToWorkspace(dom, workspace);
 
-        const importedBlock = workspace.getTopBlocks(false).find((block) => block !== startBlock);
+        const importedBlocks = workspace.getTopBlocks(false).filter((block) => block !== startBlock);
+        if (importedBlocks.length !== 1) {
+            throw new Error(`Es wurde keine eindeutige neue Programmkette erzeugt (${importedBlocks.length} Startblöcke).`);
+        }
+        const importedBlock = importedBlocks[0];
         if (!importedBlock || !startBlock.nextConnection || !importedBlock.previousConnection) {
             throw new Error('Die importierten Blöcke konnten nicht mit dem Startblock verbunden werden.');
         }
@@ -211,12 +228,15 @@ function importCodeToBlocks() {
 
         // Show success message
         MSG.displayMessage('CODE_TO_BLOCKS_SUCCESS', 'TOAST', '');
-
-        // Close code panel and resize Blockly after the animation changed widths.
-        $('#blocklyDiv').closeRightView(function () {
-            Blockly.svgResize(workspace);
-        });
     } catch (error) {
+        // The conversion is transactional: if inserting or connecting the new
+        // chain fails, restore the exact workspace that was visible before.
+        if (workspace && originalProgramXml) {
+            workspace.clear();
+            const originalDom = Blockly.Xml.textToDom(originalProgramXml, workspace);
+            Blockly.Xml.domToWorkspace(originalDom, workspace);
+            Blockly.svgResize(workspace);
+        }
         console.error('Code to blocks conversion error:', error);
         MSG.displayMessage(getErrorMessage(error), 'POPUP', '');
     }
@@ -254,7 +274,10 @@ function toggleCode($button) {
             $('#blocklyDiv').closeRightView();
         }
     } else {
-        var dom = Blockly.Xml.workspaceToDom(blocklyWorkspace);
+        // Always generate the initial editor contents from the workspace that
+        // is currently visible. This also covers the first opening of <>.
+        var workspace = GUISTATE_C.getBlocklyWorkspace();
+        var dom = Blockly.Xml.workspaceToDom(workspace);
         var xmlProgram = Blockly.Xml.domToText(dom);
 
         var isNamedConfig = !GUISTATE_C.isConfigurationStandard() && !GUISTATE_C.isConfigurationAnonymous();
@@ -274,6 +297,7 @@ function toggleCode($button) {
                 if (result.rc == 'ok') {
                     GUISTATE_C.setState(result);
                     ACE_EDITOR.setEditorCode(result.sourceCode);
+                    ACE_EDITOR.setWasEditedByUser(false);
                     // TODO change javaSource to source on server
                     GUISTATE_C.setProgramSource(result.sourceCode);
                     updateCodeToolbarForSourceLanguage();

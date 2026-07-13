@@ -120,6 +120,12 @@ Programmblöcke übersetzt werden.
 Nicht unterstützte oder unvollständige NQC-Folgen werden weiterhin mit einer
 Fehlermeldung abgewiesen, bevor vorhandene Programmblöcke verändert werden.
 
+Beim Öffnen der Codeansicht wird der NQC-Code unmittelbar aus den aktuell
+sichtbaren Blöcken erzeugt. Nach „NQC-Code in Blöcke übernehmen“ bleibt die
+Codeansicht geöffnet. Der Import ersetzt die bisherige Programmkette
+transaktional; schlägt Einfügen oder Verbinden fehl, wird der vorherige
+Workspace wiederhergestellt.
+
 ## Bewusste Einschraenkungen
 
 Der RCX und NQC unterstuetzen nicht alle allgemeinen CodeON-Bloecke. Derzeit

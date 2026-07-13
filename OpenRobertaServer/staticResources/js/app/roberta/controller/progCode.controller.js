@@ -21,7 +21,8 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
         }, 'codeDownload clicked');
         $('#codeRefresh').onWrap('click', function (event) {
             event.stopPropagation();
-            var dom = Blockly.Xml.workspaceToDom(blocklyWorkspace);
+            var workspace = GUISTATE_C.getBlocklyWorkspace();
+            var dom = Blockly.Xml.workspaceToDom(workspace);
             var xmlProgram = Blockly.Xml.domToText(dom);
             var xmlConfiguration = GUISTATE_C.getConfigurationXML();
             var isNamedConfig = !GUISTATE_C.isConfigurationStandard() && !GUISTATE_C.isConfigurationAnonymous();
@@ -34,6 +35,7 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
                     GUISTATE_C.setState(result);
                     ACE_EDITOR.setEditorCode(result.sourceCode);
                     GUISTATE_C.setProgramSource(result.sourceCode);
+                    ACE_EDITOR.setWasEditedByUser(false);
                 }
                 else {
                     MSG.displayInformation(result, result.message, result.message, result.parameters);
@@ -47,7 +49,8 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
                 importCodeToBlocks();
                 return;
             }
-            var dom = Blockly.Xml.workspaceToDom(blocklyWorkspace);
+            var workspace = GUISTATE_C.getBlocklyWorkspace();
+            var dom = Blockly.Xml.workspaceToDom(workspace);
             var xmlProgram = Blockly.Xml.domToText(dom);
             var isNamedConfig = !GUISTATE_C.isConfigurationStandard() && !GUISTATE_C.isConfigurationAnonymous();
             var configName = isNamedConfig ? GUISTATE_C.getConfigurationName() : undefined;
@@ -105,49 +108,66 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
     function importCodeToBlocks() {
         var code = ACE_EDITOR.getEditorCode();
         var converter = new codeToBlocks_1.CodeToBlocksConverter();
+        var workspace;
+        var originalProgramXml;
         try {
             // The program workspace is replaced when another robot or program is
             // loaded. Do not use the reference captured during controller startup.
-            var workspace_1 = GUISTATE_C.getBlocklyWorkspace();
-            if (!workspace_1) {
+            workspace = GUISTATE_C.getBlocklyWorkspace();
+            if (!workspace) {
                 throw new Error('Der aktuelle Programmbereich wurde nicht gefunden. Die Blöcke wurden nicht verändert.');
             }
+            originalProgramXml = Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(workspace));
             var isNqc = isNqcSource();
             var xml = isNqc ? converter.convertNqcToXML(code, GUISTATE_C.getConfigurationXML()) : converter.convertToXML(code);
-            var dom = Blockly.Xml.textToDom(xml, workspace_1);
+            var dom = Blockly.Xml.textToDom(xml, workspace);
             // Validate the source before touching the workspace. Keep the mandatory
             // start block and replace only its following program chain.
-            var startBlock_1 = workspace_1.getAllBlocks().find(function (block) { return block.type === 'robControls_start'; });
+            var startBlock_1 = workspace.getAllBlocks().find(function (block) { return block.type === 'robControls_start'; });
             if (!startBlock_1) {
                 throw new Error('Der Startblock wurde nicht gefunden. Die Blöcke wurden nicht verändert.');
             }
             if (startBlock_1.nextConnection && startBlock_1.nextConnection.isConnected()) {
                 startBlock_1.nextConnection.disconnect();
             }
-            var blocksToDispose = workspace_1.getTopBlocks(false).filter(function (block) { return block !== startBlock_1; });
-            blocksToDispose.forEach(function (block) { return block.dispose(false); });
-            Blockly.Xml.domToWorkspace(dom, workspace_1);
-            var importedBlock = workspace_1.getTopBlocks(false).find(function (block) { return block !== startBlock_1; });
+            // Removing only the first top block can leave the rest of the old
+            // statement chain behind. Dispose top blocks repeatedly until the
+            // mandatory start block is the only remaining program block.
+            var blocksToDispose = workspace.getTopBlocks(false).filter(function (block) { return block !== startBlock_1; });
+            while (blocksToDispose.length > 0) {
+                blocksToDispose.forEach(function (block) { return block.dispose(false); });
+                blocksToDispose = workspace.getTopBlocks(false).filter(function (block) { return block !== startBlock_1; });
+            }
+            Blockly.Xml.domToWorkspace(dom, workspace);
+            var importedBlocks = workspace.getTopBlocks(false).filter(function (block) { return block !== startBlock_1; });
+            if (importedBlocks.length !== 1) {
+                throw new Error("Es wurde keine eindeutige neue Programmkette erzeugt (".concat(importedBlocks.length, " Startbl\u00F6cke)."));
+            }
+            var importedBlock = importedBlocks[0];
             if (!importedBlock || !startBlock_1.nextConnection || !importedBlock.previousConnection) {
                 throw new Error('Die importierten Blöcke konnten nicht mit dem Startblock verbunden werden.');
             }
             startBlock_1.nextConnection.connect(importedBlock.previousConnection);
-            var updatedDom = Blockly.Xml.workspaceToDom(workspace_1);
+            var updatedDom = Blockly.Xml.workspaceToDom(workspace);
             GUISTATE_C.setProgramXML(Blockly.Xml.domToText(updatedDom));
             GUISTATE_C.setProgramSaved(false);
             startBlock_1.render();
             importedBlock.render();
-            Blockly.svgResize(workspace_1);
+            Blockly.svgResize(workspace);
             // Reset edit flag
             ACE_EDITOR.setWasEditedByUser(false);
             // Show success message
             MSG.displayMessage('CODE_TO_BLOCKS_SUCCESS', 'TOAST', '');
-            // Close code panel and resize Blockly after the animation changed widths.
-            $('#blocklyDiv').closeRightView(function () {
-                Blockly.svgResize(workspace_1);
-            });
         }
         catch (error) {
+            // The conversion is transactional: if inserting or connecting the new
+            // chain fails, restore the exact workspace that was visible before.
+            if (workspace && originalProgramXml) {
+                workspace.clear();
+                var originalDom = Blockly.Xml.textToDom(originalProgramXml, workspace);
+                Blockly.Xml.domToWorkspace(originalDom, workspace);
+                Blockly.svgResize(workspace);
+            }
             console.error('Code to blocks conversion error:', error);
             MSG.displayMessage(getErrorMessage(error), 'POPUP', '');
         }
@@ -185,7 +205,10 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
             }
         }
         else {
-            var dom = Blockly.Xml.workspaceToDom(blocklyWorkspace);
+            // Always generate the initial editor contents from the workspace that
+            // is currently visible. This also covers the first opening of <>.
+            var workspace = GUISTATE_C.getBlocklyWorkspace();
+            var dom = Blockly.Xml.workspaceToDom(workspace);
             var xmlProgram = Blockly.Xml.domToText(dom);
             var isNamedConfig = !GUISTATE_C.isConfigurationStandard() && !GUISTATE_C.isConfigurationAnonymous();
             var configName = isNamedConfig ? GUISTATE_C.getConfigurationName() : undefined;
@@ -196,6 +219,7 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
                 if (result.rc == 'ok') {
                     GUISTATE_C.setState(result);
                     ACE_EDITOR.setEditorCode(result.sourceCode);
+                    ACE_EDITOR.setWasEditedByUser(false);
                     // TODO change javaSource to source on server
                     GUISTATE_C.setProgramSource(result.sourceCode);
                     updateCodeToolbarForSourceLanguage();
