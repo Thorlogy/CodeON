@@ -1,0 +1,4 @@
+# LEGO RCX firmware is user-provided and must not be committed.
+*.LGO
+*.lgo
+!.gitignore

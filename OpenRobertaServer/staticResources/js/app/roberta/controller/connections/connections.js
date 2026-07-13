@@ -2596,7 +2596,6 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
         }
         RcxConnection.prototype.setState = function () { };
         RcxConnection.prototype.run = function (result) {
-            var _this = this;
             if (result.rc !== 'ok') {
                 GUISTATE_C.setState(result);
                 MSG.displayInformation(result, result.message, result.message, GUISTATE_C.getProgramName(), GUISTATE_C.getRobot());
@@ -2609,6 +2608,10 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
                 return;
             }
             $('body>.pace').show();
+            this._uploadProgram(result);
+        };
+        RcxConnection.prototype._uploadProgram = function (result) {
+            var _this = this;
             fetch(this.bridgeUrl + '/upload', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2626,6 +2629,9 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
                     MSG.displayMessage('POPUP_DOWNLOAD_STEP_1', 'TOAST', '', GUISTATE_C.getProgramName(), null);
                     GUISTATE_C.setConnectionState('wait');
                 }
+                else if (data && data.error === 'firmware_missing') {
+                    _this._offerFirmwareInstall(result);
+                }
                 else {
                     _this._bridgeError((data && data.message) || 'Unbekannter Fehler bei der Uebertragung.');
                 }
@@ -2637,10 +2643,39 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
                     'eingesteckt und der RCX eingeschaltet ist.\n\nTechnisch: ' + err);
             });
         };
+        RcxConnection.prototype._offerFirmwareInstall = function (result) {
+            var _this = this;
+            var confirmed = window.confirm('Auf dem RCX wurde keine Firmware erkannt.\n\n' +
+                'Soll CodeON jetzt zuerst die konfigurierte LEGO-RCX-Firmware übertragen ' +
+                'und danach das Programm erneut senden?\n\n' +
+                'Der RCX muss eingeschaltet sein und direkt vor dem Infrarot-Turm stehen.');
+            if (!confirmed) {
+                $('body>.pace').fadeOut();
+                GUISTATE_C.setConnectionState('wait');
+                return;
+            }
+            $('body>.pace').show();
+            fetch(this.bridgeUrl + '/firmware', { method: 'POST' })
+                .then(function (resp) { return resp.json().catch(function () { return ({ ok: resp.ok, message: '' }); }); })
+                .then(function (data) {
+                if (data && data.ok) {
+                    _this._uploadProgram(result);
+                }
+                else {
+                    $('body>.pace').fadeOut();
+                    _this._bridgeError((data && data.message) || 'Die RCX-Firmware konnte nicht übertragen werden.');
+                }
+            })
+                .catch(function (err) {
+                $('body>.pace').fadeOut();
+                _this._bridgeError('Fehler beim Aufruf der Firmwareübertragung.\n\nTechnisch: ' + err);
+            });
+        };
         RcxConnection.prototype._bridgeError = function (msg) {
             var fauxResult = { rc: 'error', message: msg };
             MSG.displayInformation(fauxResult, msg, msg, GUISTATE_C.getProgramName(), null);
-            // Keep Run enabled after a failed upload so that the transfer can be retried.
+            // The IR tower has no persistent connection state. A failed upload must
+            // leave the Run action available so the transfer can be retried.
             GUISTATE_C.setConnectionState('wait');
         };
         RcxConnection.prototype.probe = function () {

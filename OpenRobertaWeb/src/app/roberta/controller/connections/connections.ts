@@ -2161,6 +2161,10 @@ export class RcxConnection extends AbstractPromptConnection {
 
         $('body>.pace').show();
 
+        this._uploadProgram(result);
+    }
+
+    private _uploadProgram(result: any): void {
         fetch(this.bridgeUrl + '/upload', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -2177,6 +2181,8 @@ export class RcxConnection extends AbstractPromptConnection {
                 result.message = 'MESSAGE_RESTART_APP_TITLE';
                 MSG.displayMessage('POPUP_DOWNLOAD_STEP_1', 'TOAST', '', GUISTATE_C.getProgramName(), null);
                 GUISTATE_C.setConnectionState('wait');
+            } else if (data && data.error === 'firmware_missing') {
+                this._offerFirmwareInstall(result);
             } else {
                 this._bridgeError((data && data.message) || 'Unbekannter Fehler bei der Uebertragung.');
             }
@@ -2188,6 +2194,36 @@ export class RcxConnection extends AbstractPromptConnection {
                 '"python3 rcx-bridge.py" und stelle sicher, dass der USB-Tower ' +
                 'eingesteckt und der RCX eingeschaltet ist.\n\nTechnisch: ' + err);
         });
+    }
+
+    private _offerFirmwareInstall(result: any): void {
+        const confirmed = window.confirm(
+            'Auf dem RCX wurde keine Firmware erkannt.\n\n' +
+            'Soll CodeON jetzt zuerst die konfigurierte LEGO-RCX-Firmware übertragen ' +
+            'und danach das Programm erneut senden?\n\n' +
+            'Der RCX muss eingeschaltet sein und direkt vor dem Infrarot-Turm stehen.'
+        );
+        if (!confirmed) {
+            $('body>.pace').fadeOut();
+            GUISTATE_C.setConnectionState('wait');
+            return;
+        }
+
+        $('body>.pace').show();
+        fetch(this.bridgeUrl + '/firmware', { method: 'POST' })
+            .then(resp => resp.json().catch(() => ({ ok: resp.ok, message: '' })))
+            .then(data => {
+                if (data && data.ok) {
+                    this._uploadProgram(result);
+                } else {
+                    $('body>.pace').fadeOut();
+                    this._bridgeError((data && data.message) || 'Die RCX-Firmware konnte nicht übertragen werden.');
+                }
+            })
+            .catch(err => {
+                $('body>.pace').fadeOut();
+                this._bridgeError('Fehler beim Aufruf der Firmwareübertragung.\n\nTechnisch: ' + err);
+            });
     }
 
     private _bridgeError(msg: string): void {

@@ -9,7 +9,14 @@ interface BlockDefinition {
     y?: number;
     fields?: { [key: string]: any };
     values?: { [key: string]: BlockDefinition };
+    statements?: { [key: string]: BlockDefinition };
     next?: BlockDefinition;
+}
+
+interface NqcStatement {
+    line: number;
+    text: string;
+    body?: NqcStatement[];
 }
 
 interface PatternMatcher {
@@ -265,6 +272,14 @@ export class CodeToBlocksConverter {
      */
     convertNqcToXML(nqcCode: string, configurationXml?: string): string {
         const statements = this.getNqcStatements(nqcCode);
+        const blocks = this.convertNqcStatements(statements, configurationXml);
+        if (blocks.length === 0) {
+            throw new Error('Im task main wurden keine in Blöcke übersetzbaren NQC-Anweisungen gefunden.');
+        }
+        return this.generateXML(this.chainBlocks(blocks));
+    }
+
+    private convertNqcStatements(statements: NqcStatement[], configurationXml?: string): BlockDefinition[] {
         const blocks: BlockDefinition[] = [];
         const powerStateByPort: {
             [port: string]: { group: string; ports: string[]; power: number };
@@ -290,6 +305,20 @@ export class CodeToBlocksConverter {
         for (let index = 0; index < statements.length; index++) {
             const statement = statements[index];
             let match: RegExpMatchArray | null;
+
+            if (statement.body) {
+                flushPendingPowerBlocks();
+                if (statement.text !== 'while (true)') {
+                    throw new NqcConversionError(statement.line, statement.text, 'nicht unterstützte Kontrollstruktur');
+                }
+                const loop: BlockDefinition = { type: 'robControls_loopForever' };
+                const chainedBody = this.chainBlocks(this.convertNqcStatements(statement.body, configurationXml));
+                if (chainedBody.length > 0) {
+                    loop.statements = { DO: chainedBody[0] };
+                }
+                blocks.push(loop);
+                continue;
+            }
 
             if ((match = statement.text.match(/^SetPower\((OUT_[ABC](?:\+OUT_[ABC])?),\s*NEPO_PWR\((-?\d+)\)\)$/))) {
                 // A second SetPower is an independent visible command unless
@@ -424,28 +453,77 @@ export class CodeToBlocksConverter {
         if (Object.keys(pendingDirectionsByGroup).some((group) => Object.keys(pendingDirectionsByGroup[group]).length > 0)) {
             throw new Error('NQC enthält unvollständige Motor-Richtungsbefehle. Die Blöcke wurden nicht verändert.');
         }
-        if (blocks.length === 0) {
-            throw new Error('Im task main wurden keine in Blöcke übersetzbaren NQC-Anweisungen gefunden.');
-        }
-        return this.generateXML(this.chainBlocks(blocks));
+        return blocks;
     }
 
-    private getNqcStatements(code: string): Array<{ line: number; text: string }> {
-        const main = code.match(/task\s+main\s*\(\s*\)\s*\{([\s\S]*?)\}/);
+    private getNqcStatements(code: string): NqcStatement[] {
+        const main = /task\s+main\s*\(\s*\)\s*\{/m.exec(code);
         if (!main || main.index === undefined) {
             throw new Error('NQC benötigt einen task main() { ... }-Block.');
         }
-        const bodyStartLine = code.substring(0, main.index + main[0].indexOf('{') + 1).split('\n').length;
-        const body = main[1].replace(/\/\/.*$/gm, '');
-        const result: Array<{ line: number; text: string }> = [];
-        body.split(';').forEach((part) => {
-            const text = part.trim().replace(/\s+/g, ' ');
-            if (text) {
-                const offset = body.indexOf(part);
-                result.push({ line: bodyStartLine + body.substring(0, offset).split('\n').length - 1, text });
+        const openBrace = main.index + main[0].lastIndexOf('{');
+        const closeBrace = this.findMatchingBrace(code, openBrace);
+        if (closeBrace < 0) {
+            throw new Error('Der task main() enthält eine nicht geschlossene geschweifte Klammer.');
+        }
+        const bodyStartLine = code.substring(0, openBrace + 1).split('\n').length;
+        const body = code.substring(openBrace + 1, closeBrace).replace(/\/\/.*$/gm, '');
+        return this.parseNqcBody(body, bodyStartLine);
+    }
+
+    private parseNqcBody(body: string, startLine: number): NqcStatement[] {
+        const result: NqcStatement[] = [];
+        let index = 0;
+        const lineAt = (offset: number) => startLine + body.substring(0, offset).split('\n').length - 1;
+        while (index < body.length) {
+            while (index < body.length && /\s/.test(body[index])) index++;
+            if (index >= body.length) break;
+
+            const remaining = body.substring(index);
+            const whileMatch = /^while\s*\(\s*true\s*\)\s*\{/i.exec(remaining);
+            if (whileMatch) {
+                const openBrace = index + whileMatch[0].lastIndexOf('{');
+                const closeBrace = this.findMatchingBrace(body, openBrace);
+                if (closeBrace < 0) {
+                    throw new NqcConversionError(lineAt(index), 'while (true)', 'nicht geschlossene geschweifte Klammer');
+                }
+                result.push({
+                    line: lineAt(index),
+                    text: 'while (true)',
+                    body: this.parseNqcBody(body.substring(openBrace + 1, closeBrace), lineAt(openBrace + 1)),
+                });
+                index = closeBrace + 1;
+                continue;
             }
-        });
+
+            const semicolon = body.indexOf(';', index);
+            const brace = body.indexOf('{', index);
+            if (semicolon < 0 || (brace >= 0 && brace < semicolon)) {
+                const end = brace >= 0 ? brace : body.length;
+                const unsupported = body.substring(index, end).trim().replace(/\s+/g, ' ');
+                throw new NqcConversionError(
+                    lineAt(index),
+                    unsupported || body[index],
+                    'nicht unterstützte oder unvollständige NQC-Anweisung'
+                );
+            }
+            const text = body.substring(index, semicolon).trim().replace(/\s+/g, ' ');
+            if (text) result.push({ line: lineAt(index), text });
+            index = semicolon + 1;
+        }
         return result;
+    }
+
+    private findMatchingBrace(text: string, openBrace: number): number {
+        let depth = 0;
+        for (let index = openBrace; index < text.length; index++) {
+            if (text[index] === '{') depth++;
+            if (text[index] === '}') {
+                depth--;
+                if (depth === 0) return index;
+            }
+        }
+        return -1;
     }
 
     private numberBlock(value: number): BlockDefinition {
@@ -587,6 +665,15 @@ export class CodeToBlocksConverter {
                 xml += `${indentStr}  <value name="${name}">\n`;
                 xml += this.blockToXML(valueBlock, indent + 2);
                 xml += `${indentStr}  </value>\n`;
+            }
+        }
+
+        // Add statement inputs (for example the body of a forever loop).
+        if (block.statements) {
+            for (const [name, statementBlock] of Object.entries(block.statements)) {
+                xml += `${indentStr}  <statement name="${name}">\n`;
+                xml += this.blockToXML(statementBlock, indent + 2);
+                xml += `${indentStr}  </statement>\n`;
             }
         }
 

@@ -11,7 +11,7 @@ uebertraegt das Programm ueber eine lokale Bridge und den Infrarot-Tower.
 
 - Python 3
 - eine ausfuehrbare `nqc`-Binary
-- RCX mit Firmware und ein kompatibler IR-Tower
+- RCX und ein kompatibler IR-Tower
 
 Die Bridge sucht `nqc` in dieser Reihenfolge:
 
@@ -80,6 +80,30 @@ Anschliessend in CodeON ein Programm bauen und **Ausfuehren** waehlen. Das
 Programm wird standardmaessig auf Programmplatz 1 uebertragen und nicht
 automatisch gestartet.
 
+## Fehlende RCX-Firmware automatisch behandeln
+
+NQC erkennt einen eingeschalteten RCX ohne Firmware eindeutig mit der Meldung
+`No firmware installed`. Tritt dieser Fall während einer Programmübertragung
+auf, fragt CodeON den Benutzer, ob zuerst die Firmware übertragen werden soll.
+Nur nach ausdrücklicher Bestätigung ruft die Bridge `nqc -firmware ...` auf und
+wiederholt anschließend automatisch die Programmübertragung.
+
+Die proprietäre LEGO-Firmware wird nicht mit CodeON verteilt. Eine rechtmäßig
+bezogene `FIRM0332.LGO` (empfohlen) oder `FIRM0328.LGO` wird hier abgelegt:
+
+```text
+RobotRCX/firmware/FIRM0332.LGO
+```
+
+Alternativ kann ein beliebiger lokaler Pfad gesetzt werden:
+
+```bash
+RCX_FIRMWARE_PATH=/pfad/zu/FIRM0332.LGO ./ora.sh start-from-git
+```
+
+Ohne konfigurierte Datei bleibt die Firmware des RCX unverändert und CodeON
+zeigt einen verständlichen Hinweis mit dem erwarteten Speicherort an.
+
 ## Zugriffsschutz
 
 Die Bridge lauscht ausschliesslich auf `127.0.0.1`. Browserzugriffe sind
@@ -117,7 +141,9 @@ grafischer Rückweg existiert. Beliebige Wörter aus dem aktuellen Quelltext
 Alle Einträge sind in der Vorschlagsliste mit `NQC ↔ Block` gekennzeichnet.
 
 Abgedeckt sind `SetPower`, `OnFwd`, `OnRev`, `Off`, `Wait`, `PlayTone`,
-`SetUserDisplay`, `SelectDisplay`, `ClearTimer` und `ClearSensor`. Die
+`SetUserDisplay`, `SelectDisplay`, `ClearTimer`, `ClearSensor` und `while`.
+`while (true) { ... }` wird als grafischer **wiederhole unendlich**-Block mit
+seinen enthaltenen Aktionen übernommen. Die
 eingefügten Motor- und Ton-Vorlagen enthalten jeweils alle NQC-Zeilen, die für
 die semantisch entsprechende grafische Aktion erforderlich sind.
 
@@ -165,7 +191,7 @@ diesen sichtbaren Editor zu und nicht auf den separaten Quellcode-Tab.
 
 Damit Browser nach einem lokalen Update nicht weiter eine ältere Version dieser
 Adapterschicht aus dem Cache verwenden, trägt die Startseite die Web-Version
-`rcx-roundtrip-contract-20260713` ein. RequireJS hängt diese Version an alle geladenen
+`rcx-nqc-firmware-20260713` ein. RequireJS hängt diese Version an alle geladenen
 Module an. Nach einem Update genügt dadurch ein normales Neuladen der Seite;
 der aktuelle Controller für „NQC-Code in Blöcke übernehmen“ wird neu geladen.
 

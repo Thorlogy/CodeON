@@ -209,6 +209,7 @@ define(["require", "exports"], function (require, exports) {
                 { caption: 'SelectDisplay', value: 'SelectDisplay(DISPLAY_WATCH);', meta: 'NQC ↔ Block: Anzeige löschen', score: 950 },
                 { caption: 'ClearTimer', value: 'ClearTimer(0);', meta: 'NQC ↔ Block: Timer zurücksetzen', score: 900 },
                 { caption: 'ClearSensor', value: 'ClearSensor(SENSOR_3);', meta: 'NQC ↔ Block: Drehsensor zurücksetzen', score: 900 },
+                { caption: 'while', value: 'while (true) {\n    \n}', meta: 'NQC ↔ Block: Wiederhole unendlich', score: 900 },
             ]);
         }
     };
@@ -234,6 +235,7 @@ define(["require", "exports"], function (require, exports) {
         langToolsForCodeView.addCompleter(nqcCompleter);
         codeView.session.on('change', function () {
             wasEdited = true;
+            startNqcAutocompleteForCurrentWord(codeView);
         });
         editor = ace.edit('aceEditor');
         applyDefaultSettings(editor);
@@ -253,6 +255,7 @@ define(["require", "exports"], function (require, exports) {
                 resetActiveLine(editor);
             }
             wasEdited = true;
+            startNqcAutocompleteForCurrentWord(editor);
         });
         editor.session.on('changeFold', function () {
             resetActiveLine(editor);
@@ -345,6 +348,23 @@ define(["require", "exports"], function (require, exports) {
     function applyDefaultSettings(ed) {
         ed.session.setUseWrapMode(true);
         ed.setShowPrintMargin(false);
+    }
+    /**
+     * Ace's live-autocomplete option does not consistently open for the custom
+     * NQC-only completer. Start it explicitly once an identifier has two letters;
+     * Ace itself still filters the result list and closes it when nothing matches.
+     */
+    function startNqcAutocompleteForCurrentWord(ed) {
+        if (currentLanguage !== 'nqc')
+            return;
+        window.setTimeout(function () {
+            var cursor = ed.getCursorPosition();
+            var beforeCursor = ed.session.getLine(cursor.row).substring(0, cursor.column);
+            var word = beforeCursor.match(/[A-Za-z][A-Za-z0-9_]*$/);
+            if (word && word[0].length >= 2) {
+                ed.execCommand('startAutocomplete');
+            }
+        }, 0);
     }
     function resetActiveLine(ed) {
         ed.setHighlightActiveLine(false);

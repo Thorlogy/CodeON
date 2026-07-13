@@ -209,6 +209,7 @@ const nqcCompleter = {
             { caption: 'SelectDisplay', value: 'SelectDisplay(DISPLAY_WATCH);', meta: 'NQC ↔ Block: Anzeige löschen', score: 950 },
             { caption: 'ClearTimer', value: 'ClearTimer(0);', meta: 'NQC ↔ Block: Timer zurücksetzen', score: 900 },
             { caption: 'ClearSensor', value: 'ClearSensor(SENSOR_3);', meta: 'NQC ↔ Block: Drehsensor zurücksetzen', score: 900 },
+            { caption: 'while', value: 'while (true) {\n    \n}', meta: 'NQC ↔ Block: Wiederhole unendlich', score: 900 },
         ]);
     }
 };
@@ -238,6 +239,7 @@ export function init() {
 
     codeView.session.on('change', function () {
         wasEdited = true;
+        startNqcAutocompleteForCurrentWord(codeView);
     });
 
     editor = ace.edit('aceEditor');
@@ -260,6 +262,7 @@ export function init() {
             resetActiveLine(editor);
         }
         wasEdited = true;
+        startNqcAutocompleteForCurrentWord(editor);
     });
 
     editor.session.on('changeFold', () => {
@@ -359,6 +362,23 @@ export function setCodeLanguage(languageFileExtension: string) {
 function applyDefaultSettings(ed: AceAjax.Editor) {
     ed.session.setUseWrapMode(true);
     ed.setShowPrintMargin(false);
+}
+
+/**
+ * Ace's live-autocomplete option does not consistently open for the custom
+ * NQC-only completer. Start it explicitly once an identifier has two letters;
+ * Ace itself still filters the result list and closes it when nothing matches.
+ */
+function startNqcAutocompleteForCurrentWord(ed: AceAjax.Editor) {
+    if (currentLanguage !== 'nqc') return;
+    window.setTimeout(() => {
+        const cursor = ed.getCursorPosition();
+        const beforeCursor = ed.session.getLine(cursor.row).substring(0, cursor.column);
+        const word = beforeCursor.match(/[A-Za-z][A-Za-z0-9_]*$/);
+        if (word && word[0].length >= 2) {
+            ed.execCommand('startAutocomplete');
+        }
+    }, 0);
 }
 
 function resetActiveLine(ed: AceAjax.Editor) {

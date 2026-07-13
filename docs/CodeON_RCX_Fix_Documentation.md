@@ -115,7 +115,7 @@ Auf `localhost:1999` wurde folgender Roundtrip geprüft:
 
 Da der vom Benutzer beobachtete alte Ablauf (keine Blockänderung, Fenster
 schließt) exakt zu einem zwischengespeicherten älteren Controller passt, besitzt
-die Startseite nun die Web-Version `rcx-roundtrip-contract-20260713`. RequireJS hängt sie
+die Startseite nun die Web-Version `rcx-nqc-firmware-20260713`. RequireJS hängt sie
 an alle Webmodule an und lädt nach einem Seiten-Reload garantiert die aktuelle
 NQC-Adapterschicht.
 
@@ -128,8 +128,10 @@ lokale Wort-Vervollständiger nun deaktiviert.
 
 Die verbleibenden Einträge tragen die Kennzeichnung `NQC ↔ Block` und besitzen
 alle einen geprüften grafischen Rückweg: `SetPower`, `OnFwd`, `OnRev`, `Off`,
-`Wait`, `PlayTone`, `SetUserDisplay`, `SelectDisplay`, `ClearTimer` und
-`ClearSensor`. Nicht grafisch repräsentierte Initialisierungsbefehle wie
+`Wait`, `PlayTone`, `SetUserDisplay`, `SelectDisplay`, `ClearTimer`,
+`ClearSensor` und `while`. Die Adapterschicht erkennt nun verschachtelte
+Klammern und übernimmt `while (true) { ... }` als grafischen
+**wiederhole unendlich**-Block einschließlich seines Inhalts. Nicht grafisch repräsentierte Initialisierungsbefehle wie
 `SetSensor` werden nicht mehr aktiv vorgeschlagen.
 
 Für `SetPower` wurde die RCX-Expert-Toolbox um
@@ -137,6 +139,19 @@ Für `SetPower` wurde die RCX-Expert-Toolbox um
 `Float(...)` verlustfrei als einzelne Motor-Stopp-Blöcke mit dem Modus
 `FLOAT`, falls solcher nativer Code manuell eingegeben wird.
 
-Der neue Test `OpenRobertaWeb/test/codeToBlocks.roundtrip.test.js` führt zwölf
-Abnahmen aus: zehn Vorschläge, wiederholte Motoraktionen mit fortbestehender
+Der neue Test `OpenRobertaWeb/test/codeToBlocks.roundtrip.test.js` führt dreizehn
+Abnahmen aus: elf Vorschläge, wiederholte Motoraktionen mit fortbestehender
 Leistung und einen bewusst fehlerhaften unvollständigen Differentialbefehl.
+
+## 9. Optionale Firmwareübertragung vor dem Programm
+
+Die RCX-Bridge unterscheidet nun NQCs eindeutige Meldung `No firmware installed`
+von einem ausgeschalteten oder nicht antwortenden RCX. Nur in diesem Fall fragt
+die Weboberfläche vor einer Änderung nach. Nach Bestätigung überträgt die Bridge
+eine lokal konfigurierte `FIRM0332.LGO` oder `FIRM0328.LGO` und versucht danach
+die ursprüngliche Programmübertragung erneut.
+
+Die LEGO-Firmware ist nicht Teil des Repositorys. Sie wird über
+`RCX_FIRMWARE_PATH` oder unter `RobotRCX/firmware/` bereitgestellt. Ist keine
+Datei vorhanden, erfolgt keine Änderung am RCX und es erscheint ein konkreter
+Konfigurationshinweis.

@@ -32,14 +32,43 @@ class RcxBridgeTest(unittest.TestCase):
         with patch.object(RCX_BRIDGE, "find_nqc", return_value="/usr/bin/nqc"), \
                 patch.object(RCX_BRIDGE, "nqc_serial_args", return_value=["-S/test-tower"]), \
                 patch.object(RCX_BRIDGE.subprocess, "Popen", return_value=process) as popen:
-            ok, _ = RCX_BRIDGE.transfer_rcx(b"program", program_slot=3, run_after=True)
+            ok, _, error = RCX_BRIDGE.transfer_rcx(b"program", program_slot=3, run_after=True)
 
         self.assertTrue(ok)
+        self.assertIsNone(error)
         command = popen.call_args.args[0]
         self.assertEqual("/usr/bin/nqc", command[0])
         self.assertIn("-S/test-tower", command)
         self.assertEqual("3", command[command.index("-pgm") + 1])
         self.assertIn("-run", command)
+
+    def test_transfer_reports_missing_firmware(self):
+        process = MagicMock()
+        process.communicate.return_value = (b"", b"No firmware installed on RCX2\n")
+        process.returncode = 1
+
+        with patch.object(RCX_BRIDGE, "find_nqc", return_value="/usr/bin/nqc"), \
+                patch.object(RCX_BRIDGE.subprocess, "Popen", return_value=process):
+            ok, message, error = RCX_BRIDGE.transfer_rcx(b"program")
+
+        self.assertFalse(ok)
+        self.assertEqual("firmware_missing", error)
+        self.assertIn("keine Firmware", message)
+
+    def test_configured_firmware_is_installed_with_nqc(self):
+        process = MagicMock(returncode=0, stdout="done", stderr="")
+        with patch.object(RCX_BRIDGE, "find_nqc", return_value="/usr/bin/nqc"), \
+                patch.object(RCX_BRIDGE, "find_firmware", return_value="/tmp/FIRM0332.LGO"), \
+                patch.object(RCX_BRIDGE, "nqc_serial_args", return_value=["-S/test-tower"]), \
+                patch.object(RCX_BRIDGE.subprocess, "run", return_value=process) as run:
+            ok, message = RCX_BRIDGE.install_firmware()
+
+        self.assertTrue(ok)
+        self.assertIn("erfolgreich", message)
+        self.assertEqual(
+            ["/usr/bin/nqc", "-S/test-tower", "-firmware", "/tmp/FIRM0332.LGO"],
+            run.call_args.args[0],
+        )
 
 
 if __name__ == "__main__":

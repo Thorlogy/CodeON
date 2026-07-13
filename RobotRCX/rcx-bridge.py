@@ -60,6 +60,20 @@ def find_nqc():
     return None
 
 
+def find_firmware():
+    """Find a user-provided standard LEGO RCX firmware image."""
+    configured = os.environ.get("RCX_FIRMWARE_PATH")
+    candidates = [configured] if configured else []
+    firmware_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "firmware")
+    candidates += [
+        os.path.join(firmware_dir, "FIRM0332.LGO"),
+        os.path.join(firmware_dir, "FIRM0328.LGO"),
+        os.path.join(firmware_dir, "firm0332.lgo"),
+        os.path.join(firmware_dir, "firm0328.lgo"),
+    ]
+    return next((path for path in candidates if path and os.path.isfile(path)), None)
+
+
 # nqc-Aufrufparameter je nach Betriebssystem. Der USB-Tower nutzt auf allen
 # unterstuetzten Systemen den speziellen -Susb-Modus. Serielle Tower brauchen
 # stattdessen den Geraetepfad (siehe Kommentar unten).
@@ -87,12 +101,13 @@ def nqc_serial_args():
 def transfer_rcx(rcx_bytes, program_slot=1, run_after=False):
     """
     Schreibt die uebergebenen .rcx-Bytes in eine temporaere Datei und ruft
-    nqc auf, um sie auf den RCX zu uebertragen. Gibt (ok, meldung) zurueck.
+    nqc auf, um sie auf den RCX zu uebertragen. Gibt
+    (ok, meldung, fehlercode) zurueck.
     """
     nqc = find_nqc()
     if not nqc:
         return False, ("nqc wurde nicht gefunden. Lege die kompilierte Binary "
-                       "nach ./bin/nqc oder setze die Umgebungsvariable NQC_PATH.")
+                       "nach ./bin/nqc oder setze die Umgebungsvariable NQC_PATH."), "nqc_missing"
 
     tmpdir = tempfile.mkdtemp(prefix="rcx-bridge-")
     rcx_path = os.path.join(tmpdir, "programm.rcx")
@@ -132,7 +147,12 @@ def transfer_rcx(rcx_bytes, program_slot=1, run_after=False):
             msg = "Programm erfolgreich auf den RCX uebertragen."
             if not run_after:
                 msg += " Gruenen Run-Knopf am RCX druecken."
-            return True, msg + ("\n" + out.strip() if out.strip() else "")
+            return True, msg + ("\n" + out.strip() if out.strip() else ""), None
+        elif "no firmware installed" in out.lower():
+            return False, (
+                "Auf dem RCX wurde keine Firmware erkannt. Nach deiner Zustimmung kann "
+                "CodeON zuerst eine lokal bereitgestellte LEGO-RCX-Firmware übertragen."
+            ), "firmware_missing"
         elif returncode == 253:
             return False, (
                 "Übertragung fehlgeschlagen: Der RCX-Roboter hat nicht geantwortet (NQC-Fehler 253).\n\n"
@@ -141,12 +161,12 @@ def transfer_rcx(rcx_bytes, program_slot=1, run_after=False):
                 "2. die Firmware auf dem RCX geladen ist (falls nicht, 'Firmware übertragen' klicken),\n"
                 "3. der Infrarot-Turm direkt auf das Empfängerfenster des RCX zeigt (Sichtlinie frei),\n"
                 "4. die Batterien des RCX nicht zu schwach sind."
-            )
+            ), "no_reply"
         else:
             return False, ("Uebertragung fehlgeschlagen (nqc-Code %d).\n%s"
-                           % (returncode, out.strip()))
+                           % (returncode, out.strip())), "transfer_failed"
     except Exception as e:
-        return False, "Interner Fehler bei der Übertragung: %s" % e
+        return False, "Interner Fehler bei der Übertragung: %s" % e, "internal_error"
     finally:
         # Sicheres Loeschen der temporaeren Datei und des Verzeichnisses
         shutil.rmtree(tmpdir, ignore_errors=True)
@@ -164,6 +184,31 @@ def probe_rcx():
         return (proc.returncode == 0), out.strip()
     except Exception as e:
         return False, str(e)
+
+
+def install_firmware():
+    """Install configured LEGO firmware after explicit confirmation in CodeON."""
+    nqc = find_nqc()
+    firmware = find_firmware()
+    if not nqc:
+        return False, "nqc wurde nicht gefunden."
+    if not firmware:
+        return False, (
+            "Keine RCX-Firmwaredatei gefunden. Lege FIRM0332.LGO oder FIRM0328.LGO "
+            "in RobotRCX/firmware ab oder setze RCX_FIRMWARE_PATH."
+        )
+    cmd = [nqc] + nqc_serial_args() + ["-firmware", firmware]
+    try:
+        print("[RCX-Bridge] Installing firmware:", " ".join(cmd))
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        out = ((proc.stdout or "") + (proc.stderr or "")).strip()
+        if proc.returncode == 0:
+            return True, "Firmware erfolgreich auf den RCX übertragen." + ("\n" + out if out else "")
+        return False, "Firmwareübertragung fehlgeschlagen (nqc-Code %d).\n%s" % (proc.returncode, out)
+    except subprocess.TimeoutExpired:
+        return False, "Zeitüberschreitung bei der Firmwareübertragung."
+    except Exception as e:
+        return False, "Interner Fehler bei der Firmwareübertragung: %s" % e
 
 
 # ----------------------------------------------------------------------------
@@ -210,6 +255,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
             payload = {
                 "ok": True,
                 "nqc": find_nqc(),
+                "firmwareAvailable": bool(find_firmware()),
                 "system": platform.system(),
                 "message": "RCX-Bridge laeuft.",
             }
@@ -228,7 +274,13 @@ class BridgeHandler(BaseHTTPRequestHandler):
             send_cors(self, 403)
             self.wfile.write(b'{"ok":false,"message":"origin not allowed"}')
             return
-        if urlsplit(self.path).path != "/upload":
+        path = urlsplit(self.path).path
+        if path == "/firmware":
+            ok, msg = install_firmware()
+            send_cors(self, 200)
+            self.wfile.write(json.dumps({"ok": ok, "message": msg}).encode("utf-8"))
+            return
+        if path != "/upload":
             send_cors(self, 404)
             self.wfile.write(b'{"ok":false,"message":"unknown endpoint"}')
             return
@@ -272,10 +324,10 @@ class BridgeHandler(BaseHTTPRequestHandler):
                 {"ok": False, "message": "base64-Dekodierung fehlgeschlagen: %s" % e}).encode())
             return
 
-        ok, msg = transfer_rcx(rcx_bytes, program_slot=slot, run_after=run_after)
+        ok, msg, error = transfer_rcx(rcx_bytes, program_slot=slot, run_after=run_after)
         # Immer 200 OK senden, damit das JSON-Fehlerobjekt im Browser verarbeitet werden kann
         send_cors(self, 200)
-        self.wfile.write(json.dumps({"ok": ok, "message": msg}).encode("utf-8"))
+        self.wfile.write(json.dumps({"ok": ok, "message": msg, "error": error}).encode("utf-8"))
 
 
 def main():
@@ -285,9 +337,10 @@ def main():
     print("=" * 60)
     print(" System      :", platform.system(), platform.release())
     print(" nqc         :", nqc or "NICHT GEFUNDEN (siehe README)")
+    print(" Firmware    :", find_firmware() or "NICHT KONFIGURIERT (optional)")
     print(" nqc-Args    :", " ".join(nqc_serial_args()))
     print(" Port        :", BRIDGE_PORT)
-    print(" Endpunkte   : GET /status  GET /probe  POST /upload")
+    print(" Endpunkte   : GET /status  GET /probe  POST /upload  POST /firmware")
     print("-" * 60)
     if not nqc:
         print(" WARNUNG: Ohne nqc kann nicht uebertragen werden.")

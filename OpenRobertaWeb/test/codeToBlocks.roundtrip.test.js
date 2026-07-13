@@ -58,6 +58,11 @@ const cases = [
     ['SelectDisplay', 'SelectDisplay(DISPLAY_WATCH);', ['robActions_display_clear']],
     ['ClearTimer', 'ClearTimer(0);', ['robSensors_timer_reset']],
     ['ClearSensor', 'ClearSensor(SENSOR_3);', ['robSensors_encoder_reset', '<field name="SENSORPORT">3</field>']],
+    [
+        'while',
+        'while (true) {\nWait((500) / 10);\nOff(OUT_A+OUT_C);\n}',
+        ['robControls_loopForever', '<statement name="DO">', 'robControls_wait_time', 'robActions_motorDiff_stop'],
+    ],
 ];
 
 for (const [name, source, expectedFragments] of cases) {

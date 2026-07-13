@@ -264,8 +264,15 @@ define(["require", "exports"], function (require, exports) {
          * native command would produce a different robot program.
          */
         CodeToBlocksConverter.prototype.convertNqcToXML = function (nqcCode, configurationXml) {
-            var _this = this;
             var statements = this.getNqcStatements(nqcCode);
+            var blocks = this.convertNqcStatements(statements, configurationXml);
+            if (blocks.length === 0) {
+                throw new Error('Im task main wurden keine in Blöcke übersetzbaren NQC-Anweisungen gefunden.');
+            }
+            return this.generateXML(this.chainBlocks(blocks));
+        };
+        CodeToBlocksConverter.prototype.convertNqcStatements = function (statements, configurationXml) {
+            var _this = this;
             var blocks = [];
             var powerStateByPort = {};
             var powerStateByGroup = {};
@@ -288,6 +295,19 @@ define(["require", "exports"], function (require, exports) {
             var _loop_1 = function (index) {
                 var statement = statements[index];
                 var match = void 0;
+                if (statement.body) {
+                    flushPendingPowerBlocks();
+                    if (statement.text !== 'while (true)') {
+                        throw new NqcConversionError(statement.line, statement.text, 'nicht unterstützte Kontrollstruktur');
+                    }
+                    var loop = { type: 'robControls_loopForever' };
+                    var chainedBody = this_1.chainBlocks(this_1.convertNqcStatements(statement.body, configurationXml));
+                    if (chainedBody.length > 0) {
+                        loop.statements = { DO: chainedBody[0] };
+                    }
+                    blocks.push(loop);
+                    return out_index_1 = index, "continue";
+                }
                 if ((match = statement.text.match(/^SetPower\((OUT_[ABC](?:\+OUT_[ABC])?),\s*NEPO_PWR\((-?\d+)\)\)$/))) {
                     // A second SetPower is an independent visible command unless
                     // the previous one is consumed by a following OnFwd/OnRev.
@@ -403,27 +423,73 @@ define(["require", "exports"], function (require, exports) {
             if (Object.keys(pendingDirectionsByGroup).some(function (group) { return Object.keys(pendingDirectionsByGroup[group]).length > 0; })) {
                 throw new Error('NQC enthält unvollständige Motor-Richtungsbefehle. Die Blöcke wurden nicht verändert.');
             }
-            if (blocks.length === 0) {
-                throw new Error('Im task main wurden keine in Blöcke übersetzbaren NQC-Anweisungen gefunden.');
-            }
-            return this.generateXML(this.chainBlocks(blocks));
+            return blocks;
         };
         CodeToBlocksConverter.prototype.getNqcStatements = function (code) {
-            var main = code.match(/task\s+main\s*\(\s*\)\s*\{([\s\S]*?)\}/);
+            var main = /task\s+main\s*\(\s*\)\s*\{/m.exec(code);
             if (!main || main.index === undefined) {
                 throw new Error('NQC benötigt einen task main() { ... }-Block.');
             }
-            var bodyStartLine = code.substring(0, main.index + main[0].indexOf('{') + 1).split('\n').length;
-            var body = main[1].replace(/\/\/.*$/gm, '');
+            var openBrace = main.index + main[0].lastIndexOf('{');
+            var closeBrace = this.findMatchingBrace(code, openBrace);
+            if (closeBrace < 0) {
+                throw new Error('Der task main() enthält eine nicht geschlossene geschweifte Klammer.');
+            }
+            var bodyStartLine = code.substring(0, openBrace + 1).split('\n').length;
+            var body = code.substring(openBrace + 1, closeBrace).replace(/\/\/.*$/gm, '');
+            return this.parseNqcBody(body, bodyStartLine);
+        };
+        CodeToBlocksConverter.prototype.parseNqcBody = function (body, startLine) {
             var result = [];
-            body.split(';').forEach(function (part) {
-                var text = part.trim().replace(/\s+/g, ' ');
-                if (text) {
-                    var offset = body.indexOf(part);
-                    result.push({ line: bodyStartLine + body.substring(0, offset).split('\n').length - 1, text: text });
+            var index = 0;
+            var lineAt = function (offset) { return startLine + body.substring(0, offset).split('\n').length - 1; };
+            while (index < body.length) {
+                while (index < body.length && /\s/.test(body[index]))
+                    index++;
+                if (index >= body.length)
+                    break;
+                var remaining = body.substring(index);
+                var whileMatch = /^while\s*\(\s*true\s*\)\s*\{/i.exec(remaining);
+                if (whileMatch) {
+                    var openBrace = index + whileMatch[0].lastIndexOf('{');
+                    var closeBrace = this.findMatchingBrace(body, openBrace);
+                    if (closeBrace < 0) {
+                        throw new NqcConversionError(lineAt(index), 'while (true)', 'nicht geschlossene geschweifte Klammer');
+                    }
+                    result.push({
+                        line: lineAt(index),
+                        text: 'while (true)',
+                        body: this.parseNqcBody(body.substring(openBrace + 1, closeBrace), lineAt(openBrace + 1)),
+                    });
+                    index = closeBrace + 1;
+                    continue;
                 }
-            });
+                var semicolon = body.indexOf(';', index);
+                var brace = body.indexOf('{', index);
+                if (semicolon < 0 || (brace >= 0 && brace < semicolon)) {
+                    var end = brace >= 0 ? brace : body.length;
+                    var unsupported = body.substring(index, end).trim().replace(/\s+/g, ' ');
+                    throw new NqcConversionError(lineAt(index), unsupported || body[index], 'nicht unterstützte oder unvollständige NQC-Anweisung');
+                }
+                var text = body.substring(index, semicolon).trim().replace(/\s+/g, ' ');
+                if (text)
+                    result.push({ line: lineAt(index), text: text });
+                index = semicolon + 1;
+            }
             return result;
+        };
+        CodeToBlocksConverter.prototype.findMatchingBrace = function (text, openBrace) {
+            var depth = 0;
+            for (var index = openBrace; index < text.length; index++) {
+                if (text[index] === '{')
+                    depth++;
+                if (text[index] === '}') {
+                    depth--;
+                    if (depth === 0)
+                        return index;
+                }
+            }
+            return -1;
         };
         CodeToBlocksConverter.prototype.numberBlock = function (value) {
             return { type: 'math_number', fields: { NUM: value } };
@@ -544,6 +610,15 @@ define(["require", "exports"], function (require, exports) {
                     xml += "".concat(indentStr, "  <value name=\"").concat(name_2, "\">\n");
                     xml += this.blockToXML(valueBlock, indent + 2);
                     xml += "".concat(indentStr, "  </value>\n");
+                }
+            }
+            // Add statement inputs (for example the body of a forever loop).
+            if (block.statements) {
+                for (var _f = 0, _g = Object.entries(block.statements); _f < _g.length; _f++) {
+                    var _h = _g[_f], name_3 = _h[0], statementBlock = _h[1];
+                    xml += "".concat(indentStr, "  <statement name=\"").concat(name_3, "\">\n");
+                    xml += this.blockToXML(statementBlock, indent + 2);
+                    xml += "".concat(indentStr, "  </statement>\n");
                 }
             }
             // Add next block
