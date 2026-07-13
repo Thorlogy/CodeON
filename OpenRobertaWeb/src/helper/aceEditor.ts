@@ -248,6 +248,7 @@ const nqcCompleter = {
                 score: 950,
             },
             { caption: 'while', snippet: 'while (${1:SENSOR_1}) {\n\t${0}\n}', meta: 'NQC ↔ Block: Solange', score: 1000 },
+            { caption: 'while (true)', snippet: 'while (true) {\n\t${0}\n}', meta: 'NQC ↔ Block: Wiederhole unendlich', score: 1000 },
             { caption: 'forever', snippet: 'while (true) {\n\t${0}\n}', meta: 'NQC ↔ Block: Wiederhole unendlich', score: 950 },
             { caption: 'break', value: 'break;', meta: 'NQC ↔ Block: Schleife abbrechen', score: 900 },
             { caption: 'continue', value: 'continue;', meta: 'NQC ↔ Block: Nächster Schleifendurchlauf', score: 900 },
@@ -400,6 +401,11 @@ export function updateViewCodePreservingCursor(sourceCode: string) {
     codeView.moveCursorTo(Math.max(0, cursor.row + addedLines), cursor.column);
     codeView.clearSelection();
     highlightEverySecondLine(codeView);
+}
+
+/** True while an inserted Ace snippet still has an editable placeholder. */
+export function isViewCodeSnippetActive() {
+    return Boolean(codeView && (codeView as any).tabstopManager);
 }
 
 export function setCodeLanguage(languageFileExtension: string) {

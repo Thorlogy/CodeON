@@ -79,7 +79,7 @@ Signatur, Parameter, Rückgabetyp und Aufrufe gemeinsam importiert werden.
 
 Die Vorschlagsliste zeigt nur Einträge mit einem grafischen Rückweg als
 `NQC ↔ Block`. `OpenRobertaWeb/test/codeToBlocks.roundtrip.test.js` prüft 23
-Roundtrip-Fälle und das Vorhandensein aller 43 kuratierten Vorschläge, darunter
+Roundtrip-Fälle und das Vorhandensein aller 44 kuratierten Vorschläge, darunter
 verschachtelte Kontrollstrukturen und Ausdrücke. Ein Fehler verändert den
 vorhandenen Blockly-Workspace nicht. Zusätzliche Assertions prüfen die
 konfigurationsabhängige, duplikatfreie und idempotente Sensorinitialisierung.

@@ -97,7 +97,15 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
         if (!isNqcSource())
             return;
         window.clearTimeout(nqcSensorSetupTimer);
-        nqcSensorSetupTimer = window.setTimeout(prepareNqcCode, 180);
+        nqcSensorSetupTimer = window.setTimeout(function addSensorSetupAfterSnippet() {
+            // Replacing the complete editor value would cancel Ace's active snippet
+            // and make its selected parameter impossible to overwrite.
+            if (ACE_EDITOR.isViewCodeSnippetActive()) {
+                nqcSensorSetupTimer = window.setTimeout(addSensorSetupAfterSnippet, 180);
+                return;
+            }
+            prepareNqcCode();
+        }, 180);
     }
     function prepareNqcCode() {
         var code = ACE_EDITOR.getViewCode();

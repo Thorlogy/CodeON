@@ -143,7 +143,7 @@ Für `SetPower` wurde die RCX-Expert-Toolbox um
 `FLOAT`, falls solcher nativer Code manuell eingegeben wird.
 
 Der Test `OpenRobertaWeb/test/codeToBlocks.roundtrip.test.js` führt jetzt 23
-Abnahmen aus und kontrolliert zusätzlich alle 43 kuratierten Vorschläge. Er
+Abnahmen aus und kontrolliert zusätzlich alle 44 kuratierten Vorschläge. Er
 prüft neben Aktionen auch Kontrollstrukturen, verschachtelte Logik, Mathematik,
 Sensorwerte, Kommentare, Warteblöcke, fortbestehende Motorleistung und einen
 bewusst fehlerhaften Differentialbefehl.
@@ -219,3 +219,19 @@ Klammer-Eingabe geprüft. Die Einrückung der Zeilen `task`, `if`, innere `}` un
 äußere `}` betrug dabei erwartungsgemäß 0, 4, 4 und 0 Leerzeichen. Zusätzlich
 wurden die tatsächlich erzeugten Ace-Syntaxklassen im sichtbaren Editor
 kontrolliert.
+
+## 12. Logikparameter und Endlosschleife im NQC-Editor
+
+`while (true)` ist zusätzlich zum Kurzbegriff `forever` als eigener,
+unmittelbar auffindbarer Vorschlag verfügbar und wird beim Übernehmen als
+grafischer Block „Wiederhole unendlich“ dargestellt.
+
+Die automatische Ergänzung der zur Roboterkonfiguration passenden
+`SetSensor`-Zeilen wartet nun, solange ein Ace-Vorschlag noch einen aktiven
+Parameter-Platzhalter besitzt. Dadurch bleibt beispielsweise `SENSOR_1` in
+einem eingefügten `if`-Block markiert und kann direkt durch einen Sensor oder
+eine vollständige Bedingung ersetzt werden. Nach Abschluss der Eingabe wird
+die benötigte Sensorinitialisierung weiterhin automatisch ergänzt.
+
+Vergleichswerte wie `0` und `10` werden beim Import als echte, editierbare
+Zahlenblöcke in die grafische Darstellung übernommen.

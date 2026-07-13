@@ -66,6 +66,11 @@ assert.strictEqual(converterModule.ensureNqcSensorSetup(sensorSetup, configurati
 const correctedSensorSetup = converterModule.ensureNqcSensorSetup(wrap('SetSensor(SENSOR_1, SENSOR_LIGHT);\nif (SENSOR_1) {\n}'), configuration);
 assert(correctedSensorSetup.includes('SetSensor(SENSOR_1, SENSOR_TOUCH);'), 'wrong setup must follow the robot configuration');
 
+const editableLogicParameters = convert('if (SENSOR_2 == 0) {\n}\nif (SENSOR_1 >= 10) {\n}');
+assert.strictEqual((editableLogicParameters.match(/type="logic_compare"/g) || []).length, 2, 'both NQC comparisons must become graphical logic blocks');
+assert(editableLogicParameters.includes('<field name="NUM">0</field>'), 'zero must remain an editable number block');
+assert(editableLogicParameters.includes('<field name="NUM">10</field>'), 'ten must remain an editable number block');
+
 const cases = [
     ['SetPower', 'SetPower(OUT_A, NEPO_PWR(30));', ['robActions_motor_setPower', '<field name="MOTORPORT">A</field>', '<field name="NUM">30</field>']],
     ['OnFwd', 'SetPower(OUT_A+OUT_C, NEPO_PWR(30));\nOnFwd(OUT_A); OnRev(OUT_C);', ['robActions_motorDiff_on', '<field name="DIRECTION">FOREWARD</field>']],
@@ -159,6 +164,7 @@ const expectedCaptions = [
     'for',
     'repeat',
     'while',
+    'while (true)',
     'forever',
     'break',
     'continue',
@@ -184,13 +190,17 @@ for (const caption of expectedCaptions) {
     assert(aceSource.includes(`caption: '${caption}'`), `missing NQC completion: ${caption}`);
 }
 
-for (const caption of ['if', 'if … else', 'for', 'repeat', 'while', 'forever', 'wait until', 'wait with action']) {
+for (const caption of ['if', 'if … else', 'for', 'repeat', 'while', 'while (true)', 'forever', 'wait until', 'wait with action']) {
     const escapedCaption = caption.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     assert(new RegExp(`caption: '${escapedCaption}',[\\s\\S]{0,220}?snippet:`).test(aceSource), `${caption}: multiline completion must be an indented snippet`);
 }
 assert(aceSource.includes("langToSet = 'nqc';"), 'NQC must use its own Ace syntax mode');
 assert(aceSource.includes('ed.session.setTabSize(4);'), 'NQC convention must use four-space indentation');
 assert(aceSource.includes('ed.session.setUseSoftTabs(true);'), 'NQC convention must not insert tab characters');
+assert(aceSource.includes('isViewCodeSnippetActive'), 'sensor setup must preserve active NQC snippet parameters');
+
+const progCodeControllerSource = fs.readFileSync(path.join(__dirname, '../src/app/roberta/controller/progCode.controller.js'), 'utf8');
+assert(progCodeControllerSource.includes('ACE_EDITOR.isViewCodeSnippetActive()'), 'automatic sensor setup must wait for snippet parameter editing');
 
 const serverNqcMode = fs.readFileSync(path.join(__dirname, '../../OpenRobertaServer/staticResources/libs/ace/mode-nqc.js'), 'utf8');
 const applicationNqcMode = fs.readFileSync(path.join(__dirname, '../../application/staticResources/libs/ace/mode-nqc.js'), 'utf8');

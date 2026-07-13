@@ -4,7 +4,7 @@
 */
 define(["require", "exports"], function (require, exports) {
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.setCodeLanguage = exports.updateViewCodePreservingCursor = exports.setViewCode = exports.setEditorCode = exports.getViewCode = exports.getEditorCode = exports.setViewCodeChangeHandler = exports.setWasEditedByUser = exports.getCurrentLanguage = exports.wasEditedByUser = exports.init = void 0;
+    exports.setCodeLanguage = exports.isViewCodeSnippetActive = exports.updateViewCodePreservingCursor = exports.setViewCode = exports.setEditorCode = exports.getViewCode = exports.getEditorCode = exports.setViewCodeChangeHandler = exports.setWasEditedByUser = exports.getCurrentLanguage = exports.wasEditedByUser = exports.init = void 0;
     var codeView;
     var editor;
     var currentLanguage;
@@ -248,6 +248,7 @@ define(["require", "exports"], function (require, exports) {
                     score: 950,
                 },
                 { caption: 'while', snippet: 'while (${1:SENSOR_1}) {\n\t${0}\n}', meta: 'NQC ↔ Block: Solange', score: 1000 },
+                { caption: 'while (true)', snippet: 'while (true) {\n\t${0}\n}', meta: 'NQC ↔ Block: Wiederhole unendlich', score: 1000 },
                 { caption: 'forever', snippet: 'while (true) {\n\t${0}\n}', meta: 'NQC ↔ Block: Wiederhole unendlich', score: 950 },
                 { caption: 'break', value: 'break;', meta: 'NQC ↔ Block: Schleife abbrechen', score: 900 },
                 { caption: 'continue', value: 'continue;', meta: 'NQC ↔ Block: Nächster Schleifendurchlauf', score: 900 },
@@ -392,6 +393,11 @@ define(["require", "exports"], function (require, exports) {
         highlightEverySecondLine(codeView);
     }
     exports.updateViewCodePreservingCursor = updateViewCodePreservingCursor;
+    /** True while an inserted Ace snippet still has an editable placeholder. */
+    function isViewCodeSnippetActive() {
+        return Boolean(codeView && codeView.tabstopManager);
+    }
+    exports.isViewCodeSnippetActive = isViewCodeSnippetActive;
     function setCodeLanguage(languageFileExtension) {
         var langToSet;
         switch (languageFileExtension) {
