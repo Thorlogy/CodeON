@@ -2592,8 +2592,13 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
         function RcxConnection() {
             var _this = _super.call(this) || this;
             _this.bridgeUrl = 'http://127.0.0.1:2222';
+            _this.setupGuideUrl = 'https://github.com/Thorlogy/CodeON/blob/feature/sim-3d-toggle/RobotRCX/README.md';
             return _this;
         }
+        RcxConnection.prototype.init = function () {
+            _super.prototype.init.call(this);
+            this._checkLocalSetup();
+        };
         RcxConnection.prototype.setState = function () { };
         RcxConnection.prototype.run = function (result) {
             if (result.rc !== 'ok') {
@@ -2618,8 +2623,8 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
                 body: JSON.stringify({
                     compiledCode: result.compiledCode,
                     slot: 1,
-                    run: false
-                })
+                    run: false,
+                }),
             })
                 .then(function (resp) { return resp.json().catch(function () { return ({ ok: resp.ok, message: '' }); }); })
                 .then(function (data) {
@@ -2638,10 +2643,50 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
             })
                 .catch(function (err) {
                 $('body>.pace').fadeOut();
-                _this._bridgeError('Die RCX-Bridge ist nicht erreichbar. Bitte starte sie zuerst mit ' +
-                    '"python3 rcx-bridge.py" und stelle sicher, dass der USB-Tower ' +
-                    'eingesteckt und der RCX eingeschaltet ist.\n\nTechnisch: ' + err);
+                _this._bridgeError('Die RCX-Bridge ist nicht erreichbar. Starte CodeON bitte mit ' +
+                    '„CodeON-RCX-starten“ und stelle sicher, dass der USB-Tower ' +
+                    'eingesteckt und der RCX eingeschaltet ist.\n\nTechnisch: ' +
+                    err);
             });
+        };
+        RcxConnection.prototype._checkLocalSetup = function () {
+            var _this = this;
+            var controller = typeof AbortController !== 'undefined' ? new AbortController() : undefined;
+            var timeout = window.setTimeout(function () { return controller === null || controller === void 0 ? void 0 : controller.abort(); }, 1500);
+            fetch(this.bridgeUrl + '/status', controller ? { signal: controller.signal } : undefined)
+                .then(function (response) { return response.json(); })
+                .then(function (status) {
+                if (!status || !status.nqc) {
+                    _this._showSetupNoticeOnce('nqc', '<strong>Für die Übertragung auf den RCX fehlt noch NQC.</strong><br><br>' +
+                        'Starte im CodeON-Ordner die Datei <code>CodeON-RCX-starten</code>. ' +
+                        'Der Startassistent prüft alle benötigten Komponenten und zeigt die passende Bezugsquelle.<br><br>' +
+                        '<a href="' +
+                        _this.setupGuideUrl +
+                        '" target="_blank" rel="noopener noreferrer">RCX-Einsteigeranleitung öffnen</a>');
+                }
+            })
+                .catch(function () {
+                _this._showSetupNoticeOnce('bridge', '<strong>Die lokale RCX-Übertragung ist noch nicht gestartet.</strong><br><br>' +
+                    'Öffne im CodeON-Ordner per Doppelklick <code>CodeON-RCX-starten.command</code> (macOS) ' +
+                    'oder <code>CodeON-RCX-starten.cmd</code> (Windows). Unter Linux verwendest du ' +
+                    '<code>./start-codeon-rcx.sh</code>.<br><br>' +
+                    '<a href="' +
+                    _this.setupGuideUrl +
+                    '" target="_blank" rel="noopener noreferrer">RCX-Einsteigeranleitung öffnen</a>');
+            })
+                .finally(function () { return window.clearTimeout(timeout); });
+        };
+        RcxConnection.prototype._showSetupNoticeOnce = function (reason, html) {
+            var key = 'codeon.rcx.setupNotice.' + reason;
+            try {
+                if (window.sessionStorage.getItem(key))
+                    return;
+                window.sessionStorage.setItem(key, 'shown');
+            }
+            catch (_error) {
+                // The notice still works when browser storage is disabled.
+            }
+            MSG.displayPopupMessage('Blockly.Msg.POPUP_ATTENTION', html, 'OK');
         };
         RcxConnection.prototype._offerFirmwareInstall = function (result) {
             var _this = this;
@@ -2679,8 +2724,7 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
             GUISTATE_C.setConnectionState('wait');
         };
         RcxConnection.prototype.probe = function () {
-            return fetch(this.bridgeUrl + '/probe')
-                .then(function (r) { return r.json(); });
+            return fetch(this.bridgeUrl + '/probe').then(function (r) { return r.json(); });
         };
         return RcxConnection;
     }(abstract_connections_1.AbstractPromptConnection));

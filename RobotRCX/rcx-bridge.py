@@ -240,6 +240,32 @@ def send_cors(handler, status=200, ctype="application/json"):
     handler.end_headers()
 
 
+def status_payload():
+    """Describe the local setup so CodeON can offer actionable help."""
+    nqc = find_nqc()
+    firmware = find_firmware()
+    return {
+        "ok": True,
+        "nqc": nqc,
+        "firmwareAvailable": bool(firmware),
+        "firmware": firmware,
+        "system": platform.system(),
+        "message": "RCX-Bridge laeuft.",
+        "setupGuide": "https://github.com/Thorlogy/CodeON/blob/feature/sim-3d-toggle/RobotRCX/README.md",
+        "requirements": {
+            "nqc": {
+                "installed": bool(nqc),
+                "download": "https://github.com/BrickBot/nqc",
+            },
+            "firmware": {
+                "installed": bool(firmware),
+                "optional": True,
+                "expectedFolder": "RobotRCX/firmware",
+            },
+        },
+    }
+
+
 class BridgeHandler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         sys.stdout.write("[RCX-Bridge] " + (fmt % args) + "\n")
@@ -252,15 +278,8 @@ class BridgeHandler(BaseHTTPRequestHandler):
         # /probe   -> RCX-Versionsabfrage (Verbindungstest)
         path = urlsplit(self.path).path
         if path == "/status":
-            payload = {
-                "ok": True,
-                "nqc": find_nqc(),
-                "firmwareAvailable": bool(find_firmware()),
-                "system": platform.system(),
-                "message": "RCX-Bridge laeuft.",
-            }
             send_cors(self)
-            self.wfile.write(json.dumps(payload).encode("utf-8"))
+            self.wfile.write(json.dumps(status_payload()).encode("utf-8"))
         elif path == "/probe":
             ok, msg = probe_rcx()
             send_cors(self)

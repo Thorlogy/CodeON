@@ -92,12 +92,17 @@ function _startRcxBridge {
     return 0
   fi
 
-  case "$(uname -s)" in
-    Darwin) NQC_BINARY="$CC_RESOURCE_DIR/RobotRCX/osx/nqc" ;;
-    Linux)  NQC_BINARY="$(command -v nqc 2>/dev/null)" ;;
-    *)      echo 'RCX bridge autostart is supported by ora.sh on macOS and Linux only'
-            return 0 ;;
-  esac
+  if [[ -n "$NQC_PATH" && -x "$NQC_PATH" ]]
+  then
+    NQC_BINARY="$NQC_PATH"
+  else
+    case "$(uname -s)" in
+      Darwin) NQC_BINARY="$CC_RESOURCE_DIR/RobotRCX/osx/nqc" ;;
+      Linux)  NQC_BINARY="$(command -v nqc 2>/dev/null)" ;;
+      *)      echo 'RCX bridge autostart is supported by ora.sh on macOS and Linux only'
+              return 0 ;;
+    esac
+  fi
 
   if [[ -z "$NQC_BINARY" || ! -x "$NQC_BINARY" ]]
   then

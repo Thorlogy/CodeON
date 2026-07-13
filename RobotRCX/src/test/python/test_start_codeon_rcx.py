@@ -1,0 +1,108 @@
+import importlib.util
+import os
+import tempfile
+import unittest
+import zipfile
+from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+
+STARTER_PATH = Path(__file__).resolve().parents[4] / "start-codeon-rcx.py"
+SPEC = importlib.util.spec_from_file_location("start_codeon_rcx", STARTER_PATH)
+STARTER = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(STARTER)
+
+PACKAGER_PATH = STARTER_PATH.parent / "scripts/build-codeon-rcx-package.py"
+PACKAGER_SPEC = importlib.util.spec_from_file_location("build_codeon_rcx_package", PACKAGER_PATH)
+PACKAGER = importlib.util.module_from_spec(PACKAGER_SPEC)
+PACKAGER_SPEC.loader.exec_module(PACKAGER)
+
+
+class CodeOnRcxStarterTest(unittest.TestCase):
+
+    def test_java_version_supports_modern_and_legacy_formats(self):
+        modern = MagicMock(stderr='openjdk version "17.0.12"', stdout="")
+        legacy = MagicMock(stderr='java version "1.8.0_402"', stdout="")
+        with patch.object(STARTER.subprocess, "run", side_effect=[modern, legacy]):
+            self.assertEqual(17, STARTER.java_major_version("java"))
+            self.assertEqual(8, STARTER.java_major_version("java"))
+
+    def test_configured_nqc_has_priority(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            nqc = Path(tmp) / "nqc"
+            nqc.write_text("test", encoding="utf-8")
+            nqc.chmod(0o755)
+            with patch.dict(os.environ, {"NQC_PATH": str(nqc)}):
+                self.assertEqual(nqc.resolve(), STARTER.find_nqc())
+
+    def test_optional_firmware_does_not_block_start(self):
+        checks = {
+            "python": {"ok": True},
+            "java": {"ok": True},
+            "codeon": {"ok": True},
+            "nqc": {"ok": True},
+            "firmware": {"ok": False, "optional": True},
+        }
+        self.assertEqual([], STARTER.required_missing(checks))
+
+    def test_missing_nqc_blocks_start_with_clear_key(self):
+        checks = {
+            "python": {"ok": True},
+            "java": {"ok": True},
+            "codeon": {"ok": True},
+            "nqc": {"ok": False},
+        }
+        self.assertEqual(["nqc"], STARTER.required_missing(checks))
+
+    def test_mac_environment_copies_user_nqc_for_server_and_bridge(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            nqc = tmp_path / "source" / "nqc"
+            nqc.parent.mkdir()
+            nqc.write_text("test", encoding="utf-8")
+            nqc.chmod(0o755)
+            runtime = tmp_path / "runtime"
+            with patch.object(STARTER, "RUNTIME", runtime), patch.object(STARTER.platform, "system", return_value="Darwin"):
+                env, compiler_base = STARTER.prepare_environment(nqc, None)
+
+            self.assertEqual(str(nqc), env["NQC_PATH"])
+            self.assertEqual(runtime / "crosscompiler", compiler_base)
+            copied = compiler_base / "RobotRCX" / "osx" / "nqc"
+            self.assertTrue(copied.is_file())
+            self.assertTrue(os.access(copied, os.X_OK))
+
+    def test_ready_to_run_application_contains_rcx_setup_help(self):
+        root = STARTER_PATH.parent
+        source_js = root / "OpenRobertaServer/staticResources/js/app/roberta/controller/connections/connections.js"
+        application_js = root / "application/staticResources/js/app/roberta/controller/connections/connections.js"
+        for javascript in (source_js, application_js):
+            text = javascript.read_text(encoding="utf-8")
+            self.assertIn("CodeON-RCX-starten.command", text)
+            self.assertIn("feature/sim-3d-toggle/RobotRCX/README.md", text)
+
+    def test_ready_to_run_application_uses_nqc_path_from_assistant(self):
+        jar = STARTER_PATH.parent / "application/lib/RobotRCX.jar"
+        with zipfile.ZipFile(jar) as archive:
+            compiler = archive.read("de/fhg/iais/roberta/worker/compile/RcxCompilerWorker.class")
+        self.assertIn(b"NQC_PATH", compiler)
+
+    def test_clickable_launchers_are_present(self):
+        root = STARTER_PATH.parent
+        for name in ("CodeON-RCX-starten.command", "CodeON-RCX-starten.cmd", "start-codeon-rcx.sh"):
+            self.assertTrue((root / name).is_file(), name)
+
+    def test_compact_user_package_contains_runtime_but_no_proprietary_tools(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            archive_path = PACKAGER.build_package("test", Path(tmp))
+            with zipfile.ZipFile(archive_path) as archive:
+                names = set(archive.namelist())
+
+        self.assertIn("CodeON-RCX-test/CodeON-RCX-starten.command", names)
+        self.assertIn("CodeON-RCX-test/application/lib/RobotRCX.jar", names)
+        self.assertIn("CodeON-RCX-test/RobotRCX/rcx-bridge.py", names)
+        self.assertNotIn("CodeON-RCX-test/RobotRCX/bin/nqc", names)
+        self.assertFalse(any(name.lower().endswith(".lgo") for name in names))
+
+
+if __name__ == "__main__":
+    unittest.main()

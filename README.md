@@ -4,6 +4,10 @@ Open Roberta Lab
 [![Unit Test](https://github.com/OpenRoberta/openroberta-lab/actions/workflows/unit_test_triggered_by_develop_push.yml/badge.svg?branch=develop)](https://github.com/OpenRoberta/openroberta-lab/actions/workflows/unit_test.yml)
 [![Integration Test (Nightly)](https://github.com/OpenRoberta/openroberta-lab/actions/workflows/integration_test_triggered_by_cron.yml/badge.svg?branch=develop&event=schedule)](https://github.com/OpenRoberta/openroberta-lab/actions/workflows/integration_test_triggered_by_cron.yml)
 
+> **CodeON einfach mit LEGO RCX verwenden:** Bitte der deutschen
+> [Schritt-für-Schritt-Anleitung](RCX-ERSTE-SCHRITTE.md) folgen. Für die normale
+> Nutzung sind kein Maven- und kein npm-Build erforderlich.
+
 ### Introduction
 
 The steps below explain how to get started with the _sources_ of the OpenRoberta lab. If you just want to run the server locally only, please have a look into
@@ -238,9 +242,20 @@ We use BrowserStack for Cross-Browser Testing
 ### CodeON - RCX Integration
 Dieses Projekt (CodeON) beinhaltet eine Integration des LEGO Mindstorms RCX.
 Weil WebUSB unter macOS stark durch Security-Policies eingeschränkt ist, nutzt die RCX-Übertragung eine lokale Python-Bridge.
-Um Programme auf den RCX zu übertragen:
-1. Starte die RCX-Bridge: `python3 RobotRCX/tools/rcx-bridge/rcx-bridge.py`
-2. Schließe den LEGO USB-Infrarot-Tower an deinen Mac an.
-3. Platziere den eingeschalteten RCX-Brick vor dem Tower.
-4. Klicke im CodeON Lab auf "Ausführen".
+
+Für Anwender gibt es einen gemeinsamen Startassistenten, der CodeON und Bridge
+startet und fehlende Voraussetzungen mit Bezugsquellen anzeigt:
+
+- macOS: `CodeON-RCX-starten.command` doppelt anklicken
+- Windows: `CodeON-RCX-starten.cmd` doppelt anklicken
+- Linux: `./start-codeon-rcx.sh`
+
+Auf macOS kann der freie NQC-Compiler einmalig per Doppelklick auf
+`RCX-Werkzeuge-installieren.command` aus dem offiziellen BrickBot-Quellcode
+gebaut werden. Maven und npm werden für die normale Nutzung nicht benötigt.
+
+Danach den LEGO USB-Infrarot-Tower anschließen, den eingeschalteten RCX vor dem
+Tower platzieren und in CodeON auf „Ausführen“ klicken.
+
 Das Programm wird serverseitig in NQC kompiliert, an die Bridge geschickt und via `nqc` an den RCX übertragen.
+Die vollständige Einsteigeranleitung steht in `RobotRCX/README.md`.

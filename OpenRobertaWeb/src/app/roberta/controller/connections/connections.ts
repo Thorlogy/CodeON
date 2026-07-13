@@ -2138,9 +2138,15 @@ export class RcjConnection extends AbstractConnection {
 }
 export class RcxConnection extends AbstractPromptConnection {
     private readonly bridgeUrl: string = 'http://127.0.0.1:2222';
+    private readonly setupGuideUrl: string = 'https://github.com/Thorlogy/CodeON/blob/feature/sim-3d-toggle/RobotRCX/README.md';
 
     constructor() {
         super();
+    }
+
+    public override init(): void {
+        super.init();
+        this._checkLocalSetup();
     }
 
     public setState(): void {}
@@ -2171,37 +2177,83 @@ export class RcxConnection extends AbstractPromptConnection {
             body: JSON.stringify({
                 compiledCode: result.compiledCode,
                 slot: 1,
-                run: false
+                run: false,
+            }),
+        })
+            .then((resp) => resp.json().catch(() => ({ ok: resp.ok, message: '' })))
+            .then((data) => {
+                $('body>.pace').fadeOut();
+                if (data && data.ok) {
+                    result.message = 'MESSAGE_RESTART_APP_TITLE';
+                    MSG.displayMessage('POPUP_DOWNLOAD_STEP_1', 'TOAST', '', GUISTATE_C.getProgramName(), null);
+                    GUISTATE_C.setConnectionState('wait');
+                } else if (data && data.error === 'firmware_missing') {
+                    this._offerFirmwareInstall(result);
+                } else {
+                    this._bridgeError((data && data.message) || 'Unbekannter Fehler bei der Uebertragung.');
+                }
             })
-        })
-        .then(resp => resp.json().catch(() => ({ ok: resp.ok, message: '' })))
-        .then(data => {
-            $('body>.pace').fadeOut();
-            if (data && data.ok) {
-                result.message = 'MESSAGE_RESTART_APP_TITLE';
-                MSG.displayMessage('POPUP_DOWNLOAD_STEP_1', 'TOAST', '', GUISTATE_C.getProgramName(), null);
-                GUISTATE_C.setConnectionState('wait');
-            } else if (data && data.error === 'firmware_missing') {
-                this._offerFirmwareInstall(result);
-            } else {
-                this._bridgeError((data && data.message) || 'Unbekannter Fehler bei der Uebertragung.');
-            }
-        })
-        .catch(err => {
-            $('body>.pace').fadeOut();
-            this._bridgeError(
-                'Die RCX-Bridge ist nicht erreichbar. Bitte starte sie zuerst mit ' +
-                '"python3 rcx-bridge.py" und stelle sicher, dass der USB-Tower ' +
-                'eingesteckt und der RCX eingeschaltet ist.\n\nTechnisch: ' + err);
-        });
+            .catch((err) => {
+                $('body>.pace').fadeOut();
+                this._bridgeError(
+                    'Die RCX-Bridge ist nicht erreichbar. Starte CodeON bitte mit ' +
+                        '„CodeON-RCX-starten“ und stelle sicher, dass der USB-Tower ' +
+                        'eingesteckt und der RCX eingeschaltet ist.\n\nTechnisch: ' +
+                        err
+                );
+            });
+    }
+
+    private _checkLocalSetup(): void {
+        const controller = typeof AbortController !== 'undefined' ? new AbortController() : undefined;
+        const timeout = window.setTimeout(() => controller?.abort(), 1500);
+        fetch(this.bridgeUrl + '/status', controller ? { signal: controller.signal } : undefined)
+            .then((response) => response.json())
+            .then((status) => {
+                if (!status || !status.nqc) {
+                    this._showSetupNoticeOnce(
+                        'nqc',
+                        '<strong>Für die Übertragung auf den RCX fehlt noch NQC.</strong><br><br>' +
+                            'Starte im CodeON-Ordner die Datei <code>CodeON-RCX-starten</code>. ' +
+                            'Der Startassistent prüft alle benötigten Komponenten und zeigt die passende Bezugsquelle.<br><br>' +
+                            '<a href="' +
+                            this.setupGuideUrl +
+                            '" target="_blank" rel="noopener noreferrer">RCX-Einsteigeranleitung öffnen</a>'
+                    );
+                }
+            })
+            .catch(() => {
+                this._showSetupNoticeOnce(
+                    'bridge',
+                    '<strong>Die lokale RCX-Übertragung ist noch nicht gestartet.</strong><br><br>' +
+                        'Öffne im CodeON-Ordner per Doppelklick <code>CodeON-RCX-starten.command</code> (macOS) ' +
+                        'oder <code>CodeON-RCX-starten.cmd</code> (Windows). Unter Linux verwendest du ' +
+                        '<code>./start-codeon-rcx.sh</code>.<br><br>' +
+                        '<a href="' +
+                        this.setupGuideUrl +
+                        '" target="_blank" rel="noopener noreferrer">RCX-Einsteigeranleitung öffnen</a>'
+                );
+            })
+            .finally(() => window.clearTimeout(timeout));
+    }
+
+    private _showSetupNoticeOnce(reason: string, html: string): void {
+        const key = 'codeon.rcx.setupNotice.' + reason;
+        try {
+            if (window.sessionStorage.getItem(key)) return;
+            window.sessionStorage.setItem(key, 'shown');
+        } catch (_error) {
+            // The notice still works when browser storage is disabled.
+        }
+        MSG.displayPopupMessage('Blockly.Msg.POPUP_ATTENTION', html, 'OK');
     }
 
     private _offerFirmwareInstall(result: any): void {
         const confirmed = window.confirm(
             'Auf dem RCX wurde keine Firmware erkannt.\n\n' +
-            'Soll CodeON jetzt zuerst die konfigurierte LEGO-RCX-Firmware übertragen ' +
-            'und danach das Programm erneut senden?\n\n' +
-            'Der RCX muss eingeschaltet sein und direkt vor dem Infrarot-Turm stehen.'
+                'Soll CodeON jetzt zuerst die konfigurierte LEGO-RCX-Firmware übertragen ' +
+                'und danach das Programm erneut senden?\n\n' +
+                'Der RCX muss eingeschaltet sein und direkt vor dem Infrarot-Turm stehen.'
         );
         if (!confirmed) {
             $('body>.pace').fadeOut();
@@ -2211,8 +2263,8 @@ export class RcxConnection extends AbstractPromptConnection {
 
         $('body>.pace').show();
         fetch(this.bridgeUrl + '/firmware', { method: 'POST' })
-            .then(resp => resp.json().catch(() => ({ ok: resp.ok, message: '' })))
-            .then(data => {
+            .then((resp) => resp.json().catch(() => ({ ok: resp.ok, message: '' })))
+            .then((data) => {
                 if (data && data.ok) {
                     this._uploadProgram(result);
                 } else {
@@ -2220,7 +2272,7 @@ export class RcxConnection extends AbstractPromptConnection {
                     this._bridgeError((data && data.message) || 'Die RCX-Firmware konnte nicht übertragen werden.');
                 }
             })
-            .catch(err => {
+            .catch((err) => {
                 $('body>.pace').fadeOut();
                 this._bridgeError('Fehler beim Aufruf der Firmwareübertragung.\n\nTechnisch: ' + err);
             });
@@ -2235,7 +2287,6 @@ export class RcxConnection extends AbstractPromptConnection {
     }
 
     public probe(): Promise<any> {
-        return fetch(this.bridgeUrl + '/probe')
-            .then(r => r.json());
+        return fetch(this.bridgeUrl + '/probe').then((r) => r.json());
     }
 }

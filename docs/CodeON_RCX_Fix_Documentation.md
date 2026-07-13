@@ -220,7 +220,58 @@ Klammer-Eingabe geprüft. Die Einrückung der Zeilen `task`, `if`, innere `}` un
 wurden die tatsächlich erzeugten Ace-Syntaxklassen im sichtbaren Editor
 kontrolliert.
 
-## 12. Logikparameter und Endlosschleife im NQC-Editor
+## 12. Einsteigerfreundlicher lokaler RCX-Start
+
+Für Anwender ist kein Maven-/npm-Entwicklerbuild mehr erforderlich. Der neue
+plattformübergreifende Assistent `start-codeon-rcx.py` verwendet die bereits
+mitgelieferte Anwendung unter `application` und verwaltet eine getrennte
+Laufzeitumgebung unter `.codeon-runtime`.
+
+Direkte Starter:
+
+- macOS: `CodeON-RCX-starten.command`
+- Windows: `CodeON-RCX-starten.cmd`
+- Linux: `start-codeon-rcx.sh`
+
+Der Assistent prüft Python, Java, CodeON, NQC, die optionale Firmware, Bridge
+und Server. Fehlende zwingende Komponenten werden nicht nur gemeldet, sondern
+mit ihrer offiziellen Bezugsquelle ausgegeben. Bridge und Server werden als
+Laufzustände `AUS` beziehungsweise `LÄUFT` behandelt und nicht irreführend als
+fehlende Installationen bezeichnet.
+
+Auf macOS baut `RCX-Werkzeuge-installieren.command` NQC aus dem offiziellen
+BrickBot-Quellcode. Homebrew-Pfade werden dabei dynamisch erkannt, sodass der
+frühere fest codierte Intel-Pfad nicht mehr nötig ist. Die proprietäre
+LEGO-Firmware wird weiterhin nicht heruntergeladen.
+
+Der Startassistent:
+
+1. bereitet NQC für Bridge und Server aus demselben lokalen Binary vor,
+2. erstellt bei Bedarf eine eigene eingebettete Datenbank,
+3. startet Bridge und fertige CodeON-Anwendung,
+4. wartet auf deren tatsächliche Erreichbarkeit,
+5. öffnet den Browser und
+6. beendet selbst gestartete Prozesse gemeinsam.
+
+Die RCX-Weboberfläche fragt beim Öffnen des Systems zusätzlich den lokalen
+Bridge-Status ab. Bei fehlender Bridge oder fehlendem NQC erscheint einmal pro
+Browsersitzung eine verständliche Einrichtungshilfe mit Link zur aktuellen
+RCX-Anleitung. Auch Fehler beim späteren Übertragen verweisen nun auf den
+gemeinsamen Starter statt auf einen einzelnen technischen Python-Aufruf.
+
+Automatisiert geprüft werden unter anderem die Priorität von `NQC_PATH`, die
+optionale Firmwarebehandlung, die lokale Compilerablage, die enthaltenen
+Starter, die aktualisierte fertige Anwendung und das gepackte RCX-Plugin. Die
+Bridge-Statusantwort enthält maschinenlesbare Voraussetzungen und
+Bezugsquellen.
+
+Die eingecheckte fertige Anwendung wurde unabhängig vom Entwickler-Server mit
+einer neu angelegten Laufzeitdatenbank auf Port 1998 gestartet. Startseite,
+Asset-Version und der ausgelieferte RCX-Einrichtungshinweis wurden dort direkt
+per HTTP erfolgreich geprüft. Parallel laufende Dienste auf Port 1999/2222
+erkennt der Assistent und startet keine Duplikate.
+
+## 13. Logikparameter und Endlosschleife im NQC-Editor
 
 `while (true)` ist zusätzlich zum Kurzbegriff `forever` als eigener,
 unmittelbar auffindbarer Vorschlag verfügbar und wird beim Übernehmen als

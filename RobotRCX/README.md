@@ -7,11 +7,80 @@ uebertraegt das Programm ueber eine lokale Bridge und den Infrarot-Tower.
 [CodeON im Browser] -> [RCX-Bridge auf 127.0.0.1:2222] -> [nqc] -> [IR-Tower] -> [RCX]
 ```
 
+## Schnellstart ohne Entwicklerwerkzeuge
+
+Für die normale Benutzung sind **weder Maven noch npm noch ein eigener
+CodeON-Build** nötig. Das Repository enthält unter `application` eine fertige
+lokale CodeON-Anwendung.
+
+Für Endnutzer wird das kompakte Komplettpaket von der
+[GitHub-Releases-Seite](https://github.com/Thorlogy/CodeON/releases) empfohlen.
+Es enthält die fertige Anwendung, Bridge, Starter und Einsteigeranleitung,
+jedoch aus Lizenzgründen weder NQC noch die LEGO-Firmware.
+
+### macOS
+
+1. Repository herunterladen und entpacken.
+2. `CodeON-RCX-starten.command` doppelt anklicken.
+3. Zeigt die Prüfung `NQC-Compiler: FEHLT`, einmal
+   `RCX-Werkzeuge-installieren.command` doppelt anklicken. Danach den Start
+   wiederholen.
+
+Der Werkzeugassistent bezieht den freien NQC-Quellcode direkt aus dem
+[BrickBot-NQC-Projekt](https://github.com/BrickBot/nqc), baut ihn lokal und
+legt ihn unter `RobotRCX/bin/nqc` ab. Die LEGO-Firmware wird aus rechtlichen
+Gründen nicht heruntergeladen.
+
+### Linux
+
+```bash
+./start-codeon-rcx.sh
+```
+
+Falls NQC noch fehlt, nennt der Startassistent die Bezugsquelle und den
+erwarteten Ablageort. Je nach Distribution können außerdem USB-/`udev`-Rechte
+für den Infrarot-Tower erforderlich sein.
+
+### Windows
+
+`CodeON-RCX-starten.cmd` doppelt anklicken. Python, Java und NQC müssen unter
+Windows vorher installiert sein; fehlende Komponenten werden mit einer
+Bezugsquelle angezeigt. Der USB-Tower benötigt einen funktionierenden
+LEGO-/WinUSB-Treiber.
+
+### Was der Startassistent automatisch erledigt
+
+- prüft Python, Java, die fertige CodeON-Anwendung und NQC
+- erklärt bei fehlenden Komponenten verständlich, was fehlt und woher es kommt
+- zeigt die optionale Firmwaredatei getrennt von zwingenden Voraussetzungen
+- startet Bridge und CodeON gemeinsam
+- bereitet eine eigene lokale Datenbank in `.codeon-runtime` vor
+- öffnet `http://localhost:1999` im Browser
+- beendet beim Schließen auch die von ihm gestartete Bridge
+- schreibt Diagnoseprotokolle nach `.codeon-runtime/logs`
+
+Nur prüfen, ohne etwas zu starten:
+
+```bash
+python3 start-codeon-rcx.py --check
+```
+
+Wenn in CodeON das RCX-System gewählt wird, kontrolliert auch die Oberfläche
+die lokale Bridge. Fehlen Bridge oder NQC, erscheint eine verständliche
+Einrichtungshilfe statt erst beim Übertragungsversuch ein technischer Fehler.
+
+> Das noch im Repository enthaltene `codeon-rcx-bridge.zip` ist ein historischer
+> Entwicklungsstand und **keine Installationsdatei**. Für neue Installationen
+> ausschließlich die oben genannten Starter verwenden.
+
 ## Voraussetzungen
 
-- Python 3
+- Python 3.10 oder neuer
 - eine ausfuehrbare `nqc`-Binary
 - RCX und ein kompatibler IR-Tower
+
+Java 8 oder neuer wird für die mitgelieferte lokale CodeON-Anwendung benötigt.
+Empfohlen ist [Eclipse Temurin 11](https://adoptium.net/temurin/releases/?version=11).
 
 Die Bridge sucht `nqc` in dieser Reihenfolge:
 
@@ -40,6 +109,9 @@ Eine bereits laufende Bridge wird erkannt und nicht ein zweites Mal gestartet.
 Wenn `ora.sh` die Bridge selbst gestartet hat, beendet es sie beim Herunterfahren
 des Servers wieder. Die Bridge schreibt ihr Laufzeitprotokoll nach
 `admin/logs/rcx-bridge.log`.
+
+Dieser Abschnitt ist für Entwickler. Anwender verwenden stattdessen den oben
+beschriebenen `CodeON-RCX-starten`-Assistenten.
 
 Auf macOS erwartet der gemeinsame Start die Binary hier:
 

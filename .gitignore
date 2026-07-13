@@ -16,6 +16,10 @@ OpenRobertaServer/db-*
 **/*.log
 **/*.log.zip
 **/admin
+.codeon-runtime/
+dist/
+RobotRCX/bin/nqc
+RobotRCX/bin/nqc.exe
 **/*.pyc
 **/*.py~
 **/*.csv

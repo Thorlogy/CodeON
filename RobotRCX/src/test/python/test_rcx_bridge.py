@@ -70,6 +70,17 @@ class RcxBridgeTest(unittest.TestCase):
             run.call_args.args[0],
         )
 
+    def test_status_explains_missing_optional_and_required_components(self):
+        with patch.object(RCX_BRIDGE, "find_nqc", return_value=None), \
+                patch.object(RCX_BRIDGE, "find_firmware", return_value=None):
+            status = RCX_BRIDGE.status_payload()
+
+        self.assertTrue(status["ok"])
+        self.assertFalse(status["requirements"]["nqc"]["installed"])
+        self.assertIn("github.com/BrickBot/nqc", status["requirements"]["nqc"]["download"])
+        self.assertTrue(status["requirements"]["firmware"]["optional"])
+        self.assertIn("RobotRCX/README.md", status["setupGuide"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,5 +1,6 @@
 package de.fhg.iais.roberta.worker.compile;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -61,8 +62,11 @@ public class RcxCompilerWorker implements ICompilerWorker {
         Path path = Paths.get(compilerResourcesDir);
         Path base = Paths.get("");
 
+        String configuredNqc = System.getenv("NQC_PATH");
         String nqcCompilerFileName;
-        if ( SystemUtils.IS_OS_WINDOWS ) {
+        if ( configuredNqc != null && !configuredNqc.trim().isEmpty() && Files.isExecutable(Paths.get(configuredNqc)) ) {
+            nqcCompilerFileName = Paths.get(configuredNqc).toAbsolutePath().normalize().toString();
+        } else if ( SystemUtils.IS_OS_WINDOWS ) {
             nqcCompilerFileName = compilerResourcesDir + "/windows/nqc.exe";
         } else if ( SystemUtils.IS_OS_LINUX ) {
             nqcCompilerFileName = "nqc";
