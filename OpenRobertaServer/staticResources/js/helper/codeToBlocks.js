@@ -264,22 +264,39 @@ define(["require", "exports"], function (require, exports) {
          * native command would produce a different robot program.
          */
         CodeToBlocksConverter.prototype.convertNqcToXML = function (nqcCode, configurationXml) {
+            var _this = this;
             var statements = this.getNqcStatements(nqcCode);
             var blocks = [];
             var powerStateByPort = {};
+            var powerStateByGroup = {};
             // NQC keeps SetPower active until it is changed. Directions are only
             // pending for one graphical action; the associated power state persists.
             var pendingDirectionsByGroup = {};
             var pendingPowerGroups = {};
             var motorConfiguration = this.getNqcMotorConfiguration(configurationXml);
+            var flushPendingPowerBlocks = function () {
+                Object.keys(pendingPowerGroups).forEach(function (group) {
+                    if (Object.keys(pendingDirectionsByGroup[group] || {}).length > 0) {
+                        return;
+                    }
+                    var state = powerStateByGroup[group];
+                    state.ports.forEach(function (port) { return blocks.push(_this.motorSetPowerBlock(port.substring(4), state.power)); });
+                    delete pendingPowerGroups[group];
+                    delete pendingDirectionsByGroup[group];
+                });
+            };
             var _loop_1 = function (index) {
                 var statement = statements[index];
                 var match = void 0;
                 if ((match = statement.text.match(/^SetPower\((OUT_[ABC](?:\+OUT_[ABC])?),\s*NEPO_PWR\((-?\d+)\)\)$/))) {
+                    // A second SetPower is an independent visible command unless
+                    // the previous one is consumed by a following OnFwd/OnRev.
+                    flushPendingPowerBlocks();
                     var ports = this_1.outputPorts(match[1]);
                     var group = ports.slice().sort().join('+');
                     var powerState_1 = { group: group, ports: ports, power: Number(match[2]) };
                     ports.forEach(function (port) { return (powerStateByPort[port] = powerState_1); });
+                    powerStateByGroup[group] = powerState_1;
                     pendingDirectionsByGroup[group] = {};
                     pendingPowerGroups[group] = true;
                     return out_index_1 = index, "continue";
@@ -322,9 +339,17 @@ define(["require", "exports"], function (require, exports) {
                     }
                     return out_index_1 = index, "continue";
                 }
+                // No direction command followed the pending SetPower. Preserve it
+                // as one graphical set-power block per addressed RCX output.
+                flushPendingPowerBlocks();
                 if ((match = statement.text.match(/^(Off|Float)\((OUT_[ABC](?:\+OUT_[ABC])?)\)$/))) {
                     var port = match[2];
-                    if (port.indexOf('+') >= 0) {
+                    if (match[1] === 'Float') {
+                        this_1.outputPorts(port).forEach(function (outputPort) {
+                            return blocks.push({ type: 'robActions_motor_stop', fields: { MOTORPORT: outputPort.substring(4), MODE: 'FLOAT' } });
+                        });
+                    }
+                    else if (port.indexOf('+') >= 0) {
                         blocks.push({ type: 'robActions_motorDiff_stop' });
                     }
                     else {
@@ -357,6 +382,15 @@ define(["require", "exports"], function (require, exports) {
                     blocks.push({ type: 'robSensors_timer_reset' });
                     return out_index_1 = index, "continue";
                 }
+                if ((match = statement.text.match(/^ClearSensor\(SENSOR_([123])\)$/))) {
+                    blocks.push({ type: 'robSensors_encoder_reset', fields: { SENSORPORT: match[1] } });
+                    return out_index_1 = index, "continue";
+                }
+                // Sensor setup is represented by the robot configuration, not a
+                // program block. Generated setup lines are therefore safe to skip.
+                if (statement.text.match(/^SetSensor\(SENSOR_[123],\s*SENSOR_(TOUCH|LIGHT|ROTATION|CELSIUS)\)$/)) {
+                    return out_index_1 = index, "continue";
+                }
                 throw new NqcConversionError(statement.line, statement.text, 'nicht unterstützte NQC-Anweisung');
                 out_index_1 = index;
             };
@@ -365,9 +399,7 @@ define(["require", "exports"], function (require, exports) {
                 _loop_1(index);
                 index = out_index_1;
             }
-            if (Object.keys(pendingPowerGroups).length > 0) {
-                throw new Error('NQC enthält SetPower ohne nachfolgendes OnFwd oder OnRev. Die Blöcke wurden nicht verändert.');
-            }
+            flushPendingPowerBlocks();
             if (Object.keys(pendingDirectionsByGroup).some(function (group) { return Object.keys(pendingDirectionsByGroup[group]).length > 0; })) {
                 throw new Error('NQC enthält unvollständige Motor-Richtungsbefehle. Die Blöcke wurden nicht verändert.');
             }
@@ -449,6 +481,9 @@ define(["require", "exports"], function (require, exports) {
         };
         CodeToBlocksConverter.prototype.singleMotorBlock = function (port, power) {
             return { type: 'robActions_motor_on', fields: { MOTORPORT: port }, values: { POWER: this.numberBlock(power) } };
+        };
+        CodeToBlocksConverter.prototype.motorSetPowerBlock = function (port, power) {
+            return { type: 'robActions_motor_setPower', fields: { MOTORPORT: port }, values: { POWER: this.numberBlock(power) } };
         };
         CodeToBlocksConverter.prototype.waitBlock = function (milliseconds) {
             return { type: 'robControls_wait_time', values: { WAIT: this.numberBlock(milliseconds) } };

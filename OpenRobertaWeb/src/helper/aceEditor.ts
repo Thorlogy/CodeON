@@ -184,17 +184,31 @@ const nqcCompleter = {
             return;
         }
         callback(null, [
-            { caption: 'task main', value: 'task main() {\n    \n}', meta: 'NQC program', score: 1000 },
-            { caption: 'SetPower', value: 'SetPower(OUT_A+OUT_C, NEPO_PWR(30));', meta: 'NQC motor power', score: 1000 },
-            { caption: 'OnFwd', value: 'OnFwd(OUT_A+OUT_C);', meta: 'NQC motor forward', score: 1000 },
-            { caption: 'OnRev', value: 'OnRev(OUT_A+OUT_C);', meta: 'NQC motor reverse', score: 1000 },
-            { caption: 'Off', value: 'Off(OUT_A+OUT_C);', meta: 'NQC stop motors', score: 1000 },
-            { caption: 'Float', value: 'Float(OUT_A+OUT_C);', meta: 'NQC release motors', score: 950 },
-            { caption: 'Wait', value: 'Wait((500) / 10);', meta: 'NQC wait (10 ms ticks)', score: 1000 },
-            { caption: 'PlayTone', value: 'PlayTone(440, (500) / 10);', meta: 'NQC sound', score: 1000 },
-            { caption: 'SetUserDisplay', value: 'SetUserDisplay(0, 0);', meta: 'NQC RCX display', score: 950 },
-            { caption: 'ClearTimer', value: 'ClearTimer(0);', meta: 'NQC timer', score: 900 },
-            { caption: 'SetSensor', value: 'SetSensor(SENSOR_1, SENSOR_TOUCH);', meta: 'NQC sensor', score: 900 },
+            { caption: 'SetPower', value: 'SetPower(OUT_A, NEPO_PWR(30));', meta: 'NQC ↔ Block: Motorleistung', score: 1000 },
+            {
+                caption: 'OnFwd',
+                value: 'SetPower(OUT_A+OUT_C, NEPO_PWR(30));\nOnFwd(OUT_A); OnRev(OUT_C);',
+                meta: 'NQC ↔ Block: Motor vorwärts',
+                score: 1000,
+            },
+            {
+                caption: 'OnRev',
+                value: 'SetPower(OUT_A+OUT_C, NEPO_PWR(30));\nOnRev(OUT_A); OnFwd(OUT_C);',
+                meta: 'NQC ↔ Block: Motor rückwärts',
+                score: 1000,
+            },
+            { caption: 'Off', value: 'Off(OUT_A+OUT_C);', meta: 'NQC ↔ Block: Motoren stoppen', score: 1000 },
+            { caption: 'Wait', value: 'Wait((500) / 10);', meta: 'NQC ↔ Block: Warten', score: 1000 },
+            {
+                caption: 'PlayTone',
+                value: 'PlayTone(440, (500) / 10);\nWait((500) / 10);',
+                meta: 'NQC ↔ Block: Ton',
+                score: 1000,
+            },
+            { caption: 'SetUserDisplay', value: 'SetUserDisplay(0, 0);', meta: 'NQC ↔ Block: Anzeige', score: 950 },
+            { caption: 'SelectDisplay', value: 'SelectDisplay(DISPLAY_WATCH);', meta: 'NQC ↔ Block: Anzeige löschen', score: 950 },
+            { caption: 'ClearTimer', value: 'ClearTimer(0);', meta: 'NQC ↔ Block: Timer zurücksetzen', score: 900 },
+            { caption: 'ClearSensor', value: 'ClearSensor(SENSOR_3);', meta: 'NQC ↔ Block: Drehsensor zurücksetzen', score: 900 },
         ]);
     }
 };
@@ -327,6 +341,19 @@ export function setCodeLanguage(languageFileExtension: string) {
     previousLineCount = editor.session.getLength();
 
     currentLanguage = languageFileExtension === 'nqc' ? 'nqc' : langToSet;
+
+    // Ace's default text completer repeats arbitrary words from the current
+    // source (for example OUT_A or "Open" from the generated header). In NQC
+    // mode show only proposals with a guaranteed graphical roundtrip.
+    const languageTools = ace.require('ace/ext/language_tools');
+    const completers =
+        currentLanguage === 'nqc'
+            ? [nqcCompleter]
+            : [languageTools.snippetCompleter, languageTools.textCompleter, languageTools.keyWordCompleter, ev3devCompleter];
+    // @ts-ignore Ace's Editor typings do not expose the completers property.
+    codeView.completers = completers;
+    // @ts-ignore Ace's Editor typings do not expose the completers property.
+    editor.completers = completers;
 }
 
 function applyDefaultSettings(ed: AceAjax.Editor) {

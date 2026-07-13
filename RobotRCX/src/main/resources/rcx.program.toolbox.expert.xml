@@ -9,6 +9,14 @@
                     </block>
                 </value>
             </block>
+            <block type="robActions_motor_setPower">
+                <field name="MOTORPORT">A</field>
+                <value name="POWER">
+                    <block type="math_number">
+                        <field name="NUM">30</field>
+                    </block>
+                </value>
+            </block>
             <block type="robActions_motor_stop">
                 <field name="MOTORPORT">A</field>
             </block>

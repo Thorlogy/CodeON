@@ -269,21 +269,37 @@ export class CodeToBlocksConverter {
         const powerStateByPort: {
             [port: string]: { group: string; ports: string[]; power: number };
         } = {};
+        const powerStateByGroup: { [group: string]: { group: string; ports: string[]; power: number } } = {};
         // NQC keeps SetPower active until it is changed. Directions are only
         // pending for one graphical action; the associated power state persists.
         const pendingDirectionsByGroup: { [group: string]: { [port: string]: boolean } } = {};
         const pendingPowerGroups: { [group: string]: boolean } = {};
         const motorConfiguration = this.getNqcMotorConfiguration(configurationXml);
+        const flushPendingPowerBlocks = () => {
+            Object.keys(pendingPowerGroups).forEach((group) => {
+                if (Object.keys(pendingDirectionsByGroup[group] || {}).length > 0) {
+                    return;
+                }
+                const state = powerStateByGroup[group];
+                state.ports.forEach((port) => blocks.push(this.motorSetPowerBlock(port.substring(4), state.power)));
+                delete pendingPowerGroups[group];
+                delete pendingDirectionsByGroup[group];
+            });
+        };
 
         for (let index = 0; index < statements.length; index++) {
             const statement = statements[index];
             let match: RegExpMatchArray | null;
 
             if ((match = statement.text.match(/^SetPower\((OUT_[ABC](?:\+OUT_[ABC])?),\s*NEPO_PWR\((-?\d+)\)\)$/))) {
+                // A second SetPower is an independent visible command unless
+                // the previous one is consumed by a following OnFwd/OnRev.
+                flushPendingPowerBlocks();
                 const ports = this.outputPorts(match[1]);
                 const group = ports.slice().sort().join('+');
                 const powerState = { group, ports, power: Number(match[2]) };
                 ports.forEach((port) => (powerStateByPort[port] = powerState));
+                powerStateByGroup[group] = powerState;
                 pendingDirectionsByGroup[group] = {};
                 pendingPowerGroups[group] = true;
                 continue;
@@ -342,9 +358,17 @@ export class CodeToBlocksConverter {
                 continue;
             }
 
+            // No direction command followed the pending SetPower. Preserve it
+            // as one graphical set-power block per addressed RCX output.
+            flushPendingPowerBlocks();
+
             if ((match = statement.text.match(/^(Off|Float)\((OUT_[ABC](?:\+OUT_[ABC])?)\)$/))) {
                 const port = match[2];
-                if (port.indexOf('+') >= 0) {
+                if (match[1] === 'Float') {
+                    this.outputPorts(port).forEach((outputPort) =>
+                        blocks.push({ type: 'robActions_motor_stop', fields: { MOTORPORT: outputPort.substring(4), MODE: 'FLOAT' } })
+                    );
+                } else if (port.indexOf('+') >= 0) {
                     blocks.push({ type: 'robActions_motorDiff_stop' });
                 } else {
                     blocks.push({ type: 'robActions_motor_stop', fields: { MOTORPORT: port.substring(4) } });
@@ -382,12 +406,21 @@ export class CodeToBlocksConverter {
                 continue;
             }
 
+            if ((match = statement.text.match(/^ClearSensor\(SENSOR_([123])\)$/))) {
+                blocks.push({ type: 'robSensors_encoder_reset', fields: { SENSORPORT: match[1] } });
+                continue;
+            }
+
+            // Sensor setup is represented by the robot configuration, not a
+            // program block. Generated setup lines are therefore safe to skip.
+            if (statement.text.match(/^SetSensor\(SENSOR_[123],\s*SENSOR_(TOUCH|LIGHT|ROTATION|CELSIUS)\)$/)) {
+                continue;
+            }
+
             throw new NqcConversionError(statement.line, statement.text, 'nicht unterstützte NQC-Anweisung');
         }
 
-        if (Object.keys(pendingPowerGroups).length > 0) {
-            throw new Error('NQC enthält SetPower ohne nachfolgendes OnFwd oder OnRev. Die Blöcke wurden nicht verändert.');
-        }
+        flushPendingPowerBlocks();
         if (Object.keys(pendingDirectionsByGroup).some((group) => Object.keys(pendingDirectionsByGroup[group]).length > 0)) {
             throw new Error('NQC enthält unvollständige Motor-Richtungsbefehle. Die Blöcke wurden nicht verändert.');
         }
@@ -483,6 +516,10 @@ export class CodeToBlocksConverter {
 
     private singleMotorBlock(port: string, power: number): BlockDefinition {
         return { type: 'robActions_motor_on', fields: { MOTORPORT: port }, values: { POWER: this.numberBlock(power) } };
+    }
+
+    private motorSetPowerBlock(port: string, power: number): BlockDefinition {
+        return { type: 'robActions_motor_setPower', fields: { MOTORPORT: port }, values: { POWER: this.numberBlock(power) } };
     }
 
     private waitBlock(milliseconds: number): BlockDefinition {

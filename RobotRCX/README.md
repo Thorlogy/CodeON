@@ -109,6 +109,24 @@ zu pruefen, ob Motor C in der Roboterkonfiguration auf **umgekehrt** stehen muss
 
 ## NQC-Adapterschicht zu Programmblöcken
 
+### Verbindlicher Vorschlagslisten-Vertrag
+
+Die NQC-Codeansicht zeigt nur noch bewusst gepflegte Vorschläge, für die ein
+grafischer Rückweg existiert. Beliebige Wörter aus dem aktuellen Quelltext
+(`OUT_A`, `Open` usw.) werden nicht mehr als scheinbare NQC-Befehle angeboten.
+Alle Einträge sind in der Vorschlagsliste mit `NQC ↔ Block` gekennzeichnet.
+
+Abgedeckt sind `SetPower`, `OnFwd`, `OnRev`, `Off`, `Wait`, `PlayTone`,
+`SetUserDisplay`, `SelectDisplay`, `ClearTimer` und `ClearSensor`. Die
+eingefügten Motor- und Ton-Vorlagen enthalten jeweils alle NQC-Zeilen, die für
+die semantisch entsprechende grafische Aktion erforderlich sind.
+
+Die Expert-Toolbox enthält zusätzlich den Block **Motorleistung setzen**
+(`robActions_motor_setPower`). Ein einzelnes `SetPower` wird deshalb nicht mehr
+als unvollständiger Fahrbefehl abgewiesen, sondern in diesen Block übernommen.
+Ein gemeinsames `SetPower(OUT_A+OUT_C, ...)` ohne Fahrbefehl erzeugt je einen
+Leistungsblock für A und C.
+
 Beim Übernehmen von bearbeitetem NQC-Code wertet die Adapterschicht eine
 Motoraktion als zusammengehörige Folge aus: `SetPower` und die anschließenden
 `OnFwd`-/`OnRev`-Anweisungen. Sie liest zusätzlich **Seite** und
@@ -147,7 +165,7 @@ diesen sichtbaren Editor zu und nicht auf den separaten Quellcode-Tab.
 
 Damit Browser nach einem lokalen Update nicht weiter eine ältere Version dieser
 Adapterschicht aus dem Cache verwenden, trägt die Startseite die Web-Version
-`rcx-stateful-nqc-20260713` ein. RequireJS hängt diese Version an alle geladenen
+`rcx-roundtrip-contract-20260713` ein. RequireJS hängt diese Version an alle geladenen
 Module an. Nach einem Update genügt dadurch ein normales Neuladen der Seite;
 der aktuelle Controller für „NQC-Code in Blöcke übernehmen“ wird neu geladen.
 
@@ -161,6 +179,9 @@ Verifiziert wurde der vollständige Ablauf auf `http://localhost:1999/`:
 4. Die Codeansicht bleibt während und nach der Übernahme geöffnet.
 5. Eine zusätzliche Richtungszeile ohne erneutes `SetPower` erzeugt einen
    zusätzlichen grafischen Fahr-/Drehblock mit derselben Leistung.
+
+Der automatisierte Test `npm run test:nqc-roundtrip` prüft jeden bewusst
+angebotenen Vorschlag sowie wiederholte und unvollständige Motorfolgen.
 
 ## Bewusste Einschraenkungen
 

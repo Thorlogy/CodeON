@@ -115,6 +115,28 @@ Auf `localhost:1999` wurde folgender Roundtrip geprüft:
 
 Da der vom Benutzer beobachtete alte Ablauf (keine Blockänderung, Fenster
 schließt) exakt zu einem zwischengespeicherten älteren Controller passt, besitzt
-die Startseite nun die Web-Version `rcx-stateful-nqc-20260713`. RequireJS hängt sie
+die Startseite nun die Web-Version `rcx-roundtrip-contract-20260713`. RequireJS hängt sie
 an alle Webmodule an und lädt nach einem Seiten-Reload garantiert die aktuelle
 NQC-Adapterschicht.
+
+## 8. NQC-Vorschläge und grafische Blöcke synchronisiert
+
+Die frühere Ace-Vorschlagsliste mischte bewusst hinterlegte NQC-Befehle mit
+automatisch aus dem Dokument gelesenen Wörtern. Dadurch wirkten beispielsweise
+`OUT_A`, `Open` oder Zahlen wie angebotene RCX-Funktionen. Im NQC-Modus ist der
+lokale Wort-Vervollständiger nun deaktiviert.
+
+Die verbleibenden Einträge tragen die Kennzeichnung `NQC ↔ Block` und besitzen
+alle einen geprüften grafischen Rückweg: `SetPower`, `OnFwd`, `OnRev`, `Off`,
+`Wait`, `PlayTone`, `SetUserDisplay`, `SelectDisplay`, `ClearTimer` und
+`ClearSensor`. Nicht grafisch repräsentierte Initialisierungsbefehle wie
+`SetSensor` werden nicht mehr aktiv vorgeschlagen.
+
+Für `SetPower` wurde die RCX-Expert-Toolbox um
+`robActions_motor_setPower` erweitert. Der Importer bewahrt außerdem
+`Float(...)` verlustfrei als einzelne Motor-Stopp-Blöcke mit dem Modus
+`FLOAT`, falls solcher nativer Code manuell eingegeben wird.
+
+Der neue Test `OpenRobertaWeb/test/codeToBlocks.roundtrip.test.js` führt zwölf
+Abnahmen aus: zehn Vorschläge, wiederholte Motoraktionen mit fortbestehender
+Leistung und einen bewusst fehlerhaften unvollständigen Differentialbefehl.
