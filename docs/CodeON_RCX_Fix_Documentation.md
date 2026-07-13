@@ -69,9 +69,42 @@ Diese Dokumentation fasst die Ursachen und vorgenommenen Anpassungen zusammen, u
 ---
 
 ## 5. Was tun, wenn es weiterhin nicht klappt?
-Falls Fehler im Frontend auftreten, deutet das zu 99% auf ein **Caching-Problem** hin. 
+Falls Fehler im Frontend auftreten, kann ein **Caching-Problem** vorliegen.
 
 1. **Browser-Cache:** JavaScript-Dateien und Server-Responses werden vom Browser zwischengespeichert. Bitte den Tab komplett über **Strg + F5** oder **Cmd + Shift + R** neu laden. Notfalls im "Inkognito/Privat"-Modus deines Browsers testen.
 2. **Server-Cache:** Manchmal greift der laufende Prozess noch auf alte kompilierte Java-Ressourcen zurück. Stelle sicher, dass beim Start-Befehl deines Servers nicht unbeabsichtigt ein altes Profil (`develop` / `embedded`) geladen wird, das die neuen Eigenschaften überschreibt.
 
-Alle Änderungen wurden dokumentiert, committed und auf deinen GitHub-Remote (`thorlogy/fix-rcx-ui-crash`) gepusht.
+## 6. RCX-Darstellungen in Programmierung und Simulation
+
+- Der 3D-Roboter verwendet eine gelbe RCX-Darstellung; der türkise
+  Richtungspfeil ist beim RCX ausgeblendet.
+- Die Systemansicht zeigt den gelben RCX-2.0-Stein statt des NXT-Displays.
+- Der Hintergrund der Programmierbühne verwendet ebenfalls die RCX-Darstellung
+  und zeigt keinen NXT mehr.
+
+## 7. NQC-Code zuverlässig in grafische Blöcke übernehmen
+
+Die Seitenansicht `<>` besitzt einen eigenen sichtbaren Ace-Editor. Alle
+RCX-Aktionen zum Erzeugen, Übernehmen, Ausführen und Herunterladen lesen deshalb
+gezielt diesen Editor. Beim Öffnen wird der NQC-Code automatisch aus den
+grafischen Blöcken erzeugt.
+
+Die Adapterschicht wertet `SetPower` zusammen mit den folgenden
+`OnFwd`-/`OnRev`-Befehlen und der aktuellen Motor-Konfiguration aus. Beim Klick
+auf „NQC-Code in Blöcke übernehmen“ wird die Programmkette im Blockly-Workspace
+ersetzt; das Codefenster bleibt geöffnet. Ein fehlgeschlagener Import stellt
+den vorherigen Workspace wieder her.
+
+Auf `localhost:1999` wurde folgender Roundtrip geprüft:
+
+1. NQC-Code automatisch aus dem leeren Startprogramm anzeigen.
+2. `SetPower(OUT_A+OUT_C, NEPO_PWR(42));` und die Richtungsbefehle eintragen.
+3. Code übernehmen.
+4. Sichtbarer grafischer Fahr-/Drehblock mit `Tempo 42` entsteht.
+5. Das Codefenster bleibt geöffnet.
+
+Da der vom Benutzer beobachtete alte Ablauf (keine Blockänderung, Fenster
+schließt) exakt zu einem zwischengespeicherten älteren Controller passt, besitzt
+die Startseite nun die Web-Version `rcx-roundtrip-20260713`. RequireJS hängt sie
+an alle Webmodule an und lädt nach einem Seiten-Reload garantiert die aktuelle
+NQC-Adapterschicht.

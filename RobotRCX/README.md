@@ -130,6 +130,21 @@ Technisch verwendet die Seitenansicht `<>` einen eigenen Ace-Editor. Erzeugen,
 Bearbeiten, Übernehmen, Ausführen und Herunterladen greifen deshalb gezielt auf
 diesen sichtbaren Editor zu und nicht auf den separaten Quellcode-Tab.
 
+Damit Browser nach einem lokalen Update nicht weiter eine ältere Version dieser
+Adapterschicht aus dem Cache verwenden, trägt die Startseite die Web-Version
+`rcx-roundtrip-20260713` ein. RequireJS hängt diese Version an alle geladenen
+Module an. Nach einem Update genügt dadurch ein normales Neuladen der Seite;
+der aktuelle Controller für „NQC-Code in Blöcke übernehmen“ wird neu geladen.
+
+Verifiziert wurde der vollständige Ablauf auf `http://localhost:1999/`:
+
+1. Codeansicht öffnen; der NQC-Code erscheint automatisch.
+2. `NEPO_PWR(42)` mit `SetPower(OUT_A+OUT_C, ...)` und den anschließenden
+   Richtungsbefehlen übernehmen.
+3. Im Blockly-Workspace erscheint der entsprechende Fahr-/Drehblock mit
+   `Tempo 42`.
+4. Die Codeansicht bleibt während und nach der Übernahme geöffnet.
+
 ## Bewusste Einschraenkungen
 
 Der RCX und NQC unterstuetzen nicht alle allgemeinen CodeON-Bloecke. Derzeit
