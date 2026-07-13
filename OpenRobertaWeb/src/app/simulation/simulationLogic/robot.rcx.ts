@@ -1,12 +1,12 @@
 import RobotEv3 from 'robot.ev3';
-import { NXTChassis } from 'robot.actuators';
+import { RCXChassis } from 'robot.actuators';
 import { EV3Keys, LightSensor, Timer, TouchSensor } from 'robot.sensors';
 
 export default class RobotRcx extends RobotEv3 {
     override timer: Timer = new Timer(1);
 
     protected override configure(configuration: object): void {
-        this.chassis = new NXTChassis(this.id, configuration, 2, this.pose);
+        this.chassis = new RCXChassis(this.id, configuration, 2, this.pose);
         let sensors: object = configuration['SENSORS'];
         for (const c in sensors) {
             switch (sensors[c]['TYPE']) {

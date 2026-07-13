@@ -35,17 +35,14 @@ define(["require", "exports", "util.roberta", "message", "guiState.model", "prog
                     .done(function (data) {
                     // store new theme properties (only colors so far)
                     GUISTATE.server.theme = data;
-                    ready.resolve();
                 })
                     .fail(function (e, r) {
                     // this should not happen
                     console.error('"' + themePath + '" is not a valid json file! The reason is probably a', r);
                     GUISTATE.server.theme = 'default';
-                    ready.resolve();
                 });
-            } else {
-                ready.resolve();
             }
+            ready.resolve();
         });
         return ready.promise();
     }
@@ -226,9 +223,16 @@ define(["require", "exports", "util.roberta", "message", "guiState.model", "prog
         GUISTATE.gui.sourceCodeFileExtension = result.sourceCodeFileExtension;
         GUISTATE.gui.binaryFileExtension = result.binaryFileExtension;
         GUISTATE.gui.firmwareDefault = result.firmwareDefault;
-        $('#blocklyDiv, #bricklyDiv').css('background', 'url(../../../../css/img/' + robotGroup + 'Background.jpg) repeat');
-        $('#blocklyDiv, #bricklyDiv').css('background-size', '100%');
-        $('#blocklyDiv, #bricklyDiv').css('background-position', 'initial');
+        if (robotGroup === 'rcx') {
+            $('#blocklyDiv, #bricklyDiv').css('background', 'linear-gradient(rgba(255,255,255,.88), rgba(255,255,255,.88)), url(../../../../css/img/system_preview/rcx.jpg) center / contain no-repeat');
+            $('#blocklyDiv, #bricklyDiv').css('background-size', 'cover, contain');
+            $('#blocklyDiv, #bricklyDiv').css('background-position', 'center');
+        }
+        else {
+            $('#blocklyDiv, #bricklyDiv').css('background', 'url(../../../../css/img/' + robotGroup + 'Background.jpg) repeat');
+            $('#blocklyDiv, #bricklyDiv').css('background-size', '100%');
+            $('#blocklyDiv, #bricklyDiv').css('background-position', 'initial');
+        }
         if (!isConfigurationUsed()) {
             $('#bricklyDiv').css('background', 'url(../../../../css/img/' + robotGroup + 'BackgroundConf.svg) no-repeat');
             $('#bricklyDiv').css('background-position', 'center');

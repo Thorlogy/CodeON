@@ -1241,6 +1241,30 @@ export class NXTChassis extends LegoChassis {
         }
     }
 }
+
+export class RCXChassis extends LegoChassis {
+    geom: Geometry = {
+        x: -30,
+        y: -20,
+        w: 50,
+        h: 40,
+        radius: 2.5,
+        color: '#f7d900',
+    };
+    topView: string =
+        '<svg id="brick' +
+        this.id +
+        '" xmlns="http://www.w3.org/2000/svg" width="300px" height="400px" viewBox="0 0 1086 1448" preserveAspectRatio="xMidYMid meet">' +
+        '<image href="/css/img/rcx-brick.png" width="1086" height="1448" preserveAspectRatio="xMidYMid meet" />' +
+        '</svg>';
+
+    constructor(id: number, configuration: {}, maxRotation: number, pose: Pose) {
+        super(id, configuration, maxRotation, pose);
+        $('#simRobotContent').append(this.topView);
+        $('#simRobotWindow button').removeClass('btn-close-white');
+        $('#brick' + this.id).hide();
+    }
+}
 export class RCJChassis extends ChassisDiffDrive implements ILabel {
     axisDiff: number;
     geom: Geometry = {

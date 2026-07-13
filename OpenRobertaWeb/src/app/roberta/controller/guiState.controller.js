@@ -242,9 +242,18 @@ function setRobot(robot, result, opt_init) {
     GUISTATE.gui.binaryFileExtension = result.binaryFileExtension;
     GUISTATE.gui.firmwareDefault = result.firmwareDefault;
 
-    $('#blocklyDiv, #bricklyDiv').css('background', 'url(../../../../css/img/' + robotGroup + 'Background.jpg) repeat');
-    $('#blocklyDiv, #bricklyDiv').css('background-size', '100%');
-    $('#blocklyDiv, #bricklyDiv').css('background-position', 'initial');
+    if (robotGroup === 'rcx') {
+        $('#blocklyDiv, #bricklyDiv').css(
+            'background',
+            'linear-gradient(rgba(255,255,255,.88), rgba(255,255,255,.88)), url(../../../../css/img/system_preview/rcx.jpg) center / contain no-repeat'
+        );
+        $('#blocklyDiv, #bricklyDiv').css('background-size', 'cover, contain');
+        $('#blocklyDiv, #bricklyDiv').css('background-position', 'center');
+    } else {
+        $('#blocklyDiv, #bricklyDiv').css('background', 'url(../../../../css/img/' + robotGroup + 'Background.jpg) repeat');
+        $('#blocklyDiv, #bricklyDiv').css('background-size', '100%');
+        $('#blocklyDiv, #bricklyDiv').css('background-position', 'initial');
+    }
 
     if (!isConfigurationUsed()) {
         $('#bricklyDiv').css('background', 'url(../../../../css/img/' + robotGroup + 'BackgroundConf.svg) no-repeat');

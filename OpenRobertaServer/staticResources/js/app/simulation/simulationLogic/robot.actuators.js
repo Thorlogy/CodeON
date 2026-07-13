@@ -15,7 +15,7 @@ var __extends = (this && this.__extends) || (function () {
 })();
 define(["require", "exports", "interpreter.constants", "simulation.math", "guiState.controller", "simulation.objects", "util.roberta", "jquery", "blockly"], function (require, exports, C, SIMATH, GUISTATE_C, simulation_objects_1, UTIL, $, Blockly) {
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Motors = exports.PinActuators = exports.MbotRGBLed = exports.ThymioSoundLed = exports.ThymioTemperatureLeds = exports.ThymioProxHLeds = exports.ThymioButtonLeds = exports.ThymioCircleLeds = exports.EdisonLeds = exports.ThymioRGBLeds = exports.CalliopeV3RGBLeds = exports.Txt4RGBLed = exports.RGBLed = exports.MbotDisplay = exports.MbedDisplay = exports.MatrixDisplay = exports.WebAudio = exports.TTS = exports.StatusLed = exports.MbotChassis = exports.ThymioChassis = exports.EdisonChassis = exports.Txt4Chassis = exports.RCJChassis = exports.NXTChassis = exports.EV3Chassis = exports.LegoChassis = exports.EncoderChassisDiffDrive = exports.RobotinoChassis = exports.ChassisDiffDrive = exports.ChassisMobile = void 0;
+    exports.Motors = exports.PinActuators = exports.MbotRGBLed = exports.ThymioSoundLed = exports.ThymioTemperatureLeds = exports.ThymioProxHLeds = exports.ThymioButtonLeds = exports.ThymioCircleLeds = exports.EdisonLeds = exports.ThymioRGBLeds = exports.CalliopeV3RGBLeds = exports.Txt4RGBLed = exports.RGBLed = exports.MbotDisplay = exports.MbedDisplay = exports.MatrixDisplay = exports.WebAudio = exports.TTS = exports.StatusLed = exports.MbotChassis = exports.ThymioChassis = exports.EdisonChassis = exports.Txt4Chassis = exports.RCJChassis = exports.RCXChassis = exports.NXTChassis = exports.EV3Chassis = exports.LegoChassis = exports.EncoderChassisDiffDrive = exports.RobotinoChassis = exports.ChassisDiffDrive = exports.ChassisMobile = void 0;
     var ChassisMobile = /** @class */ (function () {
         function ChassisMobile(id) {
             this.drawPriority = 0;
@@ -1159,6 +1159,31 @@ define(["require", "exports", "interpreter.constants", "simulation.math", "guiSt
         return NXTChassis;
     }(LegoChassis));
     exports.NXTChassis = NXTChassis;
+    var RCXChassis = /** @class */ (function (_super) {
+        __extends(RCXChassis, _super);
+        function RCXChassis(id, configuration, maxRotation, pose) {
+            var _this = _super.call(this, id, configuration, maxRotation, pose) || this;
+            _this.geom = {
+                x: -30,
+                y: -20,
+                w: 50,
+                h: 40,
+                radius: 2.5,
+                color: '#f7d900',
+            };
+            _this.topView = '<svg id="brick' +
+                _this.id +
+                '" xmlns="http://www.w3.org/2000/svg" width="300px" height="400px" viewBox="0 0 1086 1448" preserveAspectRatio="xMidYMid meet">' +
+                '<image href="/css/img/rcx-brick.png" width="1086" height="1448" preserveAspectRatio="xMidYMid meet" />' +
+                '</svg>';
+            $('#simRobotContent').append(_this.topView);
+            $('#simRobotWindow button').removeClass('btn-close-white');
+            $('#brick' + _this.id).hide();
+            return _this;
+        }
+        return RCXChassis;
+    }(LegoChassis));
+    exports.RCXChassis = RCXChassis;
     var RCJChassis = /** @class */ (function (_super) {
         __extends(RCJChassis, _super);
         function RCJChassis(id, configuration, maxRotation, pose) {

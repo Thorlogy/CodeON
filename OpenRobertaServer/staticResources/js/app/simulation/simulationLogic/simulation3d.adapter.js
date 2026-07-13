@@ -36,9 +36,30 @@
         return { width: canvas && canvas.width ? canvas.width : 800, height: canvas && canvas.height ? canvas.height : 600 };
     }
 
+    function isRcxSelected(robot) {
+        var robotButton = getElement('simRobot');
+        if (robotButton && robotButton.classList.contains('typcn-rcx')) return true;
+        var robotType = robot ? [
+            robot.constructor && robot.constructor.name,
+            robot.chassis && robot.chassis.constructor && robot.chassis.constructor.name
+        ].join(' ') : '';
+        return /rcx/i.test(robotType);
+    }
+
+    function updateRobotAppearance(robot) {
+        if (!robotMesh) return;
+        var isRcx = isRcxSelected(robot);
+        var body = robotMesh.getObjectByName('robotBody');
+        var direction = robotMesh.getObjectByName('directionMarker');
+        if (body) body.material.color.setHex(isRcx ? 0xf7d900 : 0xd8d8d8);
+        if (direction) direction.visible = !isRcx;
+    }
+
     function buildRobot() {
         var group = new THREE.Group();
-        var body = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.6, 2.0), new THREE.MeshPhongMaterial({ color: 0xd8d8d8 }));
+        var isRcx = isRcxSelected();
+        var body = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.6, 2.0), new THREE.MeshPhongMaterial({ color: isRcx ? 0xf7d900 : 0xd8d8d8 }));
+        body.name = 'robotBody';
         body.position.y = 0.45;
         body.castShadow = true;
         group.add(body);
@@ -55,8 +76,10 @@
             group.add(wheel);
         });
         var direction = new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.55, 24), new THREE.MeshPhongMaterial({ color: 0x33b8ca }));
+        direction.name = 'directionMarker';
         direction.rotation.x = -Math.PI / 2;
         direction.position.set(0, 0.8, -1.15);
+        direction.visible = !isRcx;
         group.add(direction);
         return group;
     }
@@ -158,6 +181,7 @@
         var simScene = getSimulationScene();
         var robot = simScene && simScene.robots && simScene.robots.length ? simScene.robots[0] : null;
         if (!robot || !robot.pose) return;
+        updateRobotAppearance(robot);
         var size = getCanvasSize(simScene);
         var scale = 18 / Math.max(size.width, size.height);
         robotMesh.position.x = (robot.pose.x - size.width / 2) * scale;
@@ -186,6 +210,7 @@
         if (enabled) {
             init();
             if (!initialized) { enabled = false; return; }
+            updateRobotAppearance();
             if (canvasDiv) canvasDiv.style.display = 'none';
             if (sim3dDiv) sim3dDiv.style.display = 'block';
             if (toggle) toggle.classList.add('active');
