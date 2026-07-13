@@ -64,6 +64,34 @@ Wenn auf dem RCX keine Firmware vorhanden ist, fragt CodeON vor einer
 Übertragung nach. Die LEGO-Firmware darf CodeON nicht mitliefern. Eine legal
 bezogene `FIRM0332.LGO` kann im Ordner `RobotRCX/firmware` abgelegt werden.
 
+## Entwicklerstand lokal prüfen
+
+Für die lokale Weiterentwicklung wird CodeON aus dem Git-Arbeitsstand gestartet,
+nicht aus einem alten `application`-Export. So werden die aktuellen Dateien aus
+`OpenRobertaServer/staticResources` verwendet.
+
+Empfohlener Start:
+
+```bash
+./start-codeon-rcx.sh
+```
+
+Danach im Browser öffnen:
+
+```text
+http://localhost:1999/
+```
+
+Falls der Browser alte JavaScript-Dateien oder einen kaputten Tab-Zustand
+festhält, dieselbe laufende CodeON-Instanz unter dieser frischen Adresse öffnen:
+
+```text
+http://127.0.0.1:1999/
+```
+
+Diese Adresse nutzt denselben lokalen Server, umgeht aber den Cache und
+Seitenspeicher von `localhost`.
+
 ## Hilfe bei Problemen
 
 Erneut `CodeON-RCX-starten` ausführen. Der Assistent prüft die Installation
