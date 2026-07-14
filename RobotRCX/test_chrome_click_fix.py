@@ -38,6 +38,13 @@ class ChromeClickFixTest(unittest.TestCase):
             self.assertIn("css/img/rcx-brick.png", javascript)
             self.assertNotIn("system_preview/rcx.jpg", javascript)
 
+        for actuator in (
+            "OpenRobertaServer/staticResources/js/app/simulation/simulationLogic/robot.actuators.js",
+            "application/staticResources/js/app/simulation/simulationLogic/robot.actuators.js",
+        ):
+            javascript = (ROOT / actuator).read_text(encoding="utf-8")
+            self.assertIn("/css/img/rcx-brick.png", javascript)
+
 
 if __name__ == "__main__":
     unittest.main()

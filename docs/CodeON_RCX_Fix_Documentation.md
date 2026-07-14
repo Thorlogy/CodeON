@@ -56,6 +56,17 @@ Dieser startet Server und Bridge mit dem richtigen
 Serverprotokoll als `exception when calling the cross compiler` und
 `./RobotRCX/osx/nqc: No such file or directory`.
 
+### RCX-Bild in Hintergrund und Simulation
+
+Das verbindliche RCX-Motiv ist `css/img/rcx-brick.png`. Es entspricht der
+bereitgestellten Datei `RCX_2048x2048_download.png` (SHA-256
+`d137d58f1d85abc88682f7f80e3f4137cdda111f5f1d65da91e0c4b51616ed1b`).
+Es wird sowohl für den dezenten Editorhintergrund als auch für das
+RCX-Chassis in der Simulation verwendet. Der Regressionstest kontrolliert das
+Bild in beiden Laufzeitbäumen und prüft, dass auch die ausgelieferte
+`robot.actuators.js` darauf verweist. So kann die Exportfassung nicht erneut
+unbemerkt auf das alte NXT-Modell zurückfallen.
+
 ---
 
 ## 1. Initiale Abstürze beim Auswählen des RCX-Roboters behoben
