@@ -245,9 +245,9 @@ function setRobot(robot, result, opt_init) {
     if (robotGroup === 'rcx') {
         $('#blocklyDiv, #bricklyDiv').css(
             'background',
-            'linear-gradient(rgba(255,255,255,.88), rgba(255,255,255,.88)), url(../../../../css/img/system_preview/rcx.jpg) center / contain no-repeat'
+            'linear-gradient(rgba(255,255,255,.88), rgba(255,255,255,.88)), url(../../../../css/img/rcx-brick.png) center / auto 88% no-repeat'
         );
-        $('#blocklyDiv, #bricklyDiv').css('background-size', 'cover, contain');
+        $('#blocklyDiv, #bricklyDiv').css('background-size', 'cover, auto 88%');
         $('#blocklyDiv, #bricklyDiv').css('background-position', 'center');
     } else {
         $('#blocklyDiv, #bricklyDiv').css('background', 'url(../../../../css/img/' + robotGroup + 'Background.jpg) repeat');

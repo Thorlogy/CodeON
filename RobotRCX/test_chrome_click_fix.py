@@ -26,10 +26,17 @@ class ChromeClickFixTest(unittest.TestCase):
             self.assertNotIn("blocklyTreeRow", selector_line)
             self.assertIn("blocklyFlyout", selector_line)
 
-    def test_rcx_background_is_shipped_in_application(self):
-        source = ROOT / "OpenRobertaServer/staticResources/css/img/rcxBackground.jpg"
-        runtime = ROOT / "application/staticResources/css/img/rcxBackground.jpg"
+    def test_rcx_background_uses_the_rcx_brick(self):
+        source = ROOT / "OpenRobertaServer/staticResources/css/img/rcx-brick.png"
+        runtime = ROOT / "application/staticResources/css/img/rcx-brick.png"
         self.assertEqual(source.read_bytes(), runtime.read_bytes())
+        for controller in (
+            "OpenRobertaWeb/src/app/roberta/controller/guiState.controller.js",
+            "OpenRobertaServer/staticResources/js/app/roberta/controller/guiState.controller.js",
+        ):
+            javascript = (ROOT / controller).read_text(encoding="utf-8")
+            self.assertIn("css/img/rcx-brick.png", javascript)
+            self.assertNotIn("system_preview/rcx.jpg", javascript)
 
 
 if __name__ == "__main__":

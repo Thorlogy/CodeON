@@ -224,8 +224,8 @@ define(["require", "exports", "util.roberta", "message", "guiState.model", "prog
         GUISTATE.gui.binaryFileExtension = result.binaryFileExtension;
         GUISTATE.gui.firmwareDefault = result.firmwareDefault;
         if (robotGroup === 'rcx') {
-            $('#blocklyDiv, #bricklyDiv').css('background', 'linear-gradient(rgba(255,255,255,.88), rgba(255,255,255,.88)), url(../../../../css/img/system_preview/rcx.jpg) center / contain no-repeat');
-            $('#blocklyDiv, #bricklyDiv').css('background-size', 'cover, contain');
+            $('#blocklyDiv, #bricklyDiv').css('background', 'linear-gradient(rgba(255,255,255,.88), rgba(255,255,255,.88)), url(../../../../css/img/rcx-brick.png) center / auto 88% no-repeat');
+            $('#blocklyDiv, #bricklyDiv').css('background-size', 'cover, auto 88%');
             $('#blocklyDiv, #bricklyDiv').css('background-position', 'center');
         }
         else {
