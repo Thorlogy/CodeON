@@ -374,3 +374,10 @@ entscheidenden Roundtrip-, Snippet-, Import- und Auto-Sync-Merkmale in der
 tatsächlich gestarteten Exportfassung. Die fachliche Abdeckung bleibt im Test
 `OpenRobertaWeb/test/codeToBlocks.roundtrip.test.js` mit 23 Roundtrip-Fällen
 und 44 kuratierten NQC-Vorschlägen dokumentiert.
+
+Die sichtbare NQC-Werkzeugleiste enthält bewusst nur einen Rückweg in die
+Blöcke: `codeSynchronize`. Der zusätzliche Button „Import Code to Blocks“ war
+funktionsgleich und wurde entfernt. Ebenso wurde der separate direkte
+`codeRun`-Button mit der fehlerhaften Beschriftung „starte auf …“ aus der
+Leiste entfernt. Die normale RCX-Ausführung erfolgt weiterhin über den
+Run-Button im Blockly-Arbeitsbereich.

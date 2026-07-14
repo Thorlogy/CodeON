@@ -58,6 +58,12 @@ class ChromeClickFixTest(unittest.TestCase):
             for marker in markers:
                 self.assertIn(marker, javascript, f"{marker} fehlt in {relative}")
 
+        for runtime in ("OpenRobertaServer/staticResources", "application/staticResources"):
+            index = (ROOT / runtime / "index.html").read_text(encoding="utf-8")
+            self.assertNotIn("id='codeImportToBlocks'", index)
+            self.assertNotIn("id='codeRun'", index)
+            self.assertIn("id='codeSynchronize'", index)
+
 
 if __name__ == "__main__":
     unittest.main()
