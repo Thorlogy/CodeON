@@ -84,3 +84,12 @@ Die 3D-Ansicht verwendet weiterhin die bewaehrte 2D-Simulationslogik. Dadurch wi
 5. Ein ausgewaehltes Element kann mit Pipette/Farbwahl umgefaerbt oder mit dem Papierkorb geloescht werden.
 
 Die automatische Pruefung deckt zusaetzlich das 3D-Sensormodell, die Spiegelung der Weltobjekte, die erweiterte 3D-Fahrflaeche und die einheitliche Cache-Version ab.
+
+## Korrektur 2026-07-14: Fahrtrichtung und Kollisionsdarstellung
+
+Die 3D-Ansicht besitzt weiterhin keine zweite Physik-Engine. Kollisionen werden von der bestehenden und bewaehrten 2D-Simulation berechnet. Zwei Darstellungsabweichungen wurden korrigiert:
+
+- Das Three.js-Robotermodell war gegenueber der 2D-Fahrtrichtung um 180 Grad verdreht. Stossfaenger und Lichtsensor zeigen nun tatsaechlich nach vorne.
+- Das sichtbare 3D-Modell war deutlich groesser als der unsichtbare Kollisionskoerper der 2D-Simulation. Seine Skalierung und Position werden nun aus dem RCX-Kollisionsmass von 55 x 45 Simulationseinheiten berechnet. Dadurch beruehrt der sichtbare Stossfaenger ein Hindernis an derselben Stelle, an der die 2D-Physik die Kollision und den Taster ausloest.
+
+Eine vollstaendige Uebernahme der 3D-RoboMission-Physik bleibt eine spaetere, groessere Ausbaustufe. Fuer einfache RCX-Hinderniskollisionen ist sie nicht notwendig, solange 2D-Kollisionskoerper und 3D-Darstellung deckungsgleich sind.

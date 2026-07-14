@@ -21,7 +21,7 @@
     var lastWidth = 0;
     var lastHeight = 0;
     // Same low, robot-centred starting perspective as the 3D-RoboMission scene.
-    var orbit = { yaw: 0, pitch: 0.52, distance: 17, targetX: 0, targetZ: 0, panned: false };
+    var orbit = { yaw: 0, pitch: 0.52, distance: 7, targetX: 0, targetZ: 0, panned: false };
     var drag = null;
 
     function getElement(id) {
@@ -588,7 +588,7 @@
         canvas.addEventListener('wheel', function (event) {
             if (!enabled) return;
             event.preventDefault();
-            orbit.distance = Math.max(8, Math.min(60, orbit.distance * (event.deltaY > 0 ? 1.1 : 0.9)));
+            orbit.distance = Math.max(5, Math.min(60, orbit.distance * (event.deltaY > 0 ? 1.1 : 0.9)));
             updateCamera();
         }, { passive: false });
     }
@@ -703,9 +703,19 @@
         lastWidth = size.width;
         lastHeight = size.height;
         var scale = 18 / Math.max(lastWidth, lastHeight);
-        robotMesh.position.x = (robot.pose.x - lastWidth / 2) * scale;
-        robotMesh.position.z = (robot.pose.y - lastHeight / 2) * scale;
-        robotMesh.rotation.y = -robot.pose.theta + Math.PI / 2;
+        // The 2D RCX collision body is 55 x 45 simulation units. Keep the complete
+        // visible 3D robot (including its wheels) inside that footprint so a
+        // collision and the rendered contact point agree.
+        var robotVisualScale = (45 * scale) / 3.3;
+        var frontVisual = 2.16 * robotVisualScale;
+        var frontCollision = 25 * scale;
+        var rearwardCorrection = Math.max(0, frontVisual - frontCollision);
+        robotMesh.scale.set(robotVisualScale, robotVisualScale, robotVisualScale);
+        robotMesh.position.x = (robot.pose.x - lastWidth / 2) * scale - Math.cos(robot.pose.theta) * rearwardCorrection;
+        robotMesh.position.z = (robot.pose.y - lastHeight / 2) * scale - Math.sin(robot.pose.theta) * rearwardCorrection;
+        // In the Three.js model the front points towards local -Z; in the 2D
+        // simulation heading 0 points towards +X.
+        robotMesh.rotation.y = -robot.pose.theta - Math.PI / 2;
         syncWorldObjects(simScene, robot, size, scale);
 
         if (!orbit.panned) {

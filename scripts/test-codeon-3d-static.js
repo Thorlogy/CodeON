@@ -18,7 +18,7 @@ const runtimeSource = fs.readFileSync(runtimeAdapter, 'utf8');
 assert.strictEqual(serverSource, runtimeSource, 'Quell- und Laufzeitversion des 3D-Adapters muessen identisch sein.');
 
 [
-    'distance: 17',
+    'distance: 7',
     'new THREE.Fog(',
     'THREE.PCFSoftShadowMap',
     "poseHud.id = 'sim3dPoseHud'",
@@ -29,11 +29,13 @@ assert.strictEqual(serverSource, runtimeSource, 'Quell- und Laufzeitversion des 
     'syncWorldObjects(simScene, robot, size, scale)',
     'ground.w = 200000',
     "data-codeon-3d-object-count",
+    'robotVisualScale = (45 * scale) / 3.3',
+    'robotMesh.rotation.y = -robot.pose.theta - Math.PI / 2',
 ].forEach(function (feature) {
     assert.ok(runtimeSource.indexOf(feature) !== -1, '3D-RoboMission-Merkmal fehlt: ' + feature);
 });
 
-const version = 'simulation3d.adapter.js?v=codeon-3d-robomission-3';
+const version = 'simulation3d.adapter.js?v=codeon-3d-robomission-4';
 assert.ok(fs.readFileSync(serverIndex, 'utf8').indexOf(version) !== -1, 'Cache-Version fehlt im Quell-Index.');
 assert.ok(fs.readFileSync(runtimeIndex, 'utf8').indexOf(version) !== -1, 'Cache-Version fehlt im Laufzeit-Index.');
 
