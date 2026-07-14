@@ -42,6 +42,20 @@ Manueller Regressionstest in Chrome nach einem vollständigen Server-Neustart:
 Wichtig: Änderungen an `OpenRobertaServer/staticResources` müssen auch in der
 gestarteten Exportfassung `application/staticResources` enthalten sein.
 
+Der RCX-Server darf für den vollständigen Hardwaretest nicht mit
+`application/admin.sh start-server` allein gestartet werden, weil dabei ohne
+zusätzliche Parameter der RCX-Crosscompiler-Pfad fehlt. Immer den vorgesehenen
+Starter verwenden:
+
+```bash
+./start-codeon-rcx.sh
+```
+
+Dieser startet Server und Bridge mit dem richtigen
+`robot.crosscompiler.resourcebase`. Ein fehlender Pfad zeigt sich im
+Serverprotokoll als `exception when calling the cross compiler` und
+`./RobotRCX/osx/nqc: No such file or directory`.
+
 ---
 
 ## 1. Initiale Abstürze beim Auswählen des RCX-Roboters behoben
