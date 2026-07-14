@@ -62,3 +62,25 @@ Automatische Sicherungspruefung:
 `node scripts/test-codeon-3d-static.js`
 
 Der Test stellt sicher, dass Quell- und Laufzeitkopie identisch bleiben, die zentralen Darstellungsmerkmale vorhanden sind und beide HTML-Einstiege dieselbe Cache-Version laden.
+
+## Ausbau 2026-07-14: Sensoren, freie Fahrt und 3D-Weltbau
+
+Die 3D-Ansicht verwendet weiterhin die bewaehrte 2D-Simulationslogik. Dadurch wirken Programme, Kollisionen und Sensorwerte in beiden Ansichten identisch; nur die Darstellung wird in Three.js gespiegelt.
+
+- Das RCX-3D-Modell besitzt nun standardmaessig den vorderen Stossfaenger und den nach unten gerichteten Lichtsensor der RCX-Basiskonfiguration.
+- Der Stossfaenger wird bei einem Tastkontakt rot. Der Lichtwert sowie der Zustand des Tasters werden im 3D-Statusfeld angezeigt.
+- Die Ursache fuer das scheinbar zufaellige Stoppen war der unsichtbare Rand der kleineren 2D-Simulationsflaeche. Im aktiven 3D-Modus wird dieser Rand deshalb nur fuer die Kollisionspruefung stark erweitert. Beim Wechsel zurueck zu 2D werden die Originalabmessungen exakt wiederhergestellt.
+- Echte Hindernisse bleiben wirksam und koennen weiterhin den Taster ausloesen.
+- Die vorhandenen Toolbar-Schaltflaechen fuer Hindernisse und Farbflaechen erzeugen nun auch in der 3D-Ansicht Rechtecke, Kreise und Dreiecke.
+- Neue Elemente werden vor dem Roboter platziert. Sie koennen in 3D mit der Maus angeklickt und verschoben werden.
+- Hindernisse werden als erhoehte 3D-Koerper dargestellt; Farbflaechen liegen als flache, farbige Kacheln auf dem Boden. Auswahl, Farbe aendern und Loeschen verwenden weiterhin die vorhandenen CodeON-Schaltflaechen.
+
+### Bedienung
+
+1. Simulation oeffnen und `3D` aktivieren.
+2. Ueber den Wuerfel ein Hindernis oder ueber das Farbfeld eine farbige Kachel auswaehlen.
+3. Das neue Element erscheint vor dem Roboter.
+4. Element anklicken und ziehen, um es zu platzieren.
+5. Ein ausgewaehltes Element kann mit Pipette/Farbwahl umgefaerbt oder mit dem Papierkorb geloescht werden.
+
+Die automatische Pruefung deckt zusaetzlich das 3D-Sensormodell, die Spiegelung der Weltobjekte, die erweiterte 3D-Fahrflaeche und die einheitliche Cache-Version ab.

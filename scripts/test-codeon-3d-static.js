@@ -24,11 +24,16 @@ assert.strictEqual(serverSource, runtimeSource, 'Quell- und Laufzeitversion des 
     "poseHud.id = 'sim3dPoseHud'",
     "sceneLabel.textContent = '3D SIMULATION'",
     'orbit.targetX = robotMesh.position.x',
+    "frontBumper.name = 'touchBumper'",
+    "lightLens.name = 'lightSensorLens'",
+    'syncWorldObjects(simScene, robot, size, scale)',
+    'ground.w = 200000',
+    "data-codeon-3d-object-count",
 ].forEach(function (feature) {
     assert.ok(runtimeSource.indexOf(feature) !== -1, '3D-RoboMission-Merkmal fehlt: ' + feature);
 });
 
-const version = 'simulation3d.adapter.js?v=codeon-3d-robomission-2';
+const version = 'simulation3d.adapter.js?v=codeon-3d-robomission-3';
 assert.ok(fs.readFileSync(serverIndex, 'utf8').indexOf(version) !== -1, 'Cache-Version fehlt im Quell-Index.');
 assert.ok(fs.readFileSync(runtimeIndex, 'utf8').indexOf(version) !== -1, 'Cache-Version fehlt im Laufzeit-Index.');
 

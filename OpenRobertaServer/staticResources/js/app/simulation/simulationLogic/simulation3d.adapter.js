@@ -11,6 +11,13 @@
     var fieldMesh;
     var poseHud;
     var sceneLabel;
+    var worldObjectGroup;
+    var worldObjectRecords = {};
+    var raycaster;
+    var groundPlane;
+    var objectDrag = null;
+    var groundBackup = null;
+    var spawnCounter = 0;
     var lastWidth = 0;
     var lastHeight = 0;
     // Same low, robot-centred starting perspective as the 3D-RoboMission scene.
@@ -68,6 +75,40 @@
         if (direction) direction.visible = !isRcx;
     }
 
+    function getRobotSensorState(robot) {
+        var state = { touch: false, touchFound: false, light: null };
+        if (!robot) return state;
+        Object.keys(robot).forEach(function (key) {
+            var component = robot[key];
+            if (!component || typeof component !== 'object') return;
+            if (component.position === 'front' && typeof component.value === 'boolean') {
+                state.touchFound = true;
+                state.touch = state.touch || component.value;
+            }
+            if (typeof component.lightValue === 'number') {
+                state.light = component.lightValue;
+            }
+        });
+        return state;
+    }
+
+    function updateRobotSensorsAppearance(robot) {
+        if (!robotMesh) return;
+        var state = getRobotSensorState(robot);
+        var bumper = robotMesh.getObjectByName('touchBumper');
+        var lightLens = robotMesh.getObjectByName('lightSensorLens');
+        if (bumper && bumper.material) {
+            bumper.material.color.setHex(state.touch ? 0xe5484d : 0xb8c0c8);
+            if (bumper.material.emissive) bumper.material.emissive.setHex(state.touch ? 0x661111 : 0x000000);
+        }
+        if (lightLens && lightLens.material) {
+            var light = state.light === null ? 55 : Math.max(0, Math.min(100, state.light));
+            var level = Math.round(30 + light * 2.1);
+            lightLens.material.color.setRGB(level / 255, level / 255, level / 255);
+        }
+        return state;
+    }
+
     function buildRobot() {
         var group = new THREE.Group();
         var isRcx = isRcxSelected();
@@ -121,10 +162,32 @@
             group.add(hub);
         });
 
-        var frontBumper = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.34, 0.22), darkMaterial);
-        frontBumper.position.set(0, 0.62, -1.58);
+        var bumperMaterial = new THREE.MeshPhongMaterial({ color: 0xb8c0c8, shininess: 75, emissive: 0x000000 });
+        var frontBumper = new THREE.Mesh(new THREE.BoxGeometry(2.65, 0.22, 0.22), bumperMaterial);
+        frontBumper.name = 'touchBumper';
+        frontBumper.position.set(0, 0.58, -2.05);
         frontBumper.castShadow = true;
         group.add(frontBumper);
+
+        [-0.92, 0.92].forEach(function (x) {
+            var bumperSupport = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.78), bumperMaterial);
+            bumperSupport.position.set(x, 0.58, -1.72);
+            bumperSupport.castShadow = true;
+            group.add(bumperSupport);
+        });
+
+        var lightSensorBody = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.42, 0.64), darkMaterial);
+        lightSensorBody.position.set(0, 0.35, -1.7);
+        lightSensorBody.castShadow = true;
+        group.add(lightSensorBody);
+
+        var lightLens = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.2, 0.2, 0.12, 18),
+            new THREE.MeshPhongMaterial({ color: 0x777777, shininess: 90 })
+        );
+        lightLens.name = 'lightSensorLens';
+        lightLens.position.set(0, 0.1, -1.72);
+        group.add(lightLens);
 
         var caster = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 10), hubMaterial);
         caster.position.set(0, 0.3, 1.25);
@@ -177,6 +240,300 @@
         container.appendChild(sceneLabel);
     }
 
+    function updateContainerState(objectCount) {
+        var container = getElement('sim3dDiv');
+        if (!container) return;
+        container.setAttribute('data-codeon-3d-ready', initialized ? 'true' : 'false');
+        container.setAttribute('data-codeon-3d-object-count', String(objectCount || 0));
+        container.setAttribute('data-codeon-3d-ground-expanded', groundBackup ? 'true' : 'false');
+    }
+
+    function getObjectShape(source) {
+        if (typeof source.r === 'number') return 'circle';
+        if (typeof source.ax === 'number') return 'triangle';
+        return 'rectangle';
+    }
+
+    function getObjectCenter(source) {
+        var shape = getObjectShape(source);
+        if (shape === 'circle') return { x: source.x, y: source.y };
+        if (shape === 'triangle') {
+            return { x: (source.ax + source.bx + source.cx) / 3, y: (source.ay + source.by + source.cy) / 3 };
+        }
+        return { x: source.x + source.w / 2, y: source.y + source.h / 2 };
+    }
+
+    function moveObjectCenter(source, x, y) {
+        var shape = getObjectShape(source);
+        if (shape === 'triangle') {
+            var center = getObjectCenter(source);
+            var dx = x - center.x;
+            var dy = y - center.y;
+            source.ax += dx;
+            source.ay += dy;
+            source.bx += dx;
+            source.by += dy;
+            source.cx += dx;
+            source.cy += dy;
+            if (source.corners && source.corners.length === 3) {
+                source.corners.forEach(function (corner) {
+                    corner.x += dx;
+                    corner.y += dy;
+                });
+            }
+        } else if (typeof source.moveTo === 'function') {
+            source.moveTo({ x: x, y: y });
+        } else if (shape === 'circle') {
+            source.x = x;
+            source.y = y;
+        } else {
+            source.x = x - source.w / 2;
+            source.y = y - source.h / 2;
+        }
+        if (source.myScene) {
+            if (source.type === 'OBSTACLE') source.myScene.redrawObstacles = true;
+            if (source.type === 'COLORAREA') source.myScene.redrawColorAreas = true;
+        }
+    }
+
+    function objectSignature(source, scale) {
+        var shape = getObjectShape(source);
+        if (shape === 'circle') return [shape, source.type, source.r, scale].join(':');
+        if (shape === 'triangle') {
+            return [
+                shape,
+                source.type,
+                source.bx - source.ax,
+                source.by - source.ay,
+                source.cx - source.ax,
+                source.cy - source.ay,
+                scale,
+            ].join(':');
+        }
+        return [shape, source.type, source.w, source.h, scale].join(':');
+    }
+
+    function disposeObjectRecord(record) {
+        if (!record || !record.root) return;
+        record.root.traverse(function (node) {
+            if (node.geometry && typeof node.geometry.dispose === 'function') node.geometry.dispose();
+            if (node.material) {
+                var materials = Array.isArray(node.material) ? node.material : [node.material];
+                materials.forEach(function (material) {
+                    if (material && typeof material.dispose === 'function') material.dispose();
+                });
+            }
+        });
+        worldObjectGroup.remove(record.root);
+    }
+
+    function createWorldObjectRecord(source, scale) {
+        var shape = getObjectShape(source);
+        var isColorArea = source.type === 'COLORAREA';
+        var height = isColorArea ? 0.08 : 1.25;
+        var geometry;
+        var center = getObjectCenter(source);
+
+        if (shape === 'circle') {
+            var radius = Math.max(source.r * scale, 0.22);
+            geometry = isColorArea ? new THREE.CircleGeometry(radius, 32) : new THREE.CylinderGeometry(radius, radius, height, 32);
+        } else if (shape === 'triangle') {
+            var ax = (source.ax - center.x) * scale;
+            var az = (source.ay - center.y) * scale;
+            var bx = (source.bx - center.x) * scale;
+            var bz = (source.by - center.y) * scale;
+            var cx = (source.cx - center.x) * scale;
+            var cz = (source.cy - center.y) * scale;
+            if (isColorArea) {
+                geometry = new THREE.BufferGeometry();
+                geometry.setAttribute('position', new THREE.Float32BufferAttribute([ax, 0, az, bx, 0, bz, cx, 0, cz], 3));
+                geometry.computeVertexNormals();
+            } else {
+                var radiusTriangle = Math.max(
+                    Math.sqrt(ax * ax + az * az),
+                    Math.sqrt(bx * bx + bz * bz),
+                    Math.sqrt(cx * cx + cz * cz),
+                    0.35
+                );
+                geometry = new THREE.ConeGeometry(radiusTriangle, height, 3);
+            }
+        } else {
+            var width = Math.max(source.w * scale, 0.3);
+            var depth = Math.max(source.h * scale, 0.3);
+            geometry = isColorArea ? new THREE.PlaneGeometry(width, depth) : new THREE.BoxGeometry(width, height, depth);
+        }
+
+        var color = source.color || (isColorArea ? '#fbed00' : '#33b8ca');
+        var material = isColorArea
+            ? new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.9, side: THREE.DoubleSide })
+            : new THREE.MeshPhongMaterial({ color: color, shininess: 42 });
+        var mesh = new THREE.Mesh(geometry, material);
+        if (isColorArea && shape !== 'triangle') mesh.rotation.x = -Math.PI / 2;
+        mesh.position.y = isColorArea ? 0.055 : height / 2;
+        mesh.castShadow = !isColorArea;
+        mesh.receiveShadow = true;
+
+        var selectionMaterial = new THREE.MeshBasicMaterial({ color: 0x172033, wireframe: true, transparent: true, opacity: 0.85 });
+        var selection = new THREE.Mesh(geometry, selectionMaterial);
+        if (isColorArea && shape !== 'triangle') selection.rotation.x = -Math.PI / 2;
+        selection.position.y = isColorArea ? 0.075 : height / 2 + 0.02;
+        selection.scale.set(1.05, 1.05, 1.05);
+        selection.visible = !!source.selected;
+
+        var root = new THREE.Group();
+        root.add(mesh);
+        root.add(selection);
+        var record = {
+            root: root,
+            mesh: mesh,
+            selection: selection,
+            source: source,
+            signature: objectSignature(source, scale),
+            scale: scale,
+        };
+        root.userData.codeOnRecord = record;
+        mesh.userData.codeOnRecord = record;
+        selection.userData.codeOnRecord = record;
+        worldObjectGroup.add(root);
+        return record;
+    }
+
+    function placeNewObjectNearRobot(source, robot) {
+        if (!robot || !robot.pose) return;
+        var lane = (spawnCounter % 3) - 1;
+        var distance = 115 + Math.floor(spawnCounter / 3) % 3 * 45;
+        var lateral = lane * 90;
+        var theta = robot.pose.theta || 0;
+        var x = robot.pose.x + Math.cos(theta) * distance - Math.sin(theta) * lateral;
+        var y = robot.pose.y + Math.sin(theta) * distance + Math.cos(theta) * lateral;
+        moveObjectCenter(source, x, y);
+        spawnCounter += 1;
+    }
+
+    function isOutsideOriginalGround(source) {
+        if (!groundBackup) return false;
+        var center = getObjectCenter(source);
+        return (
+            center.x < groundBackup.x - 50 ||
+            center.x > groundBackup.x + groundBackup.w + 50 ||
+            center.y < groundBackup.y - 50 ||
+            center.y > groundBackup.y + groundBackup.h + 50
+        );
+    }
+
+    function syncWorldObjects(simScene, robot, size, scale) {
+        if (!worldObjectGroup || !simScene) return;
+        var sources = (simScene.obstacleList || []).concat(simScene.colorAreaList || []);
+        var live = {};
+
+        sources.forEach(function (source) {
+            var id = String(source.myId);
+            live[id] = true;
+            var record = worldObjectRecords[id];
+            if (!record || record.source !== source || record.signature !== objectSignature(source, scale)) {
+                if (record) disposeObjectRecord(record);
+                if (!record && isOutsideOriginalGround(source)) placeNewObjectNearRobot(source, robot);
+                record = createWorldObjectRecord(source, scale);
+                worldObjectRecords[id] = record;
+            }
+
+            var center = getObjectCenter(source);
+            record.root.position.set((center.x - size.width / 2) * scale, 0, (center.y - size.height / 2) * scale);
+            if (record.mesh.material && record.mesh.material.color) record.mesh.material.color.set(source.color || '#33b8ca');
+            record.selection.visible = !!source.selected;
+        });
+
+        Object.keys(worldObjectRecords).forEach(function (id) {
+            if (!live[id]) {
+                disposeObjectRecord(worldObjectRecords[id]);
+                delete worldObjectRecords[id];
+            }
+        });
+        updateContainerState(Object.keys(worldObjectRecords).length);
+    }
+
+    function expandSimulationGround(simScene) {
+        var ground = simScene && simScene.ground;
+        if (!ground) return;
+        if (!groundBackup || groundBackup.ground !== ground) {
+            restoreSimulationGround();
+            groundBackup = { ground: ground, x: ground.x, y: ground.y, w: ground.w, h: ground.h };
+        }
+        ground.x = -100000;
+        ground.y = -100000;
+        ground.w = 200000;
+        ground.h = 200000;
+        updateContainerState(Object.keys(worldObjectRecords).length);
+    }
+
+    function restoreSimulationGround() {
+        if (!groundBackup || !groundBackup.ground) return;
+        groundBackup.ground.x = groundBackup.x;
+        groundBackup.ground.y = groundBackup.y;
+        groundBackup.ground.w = groundBackup.w;
+        groundBackup.ground.h = groundBackup.h;
+        groundBackup = null;
+        updateContainerState(Object.keys(worldObjectRecords).length);
+    }
+
+    function findObjectRecord(object) {
+        var current = object;
+        while (current) {
+            if (current.userData && current.userData.codeOnRecord) return current.userData.codeOnRecord;
+            current = current.parent;
+        }
+        return null;
+    }
+
+    function pointerOnGround(event) {
+        var rect = renderer.domElement.getBoundingClientRect();
+        var mouse = new THREE.Vector2(
+            ((event.clientX - rect.left) / rect.width) * 2 - 1,
+            -((event.clientY - rect.top) / rect.height) * 2 + 1
+        );
+        raycaster.setFromCamera(mouse, camera);
+        var point = new THREE.Vector3();
+        return raycaster.ray.intersectPlane(groundPlane, point) ? point : null;
+    }
+
+    function beginObjectDrag(event) {
+        if (event.button !== 0 || event.shiftKey || !worldObjectGroup) return false;
+        var rect = renderer.domElement.getBoundingClientRect();
+        var mouse = new THREE.Vector2(
+            ((event.clientX - rect.left) / rect.width) * 2 - 1,
+            -((event.clientY - rect.top) / rect.height) * 2 + 1
+        );
+        raycaster.setFromCamera(mouse, camera);
+        var hits = raycaster.intersectObjects(worldObjectGroup.children, true);
+        if (!hits.length) return false;
+        var record = findObjectRecord(hits[0].object);
+        var point = pointerOnGround(event);
+        if (!record || !point) return false;
+        record.source.selected = true;
+        objectDrag = {
+            record: record,
+            offsetX: point.x - record.root.position.x,
+            offsetZ: point.z - record.root.position.z,
+        };
+        renderer.domElement.style.cursor = 'grabbing';
+        return true;
+    }
+
+    function moveDraggedObject(event) {
+        if (!objectDrag || !lastWidth || !lastHeight) return false;
+        var point = pointerOnGround(event);
+        if (!point) return true;
+        var scale = objectDrag.record.scale;
+        var worldX = point.x - objectDrag.offsetX;
+        var worldZ = point.z - objectDrag.offsetZ;
+        moveObjectCenter(
+            objectDrag.record.source,
+            worldX / scale + lastWidth / 2,
+            worldZ / scale + lastHeight / 2
+        );
+        return true;
+    }
+
     function updateCamera() {
         if (!camera) return;
         var horizontal = Math.cos(orbit.pitch) * orbit.distance;
@@ -194,10 +551,15 @@
         canvas.addEventListener('contextmenu', function (event) { event.preventDefault(); });
         canvas.addEventListener('pointerdown', function (event) {
             if (!enabled) return;
+            if (beginObjectDrag(event)) {
+                canvas.setPointerCapture(event.pointerId);
+                return;
+            }
             drag = { x: event.clientX, y: event.clientY, pan: event.button === 2 || event.shiftKey };
             canvas.setPointerCapture(event.pointerId);
         });
         canvas.addEventListener('pointermove', function (event) {
+            if (moveDraggedObject(event)) return;
             if (!drag) return;
             var dx = event.clientX - drag.x;
             var dy = event.clientY - drag.y;
@@ -216,7 +578,10 @@
         });
         function stopDrag(event) {
             if (drag && canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+            if (objectDrag && canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
             drag = null;
+            objectDrag = null;
+            canvas.style.cursor = 'default';
         }
         canvas.addEventListener('pointerup', stopDrag);
         canvas.addEventListener('pointercancel', stopDrag);
@@ -296,11 +661,18 @@
         fieldMesh.add(fieldBorder);
         scene.add(fieldMesh);
 
+        worldObjectGroup = new THREE.Group();
+        worldObjectGroup.name = 'codeOnWorldObjects';
+        scene.add(worldObjectGroup);
+        raycaster = new THREE.Raycaster();
+        groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+
         robotMesh = buildRobot();
         scene.add(robotMesh);
 
         attachNavigation();
         initialized = true;
+        updateContainerState(0);
         resize();
         animate();
     }
@@ -324,6 +696,8 @@
         if (!robot || !robot.pose) return;
 
         updateRobotAppearance(robot);
+        var sensorState = updateRobotSensorsAppearance(robot) || { touch: false, touchFound: false, light: null };
+        expandSimulationGround(simScene);
 
         var size = getCanvasSize(simScene);
         lastWidth = size.width;
@@ -332,6 +706,7 @@
         robotMesh.position.x = (robot.pose.x - lastWidth / 2) * scale;
         robotMesh.position.z = (robot.pose.y - lastHeight / 2) * scale;
         robotMesh.rotation.y = -robot.pose.theta + Math.PI / 2;
+        syncWorldObjects(simScene, robot, size, scale);
 
         if (!orbit.panned) {
             orbit.targetX = robotMesh.position.x;
@@ -344,7 +719,9 @@
             poseHud.textContent =
                 'POSITION\n' +
                 'X: ' + robotMesh.position.x.toFixed(1) + '   Y: ' + robotMesh.position.z.toFixed(1) + '\n' +
-                'Richtung: ' + degrees + '°';
+                'Richtung: ' + degrees + '°\n' +
+                'Taster: ' + (sensorState.touchFound ? (sensorState.touch ? 'JA' : 'nein') : '--') +
+                '   Licht: ' + (sensorState.light === null ? '--' : Math.round(sensorState.light) + ' %');
         }
 
         if (fieldMesh) {
@@ -384,6 +761,7 @@
             if (toggle) toggle.classList.add('active');
             requestAnimationFrame(resize);
         } else {
+            restoreSimulationGround();
             if (sim3dDiv) sim3dDiv.style.display = 'none';
             if (canvasDiv) canvasDiv.style.display = '';
             if (toggle) toggle.classList.remove('active');
@@ -420,6 +798,14 @@
         toggle: toggle,
         isEnabled: function () {
             return enabled;
+        },
+        getDebugState: function () {
+            return {
+                enabled: enabled,
+                initialized: initialized,
+                objectCount: Object.keys(worldObjectRecords).length,
+                groundExpanded: !!groundBackup,
+            };
         },
     };
 })();
