@@ -2,6 +2,48 @@
 
 Diese Dokumentation fasst die Ursachen und vorgenommenen Anpassungen zusammen, um die Abstürze bei der RCX-Auswahl sowie das Verschwinden des "Roboter-Konfiguration"-Tabs in **CodeON** zu beheben, sowie die Fehler im Java-Backend beim Ausführen (Kompilieren) des RCX-Codes.
 
+## Chrome: Toolbox und Run-Button reagieren nicht (14. Juli 2026)
+
+### Ursache
+
+Der bereits vorhandene CSS-Fix gegen unsichtbare Bootstrap-Tabs war nur in
+`OpenRobertaServer/staticResources/css/style.css` enthalten, aber nicht in der
+tatsächlich gestarteten Exportfassung unter `application/staticResources`.
+Chrome ließ dadurch einen inaktiven, unsichtbaren Tab Klicks abfangen. Firefox
+verhielt sich anders, weshalb der Fehler dort nicht auftrat.
+
+Zusätzlich darf der Pointer-to-Mouse-Proxy in `main.js` ausschließlich Blocklys
+SVG-Arbeitsbereich und Flyout behandeln. Die HTML-Elemente
+`.blocklyToolboxDiv` und `.blocklyTreeRow` dürfen nicht in seinem Selektor
+stehen, weil der Proxy dort native Chrome-Klicks mit `preventDefault()`
+unterdrückt.
+
+### Dauerhafte Absicherung
+
+- `css/rcx-click-fix.css` wird sowohl im Server-Quellstand als auch in der
+  laufenden `application` ausgeliefert.
+- Beide `index.html`-Dateien binden diese Datei mit einer Versionskennung ein.
+- `RobotRCX/test_chrome_click_fix.py` prüft beide Laufzeitbäume und verhindert,
+  dass der Pointer-Proxy erneut auf die HTML-Toolbox erweitert wird.
+
+Vor jedem RCX-Test oder Release aus dem Repository ausführen:
+
+```bash
+python3 RobotRCX/test_chrome_click_fix.py
+```
+
+Manueller Regressionstest in Chrome nach einem vollständigen Server-Neustart:
+
+1. `http://127.0.0.1:1999/` öffnen.
+2. Mehrere Toolbox-Kategorien öffnen.
+3. Den Run-Button anklicken.
+4. Einen Block im SVG-Arbeitsbereich ziehen.
+
+Wichtig: Änderungen an `OpenRobertaServer/staticResources` müssen auch in der
+gestarteten Exportfassung `application/staticResources` enthalten sein.
+
+---
+
 ## 1. Initiale Abstürze beim Auswählen des RCX-Roboters behoben
 **Problem:** Sobald in CodeON im Menü der RCX ausgewählt wurde, reagierte die Weboberfläche nicht mehr, und in der Konsole traten JavaScript-Fehler auf (`"RCX-Background not found"` / Blockly Sensor Errors).
 **Ursachen:**

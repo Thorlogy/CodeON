@@ -2261,19 +2261,77 @@ export class RcxConnection extends AbstractPromptConnection {
             return;
         }
 
-        $('body>.pace').show();
-        fetch(this.bridgeUrl + '/firmware', { method: 'POST' })
+        $('body>.pace').fadeOut();
+        this._runFirmwareWithProgress(result);
+    }
+
+    /**
+     * Startet die Firmwareuebertragung ueber die Bridge im Hintergrund und
+     * zeigt waehrenddessen einen Fortschrittsdialog. Der IR-Download dauert
+     * mehrere Minuten; der Fortschritt ist eine ehrliche Zeitschaetzung der
+     * Bridge (GET /firmware/progress), kein echtes Byte-Zaehlen.
+     */
+    private _runFirmwareWithProgress(result: any): void {
+        const overlay = $(
+            '<div id="rcxFirmwareOverlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.55);z-index:10000;display:flex;align-items:center;justify-content:center;">' +
+                '<div style="background:#fff;border-radius:8px;padding:24px 28px;max-width:440px;width:90%;box-shadow:0 4px 24px rgba(0,0,0,0.35);">' +
+                '<h4 style="margin:0 0 8px 0;">Firmware wird auf den RCX übertragen</h4>' +
+                '<p style="margin:0 0 14px 0;font-size:13px;color:#444;">Das dauert etwa 3–4 Minuten. Bitte den RCX nicht ausschalten und RCX und Infrarot-Turm nicht bewegen.</p>' +
+                '<div style="background:#e6e6e6;border-radius:6px;height:18px;overflow:hidden;">' +
+                '<div id="rcxFirmwareBar" style="background:#33B8CA;height:100%;width:0%;transition:width 1s linear;"></div>' +
+                '</div>' +
+                '<p id="rcxFirmwareText" style="margin:10px 0 0 0;font-size:13px;color:#444;">Übertragung wird gestartet …</p>' +
+                '</div></div>'
+        );
+        $('body').append(overlay);
+        const close = () => $('#rcxFirmwareOverlay').remove();
+        fetch(this.bridgeUrl + '/firmware/start', { method: 'POST' })
             .then((resp) => resp.json().catch(() => ({ ok: resp.ok, message: '' })))
             .then((data) => {
-                if (data && data.ok) {
-                    this._uploadProgram(result);
-                } else {
-                    $('body>.pace').fadeOut();
+                if (!data || !data.ok) {
+                    close();
                     this._bridgeError((data && data.message) || 'Die RCX-Firmware konnte nicht übertragen werden.');
+                    return;
                 }
+                const poll = window.setInterval(() => {
+                    fetch(this.bridgeUrl + '/firmware/progress')
+                        .then((r) => r.json())
+                        .then((p) => {
+                            if (!p) {
+                                return;
+                            }
+                            if (p.state === 'running') {
+                                const pct = Math.max(0, Math.min(100, p.progress || 0));
+                                $('#rcxFirmwareBar').css('width', pct + '%');
+                                let text = pct + ' %';
+                                if (typeof p.elapsedSeconds === 'number') {
+                                    const remaining = Math.max(0, (p.estimatedSeconds || 240) - p.elapsedSeconds);
+                                    text += ' – noch etwa ' + Math.max(1, Math.ceil(remaining / 60)) + ' Min. (geschätzt)';
+                                }
+                                $('#rcxFirmwareText').text(text);
+                            } else if (p.state === 'ok') {
+                                window.clearInterval(poll);
+                                $('#rcxFirmwareBar').css('width', '100%');
+                                $('#rcxFirmwareText').text('Fertig! Das Programm wird jetzt übertragen …');
+                                window.setTimeout(() => {
+                                    close();
+                                    $('body>.pace').show();
+                                    this._uploadProgram(result);
+                                }, 800);
+                            } else {
+                                // error oder idle (z. B. Bridge neu gestartet)
+                                window.clearInterval(poll);
+                                close();
+                                this._bridgeError(p.message || 'Die RCX-Firmware konnte nicht übertragen werden.');
+                            }
+                        })
+                        .catch(() => {
+                            // Bridge kurzzeitig nicht erreichbar: weiter versuchen
+                        });
+                }, 2000);
             })
             .catch((err) => {
-                $('body>.pace').fadeOut();
+                close();
                 this._bridgeError('Fehler beim Aufruf der Firmwareübertragung.\n\nTechnisch: ' + err);
             });
     }

@@ -32,6 +32,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
 
@@ -217,6 +219,72 @@ def install_firmware():
 
 
 # ----------------------------------------------------------------------------
+# Firmware-Hintergrundjob mit Fortschrittsanzeige
+# ----------------------------------------------------------------------------
+# Der IR-Download der Firmware dauert je nach Tower/Batterien mehrere Minuten.
+# nqc liefert dabei keine maschinenlesbare Fortschrittsausgabe, deshalb wird
+# der Fortschritt aus der verstrichenen Zeit geschaetzt (und ehrlich als
+# Schaetzung angezeigt). Der Balken bleibt bei 95%, bis nqc wirklich fertig
+# meldet.
+FIRMWARE_ESTIMATED_SECONDS = 240
+
+_firmware_job = {
+    "state": "idle",  # idle | running | ok | error
+    "message": "",
+    "started_at": None,
+}
+_firmware_lock = threading.Lock()
+
+
+def _firmware_job_worker():
+    ok, msg = install_firmware()
+    with _firmware_lock:
+        _firmware_job["state"] = "ok" if ok else "error"
+        _firmware_job["message"] = msg
+
+
+def start_firmware_job():
+    """Startet die Firmwareuebertragung im Hintergrund. Gibt (ok, meldung)."""
+    # Voraussetzungen synchron pruefen, damit Fehler sofort ankommen:
+    if not find_nqc():
+        return False, "nqc wurde nicht gefunden."
+    if not find_firmware():
+        return False, (
+            "Keine RCX-Firmwaredatei gefunden. Lege FIRM0332.LGO oder FIRM0328.LGO "
+            "in RobotRCX/firmware ab oder setze RCX_FIRMWARE_PATH."
+        )
+    with _firmware_lock:
+        if _firmware_job["state"] == "running":
+            return False, "Es laeuft bereits eine Firmwareuebertragung."
+        _firmware_job["state"] = "running"
+        _firmware_job["message"] = "Firmware wird uebertragen ..."
+        _firmware_job["started_at"] = time.time()
+    threading.Thread(target=_firmware_job_worker, daemon=True).start()
+    return True, "Firmwareuebertragung gestartet."
+
+
+def firmware_progress_payload():
+    with _firmware_lock:
+        state = _firmware_job["state"]
+        message = _firmware_job["message"]
+        started_at = _firmware_job["started_at"]
+    payload = {
+        "ok": True,
+        "state": state,
+        "message": message,
+        "estimatedSeconds": FIRMWARE_ESTIMATED_SECONDS,
+        "progress": 0,
+    }
+    if state == "running" and started_at is not None:
+        elapsed = time.time() - started_at
+        payload["elapsedSeconds"] = int(elapsed)
+        payload["progress"] = min(95, int(elapsed / FIRMWARE_ESTIMATED_SECONDS * 100))
+    elif state == "ok":
+        payload["progress"] = 100
+    return payload
+
+
+# ----------------------------------------------------------------------------
 # HTTP-Server
 # ----------------------------------------------------------------------------
 # Standardmaessig duerfen nur lokal ausgelieferte CodeON-Seiten zugreifen.
@@ -285,6 +353,9 @@ class BridgeHandler(BaseHTTPRequestHandler):
         if path == "/status":
             send_cors(self)
             self.wfile.write(json.dumps(status_payload()).encode("utf-8"))
+        elif path == "/firmware/progress":
+            send_cors(self)
+            self.wfile.write(json.dumps(firmware_progress_payload()).encode("utf-8"))
         elif path == "/probe":
             ok, msg = probe_rcx()
             send_cors(self)
@@ -299,7 +370,15 @@ class BridgeHandler(BaseHTTPRequestHandler):
             self.wfile.write(b'{"ok":false,"message":"origin not allowed"}')
             return
         path = urlsplit(self.path).path
+        if path == "/firmware/start":
+            # Startet die Uebertragung im Hintergrund; Fortschritt kommt
+            # anschliessend ueber GET /firmware/progress.
+            ok, msg = start_firmware_job()
+            send_cors(self, 200)
+            self.wfile.write(json.dumps({"ok": ok, "started": ok, "message": msg}).encode("utf-8"))
+            return
         if path == "/firmware":
+            # Alter, blockierender Endpunkt - bleibt fuer Kompatibilitaet erhalten.
             ok, msg = install_firmware()
             send_cors(self, 200)
             self.wfile.write(json.dumps({"ok": ok, "message": msg}).encode("utf-8"))
@@ -364,7 +443,8 @@ def main():
     print(" Firmware    :", find_firmware() or "NICHT KONFIGURIERT (optional)")
     print(" nqc-Args    :", " ".join(nqc_serial_args()))
     print(" Port        :", BRIDGE_PORT)
-    print(" Endpunkte   : GET /status  GET /probe  POST /upload  POST /firmware")
+    print(" Endpunkte   : GET /status  GET /probe  GET /firmware/progress")
+    print("               POST /upload  POST /firmware  POST /firmware/start")
     print("-" * 60)
     if not nqc:
         print(" WARNUNG: Ohne nqc kann nicht uebertragen werden.")

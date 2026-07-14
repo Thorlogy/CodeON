@@ -1,6 +1,8 @@
 // Global Scoped Pointer-to-Mouse Proxy – restores Blockly drag-and-drop on modern browsers
 (function () {
-    var blocklySelector = '.blocklySvg, .blocklyToolboxDiv, .blocklyTreeRow';
+    // Keep the HTML toolbox on its native click handling. The proxy is only
+    // needed inside Blockly's SVG workspace and flyout.
+    var blocklySelector = '.blocklySvg, .blocklyFlyout, .blocklyBlockCanvas, .blocklyDraggable, .blocklyBlock, svg';
     ['pointerdown', 'pointermove', 'pointerup', 'pointercancel'].forEach(function (type) {
         document.addEventListener(type, function (e) {
             if (!e.target.closest(blocklySelector))
@@ -12,7 +14,7 @@
                 clientX: e.clientX,
                 clientY: e.clientY,
                 button: e.button,
-                buttons: e.buttons,
+                buttons: e.buttons || 1,
                 ctrlKey: e.ctrlKey,
                 shiftKey: e.shiftKey,
                 altKey: e.altKey,

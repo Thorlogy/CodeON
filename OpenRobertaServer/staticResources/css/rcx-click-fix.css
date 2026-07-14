@@ -1,0 +1,5 @@
+/* Prevent invisible or fading tabs from intercepting clicks. */
+.tab-pane:not(.active) {
+    display: none !important;
+    pointer-events: none !important;
+}
