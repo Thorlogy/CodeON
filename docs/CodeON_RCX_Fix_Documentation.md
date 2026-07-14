@@ -353,3 +353,24 @@ die benötigte Sensorinitialisierung weiterhin automatisch ergänzt.
 
 Vergleichswerte wie `0` und `10` werden beim Import als echte, editierbare
 Zahlenblöcke in die grafische Darstellung übernommen.
+
+## 14. Export-Sicherung für Block → NQC → Block
+
+Die vollständige Roundtrip-Implementierung war weiterhin im Git-Quellstand
+vorhanden, fehlte aber in der gestarteten Exportfassung `application`. Dadurch
+wurden unter anderem rohe Ace-Platzhalter wie `${1:condition}` sichtbar und
+der erweiterte NQC-Konverter war nicht aktiv.
+
+Für den vollständigen Funktionsumfang müssen diese vier Dateien aus dem
+aktuellen Server-Build in `application/staticResources` synchronisiert sein:
+
+- `js/helper/codeToBlocks.js`
+- `js/helper/aceEditor.js`
+- `js/app/roberta/controller/progCode.controller.js`
+- `js/app/roberta/controller/program.controller.js`
+
+`RobotRCX/test_chrome_click_fix.py` kontrolliert deshalb zusätzlich die
+entscheidenden Roundtrip-, Snippet-, Import- und Auto-Sync-Merkmale in der
+tatsächlich gestarteten Exportfassung. Die fachliche Abdeckung bleibt im Test
+`OpenRobertaWeb/test/codeToBlocks.roundtrip.test.js` mit 23 Roundtrip-Fällen
+und 44 kuratierten NQC-Vorschlägen dokumentiert.

@@ -45,6 +45,19 @@ class ChromeClickFixTest(unittest.TestCase):
             javascript = (ROOT / actuator).read_text(encoding="utf-8")
             self.assertIn("/css/img/rcx-brick.png", javascript)
 
+    def test_nqc_roundtrip_is_shipped_in_application(self):
+        runtime = ROOT / "application/staticResources"
+        checks = {
+            "js/helper/codeToBlocks.js": ("task main()", "parseNqcBody", "robControls_if"),
+            "js/helper/aceEditor.js": ("NQC ↔ Block", "snippet", "${1:SENSOR_1}"),
+            "js/app/roberta/controller/progCode.controller.js": ("codeImportToBlocks", "CodeToBlocksConverter", "setViewCode"),
+            "js/app/roberta/controller/program.controller.js": ("codeSynchronize", "syncTimeout", "setEditorCode"),
+        }
+        for relative, markers in checks.items():
+            javascript = (runtime / relative).read_text(encoding="utf-8")
+            for marker in markers:
+                self.assertIn(marker, javascript, f"{marker} fehlt in {relative}")
+
 
 if __name__ == "__main__":
     unittest.main()
