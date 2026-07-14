@@ -42,3 +42,23 @@ Die bestehende CodeON-Simulation wird erweitert, aber nicht ersetzt. In der Simu
 - `application/staticResources/index.html`
 - `OpenRobertaServer/staticResources/js/app/simulation/simulationLogic/simulation3d.adapter.js`
 - `application/staticResources/js/app/simulation/simulationLogic/simulation3d.adapter.js`
+
+## Ausbau 2026-07-14: Optik wie 3D-RoboMission
+
+Die alternative 3D-Ansicht wurde visuell an die bestehende 3D-RoboMission-Simulation angenaehert. Die 2D-Simulation bleibt weiterhin die einzige Quelle fuer Position, Richtung und Programmausfuehrung.
+
+- niedrigere, robotzentrierte Startkamera mit automatischer Verfolgung
+- vergroessertes und detaillierteres Robotermodell mit Raedern, Radnaben, Display, Frontleiste und Stuetzrad
+- weiche Schatten mit Haupt- und Fuelllicht
+- groesserer, klarer gegliederter Boden mit betonten Hauptachsen und sichtbarer Feldgrenze
+- leichte Tiefenwirkung durch Nebel und abgestufte Hintergrundfarben
+- dezente 3D-Kennung und live aktualisierte Positionsanzeige
+- weiterhin freie Drehung, Zoom und manuelles Verschieben der Kamera
+
+Die Darstellung orientiert sich bewusst an 3D-RoboMission, uebernimmt aber keine zweite Physik oder eigene Roboterbewegung. Dadurch bleiben Run-Button, RCX-Programmlogik und 2D-Simulation unveraendert.
+
+Automatische Sicherungspruefung:
+
+`node scripts/test-codeon-3d-static.js`
+
+Der Test stellt sicher, dass Quell- und Laufzeitkopie identisch bleiben, die zentralen Darstellungsmerkmale vorhanden sind und beide HTML-Einstiege dieselbe Cache-Version laden.
