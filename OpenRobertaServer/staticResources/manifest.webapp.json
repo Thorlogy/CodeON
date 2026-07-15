@@ -1,8 +1,8 @@
 {
-  "name": "Open Roberta Lab",
-  "short_name": "Open Roberta Lab",
+  "name": "CodeON",
+  "short_name": "CodeON",
   "version": "${openRobertaServer.version}",
-  "description": "Roberta – Learning with Robots",
+  "description": "CodeON – Programmieren und Lernen mit Robotern",
   "developer": {
     "name": "Open Roberta",
     "url": "${project.parent.url}"
@@ -14,8 +14,9 @@
   "orientation": "landscape",
   "icons": [
     {
-      "src": "/css/img/NEPO.ico",
-      "sizes": "16x16 24x24 32x32 48x48 64x64 128x128 144x144 256x256"
+      "src": "/css/img/codeon-favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
     }
   ]
 }

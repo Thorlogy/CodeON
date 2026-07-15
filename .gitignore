@@ -29,3 +29,11 @@ dbIptoCountry/
 **/data/test/output/*
 
 .venv/
+
+# Local credentials must never enter the repository.
+.env
+.env.*
+!.env.example
+.codeon-secrets/
+*.pem
+*.key
