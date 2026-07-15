@@ -33,20 +33,32 @@ assert.strictEqual(sourceManifest, runtimeManifest, 'Quell- und Laufzeitmanifest
 assert.strictEqual(fs.readFileSync(sourceIconPath, 'utf8'), fs.readFileSync(runtimeIconPath, 'utf8'), 'Quell- und Laufzeitfavicon unterscheiden sich.');
 
 [
-    "sessionStorage.getItem(KEY_SESSION_NAME)",
-    "sessionStorage.setItem(KEY_SESSION_NAME, key)",
+    "sessionStorage.getItem(KEY_SESSION_PREFIX + providerId)",
+    "sessionStorage.setItem(KEY_SESSION_PREFIX + providerId, key)",
     "localStorage.removeItem('gemini_api_key')",
-    "fetch('https://openrouter.ai/api/v1/models'",
-    "fetch('https://openrouter.ai/api/v1/chat/completions'",
+    "OLLAMA_BASE_URL = 'http://127.0.0.1:11434'",
+    "fetchJson(OLLAMA_BASE_URL + '/api/tags'",
+    "fetchJson(OLLAMA_BASE_URL + '/api/chat'",
+    "fetchJson('https://openrouter.ai/api/v1/models'",
+    "https://api.openai.com/v1/chat/completions",
+    "https://api.anthropic.com/v1/messages",
+    "https://api.mistral.ai/v1/chat/completions",
+    "https://generativelanguage.googleapis.com/v1beta/models/",
+    "https://openrouter.ai/api/v1/chat/completions",
     "'Authorization': 'Bearer ' + key",
-    "provider: { data_collection: 'deny', zdr: useZdr }",
+    "payload.provider = { data_collection: 'deny', zdr:",
+    "'x-goog-api-key': key",
+    "'x-api-key': key",
+    "'anthropic-dangerous-direct-browser-access': 'true'",
     'var MAX_MESSAGE_LENGTH = 4000',
     'var MAX_CONTEXT_LENGTH = 7000',
     "$content.text(text)",
-    "OpenAI / GPT",
-    "Anthropic / Claude",
-    "Mistral",
-    "Google / Gemini"
+    "label: 'Ollama (lokal)'",
+    "label: 'Google Gemini'",
+    "label: 'OpenAI / GPT'",
+    "label: 'Anthropic / Claude'",
+    "label: 'Mistral AI'",
+    "label: 'OpenRouter (viele Anbieter)'"
 ].forEach((feature) => assert.ok(sourceController.includes(feature), 'Sicherheits- oder Modellmerkmal fehlt: ' + feature));
 
 [
@@ -62,7 +74,7 @@ assert.ok(sourceTheme.includes('.ai-icon-button'), 'Große, zugängliche Code-Bu
 assert.ok(sourceTheme.includes('#btn-clear-chat { width: 42px; height: 42px;'), 'Der Löschbutton ist nicht ausreichend groß.');
 assert.ok(sourceTheme.includes('#btn-send { width: 48px; height: 46px;'), 'Der Sendebutton ist nicht ausreichend groß.');
 assert.ok(sourceIndex.includes("codeon-favicon.svg?v=20260715"), 'Das CodeON-Favicon fehlt im Index.');
-assert.ok(sourceIndex.includes("v=codeon-buddy-20260715-1"), 'Die Code-Buddy-Cacheversion fehlt.');
+assert.ok(sourceIndex.includes("v=codeon-buddy-20260715-2"), 'Die Code-Buddy-Cacheversion fehlt.');
 assert.strictEqual(JSON.parse(sourceManifest).short_name, 'CodeON', 'Das Web-App-Manifest ist nicht auf CodeON umgestellt.');
 
 console.log('CodeON-Code-Buddy-Sicherheitsprüfung erfolgreich.');

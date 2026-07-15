@@ -139,10 +139,25 @@ define(['jquery'], function ($) {
             .ai-form-card > label:not(.ai-check-row) { display: block; margin: 12px 0 6px; font-weight: 650; color: #273d52; }
             .ai-form-card > label:first-child { margin-top: 0; }
             .ai-form-card .form-control { min-height: 44px; border-radius: 9px; border-color: #bfcdd8; }
+            .ai-provider-explanation {
+                margin-top: 10px;
+                padding: 10px 12px;
+                border-radius: 9px;
+                background: #f2f7fa;
+                color: #40586d;
+                font-size: 0.8rem;
+                line-height: 1.4;
+            }
+            .ai-status-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; }
+            .ai-status-dot.local { background: #00a67d; box-shadow: 0 0 0 3px rgba(0,166,125,0.13); }
+            .ai-status-dot.cloud { background: #009ee3; box-shadow: 0 0 0 3px rgba(0,158,227,0.13); }
             .ai-secret-row { display: flex; gap: 8px; }
             .ai-secret-row .form-control { min-width: 0; }
             .ai-small-button { border: 1px solid #bfcdd8; border-radius: 9px; background: #f5f8fa; color: #30465c; padding: 0 12px; font-weight: 600; }
             .ai-field-help { display: block; color: #6b7f91; font-size: 0.75rem; line-height: 1.35; margin: 6px 0 0; }
+            .ai-model-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
+            .ai-model-row .ai-field-help { flex: 1; margin: 0; }
+            .ai-model-row .ai-small-button { min-height: 34px; flex: 0 0 auto; }
             .ai-check-row { display: flex; gap: 11px; align-items: flex-start; cursor: pointer; margin: 0; }
             .ai-check-row + .ai-check-row { margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5edf2; }
             .ai-check-row input { width: 20px; height: 20px; flex: 0 0 20px; margin-top: 1px; accent-color: #0076a9; }
@@ -150,6 +165,7 @@ define(['jquery'], function ($) {
             .ai-check-row small { color: #607284; line-height: 1.4; }
             .ai-notice { border-left: 4px solid #009ee3; background: #eaf7fd; color: #29455d; border-radius: 9px; padding: 11px 13px; font-size: 0.82rem; line-height: 1.42; }
             .ai-notice-warning { border-left-color: #e98b21; background: #fff5e8; color: #694315; margin-top: 12px; }
+            .ai-notice-local { border-left-color: #00a67d; background: #eaf9f4; color: #174f40; margin-top: 14px; }
             .ai-inline-error { min-height: 22px; margin: 10px 2px 0; color: #b3261e; font-size: 0.84rem; font-weight: 600; }
             .ai-settings-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 8px; }
             .ai-settings-actions .btn { min-height: 42px; border-radius: 9px; font-weight: 650; }
