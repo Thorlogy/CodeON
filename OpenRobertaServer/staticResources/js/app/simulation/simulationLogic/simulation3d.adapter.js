@@ -28,7 +28,8 @@
     var drag = null;
     var lastRobotPose = null;
     var wheelRotation = { left: 0, right: 0 };
-    var movementPulse = 0;
+    var STRUCTURE_HEIGHT = 0.5;
+    var SNAP_DISTANCE = 0.7;
 
     function getElement(id) {
         return document.getElementById(id);
@@ -316,7 +317,8 @@
     function objectSignature(source, scale) {
         var shape = getObjectShape(source);
         var structure = getStructureType(source) || '';
-        if (shape === 'circle') return [shape, source.type, source.r, structure, scale].join(':');
+        var rotation = source.codeOn3dRotation || 0;
+        if (shape === 'circle') return [shape, source.type, source.r, structure, rotation, scale].join(':');
         if (shape === 'triangle') {
             return [
                 shape,
@@ -326,10 +328,11 @@
                 source.cx - source.ax,
                 source.cy - source.ay,
                 structure,
+                rotation,
                 scale,
             ].join(':');
         }
-        return [shape, source.type, source.w, source.h, structure, scale].join(':');
+        return [shape, source.type, source.w, source.h, structure, rotation, scale].join(':');
     }
 
     function createRampGeometry(width, depth, height, descending) {
@@ -363,6 +366,31 @@
         return geometry;
     }
 
+    function getStructureConnectorDefinitions(structure, width, depth, height) {
+        if (structure === 'ramp-up') {
+            return [{ x: 0, z: -depth / 2, y: height, nx: 0, nz: -1 }];
+        }
+        if (structure === 'ramp-down') {
+            return [{ x: 0, z: depth / 2, y: height, nx: 0, nz: 1 }];
+        }
+        return [
+            { x: 0, z: -depth / 2, y: height, nx: 0, nz: -1 },
+            { x: 0, z: depth / 2, y: height, nx: 0, nz: 1 },
+            { x: -width / 2, z: 0, y: height, nx: -1, nz: 0 },
+            { x: width / 2, z: 0, y: height, nx: 1, nz: 0 },
+        ];
+    }
+
+    function addStructureConnectors(root, structure, width, depth, height) {
+        var material = new THREE.MeshPhongMaterial({ color: 0x334155, shininess: 65 });
+        getStructureConnectorDefinitions(structure, width, depth, height).forEach(function (connector) {
+            var marker = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.06, 16), material);
+            marker.position.set(connector.x, connector.y + 0.035, connector.z);
+            marker.castShadow = true;
+            root.add(marker);
+        });
+    }
+
     function disposeObjectRecord(record) {
         if (!record || !record.root) return;
         record.root.traverse(function (node) {
@@ -380,14 +408,17 @@
     function createWorldObjectRecord(source, scale) {
         var shape = getObjectShape(source);
         var isColorArea = source.type === 'COLORAREA';
-        var structure = isColorArea ? null : getStructureType(source);
-        var height = isColorArea ? 0.08 : (structure ? 1.45 : 1.25);
+        var structure = getStructureType(source);
+        var flatColorArea = isColorArea && !structure;
+        var height = flatColorArea ? 0.08 : (structure ? STRUCTURE_HEIGHT : 1.25);
         var geometry;
         var center = getObjectCenter(source);
+        var structureWidth = 0;
+        var structureDepth = 0;
 
         if (structure) {
-            var structureWidth = Math.max((source.w || 130) * scale, 1.8);
-            var structureDepth = Math.max((source.h || 190) * scale, 2.6);
+            structureWidth = Math.max((source.w || 80) * scale, 0.8);
+            structureDepth = Math.max((source.h || 130) * scale, 1.0);
             geometry = structure === 'plateau'
                 ? new THREE.BoxGeometry(structureWidth, height, structureDepth)
                 : createRampGeometry(structureWidth, structureDepth, height, structure === 'ramp-down');
@@ -421,25 +452,26 @@
         }
 
         var color = source.color || (isColorArea ? '#fbed00' : '#33b8ca');
-        var material = isColorArea
+        var material = flatColorArea
             ? new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.9, side: THREE.DoubleSide })
             : new THREE.MeshPhongMaterial({ color: color, shininess: 42 });
         var mesh = new THREE.Mesh(geometry, material);
-        if (isColorArea && shape !== 'triangle') mesh.rotation.x = -Math.PI / 2;
-        mesh.position.y = isColorArea ? 0.055 : (structure && structure !== 'plateau' ? 0 : height / 2);
-        mesh.castShadow = !isColorArea;
+        if (flatColorArea && shape !== 'triangle') mesh.rotation.x = -Math.PI / 2;
+        mesh.position.y = flatColorArea ? 0.055 : (structure && structure !== 'plateau' ? 0 : height / 2);
+        mesh.castShadow = !flatColorArea;
         mesh.receiveShadow = true;
 
         var selectionMaterial = new THREE.MeshBasicMaterial({ color: 0x172033, wireframe: true, transparent: true, opacity: 0.85 });
         var selection = new THREE.Mesh(geometry, selectionMaterial);
-        if (isColorArea && shape !== 'triangle') selection.rotation.x = -Math.PI / 2;
-        selection.position.y = isColorArea ? 0.075 : (structure && structure !== 'plateau' ? 0.02 : height / 2 + 0.02);
+        if (flatColorArea && shape !== 'triangle') selection.rotation.x = -Math.PI / 2;
+        selection.position.y = flatColorArea ? 0.075 : (structure && structure !== 'plateau' ? 0.02 : height / 2 + 0.02);
         selection.scale.set(1.05, 1.05, 1.05);
         selection.visible = !!source.selected;
 
         var root = new THREE.Group();
         root.add(mesh);
         root.add(selection);
+        if (structure) addStructureConnectors(root, structure, structureWidth, structureDepth, height);
         var record = {
             root: root,
             mesh: mesh,
@@ -448,6 +480,9 @@
             signature: objectSignature(source, scale),
             scale: scale,
             structure: structure,
+            width: structureWidth,
+            depth: structureDepth,
+            height: structure ? height : 0,
         };
         root.userData.codeOnRecord = record;
         mesh.userData.codeOnRecord = record;
@@ -460,7 +495,7 @@
         if (!robot || !robot.pose) return;
         var lane = (spawnCounter % 3) - 1;
         var distance = 115 + Math.floor(spawnCounter / 3) % 3 * 45;
-        var lateral = lane * 90;
+        var lateral = lane * 150;
         var theta = robot.pose.theta || 0;
         var x = robot.pose.x + Math.cos(theta) * distance - Math.sin(theta) * lateral;
         var y = robot.pose.y + Math.sin(theta) * distance + Math.cos(theta) * lateral;
@@ -497,6 +532,7 @@
 
             var center = getObjectCenter(source);
             record.root.position.set((center.x - size.width / 2) * scale, 0, (center.y - size.height / 2) * scale);
+            record.root.rotation.y = (source.codeOn3dRotation || 0) * Math.PI / 2;
             if (record.mesh.material && record.mesh.material.color) record.mesh.material.color.set(source.color || '#33b8ca');
             record.selection.visible = !!source.selected;
         });
@@ -573,6 +609,7 @@
             offsetX: point.x - record.root.position.x,
             offsetZ: point.z - record.root.position.z,
         };
+        renderer.domElement.focus();
         renderer.domElement.style.cursor = 'grabbing';
         return true;
     }
@@ -603,6 +640,80 @@
         return true;
     }
 
+    function rotateStructureVector(x, z, turns) {
+        var angle = (turns || 0) * Math.PI / 2;
+        return {
+            x: Math.cos(angle) * x + Math.sin(angle) * z,
+            z: -Math.sin(angle) * x + Math.cos(angle) * z,
+        };
+    }
+
+    function getStructureFootprint(record, centerX, centerZ) {
+        var turns = (record.source.codeOn3dRotation || 0) % 2;
+        var width = turns ? record.depth : record.width;
+        var depth = turns ? record.width : record.depth;
+        return {
+            minX: centerX - width / 2,
+            maxX: centerX + width / 2,
+            minZ: centerZ - depth / 2,
+            maxZ: centerZ + depth / 2,
+        };
+    }
+
+    function footprintsOverlap(a, b) {
+        var epsilon = 0.035;
+        return a.minX < b.maxX - epsilon && a.maxX > b.minX + epsilon &&
+            a.minZ < b.maxZ - epsilon && a.maxZ > b.minZ + epsilon;
+    }
+
+    function structureWouldOverlap(record, centerX, centerZ) {
+        var footprint = getStructureFootprint(record, centerX, centerZ);
+        return Object.keys(worldObjectRecords).some(function (id) {
+            var other = worldObjectRecords[id];
+            if (!other || other === record || !other.structure) return false;
+            return footprintsOverlap(footprint, getStructureFootprint(other, other.root.position.x, other.root.position.z));
+        });
+    }
+
+    function getWorldConnectors(record, centerX, centerZ) {
+        var turns = record.source.codeOn3dRotation || 0;
+        return getStructureConnectorDefinitions(record.structure, record.width, record.depth, record.height).map(function (connector) {
+            var position = rotateStructureVector(connector.x, connector.z, turns);
+            var normal = rotateStructureVector(connector.nx, connector.nz, turns);
+            return {
+                x: centerX + position.x,
+                z: centerZ + position.z,
+                y: connector.y,
+                nx: normal.x,
+                nz: normal.z,
+            };
+        });
+    }
+
+    function snapStructurePosition(record, centerX, centerZ) {
+        var best = null;
+        var ownConnectors = getWorldConnectors(record, centerX, centerZ);
+        Object.keys(worldObjectRecords).forEach(function (id) {
+            var other = worldObjectRecords[id];
+            if (!other || other === record || !other.structure) return;
+            var otherConnectors = getWorldConnectors(other, other.root.position.x, other.root.position.z);
+            ownConnectors.forEach(function (own) {
+                otherConnectors.forEach(function (target) {
+                    if (Math.abs(own.y - target.y) > 0.08) return;
+                    if (own.nx * target.nx + own.nz * target.nz > -0.8) return;
+                    var dx = target.x - own.x;
+                    var dz = target.z - own.z;
+                    var distance = Math.sqrt(dx * dx + dz * dz);
+                    if (distance <= SNAP_DISTANCE && (!best || distance < best.distance)) {
+                        best = { x: centerX + dx, z: centerZ + dz, distance: distance };
+                    }
+                });
+            });
+        });
+        if (best && !structureWouldOverlap(record, best.x, best.z)) return best;
+        return { x: centerX, z: centerZ, distance: null };
+    }
+
     function moveDraggedObject(event) {
         if (!objectDrag || !lastWidth || !lastHeight) return false;
         var point = pointerOnGround(event);
@@ -610,6 +721,13 @@
         var scale = objectDrag.record.scale;
         var worldX = point.x - objectDrag.offsetX;
         var worldZ = point.z - objectDrag.offsetZ;
+        if (objectDrag.record.structure) {
+            var snapped = snapStructurePosition(objectDrag.record, worldX, worldZ);
+            worldX = snapped.x;
+            worldZ = snapped.z;
+            objectDrag.record.root.userData.codeOnSnapped = snapped.distance !== null;
+            if (structureWouldOverlap(objectDrag.record, worldX, worldZ)) return true;
+        }
         moveObjectCenter(
             objectDrag.record.source,
             worldX / scale + lastWidth / 2,
@@ -660,9 +778,39 @@
         camera.lookAt(orbit.targetX, 0.75, orbit.targetZ);
     }
 
+    function rotateSelectedStructure(turns) {
+        var record = null;
+        Object.keys(worldObjectRecords).some(function (id) {
+            var candidate = worldObjectRecords[id];
+            if (candidate && candidate.structure && candidate.source.selected) {
+                record = candidate;
+                return true;
+            }
+            return false;
+        });
+        if (!record) return false;
+        var oldTurns = record.source.codeOn3dRotation || 0;
+        record.source.codeOn3dRotation = turns;
+        var centerX = record.root.position.x;
+        var centerZ = record.root.position.z;
+        if (structureWouldOverlap(record, centerX, centerZ)) {
+            record.source.codeOn3dRotation = oldTurns;
+            return true;
+        }
+        var snapped = snapStructurePosition(record, centerX, centerZ);
+        moveObjectCenter(
+            record.source,
+            snapped.x / record.scale + lastWidth / 2,
+            snapped.z / record.scale + lastHeight / 2
+        );
+        if (typeof record.source.updateCorners === 'function') record.source.updateCorners();
+        return true;
+    }
+
     function attachNavigation() {
         var canvas = renderer.domElement;
         canvas.style.touchAction = 'none';
+        canvas.tabIndex = 0;
         canvas.addEventListener('contextmenu', function (event) { event.preventDefault(); });
         canvas.addEventListener('pointerdown', function (event) {
             if (!enabled) return;
@@ -713,6 +861,14 @@
             orbit.distance = Math.max(5, Math.min(60, orbit.distance * (event.deltaY > 0 ? 1.1 : 0.9)));
             updateCamera();
         }, { passive: false });
+        canvas.addEventListener('keydown', function (event) {
+            var turnsByKey = { ArrowUp: 0, ArrowRight: 1, ArrowDown: 2, ArrowLeft: 3 };
+            if (!Object.prototype.hasOwnProperty.call(turnsByKey, event.key)) return;
+            if (rotateSelectedStructure(turnsByKey[event.key])) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        });
     }
 
     function init() {
@@ -842,9 +998,45 @@
         if (robotMesh.userData.leftWheel) robotMesh.userData.leftWheel.rotation.x = wheelRotation.left;
         if (robotMesh.userData.rightWheel) robotMesh.userData.rightWheel.rotation.x = wheelRotation.right;
         lastRobotPose = { x: pose.x, y: pose.y, theta: pose.theta };
-        var moving = Math.abs(forwardDistance) > 0.01 || Math.abs(dTheta) > 0.0005;
-        movementPulse = moving ? Math.min(1, movementPulse + 0.25) : Math.max(0, movementPulse - 0.08);
-        return moving;
+        return Math.abs(forwardDistance) > 0.01 || Math.abs(dTheta) > 0.0005;
+    }
+
+    function getStructureSurface(worldX, worldZ) {
+        var best = { elevation: 0, uphillX: 0, uphillZ: 0, slope: 0, structure: null };
+        Object.keys(worldObjectRecords).forEach(function (id) {
+            var record = worldObjectRecords[id];
+            if (!record || !record.structure) return;
+            var turns = record.source.codeOn3dRotation || 0;
+            var angle = turns * Math.PI / 2;
+            var dx = worldX - record.root.position.x;
+            var dz = worldZ - record.root.position.z;
+            var localX = Math.cos(angle) * dx - Math.sin(angle) * dz;
+            var localZ = Math.sin(angle) * dx + Math.cos(angle) * dz;
+            if (Math.abs(localX) > record.width / 2 || Math.abs(localZ) > record.depth / 2) return;
+            var elevation = record.height;
+            var uphillLocalZ = 0;
+            var slope = 0;
+            if (record.structure === 'ramp-up') {
+                elevation = record.height * (record.depth / 2 - localZ) / record.depth;
+                uphillLocalZ = -1;
+                slope = Math.atan2(record.height, record.depth);
+            } else if (record.structure === 'ramp-down') {
+                elevation = record.height * (record.depth / 2 + localZ) / record.depth;
+                uphillLocalZ = 1;
+                slope = Math.atan2(record.height, record.depth);
+            }
+            if (elevation >= best.elevation) {
+                var uphill = rotateStructureVector(0, uphillLocalZ, turns);
+                best = {
+                    elevation: Math.max(0, Math.min(record.height, elevation)),
+                    uphillX: uphill.x,
+                    uphillZ: uphill.z,
+                    slope: slope,
+                    structure: record.structure,
+                };
+            }
+        });
+        return best;
     }
 
     function syncRobotPose() {
@@ -873,12 +1065,17 @@
         var moving = updateWheelAnimation(robot, scale, robotVisualScale);
         robotMesh.scale.set(robotVisualScale, robotVisualScale, robotVisualScale);
         robotMesh.position.x = (robot.pose.x - lastWidth / 2) * scale - Math.cos(robot.pose.theta) * rearwardCorrection;
-        robotMesh.position.y = movementPulse > 0 ? Math.sin(performance.now() * 0.018) * 0.025 * movementPulse : 0;
         robotMesh.position.z = (robot.pose.y - lastHeight / 2) * scale - Math.sin(robot.pose.theta) * rearwardCorrection;
+        syncWorldObjects(simScene, robot, size, scale);
+        var surface = getStructureSurface(robotMesh.position.x, robotMesh.position.z);
+        robotMesh.position.y = surface.elevation;
         // In the Three.js model the front points towards local -Z; in the 2D
         // simulation heading 0 points towards +X.
-        robotMesh.rotation.y = -robot.pose.theta - Math.PI / 2;
-        syncWorldObjects(simScene, robot, size, scale);
+        var pitch = surface.slope * (
+            Math.cos(robot.pose.theta) * surface.uphillX + Math.sin(robot.pose.theta) * surface.uphillZ
+        );
+        robotMesh.rotation.order = 'YXZ';
+        robotMesh.rotation.set(pitch, -robot.pose.theta - Math.PI / 2, 0);
 
         if (!orbit.panned) {
             orbit.targetX = robotMesh.position.x;
@@ -893,6 +1090,7 @@
                 'X: ' + robotMesh.position.x.toFixed(1) + '   Y: ' + robotMesh.position.z.toFixed(1) + '\n' +
                 'Richtung: ' + degrees + '°\n' +
                 'Fahrt: ' + (moving ? 'aktiv' : 'steht') + '\n' +
+                'Hoehe: ' + surface.elevation.toFixed(1) + '\n' +
                 'Taster: ' + (sensorState.touchFound ? (sensorState.touch ? 'JA' : 'nein') : '--') +
                 '   Licht: ' + (sensorState.light === null ? '--' : Math.round(sensorState.light) + ' %');
         }
@@ -949,18 +1147,21 @@
     function add3dStructure(type) {
         var sim = getSimulationInstance();
         var simScene = getSimulationScene();
-        if (!sim || !simScene || typeof sim.addObstacle !== 'function') return;
-        sim.addObstacle('RECTANGLE');
-        var source = simScene.obstacleList && simScene.obstacleList[simScene.obstacleList.length - 1];
+        if (!sim || !simScene || typeof sim.addColorArea !== 'function') return;
+        // Structures deliberately live outside the 2D obstacle collision list.
+        // Their height and slope are handled analytically by this 3D adapter.
+        sim.addColorArea('RECTANGLE');
+        var source = simScene.colorAreaList && simScene.colorAreaList[simScene.colorAreaList.length - 1];
         var robot = simScene.robots && simScene.robots[0];
         if (!source) return;
         source.codeOn3dStructure = type;
-        source.w = type === 'plateau' ? 150 : 130;
-        source.h = type === 'plateau' ? 150 : 210;
+        source.codeOn3dRotation = 0;
+        source.w = 80;
+        source.h = type === 'plateau' ? 85 : 130;
         if (typeof source.updateCorners === 'function') source.updateCorners();
         placeNewObjectNearRobot(source, robot);
         if (typeof source.updateCorners === 'function') source.updateCorners();
-        simScene.redrawObstacles = true;
+        simScene.redrawColorAreas = true;
         if (typeof sim.enableChangeObjectButtons === 'function') sim.enableChangeObjectButtons();
     }
 
@@ -971,6 +1172,16 @@
         if (structureButton) {
             event.preventDefault();
             add3dStructure(structureButton.getAttribute('data-codeon-3d-structure'));
+            return;
+        }
+        if (target.closest('#simObstacleDeleteAll')) {
+            var simScene = getSimulationScene();
+            if (simScene && simScene.colorAreaList) {
+                simScene.colorAreaList = simScene.colorAreaList.filter(function (source) {
+                    return !getStructureType(source);
+                });
+                simScene.redrawColorAreas = true;
+            }
             return;
         }
         if (!target.closest('#sim3dToggle')) return;
@@ -1006,6 +1217,19 @@
                 robotDraggable: true,
                 wheelAnimation: true,
                 wheelRotation: { left: wheelRotation.left, right: wheelRotation.right },
+                structures: Object.keys(worldObjectRecords).map(function (id) {
+                    var record = worldObjectRecords[id];
+                    if (!record || !record.structure) return null;
+                    return {
+                        type: record.structure,
+                        x: record.root.position.x,
+                        z: record.root.position.z,
+                        width: record.width,
+                        depth: record.depth,
+                        rotation: record.source.codeOn3dRotation || 0,
+                        snapped: !!record.root.userData.codeOnSnapped,
+                    };
+                }).filter(Boolean),
             };
         },
     };

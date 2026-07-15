@@ -30,12 +30,17 @@ assert.strictEqual(serverSource, runtimeSource, 'Quell- und Laufzeitversion des 
     'ground.w = 200000',
     "data-codeon-3d-object-count",
     'robotVisualScale = (45 * scale) / 3.3',
-    'robotMesh.rotation.y = -robot.pose.theta - Math.PI / 2',
+    "robotMesh.rotation.set(pitch, -robot.pose.theta - Math.PI / 2, 0)",
     "group.userData.leftWheel = makeWheel('leftWheel'",
     'function beginRobotDrag(event)',
     'robot.chassis.transformNewPose(robot.pose, robot.chassis)',
     'function createRampGeometry(width, depth, height, descending)',
     "source.codeOn3dStructure = type",
+    "sim.addColorArea('RECTANGLE')",
+    'function getStructureSurface(worldX, worldZ)',
+    'function snapStructurePosition(record, centerX, centerZ)',
+    'function rotateSelectedStructure(turns)',
+    "var turnsByKey = { ArrowUp: 0, ArrowRight: 1, ArrowDown: 2, ArrowLeft: 3 }",
 ].forEach(function (feature) {
     assert.ok(runtimeSource.indexOf(feature) !== -1, '3D-RoboMission-Merkmal fehlt: ' + feature);
 });
@@ -49,7 +54,7 @@ assert.strictEqual(serverSource, runtimeSource, 'Quell- und Laufzeitversion des 
     assert.ok(fs.readFileSync(runtimeIndex, 'utf8').indexOf(feature) !== -1, '3D-Struktur fehlt im Laufzeit-Index: ' + feature);
 });
 
-const version = 'simulation3d.adapter.js?v=codeon-3d-robomission-5';
+const version = 'simulation3d.adapter.js?v=codeon-3d-robomission-6';
 assert.ok(fs.readFileSync(serverIndex, 'utf8').indexOf(version) !== -1, 'Cache-Version fehlt im Quell-Index.');
 assert.ok(fs.readFileSync(runtimeIndex, 'utf8').indexOf(version) !== -1, 'Cache-Version fehlt im Laufzeit-Index.');
 

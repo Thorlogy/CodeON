@@ -106,3 +106,15 @@ Eine vollstaendige Uebernahme der 3D-RoboMission-Physik bleibt eine spaetere, gr
 Die Platzierung, Radanimation und Darstellung der Rampen benoetigen keine zusaetzliche Physik-Engine. In dieser Ausbaustufe bleiben Rampe und Plateau fuer die fuehrende 2D-Simulation rechteckige Hindernisse. Der Roboter kann daher nicht physikalisch korrekt auf sie hinauffahren.
 
 Fuer echtes Befahren sind Hoehe und Neigung Teil des Simulationszustands. Dafuer soll als naechste Stufe zunaechst die bereits in `mission-sim3d.js` vorhandene analytische Rampenlogik uebernommen werden: Hoehenabtastung an den Radaufstandspunkten, Neigung der Karosserie, Seiten- und Stirnkollisionen sowie Uebergaenge zwischen Rampe und Plateau. Eine vollstaendige Engine wie Cannon-es oder Rapier wird erst benoetigt, wenn Schwerkraft, Herunterfallen, Impulse, Schieben oder komplexe Kontakte bewusst simuliert werden sollen. So bleibt die einfache RCX-Simulation stabil und bekommt erst dann eine zweite Physik, wenn deren Mehrwert den Synchronisationsaufwand rechtfertigt.
+
+## Korrektur 2026-07-15: Befahrbare und einrastende Rampen
+
+- Die rein kosmetische Auf-und-ab-Bewegung der Karosserie wurde entfernt. Der Bewegungseindruck entsteht nur noch durch die markierten, getrennt animierten Raeder.
+- Rampen und Plateau verwenden ein gemeinsames, kleineres Breiten- und Hoehenmass. Das Plateau ist damit nicht mehr breiter als eine Rampe; die gesamte Weltbaugruppe passt besser zum RCX-Modell.
+- Neue Rampen und Plateaus liegen nicht mehr in der flachen 2D-Hindernisliste. Dadurch blockiert keine unsichtbare rechteckige Kante den Rampeneinstieg.
+- Die 3D-Ansicht berechnet die Oberflaechenhoehe der Rampe analytisch. Beim Befahren wird der Roboter kontinuierlich angehoben und passend zur Fahrtrichtung geneigt. Auf dem Plateau bleibt er auf derselben Hoehe.
+- Dunkle Anschlusspunkte kennzeichnen die hohen Rampenenden und die vier Seiten eines Plateaus. Beim Verschieben rasten passende Anschlusspunkte ein. Freies Ineinanderschieben wird durch eine Ueberlappungspruefung verhindert.
+- Eine ausgewaehlte Rampe oder ein Plateau wird mit den Pfeiltasten absolut ausgerichtet: oben, rechts, unten oder links.
+- Im Hindernismenue werden Rampen ohne sichtbaren Text durch seitliche Dreieck-Symbole dargestellt; das Plateau besitzt ein flaches Seitensymbol.
+
+Diese Loesung braucht weiterhin keine vollstaendige zweite Physik-Engine. Eine solche wird erst fuer freies Herunterfallen, Schwerkraft, Impulse, Schieben, Kippen ueber Kanten oder mehrere dynamisch kollidierende Koerper erforderlich. Fuer das kontrollierte Befahren fester Rampen ist die analytische Hoehenfunktion deterministischer und bleibt mit der bestehenden 2D-Programmausfuehrung synchron.
