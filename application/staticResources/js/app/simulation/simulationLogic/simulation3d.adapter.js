@@ -16,13 +16,19 @@
     var raycaster;
     var groundPlane;
     var objectDrag = null;
+    var robotDrag = null;
     var groundBackup = null;
     var spawnCounter = 0;
     var lastWidth = 0;
     var lastHeight = 0;
+    var lastWorldScale = 1;
+    var lastRearwardCorrection = 0;
     // Same low, robot-centred starting perspective as the 3D-RoboMission scene.
     var orbit = { yaw: 0, pitch: 0.52, distance: 7, targetX: 0, targetZ: 0, panned: false };
     var drag = null;
+    var lastRobotPose = null;
+    var wheelRotation = { left: 0, right: 0 };
+    var movementPulse = 0;
 
     function getElement(id) {
         return document.getElementById(id);
@@ -140,27 +146,32 @@
         screen.castShadow = true;
         group.add(screen);
 
-        var wheelGeometry = new THREE.CylinderGeometry(0.78, 0.78, 0.5, 24);
         var wheelMaterial = new THREE.MeshPhongMaterial({ color: 0x111827, shininess: 18 });
         var hubMaterial = new THREE.MeshPhongMaterial({ color: isRcx ? 0x555b62 : 0xd0d8e8, shininess: 45 });
-        var leftWheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
-        var rightWheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
-        leftWheel.rotation.z = Math.PI / 2;
-        rightWheel.rotation.z = Math.PI / 2;
-        leftWheel.position.set(-1.38, 0.78, 0.28);
-        rightWheel.position.set(1.38, 0.78, 0.28);
-        leftWheel.castShadow = true;
-        rightWheel.castShadow = true;
-        group.add(leftWheel);
-        group.add(rightWheel);
-
-        [-1.38, 1.38].forEach(function (x) {
+        var treadMaterial = new THREE.MeshPhongMaterial({ color: 0x8592a3, shininess: 12 });
+        function makeWheel(name, x) {
+            var wheelGroup = new THREE.Group();
+            wheelGroup.name = name;
+            wheelGroup.position.set(x, 0.78, 0.28);
+            var wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.78, 0.78, 0.5, 24), wheelMaterial);
+            wheel.rotation.z = Math.PI / 2;
+            wheel.castShadow = true;
+            wheelGroup.add(wheel);
             var hub = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.54, 16), hubMaterial);
             hub.rotation.z = Math.PI / 2;
-            hub.position.set(x, 0.78, 0.28);
             hub.castShadow = true;
-            group.add(hub);
-        });
+            wheelGroup.add(hub);
+            [-1, 1].forEach(function (side) {
+                var tread = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.12, 0.18), treadMaterial);
+                tread.position.set(side * 0.29, 0.76, 0);
+                tread.castShadow = true;
+                wheelGroup.add(tread);
+            });
+            group.add(wheelGroup);
+            return wheelGroup;
+        }
+        group.userData.leftWheel = makeWheel('leftWheel', -1.38);
+        group.userData.rightWheel = makeWheel('rightWheel', 1.38);
 
         var bumperMaterial = new THREE.MeshPhongMaterial({ color: 0xb8c0c8, shininess: 75, emissive: 0x000000 });
         var frontBumper = new THREE.Mesh(new THREE.BoxGeometry(2.65, 0.22, 0.22), bumperMaterial);
@@ -254,6 +265,12 @@
         return 'rectangle';
     }
 
+    function getStructureType(source) {
+        if (source && source.codeOn3dStructure) return source.codeOn3dStructure;
+        if (source && source.type === 'OBSTACLE' && getObjectShape(source) === 'triangle') return 'ramp-up';
+        return null;
+    }
+
     function getObjectCenter(source) {
         var shape = getObjectShape(source);
         if (shape === 'circle') return { x: source.x, y: source.y };
@@ -298,7 +315,8 @@
 
     function objectSignature(source, scale) {
         var shape = getObjectShape(source);
-        if (shape === 'circle') return [shape, source.type, source.r, scale].join(':');
+        var structure = getStructureType(source) || '';
+        if (shape === 'circle') return [shape, source.type, source.r, structure, scale].join(':');
         if (shape === 'triangle') {
             return [
                 shape,
@@ -307,10 +325,42 @@
                 source.by - source.ay,
                 source.cx - source.ax,
                 source.cy - source.ay,
+                structure,
                 scale,
             ].join(':');
         }
-        return [shape, source.type, source.w, source.h, scale].join(':');
+        return [shape, source.type, source.w, source.h, structure, scale].join(':');
+    }
+
+    function createRampGeometry(width, depth, height, descending) {
+        var x0 = -width / 2;
+        var x1 = width / 2;
+        var zFront = depth / 2;
+        var zBack = -depth / 2;
+        var yFront = descending ? height : 0;
+        var yBack = descending ? 0 : height;
+        var positions = [];
+        function triangle(a, b, c) {
+            positions.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]);
+        }
+        var fl = [x0, yFront, zFront];
+        var fr = [x1, yFront, zFront];
+        var bl = [x0, yBack, zBack];
+        var br = [x1, yBack, zBack];
+        var gfl = [x0, 0, zFront];
+        var gfr = [x1, 0, zFront];
+        var gbl = [x0, 0, zBack];
+        var gbr = [x1, 0, zBack];
+        triangle(fl, fr, br); triangle(fl, br, bl);
+        triangle(gfr, gfl, gbl); triangle(gfr, gbl, gbr);
+        triangle(gfl, fl, bl); triangle(gfl, bl, gbl);
+        triangle(fr, gfr, gbr); triangle(fr, gbr, br);
+        if (yFront > 0) { triangle(gfl, gfr, fr); triangle(gfl, fr, fl); }
+        if (yBack > 0) { triangle(gbr, gbl, bl); triangle(gbr, bl, br); }
+        var geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        geometry.computeVertexNormals();
+        return geometry;
     }
 
     function disposeObjectRecord(record) {
@@ -330,11 +380,18 @@
     function createWorldObjectRecord(source, scale) {
         var shape = getObjectShape(source);
         var isColorArea = source.type === 'COLORAREA';
-        var height = isColorArea ? 0.08 : 1.25;
+        var structure = isColorArea ? null : getStructureType(source);
+        var height = isColorArea ? 0.08 : (structure ? 1.45 : 1.25);
         var geometry;
         var center = getObjectCenter(source);
 
-        if (shape === 'circle') {
+        if (structure) {
+            var structureWidth = Math.max((source.w || 130) * scale, 1.8);
+            var structureDepth = Math.max((source.h || 190) * scale, 2.6);
+            geometry = structure === 'plateau'
+                ? new THREE.BoxGeometry(structureWidth, height, structureDepth)
+                : createRampGeometry(structureWidth, structureDepth, height, structure === 'ramp-down');
+        } else if (shape === 'circle') {
             var radius = Math.max(source.r * scale, 0.22);
             geometry = isColorArea ? new THREE.CircleGeometry(radius, 32) : new THREE.CylinderGeometry(radius, radius, height, 32);
         } else if (shape === 'triangle') {
@@ -369,14 +426,14 @@
             : new THREE.MeshPhongMaterial({ color: color, shininess: 42 });
         var mesh = new THREE.Mesh(geometry, material);
         if (isColorArea && shape !== 'triangle') mesh.rotation.x = -Math.PI / 2;
-        mesh.position.y = isColorArea ? 0.055 : height / 2;
+        mesh.position.y = isColorArea ? 0.055 : (structure && structure !== 'plateau' ? 0 : height / 2);
         mesh.castShadow = !isColorArea;
         mesh.receiveShadow = true;
 
         var selectionMaterial = new THREE.MeshBasicMaterial({ color: 0x172033, wireframe: true, transparent: true, opacity: 0.85 });
         var selection = new THREE.Mesh(geometry, selectionMaterial);
         if (isColorArea && shape !== 'triangle') selection.rotation.x = -Math.PI / 2;
-        selection.position.y = isColorArea ? 0.075 : height / 2 + 0.02;
+        selection.position.y = isColorArea ? 0.075 : (structure && structure !== 'plateau' ? 0.02 : height / 2 + 0.02);
         selection.scale.set(1.05, 1.05, 1.05);
         selection.visible = !!source.selected;
 
@@ -390,6 +447,7 @@
             source: source,
             signature: objectSignature(source, scale),
             scale: scale,
+            structure: structure,
         };
         root.userData.codeOnRecord = record;
         mesh.userData.codeOnRecord = record;
@@ -519,6 +577,32 @@
         return true;
     }
 
+    function beginRobotDrag(event) {
+        if (event.button !== 0 || event.shiftKey || !robotMesh || !lastWidth || !lastHeight) return false;
+        var sim = getSimulationInstance();
+        if (sim && typeof sim.isInterpreterRunning === 'function' && sim.isInterpreterRunning()) return false;
+        var simScene = getSimulationScene();
+        var robot = simScene && simScene.robots && simScene.robots[0];
+        if (!robot || !robot.pose) return false;
+        var rect = renderer.domElement.getBoundingClientRect();
+        var mouse = new THREE.Vector2(
+            ((event.clientX - rect.left) / rect.width) * 2 - 1,
+            -((event.clientY - rect.top) / rect.height) * 2 + 1
+        );
+        raycaster.setFromCamera(mouse, camera);
+        if (!raycaster.intersectObject(robotMesh, true).length) return false;
+        var point = pointerOnGround(event);
+        if (!point) return false;
+        robotDrag = {
+            robot: robot,
+            offsetX: point.x - robotMesh.position.x,
+            offsetZ: point.z - robotMesh.position.z,
+        };
+        robot.selected = true;
+        renderer.domElement.style.cursor = 'grabbing';
+        return true;
+    }
+
     function moveDraggedObject(event) {
         if (!objectDrag || !lastWidth || !lastHeight) return false;
         var point = pointerOnGround(event);
@@ -532,6 +616,37 @@
             worldZ / scale + lastHeight / 2
         );
         return true;
+    }
+
+    function moveDraggedRobot(event) {
+        if (!robotDrag || !lastWorldScale) return false;
+        var point = pointerOnGround(event);
+        if (!point) return true;
+        var robot = robotDrag.robot;
+        var visibleX = point.x - robotDrag.offsetX;
+        var visibleZ = point.z - robotDrag.offsetZ;
+        robot.pose.xOld = robot.pose.x;
+        robot.pose.yOld = robot.pose.y;
+        robot.pose.x = (visibleX + Math.cos(robot.pose.theta) * lastRearwardCorrection) / lastWorldScale + lastWidth / 2;
+        robot.pose.y = (visibleZ + Math.sin(robot.pose.theta) * lastRearwardCorrection) / lastWorldScale + lastHeight / 2;
+        if (robot.chassis && typeof robot.chassis.transformNewPose === 'function') {
+            robot.chassis.transformNewPose(robot.pose, robot.chassis);
+        }
+        return true;
+    }
+
+    function finishRobotDrag() {
+        if (!robotDrag) return;
+        var robot = robotDrag.robot;
+        if (robot.initialPose) {
+            robot.initialPose.x = robot.pose.x;
+            robot.initialPose.y = robot.pose.y;
+            robot.initialPose.theta = robot.pose.theta;
+        }
+        robot.pose.xOld = robot.pose.x;
+        robot.pose.yOld = robot.pose.y;
+        lastRobotPose = { x: robot.pose.x, y: robot.pose.y, theta: robot.pose.theta };
+        robotDrag = null;
     }
 
     function updateCamera() {
@@ -555,11 +670,16 @@
                 canvas.setPointerCapture(event.pointerId);
                 return;
             }
+            if (beginRobotDrag(event)) {
+                canvas.setPointerCapture(event.pointerId);
+                return;
+            }
             drag = { x: event.clientX, y: event.clientY, pan: event.button === 2 || event.shiftKey };
             canvas.setPointerCapture(event.pointerId);
         });
         canvas.addEventListener('pointermove', function (event) {
             if (moveDraggedObject(event)) return;
+            if (moveDraggedRobot(event)) return;
             if (!drag) return;
             var dx = event.clientX - drag.x;
             var dy = event.clientY - drag.y;
@@ -579,8 +699,10 @@
         function stopDrag(event) {
             if (drag && canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
             if (objectDrag && canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+            if (robotDrag && canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
             drag = null;
             objectDrag = null;
+            finishRobotDrag();
             canvas.style.cursor = 'default';
         }
         canvas.addEventListener('pointerup', stopDrag);
@@ -689,6 +811,42 @@
         updateCamera();
     }
 
+    function normalizeAngleDelta(value) {
+        while (value > Math.PI) value -= Math.PI * 2;
+        while (value < -Math.PI) value += Math.PI * 2;
+        return value;
+    }
+
+    function updateWheelAnimation(robot, scale, robotVisualScale) {
+        var pose = robot.pose;
+        if (!lastRobotPose || robotDrag) {
+            lastRobotPose = { x: pose.x, y: pose.y, theta: pose.theta };
+            return false;
+        }
+        var dx = pose.x - lastRobotPose.x;
+        var dy = pose.y - lastRobotPose.y;
+        var dTheta = normalizeAngleDelta(pose.theta - lastRobotPose.theta);
+        var jump = Math.sqrt(dx * dx + dy * dy) > 80;
+        if (jump) {
+            lastRobotPose = { x: pose.x, y: pose.y, theta: pose.theta };
+            return false;
+        }
+        var heading = pose.theta - dTheta / 2;
+        var forwardDistance = dx * Math.cos(heading) + dy * Math.sin(heading);
+        var trackWidth = robot.chassis && robot.chassis.TRACKWIDTH ? robot.chassis.TRACKWIDTH : 45;
+        var leftDistance = forwardDistance - dTheta * trackWidth / 2;
+        var rightDistance = forwardDistance + dTheta * trackWidth / 2;
+        var visualRadius = Math.max(0.78 * robotVisualScale, 0.001);
+        wheelRotation.left += leftDistance * scale / visualRadius;
+        wheelRotation.right += rightDistance * scale / visualRadius;
+        if (robotMesh.userData.leftWheel) robotMesh.userData.leftWheel.rotation.x = wheelRotation.left;
+        if (robotMesh.userData.rightWheel) robotMesh.userData.rightWheel.rotation.x = wheelRotation.right;
+        lastRobotPose = { x: pose.x, y: pose.y, theta: pose.theta };
+        var moving = Math.abs(forwardDistance) > 0.01 || Math.abs(dTheta) > 0.0005;
+        movementPulse = moving ? Math.min(1, movementPulse + 0.25) : Math.max(0, movementPulse - 0.08);
+        return moving;
+    }
+
     function syncRobotPose() {
         if (!robotMesh) return;
         var simScene = getSimulationScene();
@@ -710,8 +868,12 @@
         var frontVisual = 2.16 * robotVisualScale;
         var frontCollision = 25 * scale;
         var rearwardCorrection = Math.max(0, frontVisual - frontCollision);
+        lastWorldScale = scale;
+        lastRearwardCorrection = rearwardCorrection;
+        var moving = updateWheelAnimation(robot, scale, robotVisualScale);
         robotMesh.scale.set(robotVisualScale, robotVisualScale, robotVisualScale);
         robotMesh.position.x = (robot.pose.x - lastWidth / 2) * scale - Math.cos(robot.pose.theta) * rearwardCorrection;
+        robotMesh.position.y = movementPulse > 0 ? Math.sin(performance.now() * 0.018) * 0.025 * movementPulse : 0;
         robotMesh.position.z = (robot.pose.y - lastHeight / 2) * scale - Math.sin(robot.pose.theta) * rearwardCorrection;
         // In the Three.js model the front points towards local -Z; in the 2D
         // simulation heading 0 points towards +X.
@@ -730,6 +892,7 @@
                 'POSITION\n' +
                 'X: ' + robotMesh.position.x.toFixed(1) + '   Y: ' + robotMesh.position.z.toFixed(1) + '\n' +
                 'Richtung: ' + degrees + '°\n' +
+                'Fahrt: ' + (moving ? 'aktiv' : 'steht') + '\n' +
                 'Taster: ' + (sensorState.touchFound ? (sensorState.touch ? 'JA' : 'nein') : '--') +
                 '   Licht: ' + (sensorState.light === null ? '--' : Math.round(sensorState.light) + ' %');
         }
@@ -783,9 +946,34 @@
         setMode(!enabled);
     }
 
+    function add3dStructure(type) {
+        var sim = getSimulationInstance();
+        var simScene = getSimulationScene();
+        if (!sim || !simScene || typeof sim.addObstacle !== 'function') return;
+        sim.addObstacle('RECTANGLE');
+        var source = simScene.obstacleList && simScene.obstacleList[simScene.obstacleList.length - 1];
+        var robot = simScene.robots && simScene.robots[0];
+        if (!source) return;
+        source.codeOn3dStructure = type;
+        source.w = type === 'plateau' ? 150 : 130;
+        source.h = type === 'plateau' ? 150 : 210;
+        if (typeof source.updateCorners === 'function') source.updateCorners();
+        placeNewObjectNearRobot(source, robot);
+        if (typeof source.updateCorners === 'function') source.updateCorners();
+        simScene.redrawObstacles = true;
+        if (typeof sim.enableChangeObjectButtons === 'function') sim.enableChangeObjectButtons();
+    }
+
     document.addEventListener('click', function (event) {
         var target = event.target;
-        if (!target || !target.closest || !target.closest('#sim3dToggle')) return;
+        if (!target || !target.closest) return;
+        var structureButton = target.closest('[data-codeon-3d-structure]');
+        if (structureButton) {
+            event.preventDefault();
+            add3dStructure(structureButton.getAttribute('data-codeon-3d-structure'));
+            return;
+        }
+        if (!target.closest('#sim3dToggle')) return;
         event.preventDefault();
         toggle();
     });
@@ -815,6 +1003,9 @@
                 initialized: initialized,
                 objectCount: Object.keys(worldObjectRecords).length,
                 groundExpanded: !!groundBackup,
+                robotDraggable: true,
+                wheelAnimation: true,
+                wheelRotation: { left: wheelRotation.left, right: wheelRotation.right },
             };
         },
     };

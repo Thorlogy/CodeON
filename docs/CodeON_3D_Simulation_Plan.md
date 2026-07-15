@@ -93,3 +93,16 @@ Die 3D-Ansicht besitzt weiterhin keine zweite Physik-Engine. Kollisionen werden 
 - Das sichtbare 3D-Modell war deutlich groesser als der unsichtbare Kollisionskoerper der 2D-Simulation. Seine Skalierung und Position werden nun aus dem RCX-Kollisionsmass von 55 x 45 Simulationseinheiten berechnet. Dadurch beruehrt der sichtbare Stossfaenger ein Hindernis an derselben Stelle, an der die 2D-Physik die Kollision und den Taster ausloest.
 
 Eine vollstaendige Uebernahme der 3D-RoboMission-Physik bleibt eine spaetere, groessere Ausbaustufe. Fuer einfache RCX-Hinderniskollisionen ist sie nicht notwendig, solange 2D-Kollisionskoerper und 3D-Darstellung deckungsgleich sind.
+
+## Ausbau 2026-07-15: Roboter platzieren, Radbewegung und Rampen
+
+- Der Roboter kann bei gestoppter Simulation direkt in der 3D-Ansicht angeklickt und verschoben werden. Dabei werden die echte 2D-Pose, der Kollisionskoerper und die neue Ruecksetzposition gemeinsam aktualisiert. Waehrend ein Programm laeuft, bleibt das Ziehen gesperrt, damit Benutzer und Interpreter nicht gleichzeitig die Position veraendern.
+- Linkes und rechtes Rad drehen sich aus der tatsaechlich zurueckgelegten Strecke und der Richtungsaenderung. Sichtbare Profilmarkierungen und eine sehr leichte Karosseriebewegung machen Fahren, Drehen und Stillstand besser erkennbar.
+- Der bisherige Dreieck-Eintrag im Hindernis-Menue wurde durch `Rampe hoch`, `Rampe runter` und `Plateau` ersetzt. Die drei Elemente koennen wie andere Hindernisse erzeugt, ausgewaehlt, verschoben, eingefaerbt und geloescht werden.
+- Bereits vorhandene alte Dreieck-Hindernisse erscheinen in der 3D-Ansicht als aufwaerts gerichtete Rampe.
+
+### Physikentscheidung
+
+Die Platzierung, Radanimation und Darstellung der Rampen benoetigen keine zusaetzliche Physik-Engine. In dieser Ausbaustufe bleiben Rampe und Plateau fuer die fuehrende 2D-Simulation rechteckige Hindernisse. Der Roboter kann daher nicht physikalisch korrekt auf sie hinauffahren.
+
+Fuer echtes Befahren sind Hoehe und Neigung Teil des Simulationszustands. Dafuer soll als naechste Stufe zunaechst die bereits in `mission-sim3d.js` vorhandene analytische Rampenlogik uebernommen werden: Hoehenabtastung an den Radaufstandspunkten, Neigung der Karosserie, Seiten- und Stirnkollisionen sowie Uebergaenge zwischen Rampe und Plateau. Eine vollstaendige Engine wie Cannon-es oder Rapier wird erst benoetigt, wenn Schwerkraft, Herunterfallen, Impulse, Schieben oder komplexe Kontakte bewusst simuliert werden sollen. So bleibt die einfache RCX-Simulation stabil und bekommt erst dann eine zweite Physik, wenn deren Mehrwert den Synchronisationsaufwand rechtfertigt.
