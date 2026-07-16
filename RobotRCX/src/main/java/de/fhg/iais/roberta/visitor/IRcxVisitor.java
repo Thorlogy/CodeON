@@ -1,6 +1,8 @@
 package de.fhg.iais.roberta.visitor;
 
 import de.fhg.iais.roberta.syntax.action.display.ClearDisplayAction;
+import de.fhg.iais.roberta.syntax.actors.edison.ReceiveIRAction;
+import de.fhg.iais.roberta.syntax.actors.edison.SendIRAction;
 import de.fhg.iais.roberta.syntax.action.display.ShowTextAction;
 import de.fhg.iais.roberta.syntax.action.motor.MotorOnAction;
 import de.fhg.iais.roberta.syntax.action.motor.MotorSetPowerAction;
@@ -16,6 +18,7 @@ import de.fhg.iais.roberta.syntax.sensor.generic.LightSensor;
 import de.fhg.iais.roberta.syntax.sensor.generic.TimerReset;
 import de.fhg.iais.roberta.syntax.sensor.generic.TimerSensor;
 import de.fhg.iais.roberta.syntax.sensor.generic.TouchSensor;
+import de.fhg.iais.roberta.syntax.sensor.generic.VoltageSensor;
 import de.fhg.iais.roberta.syntax.sensor.generic.TemperatureSensor;
 
 public interface IRcxVisitor<V> extends IVisitor<V> {
@@ -53,4 +56,10 @@ public interface IRcxVisitor<V> extends IVisitor<V> {
     V visitTouchSensor(TouchSensor touchSensor);
 
     V visitTemperatureSensor(TemperatureSensor temperatureSensor);
+
+    V visitVoltageSensor(VoltageSensor voltageSensor);
+
+    V visitSendIRAction(SendIRAction sendIRAction);
+
+    V visitReceiveIRAction(ReceiveIRAction receiveIRAction);
 }

@@ -218,11 +218,11 @@ define(["require", "exports", "jquery", "util.roberta", "blockly", "simulation.t
                 }
             }
         };
-        RobotBase.prototype.updateSensors = function (running, dt, uCtx, udCtx, personalObstacleList, markerList, collisionList) {
+        RobotBase.prototype.updateSensors = function (running, dt, uCtx, udCtx, personalObstacleList, markerList, collisionList, lightList) {
             var values = this.interpreter.getRobotBehaviour().hardwareState.sensors;
             for (var item in this) {
                 if (this[item] && this[item].updateSensor) {
-                    this[item].updateSensor(running, dt, this, values, uCtx, udCtx, personalObstacleList, markerList, collisionList);
+                    this[item].updateSensor(running, dt, this, values, uCtx, udCtx, personalObstacleList, markerList, collisionList, lightList);
                 }
             }
         };

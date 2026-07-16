@@ -29,6 +29,9 @@ import de.fhg.iais.roberta.syntax.sensor.generic.LightSensor;
 import de.fhg.iais.roberta.syntax.sensor.generic.TimerReset;
 import de.fhg.iais.roberta.syntax.sensor.generic.TimerSensor;
 import de.fhg.iais.roberta.syntax.sensor.generic.TouchSensor;
+import de.fhg.iais.roberta.syntax.sensor.generic.VoltageSensor;
+import de.fhg.iais.roberta.syntax.actors.edison.ReceiveIRAction;
+import de.fhg.iais.roberta.syntax.actors.edison.SendIRAction;
 import de.fhg.iais.roberta.syntax.sensor.generic.TemperatureSensor;
 import de.fhg.iais.roberta.util.basic.C;
 import de.fhg.iais.roberta.util.dbc.Assert;
@@ -194,6 +197,24 @@ public class RcxStackMachineVisitor extends AbstractStackMachineVisitor implemen
         String port = timerSensor.getUserDefinedPort();
         JSONObject o = makeNode(C.GET_SAMPLE).put(C.GET_SAMPLE, C.TIMER).put(C.PORT, port).put(C.NAME, "ev3");
         return add(o);
+    }
+
+    @Override
+    public Void visitVoltageSensor(VoltageSensor voltageSensor) {
+        // keine Simulation fuer die Batteriespannung
+        return null;
+    }
+
+    @Override
+    public Void visitSendIRAction(SendIRAction sendIRAction) {
+        // keine Simulation fuer IR-Nachrichten
+        return null;
+    }
+
+    @Override
+    public Void visitReceiveIRAction(ReceiveIRAction receiveIRAction) {
+        // keine Simulation fuer IR-Nachrichten
+        return null;
     }
 
     @Override

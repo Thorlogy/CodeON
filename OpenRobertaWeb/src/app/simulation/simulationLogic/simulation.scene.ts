@@ -10,6 +10,7 @@ import {
     Ground,
     IMovable,
     ISimulationObstacle,
+    LightSimulationObject,
     MarkerSimulationObject,
     RcjSimulationLabel,
     RectangleSimulationObject,
@@ -21,7 +22,7 @@ import simulationRoberta, { SimulationRoberta } from 'simulation.roberta';
 import { IDestroyable, RobotBase, RobotFactory } from 'robot.base';
 import { Interpreter } from 'interpreter.interpreter';
 import { Pose, RobotBaseMobile } from 'robot.base.mobile';
-import { ColorSensorHex } from 'robot.sensors';
+import { ColorSensorHex, LightSensor } from 'robot.sensors';
 
 const RESIZE_CONST: number = 3;
 
@@ -505,6 +506,7 @@ export class SimulationScene {
     sim: SimulationRoberta;
     private _colorAreaList: BaseSimulationObject[] = [];
     private _obstacleList: BaseSimulationObject[] = [];
+    private _lightList: LightSimulationObject[] = [];
     private _rcjList: BaseSimulationObject[] = [];
     private _markerList: MarkerSimulationObject[] = [];
     private _redrawColorAreas: boolean = false;
@@ -557,6 +559,16 @@ export class SimulationScene {
 
     get obstacleList(): BaseSimulationObject[] {
         return this._obstacleList;
+    }
+
+    get lightList(): LightSimulationObject[] {
+        return this._lightList;
+    }
+
+    set lightList(value: LightSimulationObject[]) {
+        this.clearList(this._lightList);
+        this._lightList = value;
+        this.redrawObstacles = true;
     }
 
     get rcjList(): BaseSimulationObject[] {
@@ -662,6 +674,25 @@ export class SimulationScene {
         this.obstacleList = newObstacleList;
     }
 
+    addImportLightList(importLightList: any[]) {
+        const newLightList: LightSimulationObject[] = [];
+        importLightList.forEach((obj) => {
+            const newObject = SimObjectFactory.getSimObject(
+                obj.id,
+                this,
+                this.sim.selectionListener,
+                SimObjectShape.Circle,
+                SimObjectType.Lamp,
+                obj.p,
+                null,
+                obj.color,
+                ...obj.params
+            ) as LightSimulationObject;
+            newLightList.push(newObject);
+        });
+        this.lightList = newLightList;
+    }
+
     addSomeObstacles(importObstacleList: any[]) {
         let that = this;
         importObstacleList.forEach((obj) => {
@@ -723,6 +754,31 @@ export class SimulationScene {
         this.redrawObstacles = true;
     }
 
+    addLamp() {
+        this.addSimulationObject(this.lightList, SimObjectShape.Circle, SimObjectType.Lamp);
+        this.redrawObstacles = true;
+    }
+
+    toggleRcxLightSensorMode(): 'ground' | 'ambient' | null {
+        if (this.robotType !== 'rcx') {
+            return null;
+        }
+        const sensors: LightSensor[] = [];
+        this.robots.forEach((robot) => {
+            Object.keys(robot).forEach((key) => {
+                if (robot[key] instanceof LightSensor) {
+                    sensors.push(robot[key] as LightSensor);
+                }
+            });
+        });
+        if (sensors.length === 0) {
+            return null;
+        }
+        const nextMode = sensors.some((sensor) => sensor.mode === 'ground') ? 'ambient' : 'ground';
+        sensors.forEach((sensor) => (sensor.mode = nextMode));
+        return nextMode;
+    }
+
     addSimulationObject(list: BaseSimulationObject[], shape: SimObjectShape, type: SimObjectType, markerId?: number) {
         let $robotLayer = $('#robotLayer');
         $robotLayer.attr('tabindex', 0);
@@ -749,11 +805,11 @@ export class SimulationScene {
     }
 
     changeColorWithColorPicker(color: string) {
-        let objectList: BaseSimulationObject[] = this.obstacleList.concat(this.colorAreaList); // >= 0 ? obstacleList[selectedObstacle] : selectedColorArea >= 0 ? colorAreaList[selectedColorArea] : null;
+        let objectList: BaseSimulationObject[] = this.obstacleList.concat(this.colorAreaList, this.lightList); // >= 0 ? obstacleList[selectedObstacle] : selectedColorArea >= 0 ? colorAreaList[selectedColorArea] : null;
         let myObj: BaseSimulationObject[] = objectList.filter((obj) => obj.selected);
         if (myObj.length == 1) {
             myObj[0].color = color;
-            if (myObj[0].type === SimObjectType.Obstacle) {
+            if (myObj[0].type === SimObjectType.Obstacle || myObj[0].type === SimObjectType.Lamp) {
                 this.redrawObstacles = true;
             } else {
                 this.redrawColorAreas = true;
@@ -793,6 +849,8 @@ export class SimulationScene {
             this.redrawColorAreas = true;
         } else if (findAndDelete(this.markerList)) {
             this.redrawMarkers = true;
+        } else if (findAndDelete(this.lightList)) {
+            this.redrawObstacles = true;
         }
     }
 
@@ -853,6 +911,7 @@ export class SimulationScene {
         this.oCtx.save();
         this.oCtx.scale(this.sim.scale, this.sim.scale);
         this.oCtx.clearRect(this.ground.x - 10, this.ground.y - 10, this.ground.w + 20, this.ground.h + 20);
+        this.lightList.forEach((light) => light.draw(this.oCtx, this.uCtx));
         this.obstacleList.forEach((obstacle) => obstacle.draw(this.oCtx, this.uCtx));
     }
 
@@ -937,6 +996,9 @@ export class SimulationScene {
                     if (scene.colorAreaList.length > 0) {
                         scene.colorAreaList = [];
                     }
+                    if (scene.lightList.length > 0) {
+                        scene.lightList = [];
+                    }
                     let imgType = '.svg';
                     if (UTIL.isIE()) {
                         imgType = '.png';
@@ -1019,6 +1081,10 @@ export class SimulationScene {
         this.colorAreaList.forEach((colorArea) => {
             colorArea.removeMouseEvents();
             colorArea.addMouseEvents();
+        });
+        this.lightList.forEach((light) => {
+            light.removeMouseEvents();
+            light.addMouseEvents();
         });
         $('#canvasDiv').fadeIn('slow');
         $('#simDiv>.pace').fadeOut('fast');
@@ -1167,6 +1233,9 @@ export class SimulationScene {
             } else if (this.objectToCopy.type === SimObjectType.Marker) {
                 this.markerList.push(newObject as MarkerSimulationObject);
                 this.redrawMarkers = true;
+            } else if (this.objectToCopy.type === SimObjectType.Lamp) {
+                this.lightList.push(newObject as LightSimulationObject);
+                this.redrawObstacles = true;
             }
         }
     }
@@ -1265,6 +1334,7 @@ export class SimulationScene {
         this.obstacleList = [];
         this.colorAreaList = [];
         this.markerList = [];
+        this.lightList = [];
         this.rcjList = [];
         this.ground.w = this.imgBackgroundList[this.currentBackground].width;
         this.ground.h = this.imgBackgroundList[this.currentBackground].height;
@@ -1308,7 +1378,16 @@ export class SimulationScene {
         this.robots.forEach((robot) => {
             let obstacleList: ISimulationObstacle[] = personalObstacleList.slice();
             let collisionList: ISimulationObstacle[] = [];
-            (robot as RobotBaseMobile).updateSensors(interpreterRunning, dt, this.uCtx, this.udCtx, obstacleList, this.markerList, collisionList);
+            (robot as RobotBaseMobile).updateSensors(
+                interpreterRunning,
+                dt,
+                this.uCtx,
+                this.udCtx,
+                obstacleList,
+                this.markerList,
+                collisionList,
+                this.lightList
+            );
             //if (interpreterRunning) {
             while (collisionList.length > 0) {
                 let movableObstacle: IMovable = collisionList[0] as unknown as IMovable;

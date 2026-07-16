@@ -15,6 +15,8 @@ import de.fhg.iais.roberta.mode.action.MotorStopMode;
 import de.fhg.iais.roberta.mode.action.TurnDirection;
 import de.fhg.iais.roberta.syntax.Phrase;
 import de.fhg.iais.roberta.syntax.action.display.ClearDisplayAction;
+import de.fhg.iais.roberta.syntax.actors.edison.ReceiveIRAction;
+import de.fhg.iais.roberta.syntax.actors.edison.SendIRAction;
 import de.fhg.iais.roberta.syntax.action.display.ShowTextAction;
 import de.fhg.iais.roberta.syntax.action.motor.MotorOnAction;
 import de.fhg.iais.roberta.syntax.action.motor.MotorSetPowerAction;
@@ -46,6 +48,7 @@ import de.fhg.iais.roberta.syntax.sensor.generic.LightSensor;
 import de.fhg.iais.roberta.syntax.sensor.generic.TimerReset;
 import de.fhg.iais.roberta.syntax.sensor.generic.TimerSensor;
 import de.fhg.iais.roberta.syntax.sensor.generic.TouchSensor;
+import de.fhg.iais.roberta.syntax.sensor.generic.VoltageSensor;
 import de.fhg.iais.roberta.syntax.sensor.generic.TemperatureSensor;
 import de.fhg.iais.roberta.typecheck.BlocklyType;
 import de.fhg.iais.roberta.util.dbc.DbcException;
@@ -193,7 +196,9 @@ public final class RcxNqcVisitor extends AbstractCppVisitor implements IRcxVisit
      */
     private void generateSensorInit() {
         for ( UsedSensor usedSensor : this.getBean(UsedHardwareBean.class).getUsedSensors() ) {
-            if ( usedSensor.getType().equals(SC.TIMER) ) {
+            if ( usedSensor.getType().equals(SC.TIMER) || usedSensor.getType().equals(SC.VOLTAGE) ) {
+                // TIMER: kein physischer Sensor. VOLTAGE: interne
+                // Batteriespannung (BatteryLevel()), haengt an keinem Port.
                 continue;
             }
             ConfigurationComponent cc = this.brickConfiguration.getConfigurationComponent(usedSensor.getPort());
@@ -450,6 +455,22 @@ public final class RcxNqcVisitor extends AbstractCppVisitor implements IRcxVisit
     // ------------------------------------------------------------------
 
     @Override
+    public Void visitSendIRAction(SendIRAction sendIRAction) {
+        // IR-Nachricht senden: 1 Byte, gueltige Werte 1-255 (RCX-Firmware)
+        this.src.add("SendMessage(");
+        sendIRAction.code.accept(this);
+        this.src.add(");");
+        return null;
+    }
+
+    @Override
+    public Void visitReceiveIRAction(ReceiveIRAction receiveIRAction) {
+        // Letzte empfangene IR-Nachricht (0 = keine Nachricht im Puffer)
+        this.src.add("Message()");
+        return null;
+    }
+
+    @Override
     public Void visitToneAction(ToneAction toneAction) {
         this.src.add("PlayTone(");
         toneAction.frequency.accept(this);
@@ -494,6 +515,13 @@ public final class RcxNqcVisitor extends AbstractCppVisitor implements IRcxVisit
     @Override
     public Void visitTimerSensor(TimerSensor timerSensor) {
         this.src.add("(FastTimer(0) * 10)"); // -> Millisekunden
+        return null;
+    }
+
+    @Override
+    public Void visitVoltageSensor(VoltageSensor voltageSensor) {
+        // Batteriespannung in Millivolt; benoetigt RCX-Firmware 2.0 (fast.rcx)
+        this.src.add("BatteryLevel()");
         return null;
     }
 

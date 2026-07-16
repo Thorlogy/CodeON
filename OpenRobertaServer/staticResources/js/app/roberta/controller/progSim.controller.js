@@ -173,6 +173,17 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
                 SIM.addObstacle && SIM.addObstacle(simulation_objects_1.SimObjectShape.Circle);
                 return false;
             }, 'sim add circle obstacle clicked');
+            $('#simAddLamp').onWrap('click.sim', function () {
+                SIM.addLamp && SIM.addLamp();
+                return false;
+            }, 'sim add lamp clicked');
+            $('#simRcxLightMode').onWrap('click.sim', function () {
+                var mode = SIM.toggleRcxLightSensorMode && SIM.toggleRcxLightSensorMode();
+                if (mode) {
+                    $('#simRcxLightMode').attr('title', mode === 'ambient' ? 'Der RCX-Lichtsensor sucht Lampen vor dem Roboter.' : 'Der RCX-Lichtsensor misst den Untergrund.');
+                }
+                return false;
+            }, 'sim toggle rcx light sensor mode clicked');
             $('#simObstacleDeleteAll').onWrap('click.sim', function () {
                 SIM.deleteAllObstacle && SIM.deleteAllObstacle();
                 return false;

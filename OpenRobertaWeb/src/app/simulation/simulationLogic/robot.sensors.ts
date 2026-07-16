@@ -4,7 +4,7 @@ import * as SIMATH from 'simulation.math';
 import * as UTIL from 'util.roberta';
 import { ChassisMobile, RobotinoChassis, WebAudio } from 'robot.actuators';
 import { IDrawable, ILabel, IReset, IUpdateAction, RobotBase } from 'robot.base';
-import { CircleSimulationObject, ISimulationObstacle, MarkerSimulationObject } from 'simulation.objects';
+import { CircleSimulationObject, ISimulationObstacle, LightSimulationObject, MarkerSimulationObject } from 'simulation.objects';
 // @ts-ignore
 import * as Blockly from 'blockly';
 // @ts-ignore
@@ -22,7 +22,8 @@ export interface ISensor {
         udCtx: CanvasRenderingContext2D,
         personalObstacleList: any[],
         markerList: MarkerSimulationObject[],
-        collisionList: ISimulationObstacle[]
+        collisionList: ISimulationObstacle[],
+        lightList: LightSimulationObject[]
     ): void;
 }
 
@@ -1081,6 +1082,7 @@ export class ColorSensor implements IExternalSensor, IDrawable, ILabel {
     rgb: number[] = [0, 0, 0];
     rx: number = 0;
     ry: number = 0;
+    mode: 'ground' | 'ambient' = 'ground';
 
     constructor(port: string, x: number, y: number, theta: number, r: number, color?: string) {
         this.port = port;
@@ -1129,12 +1131,51 @@ export class ColorSensor implements IExternalSensor, IDrawable, ILabel {
 
     public readonly labelPriority: number;
 
-    updateSensor(running: boolean, dt: number, myRobot: RobotBaseMobile, values: object, uCtx: CanvasRenderingContext2D, udCtx: CanvasRenderingContext2D) {
+    updateSensor(
+        running: boolean,
+        dt: number,
+        myRobot: RobotBaseMobile,
+        values: object,
+        uCtx: CanvasRenderingContext2D,
+        udCtx: CanvasRenderingContext2D,
+        personalObstacleList?: any[],
+        markerList?: MarkerSimulationObject[],
+        collisionList?: ISimulationObstacle[],
+        lightList: LightSimulationObject[] = []
+    ) {
         values['color'] = values['color'] || {};
         values['light'] = values['light'] || {};
         values['color'][this.port] = {};
         values['light'][this.port] = {};
         SIMATH.transform(myRobot.pose, this as PointRobotWorld);
+        if (this.mode === 'ambient') {
+            const viewDirection = myRobot.pose.theta + this.theta;
+            this.lightValue = Math.min(
+                100,
+                lightList.reduce((sum, lamp) => {
+                    const dx = lamp.x - this.rx;
+                    const dy = lamp.y - this.ry;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance > lamp.range) {
+                        return sum;
+                    }
+                    const direction = Math.atan2(dy, dx);
+                    const angle = Math.atan2(Math.sin(direction - viewDirection), Math.cos(direction - viewDirection));
+                    if (Math.abs(angle) > Math.PI / 8) {
+                        return sum;
+                    }
+                    const falloff = Math.max(0, 1 - distance / lamp.range);
+                    return sum + lamp.intensity * falloff;
+                },
+                0)
+            );
+            const grey = UTIL.round(this.lightValue * 2.55, 0);
+            this.rgb = [grey, grey, grey];
+            this.colorValue = [COLOR_ENUM.NONE, '#000000'];
+            this.color = 'grey';
+            this.writeValues(values, this.lightValue);
+            return;
+        }
         let red: number = 0;
         let green: number = 0;
         let blue: number = 0;
@@ -1175,12 +1216,18 @@ export class ColorSensor implements IExternalSensor, IDrawable, ILabel {
         } catch (e) {
             // this might happen during change of background image and is ok, we return the last valid sensor values
         }
+        this.writeValues(values, 0);
+    }
+
+    private writeValues(values: object, ambientLight: number): void {
         values['color'][this.port].colorValue = this.colorValue[0];
         values['color'][this.port].colorhex = this.colorValue[1];
         values['color'][this.port].colour = this.colorValue[0];
         values['color'][this.port].light = this.lightValue;
         values['color'][this.port].rgb = this.rgb;
-        values['color'][this.port].ambientlight = 0;
+        values['color'][this.port].ambientlight = ambientLight;
+        values['light'][this.port].light = this.lightValue;
+        values['light'][this.port].ambientlight = ambientLight;
     }
 }
 
@@ -1245,6 +1292,14 @@ export class NXTColorSensor extends ColorSensor implements IUpdateAction, IReset
 export class LightSensor extends ColorSensor {
     override draw(rCtx: CanvasRenderingContext2D, myRobot: RobotBaseMobile): void {
         rCtx.save();
+        if (this.mode === 'ambient') {
+            rCtx.fillStyle = 'rgba(255, 213, 79, 0.18)';
+            rCtx.beginPath();
+            rCtx.moveTo(this.x, this.y);
+            rCtx.arc(this.x, this.y, 75, this.theta - Math.PI / 8, this.theta + Math.PI / 8);
+            rCtx.closePath();
+            rCtx.fill();
+        }
         rCtx.beginPath();
         rCtx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
         let myGrey = parseInt(String(this.lightValue * 2.55), 10).toString(16);
@@ -1266,7 +1321,7 @@ export class LightSensor extends ColorSensor {
             ' ' +
             Blockly.Msg['SENSOR_LIGHT'] +
             '</label></div><div><label>&nbsp;-&nbsp;' +
-            Blockly.Msg['MODE_LIGHT'] +
+            (this.mode === 'ambient' ? Blockly.Msg['MODE_AMBIENTLIGHT'] : Blockly.Msg['MODE_LIGHT']) +
             '</label><span>' +
             UTIL.round(this.lightValue, 0) +
             ' %</span></div>'

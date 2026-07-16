@@ -25,6 +25,15 @@
 			<artifactId>OpenRobertaRobot</artifactId>
 		</dependency>
 
+		<!-- Die RCX-IR-Nachrichten-Bloecke nutzen die AST-Klassen
+		     SendIRAction/ReceiveIRAction der Edison-Bloecke wieder
+		     (edisonCommunication_ir_*), da Edison wie der RCX ein
+		     verbindungsloses IR-Broadcast-Geraet ist. -->
+		<dependency>
+			<groupId>de.fhg.iais.openroberta</groupId>
+			<artifactId>RobotEdison</artifactId>
+		</dependency>
+
         <dependency>
             <groupId>de.fhg.iais.openroberta</groupId>
             <artifactId>OpenRobertaRobot</artifactId>

@@ -446,6 +446,7 @@ define(["require", "exports", "util.roberta", "jquery", "simulation.objects", "s
             };
             this._colorAreaList = [];
             this._obstacleList = [];
+            this._lightList = [];
             this._rcjList = [];
             this._markerList = [];
             this._redrawColorAreas = false;
@@ -501,6 +502,18 @@ define(["require", "exports", "util.roberta", "jquery", "simulation.objects", "s
             set: function (value) {
                 this.clearList(this._obstacleList);
                 this._obstacleList = value;
+                this.redrawObstacles = true;
+            },
+            enumerable: false,
+            configurable: true
+        });
+        Object.defineProperty(SimulationScene.prototype, "lightList", {
+            get: function () {
+                return this._lightList;
+            },
+            set: function (value) {
+                this.clearList(this._lightList);
+                this._lightList = value;
                 this.redrawObstacles = true;
             },
             enumerable: false,
@@ -608,6 +621,22 @@ define(["require", "exports", "util.roberta", "jquery", "simulation.objects", "s
             });
             this.obstacleList = newObstacleList;
         };
+        SimulationScene.prototype.addImportLightList = function (importLightList) {
+            var _this = this;
+            var newLightList = [];
+            importLightList.forEach(function (obj) {
+                var newObject = simulation_objects_1.SimObjectFactory.getSimObject.apply(simulation_objects_1.SimObjectFactory, __spreadArray([obj.id,
+                    _this,
+                    _this.sim.selectionListener,
+                    simulation_objects_1.SimObjectShape.Circle,
+                    simulation_objects_1.SimObjectType.Lamp,
+                    obj.p,
+                    null,
+                    obj.color], obj.params, false));
+                newLightList.push(newObject);
+            });
+            this.lightList = newLightList;
+        };
         SimulationScene.prototype.addSomeObstacles = function (importObstacleList) {
             var _this = this;
             var that = this;
@@ -653,6 +682,29 @@ define(["require", "exports", "util.roberta", "jquery", "simulation.objects", "s
             this.addSimulationObject(this.obstacleList, shape, simulation_objects_1.SimObjectType.Obstacle);
             this.redrawObstacles = true;
         };
+        SimulationScene.prototype.addLamp = function () {
+            this.addSimulationObject(this.lightList, simulation_objects_1.SimObjectShape.Circle, simulation_objects_1.SimObjectType.Lamp);
+            this.redrawObstacles = true;
+        };
+        SimulationScene.prototype.toggleRcxLightSensorMode = function () {
+            if (this.robotType !== 'rcx') {
+                return null;
+            }
+            var sensors = [];
+            this.robots.forEach(function (robot) {
+                Object.keys(robot).forEach(function (key) {
+                    if (robot[key] instanceof robot_sensors_1.LightSensor) {
+                        sensors.push(robot[key]);
+                    }
+                });
+            });
+            if (sensors.length === 0) {
+                return null;
+            }
+            var nextMode = sensors.some(function (sensor) { return sensor.mode === 'ground'; }) ? 'ambient' : 'ground';
+            sensors.forEach(function (sensor) { return (sensor.mode = nextMode); });
+            return nextMode;
+        };
         SimulationScene.prototype.addSimulationObject = function (list, shape, type, markerId) {
             var $robotLayer = $('#robotLayer');
             $robotLayer.attr('tabindex', 0);
@@ -670,11 +722,11 @@ define(["require", "exports", "util.roberta", "jquery", "simulation.objects", "s
             newObject.selected = true;
         };
         SimulationScene.prototype.changeColorWithColorPicker = function (color) {
-            var objectList = this.obstacleList.concat(this.colorAreaList); // >= 0 ? obstacleList[selectedObstacle] : selectedColorArea >= 0 ? colorAreaList[selectedColorArea] : null;
+            var objectList = this.obstacleList.concat(this.colorAreaList, this.lightList); // >= 0 ? obstacleList[selectedObstacle] : selectedColorArea >= 0 ? colorAreaList[selectedColorArea] : null;
             var myObj = objectList.filter(function (obj) { return obj.selected; });
             if (myObj.length == 1) {
                 myObj[0].color = color;
-                if (myObj[0].type === simulation_objects_1.SimObjectType.Obstacle) {
+                if (myObj[0].type === simulation_objects_1.SimObjectType.Obstacle || myObj[0].type === simulation_objects_1.SimObjectType.Lamp) {
                     this.redrawObstacles = true;
                 }
                 else {
@@ -713,6 +765,9 @@ define(["require", "exports", "util.roberta", "jquery", "simulation.objects", "s
             }
             else if (findAndDelete(this.markerList)) {
                 this.redrawMarkers = true;
+            }
+            else if (findAndDelete(this.lightList)) {
+                this.redrawObstacles = true;
             }
         };
         SimulationScene.prototype.draw = function (dt, interpreterRunning) {
@@ -768,6 +823,7 @@ define(["require", "exports", "util.roberta", "jquery", "simulation.objects", "s
             this.oCtx.save();
             this.oCtx.scale(this.sim.scale, this.sim.scale);
             this.oCtx.clearRect(this.ground.x - 10, this.ground.y - 10, this.ground.w + 20, this.ground.h + 20);
+            this.lightList.forEach(function (light) { return light.draw(_this.oCtx, _this.uCtx); });
             this.obstacleList.forEach(function (obstacle) { return obstacle.draw(_this.oCtx, _this.uCtx); });
         };
         SimulationScene.prototype.drawRcjLabel = function () {
@@ -841,6 +897,9 @@ define(["require", "exports", "util.roberta", "jquery", "simulation.objects", "s
                         if (scene.colorAreaList.length > 0) {
                             scene.colorAreaList = [];
                         }
+                        if (scene.lightList.length > 0) {
+                            scene.lightList = [];
+                        }
                         var imgType_1 = '.svg';
                         if (UTIL.isIE()) {
                             imgType_1 = '.png';
@@ -907,6 +966,10 @@ define(["require", "exports", "util.roberta", "jquery", "simulation.objects", "s
             this.colorAreaList.forEach(function (colorArea) {
                 colorArea.removeMouseEvents();
                 colorArea.addMouseEvents();
+            });
+            this.lightList.forEach(function (light) {
+                light.removeMouseEvents();
+                light.addMouseEvents();
             });
             $('#canvasDiv').fadeIn('slow');
             $('#simDiv>.pace').fadeOut('fast');
@@ -1054,6 +1117,10 @@ define(["require", "exports", "util.roberta", "jquery", "simulation.objects", "s
                     this.markerList.push(newObject);
                     this.redrawMarkers = true;
                 }
+                else if (this.objectToCopy.type === simulation_objects_1.SimObjectType.Lamp) {
+                    this.lightList.push(newObject);
+                    this.redrawObstacles = true;
+                }
             }
         };
         SimulationScene.prototype.resetAllCanvas = function (backgroundChanged) {
@@ -1149,6 +1216,7 @@ define(["require", "exports", "util.roberta", "jquery", "simulation.objects", "s
             this.obstacleList = [];
             this.colorAreaList = [];
             this.markerList = [];
+            this.lightList = [];
             this.rcjList = [];
             this.ground.w = this.imgBackgroundList[this.currentBackground].width;
             this.ground.h = this.imgBackgroundList[this.currentBackground].height;
@@ -1193,7 +1261,7 @@ define(["require", "exports", "util.roberta", "jquery", "simulation.objects", "s
             this.robots.forEach(function (robot) {
                 var obstacleList = personalObstacleList.slice();
                 var collisionList = [];
-                robot.updateSensors(interpreterRunning, dt, _this.uCtx, _this.udCtx, obstacleList, _this.markerList, collisionList);
+                robot.updateSensors(interpreterRunning, dt, _this.uCtx, _this.udCtx, obstacleList, _this.markerList, collisionList, _this.lightList);
                 //if (interpreterRunning) {
                 while (collisionList.length > 0) {
                     var movableObstacle = collisionList[0];

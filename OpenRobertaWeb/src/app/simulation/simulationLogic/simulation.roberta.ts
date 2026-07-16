@@ -22,6 +22,7 @@ import { SelectionListener } from 'robot.base';
 import {
     BaseSimulationObject,
     CircleSimulationObject,
+    LightSimulationObject,
     MarkerSimulationObject,
     RectangleSimulationObject,
     SimObjectShape,
@@ -193,6 +194,15 @@ export class SimulationRoberta implements Simulation {
         this.enableChangeObjectButtons();
     }
 
+    addLamp() {
+        this.scene.addLamp();
+        this.enableChangeObjectButtons();
+    }
+
+    toggleRcxLightSensorMode(): 'ground' | 'ambient' | null {
+        return this.scene.toggleRcxLightSensorMode();
+    }
+
     allInterpretersTerminated() {
         for (let i = 0; i < this.interpreters.length; i++) {
             if (!this.interpreters[i].isTerminated()) {
@@ -310,6 +320,17 @@ export class SimulationRoberta implements Simulation {
                     form: SimObjectShape.Triangle,
                     type: object.type,
                 };
+            } else if (object instanceof LightSimulationObject) {
+                return {
+                    x: object.x / width,
+                    y: object.y / height,
+                    r: object.r / height / width,
+                    intensity: object.intensity,
+                    range: object.range / height / width,
+                    color: object.color,
+                    form: SimObjectShape.Circle,
+                    type: object.type,
+                };
             } else if (object instanceof CircleSimulationObject) {
                 return {
                     x: object.x / width,
@@ -344,6 +365,9 @@ export class SimulationRoberta implements Simulation {
             return calculateShape(object);
         });
         config.marker = this.scene.markerList.map(function (object) {
+            return calculateShape(object);
+        });
+        config.lights = this.scene.lightList.map(function (object) {
             return calculateShape(object);
         });
         return config;
@@ -767,6 +791,10 @@ export class SimulationRoberta implements Simulation {
                             y: object.y * height,
                         };
                         newObject.params = [object.r * height * width];
+                        if (object.type === SimObjectType.Lamp || object.type === 'LAMP') {
+                            newObject.params.push(object.intensity === undefined ? 100 : object.intensity);
+                            newObject.params.push(object.range === undefined ? Math.min(width, height) / 3 : object.range * height * width);
+                        }
                         break;
                 }
                 return newObject;
@@ -811,6 +839,12 @@ export class SimulationRoberta implements Simulation {
                     importMarker.push(calculateShape(marker));
                 });
             this.scene.addImportMarkerList(importMarker);
+
+            let importLights = [];
+            (relatives.lights || []).forEach((light) => {
+                importLights.push(calculateShape(light));
+            });
+            this.scene.addImportLightList(importLights);
         }
     }
 

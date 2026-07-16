@@ -214,6 +214,28 @@ class ProgSimController {
             },
             'sim add circle obstacle clicked'
         );
+        $('#simAddLamp').onWrap(
+            'click.sim',
+            function () {
+                (SIM as SimulationRoberta).addLamp && (SIM as SimulationRoberta).addLamp();
+                return false;
+            },
+            'sim add lamp clicked'
+        );
+        $('#simRcxLightMode').onWrap(
+            'click.sim',
+            function () {
+                const mode = (SIM as SimulationRoberta).toggleRcxLightSensorMode && (SIM as SimulationRoberta).toggleRcxLightSensorMode();
+                if (mode) {
+                    $('#simRcxLightMode').attr(
+                        'title',
+                        mode === 'ambient' ? 'Der RCX-Lichtsensor sucht Lampen vor dem Roboter.' : 'Der RCX-Lichtsensor misst den Untergrund.'
+                    );
+                }
+                return false;
+            },
+            'sim toggle rcx light sensor mode clicked'
+        );
         $('#simObstacleDeleteAll').onWrap(
             'click.sim',
             function () {

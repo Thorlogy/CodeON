@@ -30,6 +30,10 @@ import de.fhg.iais.roberta.syntax.sensor.generic.LightSensor;
 import de.fhg.iais.roberta.syntax.sensor.generic.TimerReset;
 import de.fhg.iais.roberta.syntax.sensor.generic.TimerSensor;
 import de.fhg.iais.roberta.syntax.sensor.generic.TouchSensor;
+import de.fhg.iais.roberta.syntax.sensor.generic.VoltageSensor;
+import de.fhg.iais.roberta.syntax.actors.edison.ReceiveIRAction;
+import de.fhg.iais.roberta.syntax.actors.edison.SendIRAction;
+import de.fhg.iais.roberta.syntax.lang.expr.NumConst;
 import de.fhg.iais.roberta.syntax.sensor.generic.TemperatureSensor;
 import de.fhg.iais.roberta.util.syntax.SC;
 import de.fhg.iais.roberta.visitor.IRcxVisitor;
@@ -132,8 +136,38 @@ public class RcxValidatorAndCollectorVisitor extends CommonNepoAndMotorValidator
     }
 
     @Override
+    public Void visitVoltageSensor(VoltageSensor voltageSensor) {
+        usedHardwareBuilder.addUsedSensor(new UsedSensor(voltageSensor.getUserDefinedPort(), SC.VOLTAGE, voltageSensor.getMode()));
+        addToPhraseIfUnsupportedInSim(voltageSensor, true, this.isSim);
+        return null;
+    }
+
+    @Override
     public Void visitTimerReset(TimerReset timerReset) {
         usedHardwareBuilder.addUsedSensor(new UsedSensor(timerReset.sensorPort, SC.TIMER, SC.DEFAULT));
+        return null;
+    }
+
+    @Override
+    public Void visitSendIRAction(SendIRAction sendIRAction) {
+        requiredComponentVisited(sendIRAction, sendIRAction.code);
+        if ( sendIRAction.code instanceof NumConst ) {
+            try {
+                double value = Double.parseDouble(((NumConst) sendIRAction.code).value);
+                if ( value < 1 || value > 255 ) {
+                    addErrorToPhrase(sendIRAction, "IR-Nachricht muss zwischen 1 und 255 liegen");
+                }
+            } catch ( NumberFormatException e ) {
+                // nicht auswertbar -> zur Laufzeit pruefen lassen
+            }
+        }
+        addToPhraseIfUnsupportedInSim(sendIRAction, false, this.isSim);
+        return null;
+    }
+
+    @Override
+    public Void visitReceiveIRAction(ReceiveIRAction receiveIRAction) {
+        addToPhraseIfUnsupportedInSim(receiveIRAction, true, this.isSim);
         return null;
     }
 

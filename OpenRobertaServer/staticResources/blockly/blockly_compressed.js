@@ -6459,6 +6459,11 @@ Blockly.Blocks["robBrick_temperature"] = {
         standardPort: '3'
     };
 
+    sensors.battery.rcx = {
+        title: 'BATTERY',
+        modes: [{ name: 'VALUE', type: 'Number', unit: 'VOLT', value: 7 }]
+    };
+
     // Wird vom generischen robSensors_getSample-Block benutzt
     // (steckt u.a. im "warte bis"-Block der Kategorie "Kontrolle").
     sensorsAll.rcx = [sensors.touch.rcx, sensors.light.rcx, sensors.encoder.rcx, sensors.timer.rcx, sensors.temperature.rcx];
@@ -6507,4 +6512,45 @@ Blockly.Blocks["robBrick_temperature"] = {
     };
 
     console.log('\u2713 RCX-Patch: Sensor-Definitionen geladen');
+})();
+
+
+// ==================== RCX PATCH: IR-Kommunikationsbloecke ====================
+// Die Bloecke edisonCommunication_ir_sendBlock/receiveBlock (Aliasse der
+// bob3Communication_*-Bloecke) bauen ihre Ein-/Ausgaenge geraeteabhaengig auf
+// und kennen das Geraet "rcx" nicht - der Block wuerde ohne Eingang bzw. ohne
+// Ausgang gerendert. Der RCX verhaelt sich wie der Edison (verbindungsloser
+// IR-Broadcast, Zahlenwert), daher wird "rcx" hier in dieselbe Gruppe
+// aufgenommen. Backend: SendMessage()/Message() im RcxNqcVisitor.
+(function () {
+    if (typeof Blockly === 'undefined' || !Blockly.Blocks.bob3Communication_sendBlock) {
+        console.error('RCX-Patch: bob3Communication-Bloecke nicht gefunden - Patch muss ans Ende von blockly_compressed.js');
+        return;
+    }
+    Blockly.Blocks.bob3Communication_sendBlock.init = function () {
+        this.setColour(Blockly.CAT_COMMUNICATION_RGB);
+        var dev = this.workspace.device;
+        if (dev === 'bob3' || dev === 'edison' || dev === 'rob3rta' || dev === 'thymio' || dev === 'rcx') {
+            this.appendValueInput('sendData').setAlign(Blockly.ALIGN_RIGHT).appendField(Blockly.Msg.CONNECTION_SEND_DATA).setCheck('Number');
+        } else if (dev === 'mbot') {
+            this.appendValueInput('sendData').setAlign(Blockly.ALIGN_RIGHT).appendField(Blockly.Msg.CONNECTION_SEND_DATA).setCheck('String');
+        }
+        this.setTooltip(Blockly.Msg['CONNECTION_SEND_TOOLTIP_' + dev.toUpperCase()] || Blockly.Msg.CONNECTION_SEND_TOOLTIP_EDISON);
+        this.setPreviousStatement(true);
+        this.setNextStatement(true);
+        this.setInputsInline(false);
+    };
+    Blockly.Blocks.bob3Communication_receiveBlock.init = function () {
+        this.setColour(Blockly.CAT_COMMUNICATION_RGB);
+        this.appendDummyInput('receiveData').appendField(Blockly.Msg.CONNECTION_RECEIVED_DATA);
+        var dev = this.workspace.device;
+        if (dev === 'bob3' || dev === 'edison' || dev === 'rob3rta' || dev === 'thymio' || dev === 'rcx') {
+            this.setOutput(true, 'Number');
+        } else if (dev === 'mbot') {
+            this.setOutput(true, 'String');
+        }
+        this.setBlocking(true);
+        this.setTooltip(Blockly.Msg['CONNECTION_RECEIVE_TOOLTIP_' + dev.toUpperCase()] || Blockly.Msg.CONNECTION_RECEIVE_TOOLTIP_EDISON);
+        this.setInputsInline(false);
+    };
 })();

@@ -221,6 +221,13 @@ define(["require", "exports", "interpreter.constants", "util.roberta", "interpre
             this.scene.addObstacle(shape);
             this.enableChangeObjectButtons();
         };
+        SimulationRoberta.prototype.addLamp = function () {
+            this.scene.addLamp();
+            this.enableChangeObjectButtons();
+        };
+        SimulationRoberta.prototype.toggleRcxLightSensorMode = function () {
+            return this.scene.toggleRcxLightSensorMode();
+        };
         SimulationRoberta.prototype.allInterpretersTerminated = function () {
             for (var i = 0; i < this.interpreters.length; i++) {
                 if (!this.interpreters[i].isTerminated()) {
@@ -330,6 +337,18 @@ define(["require", "exports", "interpreter.constants", "util.roberta", "interpre
                         type: object.type,
                     };
                 }
+                else if (object instanceof simulation_objects_1.LightSimulationObject) {
+                    return {
+                        x: object.x / width,
+                        y: object.y / height,
+                        r: object.r / height / width,
+                        intensity: object.intensity,
+                        range: object.range / height / width,
+                        color: object.color,
+                        form: simulation_objects_1.SimObjectShape.Circle,
+                        type: object.type,
+                    };
+                }
                 else if (object instanceof simulation_objects_1.CircleSimulationObject) {
                     return {
                         x: object.x / width,
@@ -363,6 +382,9 @@ define(["require", "exports", "interpreter.constants", "util.roberta", "interpre
                 return calculateShape(object);
             });
             config.marker = this.scene.markerList.map(function (object) {
+                return calculateShape(object);
+            });
+            config.lights = this.scene.lightList.map(function (object) {
                 return calculateShape(object);
             });
             return config;
@@ -720,7 +742,7 @@ define(["require", "exports", "interpreter.constants", "util.roberta", "interpre
         };
         SimulationRoberta.prototype.setNewConfig = function (configData) {
             return __awaiter(this, void 0, void 0, function () {
-                var relatives, height_1, width_1, sim_1, calculateShape_1, importObstacles_1, importColorAreas_1, importMarker_1;
+                var relatives, height_1, width_1, sim_1, calculateShape_1, importObstacles_1, importColorAreas_1, importMarker_1, importLights_1;
                 var _this = this;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
@@ -777,6 +799,10 @@ define(["require", "exports", "interpreter.constants", "util.roberta", "interpre
                                             y: object.y * height_1,
                                         };
                                         newObject.params = [object.r * height_1 * width_1];
+                                        if (object.type === simulation_objects_1.SimObjectType.Lamp || object.type === 'LAMP') {
+                                            newObject.params.push(object.intensity === undefined ? 100 : object.intensity);
+                                            newObject.params.push(object.range === undefined ? Math.min(width_1, height_1) / 3 : object.range * height_1 * width_1);
+                                        }
                                         break;
                                 }
                                 return newObject;
@@ -819,6 +845,11 @@ define(["require", "exports", "interpreter.constants", "util.roberta", "interpre
                                     importMarker_1.push(calculateShape_1(marker));
                                 });
                             this.scene.addImportMarkerList(importMarker_1);
+                            importLights_1 = [];
+                            (relatives.lights || []).forEach(function (light) {
+                                importLights_1.push(calculateShape_1(light));
+                            });
+                            this.scene.addImportLightList(importLights_1);
                             _a.label = 3;
                         case 3: return [2 /*return*/];
                     }

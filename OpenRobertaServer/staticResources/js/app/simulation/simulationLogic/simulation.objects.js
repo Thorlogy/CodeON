@@ -24,7 +24,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 };
 define(["require", "exports", "jquery", "util.roberta", "simulation.roberta", "simulation.math"], function (require, exports, $, UTIL, simulation_roberta_1, SIMATH) {
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.RcjSimulationLabel = exports.Ground = exports.TriangleSimulationObject = exports.CircleSimulationObject = exports.MarkerSimulationObject = exports.RectangleSimulationObject = exports.SimObjectShape = exports.SimObjectType = exports.SimObjectFactory = exports.BaseSimulationObject = void 0;
+    exports.RcjSimulationLabel = exports.Ground = exports.TriangleSimulationObject = exports.LightSimulationObject = exports.CircleSimulationObject = exports.MarkerSimulationObject = exports.RectangleSimulationObject = exports.SimObjectShape = exports.SimObjectType = exports.SimObjectFactory = exports.BaseSimulationObject = void 0;
     var BaseSimulationObject = /** @class */ (function () {
         function BaseSimulationObject(myId, myScene, mySelectionListener, type, optColor) {
             this.SHIFT = 1;
@@ -45,6 +45,9 @@ define(["require", "exports", "jquery", "util.roberta", "simulation.roberta", "s
             else {
                 if (type === SimObjectType.Obstacle) {
                     this.color = '#33B8CA';
+                }
+                else if (type === SimObjectType.Lamp) {
+                    this.color = '#FFD54F';
                 }
                 else {
                     this.color = '#FBED00';
@@ -138,6 +141,7 @@ define(["require", "exports", "jquery", "util.roberta", "simulation.roberta", "s
                     this.myScene.redrawColorAreas = true;
                     break;
                 case SimObjectType.Obstacle:
+                case SimObjectType.Lamp:
                     this.myScene.redrawObstacles = true;
                     break;
                 case SimObjectType.Marker:
@@ -158,6 +162,9 @@ define(["require", "exports", "jquery", "util.roberta", "simulation.roberta", "s
             for (var _i = 8; _i < arguments.length; _i++) {
                 params[_i - 8] = arguments[_i];
             }
+            if (type === SimObjectType.Lamp) {
+                return new (LightSimulationObject.bind.apply(LightSimulationObject, __spreadArray([void 0, id, myScene, selectionListener, type, origin, maxSize, optColor], params, false)))();
+            }
             switch (shape) {
                 case SimObjectShape.Rectangle: {
                     return new (RectangleSimulationObject.bind.apply(RectangleSimulationObject, __spreadArray([void 0, id, myScene, selectionListener, type, origin, maxSize, optColor], params, false)))();
@@ -175,7 +182,17 @@ define(["require", "exports", "jquery", "util.roberta", "simulation.roberta", "s
         };
         SimObjectFactory.copy = function (object) {
             var id = object.myScene.uniqueObjectId;
-            if (object instanceof RectangleSimulationObject) {
+            if (object instanceof LightSimulationObject) {
+                return SimObjectFactory.getSimObject.apply(SimObjectFactory, __spreadArray([id,
+                    object.myScene,
+                    object.mySelectionListener,
+                    SimObjectShape.Circle,
+                    object.type,
+                    { x: -1000, y: -1000 },
+                    null,
+                    object.color], [object.r, object.intensity, object.range], false));
+            }
+            else if (object instanceof RectangleSimulationObject) {
                 return SimObjectFactory.getSimObject.apply(SimObjectFactory, __spreadArray([id,
                     object.myScene,
                     object.mySelectionListener,
@@ -224,6 +241,7 @@ define(["require", "exports", "jquery", "util.roberta", "simulation.roberta", "s
         SimObjectType["ColorArea"] = "COLORAREA";
         SimObjectType["Passiv"] = "PASSIV";
         SimObjectType["Marker"] = "MARKER";
+        SimObjectType["Lamp"] = "LAMP";
     })(SimObjectType = exports.SimObjectType || (exports.SimObjectType = {}));
     var SimObjectShape;
     (function (SimObjectShape) {
@@ -956,6 +974,56 @@ define(["require", "exports", "jquery", "util.roberta", "simulation.roberta", "s
         return CircleSimulationObject;
     }(BaseSimulationObject));
     exports.CircleSimulationObject = CircleSimulationObject;
+    /** A draggable, non-colliding omnidirectional light source for the 2-D simulation. */
+    var LightSimulationObject = /** @class */ (function (_super) {
+        __extends(LightSimulationObject, _super);
+        function LightSimulationObject(myId, myScene, mySelectionListener, type, p, maxSize, optColor) {
+            var params = [];
+            for (var _i = 7; _i < arguments.length; _i++) {
+                params[_i - 7] = arguments[_i];
+            }
+            var _this = this;
+            var radius = params.length >= 1 ? params[0] : 18;
+            _this = _super.call(this, myId, myScene, mySelectionListener, type, p, null, optColor, radius) || this;
+            _this.intensity = Math.max(0, Math.min(100, params.length >= 2 ? params[1] : 100));
+            _this.range = Math.max(_this.r, params.length >= 3 ? params[2] : maxSize ? maxSize / 3 : 250);
+            return _this;
+        }
+        LightSimulationObject.prototype.draw = function (ctx, uCtx) {
+            ctx.save();
+            var glow = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.range);
+            var alpha = this.intensity / 100;
+            glow.addColorStop(0, this.withAlpha(this.color, 0.48 * alpha));
+            glow.addColorStop(0.35, this.withAlpha(this.color, 0.22 * alpha));
+            glow.addColorStop(1, this.withAlpha(this.color, 0));
+            ctx.fillStyle = glow;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.range, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowColor = this.color;
+            ctx.shadowBlur = 14;
+            ctx.fillStyle = this.color;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#6D5A00';
+            ctx.stroke();
+            ctx.fillStyle = '#FFF8D6';
+            ctx.beginPath();
+            ctx.arc(this.x - this.r * 0.25, this.y - this.r * 0.25, Math.max(3, this.r * 0.28), 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+            _super.prototype.draw.call(this, ctx, uCtx);
+        };
+        LightSimulationObject.prototype.withAlpha = function (color, alpha) {
+            var rgb = SIMATH.hexToRGB(color);
+            return 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + alpha + ')';
+        };
+        return LightSimulationObject;
+    }(CircleSimulationObject));
+    exports.LightSimulationObject = LightSimulationObject;
     var TriangleSimulationObject = /** @class */ (function (_super) {
         __extends(TriangleSimulationObject, _super);
         function TriangleSimulationObject(myId, myScene, mySelectionListener, type, p, maxSize, optColor) {

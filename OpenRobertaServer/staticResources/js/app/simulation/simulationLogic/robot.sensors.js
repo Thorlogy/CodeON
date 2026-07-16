@@ -800,6 +800,7 @@ define(["require", "exports", "robot.base.mobile", "interpreter.constants", "sim
             this.rgb = [0, 0, 0];
             this.rx = 0;
             this.ry = 0;
+            this.mode = 'ground';
             this.drawPriority = 6;
             this.port = port;
             this.labelPriority = Number(this.port.replace('ORT_', ''));
@@ -838,12 +839,38 @@ define(["require", "exports", "robot.base.mobile", "interpreter.constants", "sim
                 UTIL.round(this.lightValue, 0) +
                 ' %</span></div>');
         };
-        ColorSensor.prototype.updateSensor = function (running, dt, myRobot, values, uCtx, udCtx) {
+        ColorSensor.prototype.updateSensor = function (running, dt, myRobot, values, uCtx, udCtx, personalObstacleList, markerList, collisionList, lightList) {
+            var _this = this;
+            if (lightList === void 0) { lightList = []; }
             values['color'] = values['color'] || {};
             values['light'] = values['light'] || {};
             values['color'][this.port] = {};
             values['light'][this.port] = {};
             SIMATH.transform(myRobot.pose, this);
+            if (this.mode === 'ambient') {
+                var viewDirection_1 = myRobot.pose.theta + this.theta;
+                this.lightValue = Math.min(100, lightList.reduce(function (sum, lamp) {
+                    var dx = lamp.x - _this.rx;
+                    var dy = lamp.y - _this.ry;
+                    var distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance > lamp.range) {
+                        return sum;
+                    }
+                    var direction = Math.atan2(dy, dx);
+                    var angle = Math.atan2(Math.sin(direction - viewDirection_1), Math.cos(direction - viewDirection_1));
+                    if (Math.abs(angle) > Math.PI / 8) {
+                        return sum;
+                    }
+                    var falloff = Math.max(0, 1 - distance / lamp.range);
+                    return sum + lamp.intensity * falloff;
+                }, 0));
+                var grey = UTIL.round(this.lightValue * 2.55, 0);
+                this.rgb = [grey, grey, grey];
+                this.colorValue = ["NONE" /* COLOR_ENUM.NONE */, '#000000'];
+                this.color = 'grey';
+                this.writeValues(values, this.lightValue);
+                return;
+            }
             var red = 0;
             var green = 0;
             var blue = 0;
@@ -886,12 +913,17 @@ define(["require", "exports", "robot.base.mobile", "interpreter.constants", "sim
             catch (e) {
                 // this might happen during change of background image and is ok, we return the last valid sensor values
             }
+            this.writeValues(values, 0);
+        };
+        ColorSensor.prototype.writeValues = function (values, ambientLight) {
             values['color'][this.port].colorValue = this.colorValue[0];
             values['color'][this.port].colorhex = this.colorValue[1];
             values['color'][this.port].colour = this.colorValue[0];
             values['color'][this.port].light = this.lightValue;
             values['color'][this.port].rgb = this.rgb;
-            values['color'][this.port].ambientlight = 0;
+            values['color'][this.port].ambientlight = ambientLight;
+            values['light'][this.port].light = this.lightValue;
+            values['light'][this.port].ambientlight = ambientLight;
         };
         return ColorSensor;
     }());
@@ -962,6 +994,14 @@ define(["require", "exports", "robot.base.mobile", "interpreter.constants", "sim
         }
         LightSensor.prototype.draw = function (rCtx, myRobot) {
             rCtx.save();
+            if (this.mode === 'ambient') {
+                rCtx.fillStyle = 'rgba(255, 213, 79, 0.18)';
+                rCtx.beginPath();
+                rCtx.moveTo(this.x, this.y);
+                rCtx.arc(this.x, this.y, 75, this.theta - Math.PI / 8, this.theta + Math.PI / 8);
+                rCtx.closePath();
+                rCtx.fill();
+            }
             rCtx.beginPath();
             rCtx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
             var myGrey = parseInt(String(this.lightValue * 2.55), 10).toString(16);
@@ -981,7 +1021,7 @@ define(["require", "exports", "robot.base.mobile", "interpreter.constants", "sim
                 ' ' +
                 Blockly.Msg['SENSOR_LIGHT'] +
                 '</label></div><div><label>&nbsp;-&nbsp;' +
-                Blockly.Msg['MODE_LIGHT'] +
+                (this.mode === 'ambient' ? Blockly.Msg['MODE_AMBIENTLIGHT'] : Blockly.Msg['MODE_LIGHT']) +
                 '</label><span>' +
                 UTIL.round(this.lightValue, 0) +
                 ' %</span></div>');
