@@ -5,6 +5,7 @@ import * as UTIL from 'util.roberta';
 import { ChassisMobile, RobotinoChassis, WebAudio } from 'robot.actuators';
 import { IDrawable, ILabel, IReset, IUpdateAction, RobotBase } from 'robot.base';
 import { CircleSimulationObject, ISimulationObstacle, LightSimulationObject, MarkerSimulationObject } from 'simulation.objects';
+import { calculateAmbientLight } from 'simulation.light';
 // @ts-ignore
 import * as Blockly from 'blockly';
 // @ts-ignore
@@ -1138,9 +1139,9 @@ export class ColorSensor implements IExternalSensor, IDrawable, ILabel {
         values: object,
         uCtx: CanvasRenderingContext2D,
         udCtx: CanvasRenderingContext2D,
-        personalObstacleList?: any[],
-        markerList?: MarkerSimulationObject[],
-        collisionList?: ISimulationObstacle[],
+        personalObstacleList: any[] = [],
+        markerList: MarkerSimulationObject[] = [],
+        collisionList: ISimulationObstacle[] = [],
         lightList: LightSimulationObject[] = []
     ) {
         values['color'] = values['color'] || {};
@@ -1150,25 +1151,7 @@ export class ColorSensor implements IExternalSensor, IDrawable, ILabel {
         SIMATH.transform(myRobot.pose, this as PointRobotWorld);
         if (this.mode === 'ambient') {
             const viewDirection = myRobot.pose.theta + this.theta;
-            this.lightValue = Math.min(
-                100,
-                lightList.reduce((sum, lamp) => {
-                    const dx = lamp.x - this.rx;
-                    const dy = lamp.y - this.ry;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    if (distance > lamp.range) {
-                        return sum;
-                    }
-                    const direction = Math.atan2(dy, dx);
-                    const angle = Math.atan2(Math.sin(direction - viewDirection), Math.cos(direction - viewDirection));
-                    if (Math.abs(angle) > Math.PI / 8) {
-                        return sum;
-                    }
-                    const falloff = Math.max(0, 1 - distance / lamp.range);
-                    return sum + lamp.intensity * falloff;
-                },
-                0)
-            );
+            this.lightValue = calculateAmbientLight(this.rx, this.ry, viewDirection, lightList);
             const grey = UTIL.round(this.lightValue * 2.55, 0);
             this.rgb = [grey, grey, grey];
             this.colorValue = [COLOR_ENUM.NONE, '#000000'];

@@ -1,0 +1,229 @@
+{
+  "version": 2,
+  "coordinateSystem": "simpleBackground, 750 × 480 simulation pixels",
+  "missions": [
+    {
+      "id": "M01",
+      "title": "Die erste Fahrt",
+      "difficulty": "leicht",
+      "concept": "Sequenz",
+      "description": "Fahre vom Start geradeaus in eine Zielzone und halte dort an.",
+      "success": "Der RCX steht in der Zielzone und beide Motoren sind aus.",
+      "status": "ready",
+      "hints": ["Welche drei Schritte braucht der RCX vom Start bis zum Stillstand?", "Nutze Fahren, Warten und anschließend Stopp.", "Verändere zuerst Fahrleistung oder Wartezeit, aber nicht beides gleichzeitig."],
+      "world": {
+        "backgroundIndex": 1,
+        "config": {"robotPoses":[{"x":0.2,"y":0.5,"theta":0}],"obstacles":[],"colorAreas":[],"marker":[],"lights":[],"rcxLightSensorMode":"ground"}
+      },
+      "evaluation": {
+        "mode": "automatic",
+        "note": "Zielposition und Stillstand werden automatisch geprüft.",
+        "criteria": [{"type":"stoppedInZone","zone":{"x":600,"y":180,"w":105,"h":120},"holdTicks":20}],
+        "failCriteria": [{"type":"failAfterSeconds","seconds":120}]
+      }
+    },
+    {
+      "id": "M02",
+      "title": "Das Quadrat",
+      "difficulty": "leicht",
+      "concept": "Schleifen",
+      "description": "Fahre ein Quadrat und komme wieder am Startpunkt an.",
+      "success": "Vier gleich lange Seiten und vier ungefähr rechte Winkel sind gefahren.",
+      "status": "ready",
+      "hints": ["Welcher Ablauf wiederholt sich genau viermal?", "Lege Vorwärtsfahrt und Drehung gemeinsam in eine Wiederholung.", "Beginne mit 4 × [fahren, um 90 Grad drehen] und kalibriere danach nur Strecke und Drehung."],
+      "world": {
+        "backgroundIndex": 1,
+        "config": {"robotPoses":[{"x":0.2,"y":0.3,"theta":0}],"obstacles":[],"colorAreas":[],"marker":[],"lights":[],"rcxLightSensorMode":"ground"}
+      },
+      "evaluation": {
+        "mode": "automatic",
+        "note": "Die fünf Checkpoints prüfen Reihenfolge und Rückkehr zum Start.",
+        "criteria": [{"type":"zoneSequence","zones":[{"x":150,"y":145,"r":35},{"x":430,"y":145,"r":40},{"x":430,"y":350,"r":40},{"x":150,"y":350,"r":40},{"x":150,"y":145,"r":40}]}],
+        "failCriteria": [{"type":"failAfterSeconds","seconds":180}]
+      }
+    },
+    {
+      "id": "M03",
+      "title": "Stopp vor der Wand",
+      "difficulty": "leicht",
+      "concept": "Bedingung und Sensor",
+      "description": "Fahre zur Wand, stoppe bei Berührung und piepse danach.",
+      "success": "Der RCX hält nach dem Tastendruck an und spielt einen Ton.",
+      "status": "ready",
+      "requirements": ["Tastsensor verwenden"],
+      "hints": ["Welches Ereignis soll das Warten beenden?", "Starte die Motoren und nutze danach ‚warte bis‘ mit dem Berührungssensor.", "Die Reihenfolge ist: fahren – warten bis berührt – stoppen – Ton."],
+      "world": {
+        "backgroundIndex": 1,
+        "config": {"robotPoses":[{"x":0.2,"y":0.5,"theta":0}],"obstacles":[{"x":0.76,"y":0.16,"w":0.04,"h":0.68,"theta":0,"color":"#555555","form":"RECTANGLE","type":"OBSTACLE"}],"colorAreas":[],"marker":[],"lights":[],"rcxLightSensorMode":"ground"}
+      },
+      "evaluation": {
+        "mode": "automatic",
+        "note": "Kontakt, Ton und Stillstand nahe der Wand werden geprüft.",
+        "criteria": [{"type":"collisionsExactly","n":1},{"type":"tonesPlayed","n":1},{"type":"stoppedInZone","zone":{"x":500,"y":0,"w":110,"h":480,"display":false},"holdTicks":20}],
+        "failCriteria": [{"type":"failAfterSeconds","seconds":120}]
+      }
+    },
+    {
+      "id": "M04",
+      "title": "Der Linienfolger",
+      "difficulty": "mittel",
+      "concept": "Regelkreis",
+      "description": "Folge einer schwarzen Linie eine Runde lang.",
+      "success": "Der RCX bleibt an der Linie und korrigiert seine Richtung fortlaufend.",
+      "status": "ready",
+      "requirements": ["Lichtsensor an Port 2"],
+      "hints": ["Welche zwei Fahrreaktionen brauchst du für hell und dunkel?", "Miss den Lichtsensor in einer Endlosschleife und entscheide bei jedem Durchlauf neu.", "Wenn hell: zur Linie lenken; wenn dunkel: von ihr weg lenken. Tausche die Richtungen, falls er sich entfernt."],
+      "world": {
+        "backgroundIndex": 1,
+        "config": {
+          "robotPoses":[{"x":0.2,"y":0.27,"theta":0}],
+          "obstacles":[],
+          "colorAreas":[
+            {"x":0.18,"y":0.25,"w":0.57,"h":0.045,"theta":0,"color":"#000000","form":"RECTANGLE","type":"COLORAREA"},
+            {"x":0.18,"y":0.72,"w":0.57,"h":0.045,"theta":0,"color":"#000000","form":"RECTANGLE","type":"COLORAREA"},
+            {"x":0.18,"y":0.25,"w":0.03,"h":0.515,"theta":0,"color":"#000000","form":"RECTANGLE","type":"COLORAREA"},
+            {"x":0.72,"y":0.25,"w":0.03,"h":0.515,"theta":0,"color":"#000000","form":"RECTANGLE","type":"COLORAREA"}
+          ],
+          "marker":[],"lights":[],"rcxLightSensorMode":"ground"
+        }
+      },
+      "evaluation": {
+        "mode": "automatic",
+        "note": "Linienkontakt und eine vollständige Runde werden gemeinsam geprüft.",
+        "criteria": [
+          {"type":"followLine","seconds":12,"minRatio":0.6,"port":"2","darkBelow":50},
+          {"type":"zoneSequence","zones":[{"x":150,"y":130,"r":38},{"x":550,"y":130,"r":42},{"x":550,"y":350,"r":42},{"x":150,"y":350,"r":42},{"x":150,"y":130,"r":42}]}
+        ],
+        "failCriteria": [{"type":"failAfterSeconds","seconds":180}]
+      }
+    },
+    {
+      "id": "M05",
+      "title": "Der Pendler",
+      "difficulty": "mittel",
+      "concept": "Variablen und Zähler",
+      "description": "Pendle fünfmal zwischen zwei Wänden und zähle die Berührungen.",
+      "success": "Nach zehn Berührungen hält der RCX an und gibt die gezählte Anzahl als Töne aus.",
+      "status": "ready",
+      "requirements": ["Tastsensor verwenden"],
+      "hints": ["Welche Zahl verändert sich bei jedem Wandkontakt?", "Erhöhe einen Zähler nach jeder Berührung und drehe anschließend um.", "Beende die Schleife bei Zähler = 10; verwende den Zähler danach für die Tonschleife."],
+      "world": {
+        "backgroundIndex": 1,
+        "config": {"robotPoses":[{"x":0.5,"y":0.5,"theta":0}],"obstacles":[{"x":0.08,"y":0.12,"w":0.035,"h":0.76,"theta":0,"color":"#555555","form":"RECTANGLE","type":"OBSTACLE"},{"x":0.885,"y":0.12,"w":0.035,"h":0.76,"theta":0,"color":"#555555","form":"RECTANGLE","type":"OBSTACLE"}],"colorAreas":[],"marker":[],"lights":[],"rcxLightSensorMode":"ground"}
+      },
+      "evaluation": {
+        "mode": "automatic",
+        "note": "Zehn getrennte Kontakte und zehn abgespielte Töne werden gezählt.",
+        "criteria": [{"type":"collisionsExactly","n":10},{"type":"tonesPlayed","n":10}],
+        "failCriteria": [{"type":"failAfterSeconds","seconds":300}]
+      }
+    },
+    {
+      "id": "M06",
+      "title": "Kreuzungszähler",
+      "difficulty": "mittel",
+      "concept": "Zustand und Ereignisse",
+      "description": "Folge der Linie und biege an der dritten Kreuzung rechts ab.",
+      "success": "Jede Kreuzung wird nur einmal gezählt und an Nummer drei erfolgt die Rechtskurve.",
+      "status": "ready",
+      "requirements": ["Lichtsensor an Port 2"],
+      "hints": ["Wie erkennst du mit zwei Sensoren eine Kreuzung?", "Zähle nur beim Wechsel von ‚keine Kreuzung‘ zu ‚beide dunkel‘.", "Merke einen Kreuzungszustand, damit dieselbe breite Linie nicht mehrfach gezählt wird."],
+      "world": {
+        "backgroundIndex": 1,
+        "config": {
+          "robotPoses":[{"x":0.12,"y":0.5,"theta":0}],
+          "obstacles":[],
+          "colorAreas":[
+            {"x":0.08,"y":0.48,"w":0.78,"h":0.045,"theta":0,"color":"#000000","form":"RECTANGLE","type":"COLORAREA"},
+            {"x":0.3,"y":0.2,"w":0.035,"h":0.62,"theta":0,"color":"#000000","form":"RECTANGLE","type":"COLORAREA"},
+            {"x":0.5,"y":0.2,"w":0.035,"h":0.62,"theta":0,"color":"#000000","form":"RECTANGLE","type":"COLORAREA"},
+            {"x":0.7,"y":0.2,"w":0.035,"h":0.62,"theta":0,"color":"#000000","form":"RECTANGLE","type":"COLORAREA"}
+          ],
+          "marker":[],"lights":[],"rcxLightSensorMode":"ground"
+        }
+      },
+      "evaluation": {
+        "mode": "automatic",
+        "note": "Die Linie, die dritte Kreuzung und das Abbiegeziel werden geprüft.",
+        "criteria": [
+          {"type":"followLine","seconds":8,"minRatio":0.55,"port":"2","darkBelow":50},
+          {"type":"zoneSequence","zones":[{"x":525,"y":240,"r":38},{"x":525,"y":385,"r":45}]}
+        ],
+        "failCriteria": [{"type":"failAfterSeconds","seconds":180}]
+      }
+    },
+    {
+      "id": "M07",
+      "title": "Raus aus dem Labyrinth",
+      "difficulty": "fortgeschritten",
+      "concept": "Algorithmus",
+      "description": "Finde mit Tastkontakten einen Weg aus dem Labyrinth.",
+      "success": "Der RCX erreicht den Ausgang mit einer wiederholbaren Wandfolge-Strategie.",
+      "status": "ready",
+      "requirements": ["Tastsensor verwenden"],
+      "hints": ["Welche feste Regel kann jede Wandberührung gleich behandeln?", "Fahre bis zum Kontakt, setze zurück und probiere systematisch eine Drehrichtung.", "Nutze eine vereinfachte Rechte-Hand-Regel und beobachte, wo zusätzliche Zustände nötig sind."],
+      "world": {
+        "backgroundIndex": 1,
+        "config": {
+          "robotPoses":[{"x":0.12,"y":0.15,"theta":0}],
+          "obstacles":[
+            {"x":0.3,"y":0.0,"w":0.04,"h":0.67,"theta":0,"color":"#555555","form":"RECTANGLE","type":"OBSTACLE"},
+            {"x":0.58,"y":0.33,"w":0.04,"h":0.67,"theta":0,"color":"#555555","form":"RECTANGLE","type":"OBSTACLE"},
+            {"x":0.3,"y":0.67,"w":0.18,"h":0.04,"theta":0,"color":"#555555","form":"RECTANGLE","type":"OBSTACLE"},
+            {"x":0.44,"y":0.29,"w":0.18,"h":0.04,"theta":0,"color":"#555555","form":"RECTANGLE","type":"OBSTACLE"}
+          ],
+          "colorAreas":[],"marker":[],"lights":[],"rcxLightSensorMode":"ground"
+        }
+      },
+      "evaluation": {
+        "mode": "automatic",
+        "note": "Das Erreichen des markierten Ausgangs wird automatisch erkannt.",
+        "criteria": [{"type":"reachZone","zone":{"x":625,"y":350,"w":90,"h":90}},{"type":"maxCollisions","n":30}],
+        "failCriteria": [{"type":"failAfterSeconds","seconds":300}]
+      }
+    },
+    {
+      "id": "M08",
+      "title": "Das Boten-Duo",
+      "difficulty": "fortgeschritten",
+      "concept": "Kommunikation",
+      "description": "RCX A sendet bei einer Lichtänderung die Nachricht 1; RCX B startet nach dem Empfang.",
+      "success": "B bleibt ohne Nachricht stehen und fährt nach Empfang der 1 los.",
+      "status": "ready",
+      "hints": ["Welche Bedeutung soll die Zahl 1 in eurem Protokoll haben?", "A sendet 1; B prüft den Empfang in einer Warteschleife.", "Lass B warten, bis ‚empfange Nachricht‘ = 1 ist, und starte erst danach die Motoren."],
+      "evaluation": {"mode":"manual","note":"Die 2D-Simulation stellt derzeit keinen verlässlichen zweiten RCX samt IR-Nachrichtenereignissen für eine automatische Auswertung bereit."}
+    },
+    {
+      "id": "M09",
+      "title": "Der Lichtsucher",
+      "difficulty": "schwer",
+      "concept": "Gradientensuche",
+      "description": "Finde eine Lampe durch Drehen, Messen und Vergleichen.",
+      "success": "Der RCX nähert sich schrittweise der Lampe, statt zufällig im Raum zu fahren.",
+      "status": "ready",
+      "requirements": ["Lichtsensor an Port 2"],
+      "hints": ["Wie kannst du mit einem Sensor zwei Richtungen vergleichen?", "Merke einen Messwert, drehe ein Stück und vergleiche den neuen Wert.", "Ist es heller, behalte die Richtung; ist es dunkler, drehe zurück und probiere die andere Seite."],
+      "world": {
+        "backgroundIndex": 1,
+        "config": {"robotPoses":[{"x":0.18,"y":0.5,"theta":0}],"obstacles":[],"colorAreas":[],"marker":[],"lights":[{"x":0.82,"y":0.5,"r":0.00005,"intensity":100,"range":0.0009,"color":"#fff2a8","form":"CIRCLE","type":"LAMP"}],"rcxLightSensorMode":"ambient"}
+      },
+      "evaluation": {
+        "mode": "automatic",
+        "note": "Helligkeitsziel und Stillstand in Lampennähe werden automatisch geprüft.",
+        "criteria": [{"type":"lightAbove","min":60,"port":"2"},{"type":"stoppedInZone","zone":{"x":540,"y":115,"w":170,"h":250},"holdTicks":20}],
+        "failCriteria": [{"type":"failAfterSeconds","seconds":180}]
+      }
+    },
+    {
+      "id": "M10",
+      "title": "Die Aufräum-Mission",
+      "difficulty": "schwer",
+      "concept": "Planung und Teilziele",
+      "description": "Schiebe drei Kisten in eine Zielzone und plane eine sinnvolle Reihenfolge.",
+      "success": "Alle Kisten liegen in der Zielzone; die schwere Kiste wird zuletzt bewegt.",
+      "status": "planned",
+      "hints": ["In welche kleinen Teilaufgaben lässt sich eine einzelne Kiste zerlegen?", "Plane Anfahrt, Ausrichtung, Schieben und Rückweg getrennt.", "Diese Mission benötigt noch die geplante 3D-Schiebe- und Zielzonenprüfung."],
+      "evaluation": {"mode":"manual","note":"Geplant: automatische 3D-Auswertung, sobald verschiebbare Kisten und deren Reihenfolge als stabile Simulationsereignisse verfügbar sind."}
+    }
+  ]
+}

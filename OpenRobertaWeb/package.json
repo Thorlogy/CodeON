@@ -7,6 +7,7 @@
     "watch:sourceMap": "tsc --watch --inlineSourceMap",
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:nqc-roundtrip": "node test/codeToBlocks.roundtrip.test.js",
+    "test:simulation-light": "node test/simulation.light.test.js",
     "build": "tsc",
     "build:sourceMap": "tsc --inlineSourceMap",
     "format": "prettier --write .",

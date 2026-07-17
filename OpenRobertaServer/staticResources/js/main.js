@@ -69,6 +69,7 @@ require.config({
         'logList.controller': 'js/app/roberta/controller/logList.controller',
         'logList.model': 'js/app/roberta/models/logList.model',
         'menu.controller': 'js/app/roberta/controller/menu.controller',
+        'missionPanel.controller': 'js/app/roberta/controller/missionPanel.controller',
         'notification.controller': 'js/app/roberta/controller/notification.controller',
         'notification.model': 'js/app/roberta/models/notification.model',
         'nn.controller': 'js/app/roberta/controller/nn.controller',
@@ -101,6 +102,7 @@ require.config({
         'webview.controller': 'js/app/roberta/controller/webview.controller',
         'simulation.constants': 'js/app/simulation/simulationLogic/constants',
         'simulation.math': 'js/app/simulation/simulationLogic/math',
+        'simulation.light': 'js/app/simulation/simulationLogic/simulation.light',
         'robot.calliope': 'js/app/simulation/simulationLogic/robot.calliope',
         'robot.calliopev3': 'js/app/simulation/simulationLogic/robot.calliopev3',
         'robot.mbot': 'js/app/simulation/simulationLogic/robot.mbot',
@@ -242,6 +244,7 @@ require([
     'confDelete.controller',
     'progShare.controller',
     'menu.controller',
+    'missionPanel.controller',
     'user.controller',
     'nn.controller',
     'robot.controller',
@@ -291,6 +294,7 @@ require([
     languageController = require('language.controller');
     logListController = require('logList.controller');
     menuController = require('menu.controller');
+    missionPanelController = require('missionPanel.controller');
     progDeleteController = require('progDelete.controller');
     progListController = require('progList.controller');
     galleryListController = require('galleryList.controller');
@@ -346,6 +350,7 @@ function init() {
         tutorialController.init();
         creatorsTheme.init();
         aiHelperController.init();
+        missionPanelController.init();
         userGroupController.init();
         notificationController.init();
         return startViewController.init(initProgramming);

@@ -8,6 +8,7 @@ interface JQuery {
     clickWrap();
 
     openRightView($view: JQuery, initialViewWidth: number, opt_callBack?: () => void): void;
+    setRightViewWidth(rightRatio: number): void;
 
     closeRightView(opt_callBack?: () => void): void;
 

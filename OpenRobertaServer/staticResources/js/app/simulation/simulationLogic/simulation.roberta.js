@@ -228,6 +228,9 @@ define(["require", "exports", "interpreter.constants", "util.roberta", "interpre
         SimulationRoberta.prototype.toggleRcxLightSensorMode = function () {
             return this.scene.toggleRcxLightSensorMode();
         };
+        SimulationRoberta.prototype.getRcxLightSensorMode = function () {
+            return this.scene.getRcxLightSensorMode();
+        };
         SimulationRoberta.prototype.allInterpretersTerminated = function () {
             for (var i = 0; i < this.interpreters.length; i++) {
                 if (!this.interpreters[i].isTerminated()) {
@@ -387,6 +390,7 @@ define(["require", "exports", "interpreter.constants", "util.roberta", "interpre
             config.lights = this.scene.lightList.map(function (object) {
                 return calculateShape(object);
             });
+            config.rcxLightSensorMode = this.scene.getRcxLightSensorMode();
             return config;
         };
         SimulationRoberta.prototype.getNumRobots = function () {
@@ -509,7 +513,9 @@ define(["require", "exports", "interpreter.constants", "util.roberta", "interpre
                 reader.onload = function (event) {
                     try {
                         var configData = JSON.parse(event.target.result);
-                        sim.setNewConfig(configData);
+                        Promise.resolve(sim.setNewConfig(configData)).then(function () {
+                            $('#simRcxLightMode').trigger('rcxlightmode.sim', [sim.scene.getRcxLightSensorMode()]);
+                        });
                     }
                     catch (ex) {
                         console.error(ex);
@@ -850,6 +856,7 @@ define(["require", "exports", "interpreter.constants", "util.roberta", "interpre
                                 importLights_1.push(calculateShape_1(light));
                             });
                             this.scene.addImportLightList(importLights_1);
+                            this.scene.setRcxLightSensorMode(relatives.rcxLightSensorMode === 'ambient' ? 'ambient' : 'ground');
                             _a.label = 3;
                         case 3: return [2 /*return*/];
                     }

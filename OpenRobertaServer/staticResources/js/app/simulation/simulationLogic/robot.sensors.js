@@ -13,7 +13,7 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-define(["require", "exports", "robot.base.mobile", "interpreter.constants", "simulation.math", "util.roberta", "robot.actuators", "simulation.objects", "blockly", "volume-meter", "simulation.roberta"], function (require, exports, robot_base_mobile_1, C, SIMATH, UTIL, robot_actuators_1, simulation_objects_1, Blockly, VolumeMeter, simulation_roberta_1) {
+define(["require", "exports", "robot.base.mobile", "interpreter.constants", "simulation.math", "util.roberta", "robot.actuators", "simulation.objects", "simulation.light", "blockly", "volume-meter", "simulation.roberta"], function (require, exports, robot_base_mobile_1, C, SIMATH, UTIL, robot_actuators_1, simulation_objects_1, simulation_light_1, Blockly, VolumeMeter, simulation_roberta_1) {
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Txt4CameraSensor = exports.InductiveSensor = exports.CameraSensor = exports.OdometrySensor = exports.SoundSensorBoolean = exports.SoundSensor = exports.VolumeMeterSensor = exports.TemperatureSensor = exports.Rob3rtaInfraredSensor = exports.CalliopeLightSensor = exports.CompassSensor = exports.GestureSensor = exports.MbotButton = exports.MicrobitPins = exports.Pins = exports.TouchKeys = exports.EV3Keys = exports.Keys = exports.GyroSensorExt = exports.GyroSensor = exports.OpticalSensor = exports.LightSensor = exports.NXTColorSensor = exports.ColorSensorHex = exports.ColorSensor = exports.RobotinoTouchSensor = exports.TapSensor = exports.TouchSensor = exports.EdisonInfraredSensors = exports.RobotinoInfraredSensors = exports.ThymioInfraredSensors = exports.InfraredSensors = exports.MbotInfraredSensor = exports.Txt4InfraredSensors = exports.ThymioLineSensors = exports.LineSensor = exports.EdisonInfraredSensor = exports.ThymioInfraredSensor = exports.InfraredSensor = exports.UltrasonicSensor = exports.DistanceSensor = exports.Timer = void 0;
     var WAVE_LENGTH = 60;
@@ -840,7 +840,9 @@ define(["require", "exports", "robot.base.mobile", "interpreter.constants", "sim
                 ' %</span></div>');
         };
         ColorSensor.prototype.updateSensor = function (running, dt, myRobot, values, uCtx, udCtx, personalObstacleList, markerList, collisionList, lightList) {
-            var _this = this;
+            if (personalObstacleList === void 0) { personalObstacleList = []; }
+            if (markerList === void 0) { markerList = []; }
+            if (collisionList === void 0) { collisionList = []; }
             if (lightList === void 0) { lightList = []; }
             values['color'] = values['color'] || {};
             values['light'] = values['light'] || {};
@@ -848,22 +850,8 @@ define(["require", "exports", "robot.base.mobile", "interpreter.constants", "sim
             values['light'][this.port] = {};
             SIMATH.transform(myRobot.pose, this);
             if (this.mode === 'ambient') {
-                var viewDirection_1 = myRobot.pose.theta + this.theta;
-                this.lightValue = Math.min(100, lightList.reduce(function (sum, lamp) {
-                    var dx = lamp.x - _this.rx;
-                    var dy = lamp.y - _this.ry;
-                    var distance = Math.sqrt(dx * dx + dy * dy);
-                    if (distance > lamp.range) {
-                        return sum;
-                    }
-                    var direction = Math.atan2(dy, dx);
-                    var angle = Math.atan2(Math.sin(direction - viewDirection_1), Math.cos(direction - viewDirection_1));
-                    if (Math.abs(angle) > Math.PI / 8) {
-                        return sum;
-                    }
-                    var falloff = Math.max(0, 1 - distance / lamp.range);
-                    return sum + lamp.intensity * falloff;
-                }, 0));
+                var viewDirection = myRobot.pose.theta + this.theta;
+                this.lightValue = (0, simulation_light_1.calculateAmbientLight)(this.rx, this.ry, viewDirection, lightList);
                 var grey = UTIL.round(this.lightValue * 2.55, 0);
                 this.rgb = [grey, grey, grey];
                 this.colorValue = ["NONE" /* COLOR_ENUM.NONE */, '#000000'];

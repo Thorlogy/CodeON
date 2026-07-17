@@ -687,8 +687,29 @@ define(["require", "exports", "util.roberta", "jquery", "simulation.objects", "s
             this.redrawObstacles = true;
         };
         SimulationScene.prototype.toggleRcxLightSensorMode = function () {
-            if (this.robotType !== 'rcx') {
+            var sensors = this.getRcxLightSensors();
+            if (sensors.length === 0) {
                 return null;
+            }
+            var nextMode = sensors.some(function (sensor) { return sensor.mode === 'ground'; }) ? 'ambient' : 'ground';
+            sensors.forEach(function (sensor) { return (sensor.mode = nextMode); });
+            return nextMode;
+        };
+        SimulationScene.prototype.getRcxLightSensorMode = function () {
+            var sensors = this.getRcxLightSensors();
+            return sensors.length > 0 ? sensors[0].mode : null;
+        };
+        SimulationScene.prototype.setRcxLightSensorMode = function (mode) {
+            var sensors = this.getRcxLightSensors();
+            if (sensors.length === 0) {
+                return null;
+            }
+            sensors.forEach(function (sensor) { return (sensor.mode = mode); });
+            return mode;
+        };
+        SimulationScene.prototype.getRcxLightSensors = function () {
+            if (this.robotType !== 'rcx') {
+                return [];
             }
             var sensors = [];
             this.robots.forEach(function (robot) {
@@ -698,12 +719,7 @@ define(["require", "exports", "util.roberta", "jquery", "simulation.objects", "s
                     }
                 });
             });
-            if (sensors.length === 0) {
-                return null;
-            }
-            var nextMode = sensors.some(function (sensor) { return sensor.mode === 'ground'; }) ? 'ambient' : 'ground';
-            sensors.forEach(function (sensor) { return (sensor.mode = nextMode); });
-            return nextMode;
+            return sensors;
         };
         SimulationScene.prototype.addSimulationObject = function (list, shape, type, markerId) {
             var $robotLayer = $('#robotLayer');

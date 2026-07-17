@@ -4,6 +4,7 @@ import { EV3Keys, LightSensor, Timer, TouchSensor } from 'robot.sensors';
 
 export default class RobotRcx extends RobotEv3 {
     override timer: Timer = new Timer(1);
+    override readonly imgList = ['simpleBackground', 'drawBackground', 'robertaBackground', 'rescueBackground', 'maze', 'blank', 'mathBackground'];
 
     protected override configure(configuration: object): void {
         this.chassis = new RCXChassis(this.id, configuration, 2, this.pose);

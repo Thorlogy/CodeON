@@ -117,6 +117,7 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
         ProgSimController.prototype.addConfigEvents = function () {
             var SIM = this.SIM;
             var C = this;
+            this.updateRcxLightControls();
             if (UTIL.isIE() || UTIL.isEdge()) {
                 // TODO IE and Edge: Input event not firing for file type of input
                 $('#simImport').hide();
@@ -180,10 +181,15 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
             $('#simRcxLightMode').onWrap('click.sim', function () {
                 var mode = SIM.toggleRcxLightSensorMode && SIM.toggleRcxLightSensorMode();
                 if (mode) {
-                    $('#simRcxLightMode').attr('title', mode === 'ambient' ? 'Der RCX-Lichtsensor sucht Lampen vor dem Roboter.' : 'Der RCX-Lichtsensor misst den Untergrund.');
+                    C.updateRcxLightControls(mode);
                 }
                 return false;
             }, 'sim toggle rcx light sensor mode clicked');
+            $('#simRcxLightMode')
+                .off('rcxlightmode.sim')
+                .on('rcxlightmode.sim', function (_event, mode) {
+                C.updateRcxLightControls(mode);
+            });
             $('#simObstacleDeleteAll').onWrap('click.sim', function () {
                 SIM.deleteAllObstacle && SIM.deleteAllObstacle();
                 return false;
@@ -242,6 +248,19 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
         ProgSimController.prototype.removeControl = function () {
             $('*').off('click.sim');
         };
+        ProgSimController.prototype.updateRcxLightControls = function (mode) {
+            var control = $('#simRcxLightMode');
+            var isRcx = GUISTATE_C.getRobotGroup() === 'rcx';
+            control.closest('li').toggle(isRcx);
+            var lampTitle = Blockly.Msg.TOOLBOX_LIGHT || Blockly.Msg.SENSOR_LIGHT;
+            $('#simAddLamp').attr('title', lampTitle).attr('aria-label', lampTitle);
+            if (!isRcx) {
+                return;
+            }
+            var currentMode = mode || (this.SIM.getRcxLightSensorMode && this.SIM.getRcxLightSensorMode()) || 'ground';
+            var title = Blockly.Msg.SENSOR_LIGHT + ': ' + (currentMode === 'ambient' ? Blockly.Msg.MODE_AMBIENTLIGHT : Blockly.Msg.MODE_LIGHT);
+            control.attr('title', title).attr('aria-label', title);
+        };
         ProgSimController.prototype.toggleSim = function ($button) {
             if ($('.fromRight.rightActive').hasClass('shifting')) {
                 return;
@@ -264,7 +283,7 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
                 var myCallback = function (result) {
                     if (result.rc == 'ok') {
                         result.savedName = GUISTATE_C.getProgramName();
-                        C.SIM.init([result], true, null, GUISTATE_C.getPluginSim() || GUISTATE_C.getRobotGroup());
+                        C.SIM.init([result], true, function () { return C.updateRcxLightControls(); }, GUISTATE_C.getPluginSim() || GUISTATE_C.getRobotGroup());
                         $('#simControl').addClass('typcn-media-play-outline').removeClass('typcn-media-play');
                         if (TOUR_C.getInstance() && TOUR_C.getInstance().trigger) {
                             TOUR_C.getInstance().trigger('startSim');
@@ -714,7 +733,7 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
             this.removeControl();
             this.addControlEvents();
             this.addConfigEvents();
-            C.SIM.init(mySortedExtractedPrograms, true, null, GUISTATE_C.getRobotGroup());
+            C.SIM.init(mySortedExtractedPrograms, true, function () { return C.updateRcxLightControls(); }, GUISTATE_C.getRobotGroup());
             $('#simControl').addClass('typcn-media-play-outline').removeClass('typcn-media-play');
             if (TOUR_C.getInstance() && TOUR_C.getInstance().trigger) {
                 TOUR_C.getInstance().trigger('startSim');

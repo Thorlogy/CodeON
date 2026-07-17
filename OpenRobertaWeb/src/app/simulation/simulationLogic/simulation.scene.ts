@@ -760,8 +760,32 @@ export class SimulationScene {
     }
 
     toggleRcxLightSensorMode(): 'ground' | 'ambient' | null {
-        if (this.robotType !== 'rcx') {
+        const sensors = this.getRcxLightSensors();
+        if (sensors.length === 0) {
             return null;
+        }
+        const nextMode = sensors.some((sensor) => sensor.mode === 'ground') ? 'ambient' : 'ground';
+        sensors.forEach((sensor) => (sensor.mode = nextMode));
+        return nextMode;
+    }
+
+    getRcxLightSensorMode(): 'ground' | 'ambient' | null {
+        const sensors = this.getRcxLightSensors();
+        return sensors.length > 0 ? sensors[0].mode : null;
+    }
+
+    setRcxLightSensorMode(mode: 'ground' | 'ambient'): 'ground' | 'ambient' | null {
+        const sensors = this.getRcxLightSensors();
+        if (sensors.length === 0) {
+            return null;
+        }
+        sensors.forEach((sensor) => (sensor.mode = mode));
+        return mode;
+    }
+
+    private getRcxLightSensors(): LightSensor[] {
+        if (this.robotType !== 'rcx') {
+            return [];
         }
         const sensors: LightSensor[] = [];
         this.robots.forEach((robot) => {
@@ -771,12 +795,7 @@ export class SimulationScene {
                 }
             });
         });
-        if (sensors.length === 0) {
-            return null;
-        }
-        const nextMode = sensors.some((sensor) => sensor.mode === 'ground') ? 'ambient' : 'ground';
-        sensors.forEach((sensor) => (sensor.mode = nextMode));
-        return nextMode;
+        return sensors;
     }
 
     addSimulationObject(list: BaseSimulationObject[], shape: SimObjectShape, type: SimObjectType, markerId?: number) {

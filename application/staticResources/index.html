@@ -28,8 +28,9 @@ you may not use this file except
         value to every loaded module so an already open local installation does
         not keep an outdated code-to-blocks controller in the browser cache.
     -->
-    <script>var require = { urlArgs: 'v=codeon-toolbox-20260717-3' };</script>
-    <script data-main='js/main' src='js/require.js?v=codeon-toolbox-20260717-3'></script>
+    <script src='js/app/mission-evaluator/mission-evaluator.js?v=codeon-missions-evaluator-20260717-10'></script>
+    <script>var require = { urlArgs: 'v=codeon-missions-evaluator-20260717-10' };</script>
+    <script data-main='js/main' src='js/require.js?v=codeon-missions-evaluator-20260717-10'></script>
     <script src='js/app/simulation/simulationLogic/simulation3d.adapter.js?v=codeon-3d-robomission-6'></script>
     <link href='manifest.webapp.json' rel='manifest'>
     <link href='/css/img/codeon-favicon.svg?v=20260715' rel='icon' type='image/svg+xml'>
@@ -799,6 +800,10 @@ you may not use this file except
                         lkey='Blockly.Msg.MENU_RIGHT_HELP_TOOLTIP' rel='tooltip' title=''>
                         <span class='helpButton typcn typcn-questionmark'></span>
                     </div>
+                    <div class='rightMenuButton' data-bs-original-title='RCX-Missionen' href='#' id='missionButton'
+                        rel='tooltip' title='RCX-Missionen'>
+                        <span class='typcn typcn-flag-outline'></span>
+                    </div>
                     <div class='rightMenuButton info' data-bs-original-title='' href='#' id='infoButton'
                         lkey='Blockly.Msg.MENU_RIGHT_INFO_TOOLTIP' rel='tooltip' title=''>
                         <span class='infoButton typcn typcn-message-typing'></span>
@@ -938,12 +943,10 @@ you may not use this file except
                                 <a class='typcn typcn-media-record-outline dropdown-item' id='simAddObstacleCircle'></a>
                             </li>
                             <li>
-                                <a class='typcn typcn-lightbulb dropdown-item' id='simAddLamp' title='Lampe hinzufügen'
-                                    aria-label='Lampe hinzufügen'></a>
+                                <a class='typcn typcn-lightbulb dropdown-item' id='simAddLamp'></a>
                             </li>
                             <li>
-                                <a class='typcn typcn-eye-outline dropdown-item' id='simRcxLightMode'
-                                    title='Der RCX-Lichtsensor misst den Untergrund.' aria-label='RCX-Lichtsensormodus wechseln'></a>
+                                <a class='typcn typcn-eye-outline dropdown-item' id='simRcxLightMode'></a>
                             </li>
                             <hr style='margin:0; border-top: 1px solid #333;'>
                             <li>
@@ -1014,6 +1017,9 @@ you may not use this file except
                 <div id='tutorialContent'></div>
             </div>
             <div class='fromRight' id='helpDiv'></div>
+            <div class='fromRight' id='missionDiv'>
+                <div class='p-3 h-100 overflow-auto' id='missionPanelContent'></div>
+            </div>
             <div class='fromRight' id='legalDiv'>
                 <div id='legalDivHeader'>
                     <!-- removed imprint link -->

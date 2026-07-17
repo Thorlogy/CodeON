@@ -803,6 +803,21 @@ $.fn.openRightView = function ($view, initialViewWidth, opt_callBack) {
     );
 };
 
+$.fn.setRightViewWidth = function (rightRatio) {
+    var mainWidth = $('#main-section').width();
+    if (!mainWidth || $(window).width() < 768 || !$('.fromRight.rightActive').length) {
+        return;
+    }
+    rightRatio = Math.max(0.2, Math.min(0.8, rightRatio));
+    ratioWorkspace = 1 - rightRatio;
+    var rightWidth = rightRatio * mainWidth;
+    var leftWidth = mainWidth - rightWidth;
+    $('.fromRight.rightActive').width(rightWidth);
+    $('#blocklyDiv').outerWidth(leftWidth);
+    $('#sliderDiv').css('left', leftWidth);
+    $(window).trigger('resize');
+};
+
 $(window).on('resize', function () {
     var mainWidth = $('#main-section').width();
     var parentWidth = mainWidth;

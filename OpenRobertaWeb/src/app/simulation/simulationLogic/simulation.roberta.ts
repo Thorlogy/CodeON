@@ -203,6 +203,10 @@ export class SimulationRoberta implements Simulation {
         return this.scene.toggleRcxLightSensorMode();
     }
 
+    getRcxLightSensorMode(): 'ground' | 'ambient' | null {
+        return this.scene.getRcxLightSensorMode();
+    }
+
     allInterpretersTerminated() {
         for (let i = 0; i < this.interpreters.length; i++) {
             if (!this.interpreters[i].isTerminated()) {
@@ -370,6 +374,7 @@ export class SimulationRoberta implements Simulation {
         config.lights = this.scene.lightList.map(function (object) {
             return calculateShape(object);
         });
+        config.rcxLightSensorMode = this.scene.getRcxLightSensorMode();
         return config;
     }
 
@@ -490,7 +495,9 @@ export class SimulationRoberta implements Simulation {
             reader.onload = function (event) {
                 try {
                     const configData = JSON.parse((event as any).target.result);
-                    sim.setNewConfig(configData);
+                    Promise.resolve(sim.setNewConfig(configData)).then(() => {
+                        $('#simRcxLightMode').trigger('rcxlightmode.sim', [sim.scene.getRcxLightSensorMode()]);
+                    });
                 } catch (ex) {
                     console.error(ex);
                     //TODO: MSG.displayPopupMessage('Blockly.Msg.POPUP_BACKGROUND_STORAGE', Blockly.Msg.POPUP_CONFIG_UPLOAD_ERROR);
@@ -845,6 +852,7 @@ export class SimulationRoberta implements Simulation {
                 importLights.push(calculateShape(light));
             });
             this.scene.addImportLightList(importLights);
+            this.scene.setRcxLightSensorMode(relatives.rcxLightSensorMode === 'ambient' ? 'ambient' : 'ground');
         }
     }
 

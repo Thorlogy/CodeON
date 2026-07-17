@@ -71,6 +71,9 @@
       "menu.controller": [
         "app/roberta/controller/menu.controller"
       ],
+      "missionPanel.controller": [
+        "app/roberta/controller/missionPanel.controller"
+      ],
       "notification.controller": [
         "app/roberta/controller/notification.controller"
       ],
@@ -229,6 +232,9 @@
       ],
       "simulation.math": [
         "app/simulation/simulationLogic/math"
+      ],
+      "simulation.light": [
+        "app/simulation/simulationLogic/simulation.light"
       ],
       "robot.sensors": [
         "app/simulation/simulationLogic/robot.sensors"

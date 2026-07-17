@@ -20,6 +20,7 @@ define(["require", "exports", "robot.ev3", "robot.actuators", "robot.sensors"], 
         function RobotRcx() {
             var _this = _super !== null && _super.apply(this, arguments) || this;
             _this.timer = new robot_sensors_1.Timer(1);
+            _this.imgList = ['simpleBackground', 'drawBackground', 'robertaBackground', 'rescueBackground', 'maze', 'blank', 'mathBackground'];
             return _this;
         }
         RobotRcx.prototype.configure = function (configuration) {
