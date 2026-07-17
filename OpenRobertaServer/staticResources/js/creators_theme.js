@@ -35,6 +35,11 @@ define(['jquery'], function ($) {
                 background-color: #0076A9 !important;
             }
 
+            /* Nested toolbox labels are created lazily when a category opens. */
+            #program .blocklyTreeLabel.blocklyTreeSub {
+                color: #4a4a4a !important;
+            }
+
             /* AI Buddy Sidebar Button */
             #ai-buddy-btn-sidebar {
                 background: linear-gradient(145deg, #ffb348, #f28c28) !important;

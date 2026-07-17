@@ -16,7 +16,9 @@ var $formSingleModal;
 
 var blocklyWorkspace;
 var listenToBlocklyEvents = true;
-var seen = true;
+// Force one toolbox refresh after the program tab first becomes visible.
+// During injection the RCX theme colours are not guaranteed to be ready yet.
+var seen = false;
 
 let _SSID = '';
 let _password = '';
@@ -256,6 +258,7 @@ function initEvents() {
             reloadView();
         }
         $(window).resize();
+        refreshToolboxCategoryAppearance();
     });
     $('#tabProgram').onWrap('hide.bs.tab', function (e) {
         seen = false;
@@ -683,6 +686,7 @@ function reloadView() {
         programToBlocklyWorkspace(xml);
         var toolbox = GUISTATE_C.getProgramToolbox();
         blocklyWorkspace.updateToolbox(toolbox);
+        refreshToolboxCategoryAppearance();
         seen = true;
     } else {
         seen = false;
@@ -697,6 +701,7 @@ function resetView() {
     initProgramEnvironment();
     var toolbox = GUISTATE_C.getProgramToolbox();
     blocklyWorkspace.updateToolbox(toolbox);
+    refreshToolboxCategoryAppearance();
 }
 
 function loadToolbox(level) {
@@ -716,10 +721,15 @@ function loadToolbox(level) {
 function refreshToolboxCategoryAppearance() {
     window.requestAnimationFrame(function () {
         $('#program .blocklyTreeRow').each(function () {
+            var $label = $(this).find('.blocklyTreeLabel');
+            if ($label.hasClass('blocklyTreeSub')) {
+                $label.css('color', '#4a4a4a');
+                return;
+            }
             var colour = window.getComputedStyle(this).borderLeftColor;
             if (colour && colour !== 'rgba(0, 0, 0, 0)') {
                 this.style.backgroundColor = colour;
-                $(this).find('.blocklyTreeLabel').css('color', '#fff');
+                $label.css('color', '#fff');
             }
         });
     });
@@ -728,6 +738,7 @@ function refreshToolboxCategoryAppearance() {
 function loadExternalToolbox(toolbox) {
     if (toolbox) {
         blocklyWorkspace.updateToolbox(toolbox);
+        refreshToolboxCategoryAppearance();
     }
 }
 

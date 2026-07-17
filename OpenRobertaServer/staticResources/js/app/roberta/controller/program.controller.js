@@ -4,7 +4,9 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
     var $formSingleModal;
     var blocklyWorkspace;
     var listenToBlocklyEvents = true;
-    var seen = true;
+    // Force one toolbox refresh after the program tab first becomes visible.
+    // During injection the RCX theme colours are not guaranteed to be ready yet.
+    var seen = false;
     var _SSID = '';
     var _password = '';
     function setSSID(SSID) {
@@ -226,6 +228,7 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
                 reloadView();
             }
             $(window).resize();
+            refreshToolboxCategoryAppearance();
         });
         $('#tabProgram').onWrap('hide.bs.tab', function (e) {
             seen = false;
@@ -602,6 +605,7 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
             programToBlocklyWorkspace(xml);
             var toolbox = GUISTATE_C.getProgramToolbox();
             blocklyWorkspace.updateToolbox(injectThemeCategoryStyles(toolbox));
+            refreshToolboxCategoryAppearance();
             seen = true;
         }
         else {
@@ -615,6 +619,7 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
             initProgramEnvironment();
             var toolbox = GUISTATE_C.getProgramToolbox();
             blocklyWorkspace.updateToolbox(injectThemeCategoryStyles(toolbox));
+            refreshToolboxCategoryAppearance();
         }
     }
     exports.resetView = resetView;
@@ -636,10 +641,15 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
     function refreshToolboxCategoryAppearance() {
         window.requestAnimationFrame(function () {
             $('#program .blocklyTreeRow').each(function () {
+                var $label = $(this).find('.blocklyTreeLabel');
+                if ($label.hasClass('blocklyTreeSub')) {
+                    $label.css('color', '#4a4a4a');
+                    return;
+                }
                 var colour = window.getComputedStyle(this).borderLeftColor;
                 if (colour && colour !== 'rgba(0, 0, 0, 0)') {
                     this.style.backgroundColor = colour;
-                    $(this).find('.blocklyTreeLabel').css('color', '#fff');
+                    $label.css('color', '#fff');
                 }
             });
         });
@@ -647,6 +657,7 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
     function loadExternalToolbox(toolbox) {
         if (toolbox) {
             blocklyWorkspace.updateToolbox(injectThemeCategoryStyles(toolbox));
+            refreshToolboxCategoryAppearance();
         }
     }
     exports.loadExternalToolbox = loadExternalToolbox;

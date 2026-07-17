@@ -381,3 +381,34 @@ funktionsgleich und wurde entfernt. Ebenso wurde der separate direkte
 `codeRun`-Button mit der fehlerhaften Beschriftung „starte auf …“ aus der
 Leiste entfernt. Die normale RCX-Ausführung erfolgt weiterhin über den
 Run-Button im Blockly-Arbeitsbereich.
+
+## 15. Stabile und lesbare RCX-Toolbox
+
+Beim ersten Öffnen der RCX-Programmierumgebung wurden die Hauptkategorien
+zeitweise schwarz dargestellt. Nach einem Wechsel zur Roboterkonfiguration
+und zurück zum Programm waren zwar die richtigen Farben sichtbar, der
+Neuaufbau der Toolbox hatte ihre Darstellung jedoch verändert.
+
+Die Programmansicht behandelt die Toolbox beim ersten Öffnen nun als noch
+nicht vollständig aufgebaut. Sobald der Programm-Tab sichtbar ist, wird sie
+mit den aktuellen RCX-Kategoriefarben neu geladen. Derselbe Abgleich läuft
+nach einem Tabwechsel sowie nach einem programmatischen Toolbox-Wechsel.
+
+Unterkategorien wie „Bewegen“, „Fahren“, „Anzeige“ und „Klang“ werden von
+Blockly erst beim Aufklappen einer Hauptkategorie eingeblendet. Eine
+dauerhafte CSS-Regel setzt deren Schrift deshalb unabhängig vom Zeitpunkt
+der Erzeugung auf Dunkelgrau (`#4a4a4a`) und sorgt für ausreichenden Kontrast
+zum hellgrauen Toolbox-Hintergrund.
+
+Die Korrektur liegt sowohl im Web-Quellstand als auch in den ausgelieferten
+Server- und `application`-Dateien. Die RequireJS-Version
+`codeon-toolbox-20260717-3` verhindert, dass Chrome nach dem Aktualisieren
+eine ältere Toolbox-Implementierung aus dem Cache verwendet.
+
+Manueller Regressionstest:
+
+1. CodeON in Chrome vollständig neu laden und RCX erstmals öffnen.
+2. Prüfen, dass die Hauptkategorien sofort ihre jeweiligen Farben besitzen.
+3. „Aktion“ öffnen und die dunkelgrauen Unterkategorien kontrollieren.
+4. Zur Roboterkonfiguration und zurück zum Programm wechseln.
+5. Prüfen, dass Farben, Beschriftungen und Toolbox-Aufbau unverändert bleiben.
