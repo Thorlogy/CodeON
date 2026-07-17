@@ -55,12 +55,15 @@ def find_nqc():
     if env and os.path.isfile(env) and os.access(env, os.X_OK):
         return env
     here = os.path.dirname(os.path.abspath(__file__))
-    local = os.path.join(here, "bin", "nqc")
-    if os.path.isfile(local) and os.access(local, os.X_OK):
-        return local
-    found = shutil.which("nqc")
-    if found:
-        return found
+    binary_names = ("nqc.exe", "nqc") if platform.system() == "Windows" else ("nqc", "nqc.exe")
+    for binary_name in binary_names:
+        local = os.path.join(here, "bin", binary_name)
+        if os.path.isfile(local) and os.access(local, os.X_OK):
+            return local
+    for binary_name in binary_names:
+        found = shutil.which(binary_name)
+        if found:
+            return found
     return None
 
 
@@ -78,25 +81,22 @@ def find_firmware():
     return next((path for path in candidates if path and os.path.isfile(path)), None)
 
 
-# nqc-Aufrufparameter je nach Betriebssystem. Der USB-Tower nutzt auf allen
-# unterstuetzten Systemen den speziellen -Susb-Modus. Serielle Tower brauchen
-# stattdessen den Geraetepfad (siehe Kommentar unten).
+# nqc-Aufrufparameter fuer den IR-Tower. RCX_TOWER kann "usb", einen COM-Port
+# oder einen Geraetepfad enthalten. RCX_PORT bleibt als nqc-eigene Alternative
+# kompatibel und wird von nqc selbst ausgewertet.
 def nqc_serial_args():
+    configured = os.environ.get("RCX_TOWER", "").strip()
+    if configured:
+        return ["-Susb"] if configured.lower() == "usb" else ["-S" + configured]
+    if os.environ.get("RCX_PORT", "").strip():
+        return []
     system = platform.system()
-    # USB-Tower: -Susb funktioniert auf macOS (getestet: Tower leuchtet) und Windows.
-    # Unter Linux wird der USB-Tower ueber /dev/usb/legousbtower0 angesprochen.
     if system == "Linux":
         dev = "/dev/usb/legousbtower0"
         if os.path.exists(dev):
             return ["-S" + dev]
         return ["-Susb"]
-    # macOS + Windows:
     return ["-Susb"]
-
-    # --- Serieller Tower (falls jemand statt USB einen seriellen Tower nutzt) ---
-    # macOS:   ["-S/dev/cu.usbserial-XXXX"]
-    # Linux:   ["-S/dev/ttyUSB0"]
-    # Windows: ["-SCOM1"]
 
 
 # ----------------------------------------------------------------------------
@@ -323,6 +323,11 @@ def status_payload():
         "firmwareAvailable": bool(firmware),
         "firmware": firmware,
         "system": platform.system(),
+        "tower": {
+            "configured": os.environ.get("RCX_TOWER", "").strip() or None,
+            "usesRcxPort": bool(os.environ.get("RCX_PORT", "").strip()),
+            "effectiveArgs": nqc_serial_args(),
+        },
         "message": "RCX-Bridge laeuft.",
         "setupGuide": "https://github.com/Thorlogy/CodeON/blob/feature/sim-3d-toggle/RobotRCX/README.md",
         "requirements": {

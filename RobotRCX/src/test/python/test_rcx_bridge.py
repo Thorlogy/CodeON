@@ -1,5 +1,6 @@
 import importlib.util
 import os
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -12,6 +13,32 @@ SPEC.loader.exec_module(RCX_BRIDGE)
 
 
 class RcxBridgeTest(unittest.TestCase):
+
+    def test_windows_finds_locally_installed_nqc_exe(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            bridge_dir = Path(tmp)
+            bridge_copy = bridge_dir / "rcx-bridge.py"
+            bridge_copy.write_text(BRIDGE_PATH.read_text(encoding="utf-8"), encoding="utf-8")
+            binary = bridge_dir / "bin" / "nqc.exe"
+            binary.parent.mkdir()
+            binary.write_bytes(b"test")
+            binary.chmod(0o755)
+
+            spec = importlib.util.spec_from_file_location("rcx_bridge_windows", bridge_copy)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            with patch.object(module.platform, "system", return_value="Windows"), \
+                    patch.object(module.shutil, "which", return_value=None), \
+                    patch.dict(os.environ, {}, clear=True):
+                self.assertEqual(str(binary), module.find_nqc())
+
+    def test_explicit_tower_configuration_has_priority(self):
+        with patch.dict(os.environ, {"RCX_TOWER": "COM3", "RCX_PORT": "COM2"}, clear=True):
+            self.assertEqual(["-SCOM3"], RCX_BRIDGE.nqc_serial_args())
+
+    def test_nqc_rcx_port_is_not_overridden(self):
+        with patch.dict(os.environ, {"RCX_PORT": "COM2"}, clear=True):
+            self.assertEqual([], RCX_BRIDGE.nqc_serial_args())
 
     def test_local_origins_are_allowed(self):
         self.assertTrue(RCX_BRIDGE.origin_is_allowed(None))
@@ -79,7 +106,8 @@ class RcxBridgeTest(unittest.TestCase):
 
     def test_status_explains_missing_optional_and_required_components(self):
         with patch.object(RCX_BRIDGE, "find_nqc", return_value=None), \
-                patch.object(RCX_BRIDGE, "find_firmware", return_value=None):
+                patch.object(RCX_BRIDGE, "find_firmware", return_value=None), \
+                patch.dict(os.environ, {"RCX_TOWER": "COM4"}, clear=True):
             status = RCX_BRIDGE.status_payload()
 
         self.assertTrue(status["ok"])
@@ -87,6 +115,8 @@ class RcxBridgeTest(unittest.TestCase):
         self.assertIn("github.com/BrickBot/nqc", status["requirements"]["nqc"]["download"])
         self.assertTrue(status["requirements"]["firmware"]["optional"])
         self.assertIn("RobotRCX/README.md", status["setupGuide"])
+        self.assertEqual("COM4", status["tower"]["configured"])
+        self.assertEqual(["-SCOM4"], status["tower"]["effectiveArgs"])
 
 
 if __name__ == "__main__":

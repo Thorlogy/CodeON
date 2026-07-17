@@ -34,19 +34,31 @@ Gründen nicht heruntergeladen.
 ### Linux
 
 ```bash
+./RCX-Werkzeuge-installieren.sh
 ./start-codeon-rcx.sh
 ```
 
-Falls NQC noch fehlt, nennt der Startassistent die Bezugsquelle und den
-erwarteten Ablageort. Je nach Distribution können außerdem USB-/`udev`-Rechte
-für den Infrarot-Tower erforderlich sein.
+Der Werkzeugassistent installiert NQC auf Debian-/Ubuntu-Systemen aus den
+Paketquellen und kann eine auf die aktive Desktop-Sitzung begrenzte
+USB-/`udev`-Freigabe für den LEGO-Turm einrichten. Auf anderen Distributionen
+nennt er die offizielle Bezugsquelle.
 
 ### Windows
 
-`CodeON-RCX-starten.cmd` doppelt anklicken. Python, Java und NQC müssen unter
-Windows vorher installiert sein; fehlende Komponenten werden mit einer
-Bezugsquelle angezeigt. Der USB-Tower benötigt einen funktionierenden
-LEGO-/WinUSB-Treiber.
+> **Experimenteller Installationsweg:** Die Batch-Dateien und das Paket wurden
+> automatisiert geprüft, jedoch noch nicht auf einem realen Windows-10/11-
+> System oder mit angeschlossener RCX-Hardware ausgeführt. Bis dieser
+> Plattformtest dokumentiert ist, erfolgt die Nutzung auf eigene
+> Verantwortung.
+
+Beim ersten Mal `CodeON-Installation.cmd` doppelt anklicken. Der Assistent
+prüft Java und Python und installiert NQC nach verifizierter SHA256-Prüfsumme
+lokal unter `RobotRCX/bin/nqc.exe`. Danach genügt
+`CodeON-RCX-starten.cmd`.
+
+Für aktuelle 64-Bit-Windows-Systeme wird ein serieller Infrarot-Turm mit
+USB-Seriell-Adapter empfohlen. Sein COM-Port wird einmalig gesetzt, zum
+Beispiel mit `setx RCX_TOWER COM3`.
 
 ### Was der Startassistent automatisch erledigt
 
@@ -85,7 +97,8 @@ Empfohlen ist [Eclipse Temurin 11](https://adoptium.net/temurin/releases/?versio
 Die Bridge sucht `nqc` in dieser Reihenfolge:
 
 1. Pfad aus `NQC_PATH`
-2. `RobotRCX/bin/nqc`
+2. `RobotRCX/bin/nqc` beziehungsweise unter Windows
+   `RobotRCX/bin/nqc.exe`
 3. System-`PATH`
 
 `nqc` wird nicht mit CodeON ausgeliefert. Bei einer eigenen Distribution sind

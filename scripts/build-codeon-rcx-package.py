@@ -26,14 +26,17 @@ def build_package(version: str, output: Path) -> Path:
 
     with tempfile.TemporaryDirectory(prefix="codeon-rcx-package-") as tmp:
         package = Path(tmp) / package_name
-        shutil.copytree(ROOT / "application", package / "application")
+        shutil.copytree(ROOT / "application", package / "application", ignore=shutil.ignore_patterns("db-embedded"))
 
         for name in (
             "start-codeon-rcx.py",
             "start-codeon-rcx.sh",
             "CodeON-RCX-starten.command",
             "CodeON-RCX-starten.cmd",
+            "CodeON-Installation.cmd",
             "RCX-Werkzeuge-installieren.command",
+            "RCX-Werkzeuge-installieren.cmd",
+            "RCX-Werkzeuge-installieren.sh",
             "LICENSE",
             "NOTICE",
         ):
