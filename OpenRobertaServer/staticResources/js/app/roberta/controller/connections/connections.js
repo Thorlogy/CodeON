@@ -2689,7 +2689,6 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
             MSG.displayPopupMessage('Blockly.Msg.POPUP_ATTENTION', html, 'OK');
         };
         RcxConnection.prototype._offerFirmwareInstall = function (result) {
-            var _this = this;
             var confirmed = window.confirm('Auf dem RCX wurde keine Firmware erkannt.\n\n' +
                 'Soll CodeON jetzt zuerst die konfigurierte LEGO-RCX-Firmware übertragen ' +
                 'und danach das Programm erneut senden?\n\n' +
@@ -2702,6 +2701,12 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
             $('body>.pace').fadeOut();
             this._runFirmwareWithProgress(result);
         };
+        /**
+         * Startet die Firmwareuebertragung ueber die Bridge im Hintergrund und
+         * zeigt waehrenddessen einen Fortschrittsdialog. Der IR-Download dauert
+         * mehrere Minuten; der Fortschritt ist eine ehrliche Zeitschaetzung der
+         * Bridge (GET /firmware/progress), kein echtes Byte-Zaehlen.
+         */
         RcxConnection.prototype._runFirmwareWithProgress = function (result) {
             var _this = this;
             var overlay = $('<div id="rcxFirmwareOverlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.55);z-index:10000;display:flex;align-items:center;justify-content:center;">' +
@@ -2714,7 +2719,7 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
                 '<p id="rcxFirmwareText" style="margin:10px 0 0 0;font-size:13px;color:#444;">Übertragung wird gestartet …</p>' +
                 '</div></div>');
             $('body').append(overlay);
-            var close = function () { $('#rcxFirmwareOverlay').remove(); };
+            var close = function () { return $('#rcxFirmwareOverlay').remove(); };
             fetch(this.bridgeUrl + '/firmware/start', { method: 'POST' })
                 .then(function (resp) { return resp.json().catch(function () { return ({ ok: resp.ok, message: '' }); }); })
                 .then(function (data) {

@@ -6,70 +6,7 @@ define(["require", "exports", "log", "jquery", "guiState.controller", "blockly",
      */
     function init() {
         var ready = new $.Deferred();
-        var language;
-        if (navigator.language.indexOf('de') > -1) {
-            language = 'de';
-        }
-        else if (navigator.language.indexOf('fi') > -1) {
-            language = 'fi';
-        }
-        else if (navigator.language.indexOf('da') > -1) {
-            language = 'da';
-        }
-        else if (navigator.language.indexOf('es') > -1) {
-            language = 'es';
-        }
-        else if (navigator.language.indexOf('fr') > -1) {
-            language = 'fr';
-        }
-        else if (navigator.language.indexOf('it') > -1) {
-            language = 'it';
-        }
-        else if (navigator.language.indexOf('ca') > -1) {
-            language = 'ca';
-        }
-        else if (navigator.language.indexOf('pt') > -1) {
-            language = 'pt';
-        }
-        else if (navigator.language.indexOf('pl') > -1) {
-            language = 'pl';
-        }
-        else if (navigator.language.indexOf('ru') > -1) {
-            language = 'ru';
-        }
-        else if (navigator.language.indexOf('be') > -1) {
-            language = 'be';
-        }
-        else if (navigator.language.indexOf('cs') > -1) {
-            language = 'cs';
-        }
-        else if (navigator.language.indexOf('tr') > -1) {
-            language = 'tr';
-        }
-        else if (navigator.language.indexOf('nl') > -1) {
-            language = 'nl';
-        }
-        else if (navigator.language.indexOf('sv') > -1) {
-            language = 'sv';
-        }
-        else if (navigator.language.indexOf('zh-hans') > -1) {
-            language = 'zh-hans';
-        }
-        else if (navigator.language.indexOf('zh-hant') > -1) {
-            language = 'zh-hant';
-        }
-        else if (navigator.language.indexOf('ro') > -1) {
-            language = 'ro';
-        }
-        else if (navigator.language.indexOf('eu') > -1) {
-            language = 'eu';
-        }
-        else if (navigator.language.indexOf('uk') > -1) {
-            language = 'uk';
-        }
-        else {
-            language = 'de';
-        }
+        var language = navigator.language.toLowerCase().indexOf('de') === 0 ? 'de' : 'en';
         if (language === 'de') {
             $('.EN').css('display', 'none');
             $('.DE').css('display', 'inline');
@@ -101,10 +38,11 @@ define(["require", "exports", "log", "jquery", "guiState.controller", "blockly",
             'switch language clicked';
     }
     function switchLanguage(language) {
-        if (GUISTATE_C.getLanguage == language) {
+        language = language && language.toLowerCase() === 'de' ? 'de' : 'en';
+        if (GUISTATE_C.getLanguage() === language) {
             return;
         }
-        var url = 'blockly/msg/js/' + language.toLowerCase() + ".js?v=2";
+        var url = 'blockly/msg/js/' + language + '.js?v=2';
         getCachedScript(url).done(function (data) {
             GUISTATE_C.setLanguage(language);
             translate();
@@ -115,11 +53,6 @@ define(["require", "exports", "log", "jquery", "guiState.controller", "blockly",
      * Translate the web page
      */
     function translate($domElement) {
-        if (typeof Blockly !== 'undefined' && Blockly.Msg) {
-            if (!Blockly.Msg.CODE_TO_BLOCKS_TOOLTIP) {
-                Blockly.Msg.CODE_TO_BLOCKS_TOOLTIP = "Code in Blöcke importieren";
-            }
-        }
         if (!$domElement || typeof $domElement !== 'object' || !$domElement.length) {
             $domElement = $(document.body);
         }
@@ -140,6 +73,8 @@ define(["require", "exports", "log", "jquery", "guiState.controller", "blockly",
             }
             if ($(this).attr('rel') === 'tooltip') {
                 $(this).attr('data-bs-original-title', value);
+                $(this).attr('aria-label', value);
+                $(this).attr('title', value);
             }
             else {
                 $(this).html(value);

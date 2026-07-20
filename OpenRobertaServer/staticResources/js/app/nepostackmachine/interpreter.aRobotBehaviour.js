@@ -22,6 +22,12 @@ define(["require", "exports"], function (require, exports) {
         ARobotBehaviour.prototype.getBlocking = function () {
             return this.blocking;
         };
+        ARobotBehaviour.prototype.sendIRAction = function (_message) {
+            // Communication is optional for robot behaviours.
+        };
+        ARobotBehaviour.prototype.receiveIRAction = function (s) {
+            s.push(0);
+        };
         return ARobotBehaviour;
     }());
     exports.ARobotBehaviour = ARobotBehaviour;

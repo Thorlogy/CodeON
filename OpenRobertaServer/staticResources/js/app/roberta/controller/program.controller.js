@@ -39,20 +39,10 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
         var toolbox = GUISTATE_C.getProgramToolbox();
         var serverTheme = GUISTATE_C.getTheme();
         var blocklyTheme;
+        // Determine the active Blockly instance.
+        // If running V10, window.Blockly should be set and have Theme support.
+        // Otherwise, use the imported Blockly (legacy).
         var activeBlockly = (typeof window !== 'undefined' && window.Blockly && window.Blockly.Theme) ? window.Blockly : Blockly;
-        if (serverTheme && serverTheme.category) {
-            var catMap = {
-                "TOOLBOX_ACTION": "CAT_ACTION_RGB", "TOOLBOX_SENSOR": "CAT_SENSOR_RGB", "TOOLBOX_CONTROL": "CAT_CONTROL_RGB", "TOOLBOX_LOGIC": "CAT_LOGIC_RGB", "TOOLBOX_MATH": "CAT_MATH_RGB", "TOOLBOX_TEXT": "CAT_TEXT_RGB", "TOOLBOX_LIST": "CAT_LIST_RGB", "TOOLBOX_COLOUR": "CAT_COLOUR_RGB", "TOOLBOX_VARIABLE": "CAT_VARIABLE_RGB", "TOOLBOX_PROCEDURE": "CAT_PROCEDURE_RGB", "TOOLBOX_COMMUNICATION": "CAT_COMMUNICATION_RGB", "TOOLBOX_IMAGE": "CAT_IMAGE_RGB", "TOOLBOX_DAEMON": "CAT_DAEMON_RGB",
-                "TOOLBOX_DRIVE": "CAT_ACTION_RGB", "TOOLBOX_MOVE": "CAT_ACTION_RGB", "TOOLBOX_DISPLAY": "CAT_ACTION_RGB", "TOOLBOX_SOUND": "CAT_ACTION_RGB", "TOOLBOX_LIGHT": "CAT_ACTION_RGB", "TOOLBOX_PIN": "CAT_ACTION_RGB", "TOOLBOX_WAIT": "CAT_CONTROL_RGB", "TOOLBOX_DECISION": "CAT_CONTROL_RGB", "TOOLBOX_LOOP": "CAT_CONTROL_RGB"
-            };
-            for (var key in catMap) {
-                var themeKey = catMap[key];
-                if (serverTheme.category[themeKey]) {
-                    var blocklyColorKey = "CAT_" + key.toUpperCase().replace("TOOLBOX_", "") + "_RGB";
-                    activeBlockly[blocklyColorKey] = serverTheme.category[themeKey];
-                }
-            }
-        }
         if (serverTheme && activeBlockly.Theme) {
             var categoryStyles = {};
             var blockStyles = {};
@@ -91,7 +81,24 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
                     }
                 }
                 // 1. Inject categorystyle into the Toolbox XML
-                toolbox = injectThemeCategoryStyles(toolbox);
+                if (toolbox) {
+                    try {
+                        var parser = new DOMParser();
+                        var xmlDoc = parser.parseFromString(toolbox, "text/xml");
+                        var categories = xmlDoc.getElementsByTagName("category");
+                        for (var i = 0; i < categories.length; i++) {
+                            var catName = categories[i].getAttribute("name");
+                            if (catName && categoryStyles[catName]) {
+                                categories[i].setAttribute("categorystyle", catName);
+                            }
+                        }
+                        var serializer = new XMLSerializer();
+                        toolbox = serializer.serializeToString(xmlDoc);
+                    }
+                    catch (e) {
+                        console.error("Error patching toolbox XML:", e);
+                    }
+                }
             }
             // Define standard block styles using theme colors
             if (serverTheme.category) {
@@ -485,7 +492,7 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
         function loadNewProgram() {
             var result = {};
             result.rc = 'ok';
-            result.name = 'NEPOprog';
+            result.name = 'CodeONprog';
             result.programShared = false;
             result.lastChanged = '';
             GUISTATE_C.setProgram(result);
@@ -604,7 +611,7 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
             var xml = Blockly.Xml.domToText(dom);
             programToBlocklyWorkspace(xml);
             var toolbox = GUISTATE_C.getProgramToolbox();
-            blocklyWorkspace.updateToolbox(injectThemeCategoryStyles(toolbox));
+            blocklyWorkspace.updateToolbox(toolbox);
             refreshToolboxCategoryAppearance();
             seen = true;
         }
@@ -614,20 +621,21 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
     }
     exports.reloadView = reloadView;
     function resetView() {
-        if (blocklyWorkspace) {
-            blocklyWorkspace.setDevice({ group: GUISTATE_C.getRobotGroup(), robot: GUISTATE_C.getRobot() });
-            initProgramEnvironment();
-            var toolbox = GUISTATE_C.getProgramToolbox();
-            blocklyWorkspace.updateToolbox(injectThemeCategoryStyles(toolbox));
-            refreshToolboxCategoryAppearance();
-        }
+        blocklyWorkspace.setDevice({
+            group: GUISTATE_C.getRobotGroup(),
+            robot: GUISTATE_C.getRobot(),
+        });
+        initProgramEnvironment();
+        var toolbox = GUISTATE_C.getProgramToolbox();
+        blocklyWorkspace.updateToolbox(toolbox);
+        refreshToolboxCategoryAppearance();
     }
     exports.resetView = resetView;
     function loadToolbox(level) {
         GUISTATE_C.setProgramToolboxLevel(level);
         var xml = GUISTATE_C.getToolbox(level);
         if (xml) {
-            blocklyWorkspace.updateToolbox(injectThemeCategoryStyles(xml));
+            blocklyWorkspace.updateToolbox(xml);
             refreshToolboxCategoryAppearance();
         }
         if (level === 'beginner') {
@@ -656,34 +664,11 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
     }
     function loadExternalToolbox(toolbox) {
         if (toolbox) {
-            blocklyWorkspace.updateToolbox(injectThemeCategoryStyles(toolbox));
+            blocklyWorkspace.updateToolbox(toolbox);
             refreshToolboxCategoryAppearance();
         }
     }
     exports.loadExternalToolbox = loadExternalToolbox;
-    function injectThemeCategoryStyles(xmlString) {
-        if (!xmlString) return xmlString;
-        var serverTheme = GUISTATE_C.getTheme();
-        if (!serverTheme || !serverTheme.category) return xmlString;
-        var catMap = {
-            "TOOLBOX_ACTION": "CAT_ACTION_RGB", "TOOLBOX_SENSOR": "CAT_SENSOR_RGB", "TOOLBOX_CONTROL": "CAT_CONTROL_RGB", "TOOLBOX_LOGIC": "CAT_LOGIC_RGB", "TOOLBOX_MATH": "CAT_MATH_RGB", "TOOLBOX_TEXT": "CAT_TEXT_RGB", "TOOLBOX_LIST": "CAT_LIST_RGB", "TOOLBOX_COLOUR": "CAT_COLOUR_RGB", "TOOLBOX_VARIABLE": "CAT_VARIABLE_RGB", "TOOLBOX_PROCEDURE": "CAT_PROCEDURE_RGB", "TOOLBOX_COMMUNICATION": "CAT_COMMUNICATION_RGB", "TOOLBOX_IMAGE": "CAT_IMAGE_RGB", "TOOLBOX_DAEMON": "CAT_DAEMON_RGB", "TOOLBOX_DRIVE": "CAT_ACTION_RGB", "TOOLBOX_MOVE": "CAT_ACTION_RGB", "TOOLBOX_DISPLAY": "CAT_ACTION_RGB", "TOOLBOX_SOUND": "CAT_ACTION_RGB", "TOOLBOX_LIGHT": "CAT_ACTION_RGB", "TOOLBOX_PIN": "CAT_ACTION_RGB", "TOOLBOX_WAIT": "CAT_CONTROL_RGB", "TOOLBOX_DECISION": "CAT_CONTROL_RGB", "TOOLBOX_LOOP": "CAT_CONTROL_RGB"
-        };
-        try {
-            var parser = new DOMParser();
-            var xmlDoc = parser.parseFromString(xmlString, "text/xml");
-            var categories = xmlDoc.getElementsByTagName("category");
-            for (var i = 0; i < categories.length; i++) {
-                var catName = categories[i].getAttribute("name");
-                if (catName && catMap[catName] && serverTheme.category[catMap[catName]]) {
-                    categories[i].setAttribute("colour", serverTheme.category[catMap[catName]]);
-                }
-            }
-            return new XMLSerializer().serializeToString(xmlDoc);
-        } catch (e) {
-            console.error("Error patching toolbox XML:", e);
-            return xmlString;
-        }
-    }
     function isVisible() {
         return GUISTATE_C.getView() == 'tabProgram';
     }

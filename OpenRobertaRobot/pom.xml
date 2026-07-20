@@ -17,8 +17,8 @@
         <version>5.3.0-SNAPSHOT</version>
     </parent>
     <artifactId>OpenRobertaRobot</artifactId>
-    <name>OpenRobertaRobot</name>
-    <description>the robot related part of the OpenRoberta application</description>
+    <name>CodeON Robot Core</name>
+    <description>Robot-independent programming core used by CodeON</description>
     <dependencies>
         <dependency>
             <groupId>com.google.inject</groupId>

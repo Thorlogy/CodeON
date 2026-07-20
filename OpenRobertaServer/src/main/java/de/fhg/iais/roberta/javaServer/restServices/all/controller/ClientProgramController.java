@@ -408,7 +408,7 @@ public class ClientProgramController {
             ImportRequest importRequest = ImportRequest.make(request.getData());
             String programName = importRequest.getProgramName();
             if ( !Util.isValidJavaIdentifier(programName) ) {
-                programName = "NEPOprog";
+                programName = "CodeONprog";
             }
             String xmlText = importRequest.getProgXML();
             xmlText = UtilForHtmlXml.checkProgramTextForXSS(xmlText);

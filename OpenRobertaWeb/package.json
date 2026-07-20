@@ -1,6 +1,6 @@
 {
-  "name": "openroberta-web",
-  "description": "contains the frontend sources of the openrobert-lab",
+  "name": "codeon-web",
+  "description": "Frontend sources for the CodeON robot programming environment",
   "version": "1.0.0",
   "scripts": {
     "watch": "tsc --watch",
@@ -14,8 +14,8 @@
     "format:check": "prettier --check .",
     "npx": "npx"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "CodeON contributors",
+  "license": "Apache-2.0",
   "dependencies": {
     "@types/ace": "^0.0.52",
     "ace-builds": "^1.35.2",

@@ -9,11 +9,24 @@ declare global {
     var rob3rtaNumber: number;
 }
 
+let rcxIrMessage = 0;
+
 export class RobotSimBehaviour extends ARobotBehaviour {
     constructor() {
         super();
         this.hardwareState.motors = {};
+        rcxIrMessage = 0;
         U.loggingEnabled(false, false);
+    }
+
+    override sendIRAction(message: number): void {
+        rcxIrMessage = Math.min(255, Math.max(1, Math.round(Number(message) || 0)));
+        U.debug('RCX IR sends message ' + rcxIrMessage);
+    }
+
+    override receiveIRAction(s: State): void {
+        U.debug('RCX IR receives message ' + rcxIrMessage);
+        s.push(rcxIrMessage);
     }
 
     getSample(s: State, name: string, sensor: string, port: any, mode: string, slot: string) {

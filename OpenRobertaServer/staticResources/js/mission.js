@@ -73,6 +73,7 @@ require.config({
         'webview.controller': 'js/app/roberta/controller/webview.controller',
         'simulation.constants': 'js/app/simulation/simulationLogic/constants',
         'simulation.math': 'js/app/simulation/simulationLogic/math',
+        'simulation.light': 'js/app/simulation/simulationLogic/simulation.light',
         'robot.calliope': 'js/app/simulation/simulationLogic/robot.calliope',
         'robot.calliopev3': 'js/app/simulation/simulationLogic/robot.calliopev3',
         'robot.mbot': 'js/app/simulation/simulationLogic/robot.mbot',

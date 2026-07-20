@@ -16,14 +16,24 @@ var __extends = (this && this.__extends) || (function () {
 define(["require", "exports", "./interpreter.aRobotBehaviour", "./interpreter.constants", "./interpreter.util", "util.roberta", "simulation.math"], function (require, exports, interpreter_aRobotBehaviour_1, C, U, UTIL, SIMATH) {
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.RobotSimBehaviour = void 0;
+    var rcxIrMessage = 0;
     var RobotSimBehaviour = /** @class */ (function (_super) {
         __extends(RobotSimBehaviour, _super);
         function RobotSimBehaviour() {
             var _this = _super.call(this) || this;
             _this.hardwareState.motors = {};
+            rcxIrMessage = 0;
             U.loggingEnabled(false, false);
             return _this;
         }
+        RobotSimBehaviour.prototype.sendIRAction = function (message) {
+            rcxIrMessage = Math.min(255, Math.max(1, Math.round(Number(message) || 0)));
+            U.debug('RCX IR sends message ' + rcxIrMessage);
+        };
+        RobotSimBehaviour.prototype.receiveIRAction = function (s) {
+            U.debug('RCX IR receives message ' + rcxIrMessage);
+            s.push(rcxIrMessage);
+        };
         RobotSimBehaviour.prototype.getSample = function (s, name, sensor, port, mode, slot) {
             var robotText = 'robot: ' + name + ', port: ' + port + ', mode: ' + mode;
             U.debug(robotText + ' getsample from ' + sensor);

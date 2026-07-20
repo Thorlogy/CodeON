@@ -91,6 +91,12 @@ class CodeOnRcxStarterTest(unittest.TestCase):
         for name in ("CodeON-RCX-starten.command", "CodeON-RCX-starten.cmd", "start-codeon-rcx.sh"):
             self.assertTrue((root / name).is_file(), name)
 
+    def test_only_supported_robot_plugins_are_enabled(self):
+        self.assertEqual(("rcx", "edisonv2", "rcj"), STARTER.SUPPORTED_ROBOTS)
+        source = STARTER_PATH.read_text(encoding="utf-8")
+        self.assertIn('"robot.whitelist=" + ",".join(SUPPORTED_ROBOTS)', source)
+        self.assertIn('"robot.default=rcx"', source)
+
     def test_compact_user_package_contains_runtime_but_no_proprietary_tools(self):
         with tempfile.TemporaryDirectory() as tmp:
             archive_path = PACKAGER.build_package("test", Path(tmp))
@@ -99,6 +105,15 @@ class CodeOnRcxStarterTest(unittest.TestCase):
 
         self.assertIn("CodeON-RCX-test/CodeON-RCX-starten.command", names)
         self.assertIn("CodeON-RCX-test/application/lib/RobotRCX.jar", names)
+        self.assertIn("CodeON-RCX-test/application/lib/RobotEdison.jar", names)
+        self.assertIn("CodeON-RCX-test/application/lib/RobotSpike.jar", names)
+        robot_jars = {
+            name.rsplit("/", 1)[-1]
+            for name in names
+            if "/application/lib/Robot" in name and name.endswith(".jar")
+        }
+        self.assertEqual({"RobotRCX.jar", "RobotEdison.jar", "RobotSpike.jar"}, robot_jars)
+        self.assertFalse(any("/application/db-embedded/" in name for name in names))
         self.assertIn("CodeON-RCX-test/RobotRCX/rcx-bridge.py", names)
         self.assertNotIn("CodeON-RCX-test/RobotRCX/bin/nqc", names)
         self.assertFalse(any(name.lower().endswith(".lgo") for name in names))

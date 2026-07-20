@@ -1,5 +1,4 @@
 define(["require", "exports", "jquery", "guiState.controller", "simulation.roberta"], function (require, exports, $, GUISTATE_C, simulation_roberta_1) {
-    "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.init = void 0;
     var INITIAL_WIDTH = 0.34;

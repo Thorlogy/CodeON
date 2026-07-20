@@ -277,6 +277,7 @@ public class C {
     public static final String RANDOM_INT = "randInt";
     public static final String RATE = "rate";
     public static final String RECALL = "recall";
+    public static final String RECEIVE_IR_ACTION = "receiveIrAction";
     public static final String RED = "red";
     public static final String REMEMBER = "remember";
     public static final String REMOVE = "remove";
@@ -296,6 +297,7 @@ public class C {
     public static final String SENSOR_MODE = "sensorMode";
     public static final String SENSOR_TYPE = "sensorType";
     public static final String SERIAL_WRITE_ACTION = "serialWriteAction";
+    public static final String SEND_IR_ACTION = "sendIrAction";
 
     public static final String SET = "set";
     public static final String SET_LANGUAGE_ACTION = "SetLanguageAction";

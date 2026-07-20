@@ -183,7 +183,7 @@ define(["require", "exports", "util.roberta", "log", "message", "guiState.contro
             $('#single-modal label').text(Blockly.Msg['POPUP_VALUE']);
             $('#singleModalInput').addClass('capitalLetters');
             $('#single-modal a[href]').text(Blockly.Msg['POPUP_STARTUP_HELP']);
-            $('#single-modal a[href]').attr('href', 'http://wiki.open-roberta.org');
+            $('#single-modal a[href]').attr('href', 'https://github.com/Thorlogy/CodeON#dokumentation');
         }, function () {
             // @ts-ignore
             setToken($('#singleModalInput').val().toUpperCase());
@@ -223,7 +223,7 @@ define(["require", "exports", "util.roberta", "log", "message", "guiState.contro
             $('#single-modal .form-label').text(Blockly.Msg['POPUP_VALUE']);
             $('#single-modal .form-label-ip').text('URL or IP address');
             $('#single-modal a[href]').text(Blockly.Msg['POPUP_STARTUP_HELP']);
-            $('#single-modal a[href]').attr('href', 'http://wiki.open-roberta.org');
+            $('#single-modal a[href]').attr('href', 'https://github.com/Thorlogy/CodeON#dokumentation');
         }, function () {
             // @ts-ignore
             setApiKey($('#singleModalInput').val(), $('#singleModalInputIp').val());
@@ -275,7 +275,7 @@ define(["require", "exports", "util.roberta", "log", "message", "guiState.contro
             $('#single-modal-list h3').text(Blockly.Msg['MENU_CONNECT']);
             $('#single-modal-list label').text(Blockly.Msg['POPUP_VALUE']);
             $('#single-modal-list a[href]').text(Blockly.Msg['POPUP_STARTUP_HELP']);
-            $('#single-modal-list a[href]').attr('href', 'http://wiki.open-roberta.org');
+            $('#single-modal-list a[href]').attr('href', 'https://github.com/Thorlogy/CodeON#dokumentation');
         }, function () {
             // @ts-ignore
             setPort(document.getElementById('singleModalListInput').value);

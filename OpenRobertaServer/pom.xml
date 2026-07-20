@@ -17,8 +17,8 @@
         <version>5.3.0-SNAPSHOT</version>
     </parent>
     <artifactId>OpenRobertaServer</artifactId>
-    <name>OpenRobertaServer</name>
-    <description>the server of the OpenRoberta application including the static resources delivered to the browser</description>
+    <name>CodeON Server</name>
+    <description>CodeON server and browser application</description>
     <dependencies>
         <dependency>
             <groupId>com.google.inject</groupId>
@@ -78,30 +78,6 @@
         </dependency>
         <dependency>
             <groupId>de.fhg.iais.openroberta</groupId>
-            <artifactId>RobotArdu</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>de.fhg.iais.openroberta</groupId>
-            <artifactId>RobotCyberpi</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>de.fhg.iais.openroberta</groupId>
-            <artifactId>RobotEV3</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>de.fhg.iais.openroberta</groupId>
-            <artifactId>RobotMbed</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>de.fhg.iais.openroberta</groupId>
-            <artifactId>RobotNAO</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>de.fhg.iais.openroberta</groupId>
-            <artifactId>RobotNXT</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>de.fhg.iais.openroberta</groupId>
             <artifactId>RobotRCX</artifactId>
         </dependency>
         <dependency>
@@ -110,23 +86,7 @@
         </dependency>
         <dependency>
             <groupId>de.fhg.iais.openroberta</groupId>
-            <artifactId>RobotRobotino</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>de.fhg.iais.openroberta</groupId>
-            <artifactId>RobotWeDo</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>de.fhg.iais.openroberta</groupId>
-            <artifactId>RobotThymio</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>de.fhg.iais.openroberta</groupId>
             <artifactId>RobotSpike</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>de.fhg.iais.openroberta</groupId>
-            <artifactId>RobotFischertechnik</artifactId>
         </dependency>
         <dependency>
             <groupId>de.fhg.iais.openroberta</groupId>

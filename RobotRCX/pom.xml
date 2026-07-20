@@ -18,7 +18,7 @@
 	</parent>
 	<artifactId>RobotRCX</artifactId>
 	<name>RobotRCX</name>
-	<description>the robot related part of the OpenRoberta application</description>
+	<description>CodeON plugin for LEGO Mindstorms RCX</description>
 	<dependencies>
 		<dependency>
 			<groupId>de.fhg.iais.openroberta</groupId>

@@ -24,6 +24,7 @@ APPLICATION = ROOT / "application"
 RUNTIME = ROOT / ".codeon-runtime"
 BRIDGE_URL = "http://127.0.0.1:2222"
 CODEON_URL = "http://localhost:1999"
+SUPPORTED_ROBOTS = ("rcx", "edisonv2", "rcj")
 
 HELP_URLS = {
     "python": "https://www.python.org/downloads/",
@@ -323,6 +324,10 @@ def start(args: argparse.Namespace) -> int:
             "server.admin.dir=" + str(RUNTIME / "admin"),
             "-d",
             "robot.crosscompiler.resourcebase=" + str(compiler_base),
+            "-d",
+            "robot.whitelist=" + ",".join(SUPPORTED_ROBOTS),
+            "-d",
+            "robot.default=rcx",
         ]
         server_process = subprocess.Popen(
             server_command,

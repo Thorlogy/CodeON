@@ -54,11 +54,6 @@ define(["require", "exports", "log", "util.roberta", "message", "guiState.contro
             GUISTATE_C.setView('tabConfiguration');
         });
         $('#tabConfiguration').onWrap('shown.bs.tab', function (e) {
-            console.log("DEBUG: shown.bs.tab fired. Blocks count:", bricklyWorkspace ? bricklyWorkspace.getTopBlocks(true).length : 'no workspace', "isConfigurationUsed:", GUISTATE_C.isConfigurationUsed());
-            if (bricklyWorkspace) {
-                var topBlocks = bricklyWorkspace.getTopBlocks(true);
-                console.log("DEBUG: top blocks in shown.bs.tab:", topBlocks.map(function(b) { return b.type; }));
-            }
             bricklyWorkspace.markFocused();
             if (GUISTATE_C.isConfigurationUsed()) {
                 bricklyWorkspace.setVisible(true);
@@ -67,34 +62,12 @@ define(["require", "exports", "log", "util.roberta", "message", "guiState.contro
                 bricklyWorkspace.setVisible(false);
             }
             $(window).resize();
-            Blockly.svgResize(bricklyWorkspace);
-            var blocks = bricklyWorkspace.getTopBlocks(true);
-            var x = $(window).width() / 5;
-            var y = 50;
-            for (var i = 0; i < blocks.length; i++) {
-                var coordBlock = blocks[i].getRelativeToSurfaceXY();
-                if (coordBlock.x === 0 && coordBlock.y === 0) {
-                    blocks[i].moveBy(x, y);
-                }
-            }
             UTIL.clearAnnotations(bricklyWorkspace);
             if (GUISTATE_C.confAnnos !== undefined) {
                 UTIL.annotateBlocks(bricklyWorkspace, GUISTATE_C.confAnnos);
                 delete GUISTATE_C.confAnnos;
             }
             confVis && confVis.refresh();
-            setTimeout(function() {
-                if (bricklyWorkspace) {
-                    var blocks = bricklyWorkspace.getTopBlocks(true);
-                    console.log("DEBUG: 1s after shown.bs.tab. Blocks count:", blocks.length);
-                    blocks.forEach(function(b) {
-                        var xy = b.getRelativeToSurfaceXY();
-                        var svgXY = Blockly.getSvgXY_(b.svgGroup_, bricklyWorkspace);
-                        console.log("DEBUG: Block ID:", b.id, "type:", b.type, "surfaceXY:", xy, "svgXY:", svgXY);
-                    });
-                    console.log("DEBUG: workspace metrics:", bricklyWorkspace.getMetrics());
-                }
-            }, 1000);
         }, 'tabConfiguration clicked');
         $('#tabConfiguration').onWrap('hidden.bs.tab', function (e) {
             var dom = confVis ? confVis.getXml() : Blockly.Xml.workspaceToDom(bricklyWorkspace);
@@ -402,23 +375,18 @@ define(["require", "exports", "log", "util.roberta", "message", "guiState.contro
         }
     }
     function configurationToBricklyWorkspace(xml) {
-        console.log("DEBUG: configurationToBricklyWorkspace called with xml length:", xml ? xml.length : 0);
-        console.log("DEBUG: xml content preview:", xml ? xml.substring(0, 300) : "null");
         // removing changelistener in blockly doesn't work, so no other way
         listenToBricklyEvents = false;
         bricklyWorkspace.clear();
         Blockly.svgResize(bricklyWorkspace);
         var dom = Blockly.Xml.textToDom(xml, bricklyWorkspace);
         resetConfVisIfAvailable();
-        var visualized = CV.CircuitVisualization.isRobotVisualized(GUISTATE_C.getRobotGroup(), GUISTATE_C.getRobot());
-        console.log("DEBUG: isRobotVisualized:", visualized, "group:", GUISTATE_C.getRobotGroup(), "robot:", GUISTATE_C.getRobot());
-        if (visualized) {
+        if (CV.CircuitVisualization.isRobotVisualized(GUISTATE_C.getRobotGroup(), GUISTATE_C.getRobot())) {
             confVis = CV.CircuitVisualization.domToWorkspace(dom, bricklyWorkspace);
         }
         else {
             Blockly.Xml.domToWorkspace(dom, bricklyWorkspace);
         }
-        console.log("DEBUG: blocks in workspace after domToWorkspace:", bricklyWorkspace.getTopBlocks(true).map(function(b) { return b.type; }));
         bricklyWorkspace.setVersion(dom.getAttribute('xmlversion'));
         var name;
         var configName = GUISTATE_C.getConfigurationName() == undefined ? '' : GUISTATE_C.getConfigurationName();

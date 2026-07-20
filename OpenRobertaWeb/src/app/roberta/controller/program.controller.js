@@ -567,7 +567,7 @@ function newProgram(opt_further) {
     function loadNewProgram() {
         var result = {};
         result.rc = 'ok';
-        result.name = 'NEPOprog';
+        result.name = 'CodeONprog';
         result.programShared = false;
         result.lastChanged = '';
         GUISTATE_C.setProgram(result);

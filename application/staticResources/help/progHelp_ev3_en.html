@@ -6,7 +6,7 @@
         <div id='robControls_start' class='help beginner'><h3 id='ProgrammingBlocksEV3-»Programstart«'><span
             style='color:var(--ds-text,#172b4d);'>»Program start«</span><span style='color:var(--ds-text,#172b4d);'> </span></h3>
             <p>Each program starts with the red »Program start« block.</p>
-            <p>This block is always available in the Open Roberta Lab and cannot be deleted. The little triangle below the start block is called »sequence connector«. The first block you want to use will be connected by using the »sequence connector« at the start block. The sequence connector color changes to yellow when a suitable block comes into its range.</p>
+            <p>This block is always available in the CodeON and cannot be deleted. The little triangle below the start block is called »sequence connector«. The first block you want to use will be connected by using the »sequence connector« at the start block. The sequence connector color changes to yellow when a suitable block comes into its range.</p>
             <p>Settings:
             </p>
             <ul style='margin-top: 0; margin-bottom: 10px'>
@@ -244,7 +244,7 @@
         <div id='robActions_setLanguage' class='help expert'><h3 class='auto-cursor-target' id='ProgrammingBlocksEV3-»setlanguage...«[ExpertBlock]'>»set language ... «<span
             class='typcn typcn-star'></span></h3>
             <p>With this block you can control the language of your robot. If you are using C4EV3 as your robot system, you will need to download additional files for the speech. You can find instructions
-                <a href='https://jira.iais.fraunhofer.de/wiki/display/ORInfo/Set+Up+EV3+-+System+C4EV3'>here</a>.</p>
+                <a href='https://github.com/Thorlogy/CodeON#dokumentation/Set+Up+EV3+-+System+C4EV3'>here</a>.</p>
             <p>Options:
             </p>
             <ul style='margin-top: 0; margin-bottom: 10px'>
@@ -970,7 +970,7 @@
             <br></div>
         <div id='robActions_NNstep' class='help beginner nnTrue'><h3 id='ProgrammingBlocksEV3-»makeoneNNstep«'>»make one NN step«</h3>
             <p>With this block you perform a calculation step of your neural network. Before you use this block, you should set the values of the input neurons with the block "set value input neuron ...". The input values are given into the network and the values of the output neurons are calculated using the network from the tab »Neural Network«. A detailed description of the neural network can be found
-                <a href='https://jira.iais.fraunhofer.de/wiki/display/ORInfo/Artificial+Neural+Networks'>here</a>. You can query the values of the output neurons after the calculation with the block »gett value output neuron ...«.
+                <a href='https://github.com/Thorlogy/CodeON#dokumentation/Artificial+Neural+Networks'>here</a>. You can query the values of the output neurons after the calculation with the block »gett value output neuron ...«.
             </p></div>
         <div id='robActions_set_inputneuron_val' class='help beginner nnTrue'><h3 id='ProgrammingBlocksEV3-»setvalueinputneuron...«'>»set value input neuron ... «</h3>
             <p>With this block you can set the value of an input neuron. You can use either variables, numbers, sensor data or mathematical operations as input values, e.g. the sum of two numbers.</p>
@@ -1086,7 +1086,7 @@
             <span class='typcn typcn-star'></span></h3>
             <p>The »value ... as ...« block evaluates an expression entered as text (”expression") and returns the result. The expression can be “sqrt(a^2 + b^2)”, for example. It is evaluated to a number. The block is very powerful: almost all expressions that can be generated with Blockly blocks can also be written as text.</p>
             <p>How the expression can be constructed is described on a separate <span class='--l --r sentence_highlight'><a
-                href='https://github.com/OpenRoberta/openroberta-lab/wiki/Textly#expression-block' class='external-link' rel='nofollow'
+                href='https://github.com/Thorlogy/CodeON#dokumentation' class='external-link' rel='nofollow'
                 target='_blank'>wiki page</a></span>. Please note: there are general expressions that are valid for every robot and specific parts that are only valid for the selected robot. This is necessary because each robot supports its own sensors and actuators. This is described in detail on the wiki page.
             </p>
             <p>The user must specify in a drop-down menu which type is expected for the result. Which types are possible depends on the selected robot.</p>
@@ -1114,7 +1114,7 @@
         </div>
         <div id='text_cast_string_toNumber' class='help expert notWedo notNxt notBotnroll notNao notBob3 notSensebox notMbot notEdison notFestbionics notArduino'><h3
             id='ProgrammingBlocksEV3-»cast...toNumber«[Expert-block]'>»cast ... to Number« <span class='typcn typcn-star'></span></h3>
-            <p>This block converts a string into a number if this is possible. So if a string contains only numbers, this block can convert the string into a number. If the block does not contain numbers, this block will pass »NaN« when used in th Open Roberta Lab simulation and may have a different
+            <p>This block converts a string into a number if this is possible. So if a string contains only numbers, this block can convert the string into a number. If the block does not contain numbers, this block will pass »NaN« when used in th CodeON simulation and may have a different
                 <span style='letter-spacing: 0.0px;'>behavior depending on the programming language of the robot you are currently using. I</span><span
                     style='letter-spacing: 0.0px;'>f the string starts with numbers but then contains other characters that are not numbers, this block will pass only the numbers and stop as soon as the first character is in the string. So, as an example, this block makes the number 52 out of the string »52abcd«.</span>
             </p>

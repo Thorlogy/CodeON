@@ -28,7 +28,7 @@ define(["require", "exports", "util.roberta", "message", "guiState.model", "prog
             setProgramOwnerName(null);
             setProgramAuthorName(null);
             setProgramShareRelation(null);
-            setProgramName('NEPOprog');
+            setProgramName('CodeONprog');
             if (GUISTATE.server.theme !== 'default') {
                 var themePath = '../theme/' + GUISTATE.server.theme + '.json';
                 $.getJSON(themePath)
@@ -91,7 +91,7 @@ define(["require", "exports", "util.roberta", "message", "guiState.model", "prog
      *
      */
     function isProgramStandard() {
-        return GUISTATE.program.name == 'NEPOprog';
+        return GUISTATE.program.name == 'CodeONprog';
     }
     exports.isProgramStandard = isProgramStandard;
     function isProgramWritable() {
@@ -258,12 +258,12 @@ define(["require", "exports", "util.roberta", "message", "guiState.model", "prog
             setConfigurationSaved(true);
             if (findGroup(robot) != getRobotGroup()) {
                 setConfigurationName(robotGroup.toUpperCase() + 'basis');
-                setProgramName('NEPOprog');
+                setProgramName('CodeONprog');
             }
         }
         else {
             setConfigurationName(robotGroup.toUpperCase() + 'basis');
-            setProgramName('NEPOprog');
+            setProgramName('CodeONprog');
         }
         $('#simRobot').removeClass('typcn-' + GUISTATE.gui.robotGroup);
         $('#simRobot').addClass('typcn-' + robotGroup);
@@ -958,7 +958,7 @@ define(["require", "exports", "util.roberta", "message", "guiState.model", "prog
         if (getView() === 'tabUserGroupList') {
             $('#' + getPrevView()).tabWrapShow();
         }
-        setProgramName('NEPOprog');
+        setProgramName('CodeONprog');
         setProgramOwnerName(null);
         setProgramAuthorName(null);
         setProgramShareRelation(null);

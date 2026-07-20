@@ -161,7 +161,7 @@ define(["require", "exports", "message", "comm", "wrap", "user.controller", "not
                 }
                 else if (loadProgram) {
                     callback = IMPORT_C.loadProgramFromXML;
-                    parameter.push('NEPOprog');
+                    parameter.push('CodeONprog');
                     parameter.push(loadProgram);
                 }
                 else if (exampleView) {
@@ -303,15 +303,7 @@ define(["require", "exports", "message", "comm", "wrap", "user.controller", "not
                 }
             };
             $('#feedbackButton').on('click', '', function () {
-                $('#feedbackModal').on('show.bs.modal', function () {
-                    if (GUISTATE_C.getLanguage().toLowerCase() === 'de') {
-                        $('#feedbackIframe').attr('src', 'https://www.roberta-home.de/lab/feedback/');
-                    }
-                    else {
-                        $('#feedbackIframe').attr('src', 'https://www.roberta-home.de/en/lab/feedback/');
-                    }
-                });
-                $('#feedbackModal').modal('show');
+                window.open('https://github.com/Thorlogy/CodeON/issues/new', '_blank', 'noopener');
             });
         }
         // EDIT Menu  --- don't use onWrap here, because the export xml target must be enabled always
@@ -436,17 +428,17 @@ define(["require", "exports", "message", "comm", "wrap", "user.controller", "not
             }
         });
         $('.menuGeneral').onWrap('click', function () {
-            window.open('https://jira.iais.fraunhofer.de/wiki/display/ORInfo');
+            window.open('https://github.com/Thorlogy/CodeON#dokumentation');
         }, 'head navigation menu item general clicked');
         $('.menuFaq').onWrap('click', function () {
-            window.open('https://jira.iais.fraunhofer.de/wiki/display/ORInfo/FAQ');
+            window.open('https://github.com/Thorlogy/CodeON#hilfe-und-support');
         }, 'head navigation menu item faq clicked');
         $('.menuAboutProject').onWrap('click', function () {
             if (GUISTATE_C.getLanguage() == 'de') {
-                window.open('https://www.roberta-home.de/index.php?id=135');
+                window.open('https://github.com/Thorlogy/CodeON');
             }
             else {
-                window.open('https://www.roberta-home.de/index.php?id=135&L=1');
+                window.open('https://github.com/Thorlogy/CodeON');
             }
         }, 'head navigation menu item about clicked');
         $('.menuShowStart').onWrap('click', function () { return backToStartView(); });
@@ -561,7 +553,7 @@ define(["require", "exports", "message", "comm", "wrap", "user.controller", "not
                 if ((e.metaKey || e.ctrlKey) && e.which == 83) {
                     e.preventDefault();
                     if (GUISTATE_C.isUserLoggedIn()) {
-                        if (GUISTATE_C.getProgramName() === 'NEPOprog' || e.shiftKey) {
+                        if (GUISTATE_C.getProgramName() === 'CodeONprog' || e.shiftKey) {
                             PROGRAM_C.showSaveAsModal();
                         }
                         else if (!GUISTATE_C.isProgramSaved()) {

@@ -207,14 +207,13 @@ public class RcxStackMachineVisitor extends AbstractStackMachineVisitor implemen
 
     @Override
     public Void visitSendIRAction(SendIRAction sendIRAction) {
-        // keine Simulation fuer IR-Nachrichten
-        return null;
+        sendIRAction.code.accept(this);
+        return add(makeNode(C.SEND_IR_ACTION));
     }
 
     @Override
     public Void visitReceiveIRAction(ReceiveIRAction receiveIRAction) {
-        // keine Simulation fuer IR-Nachrichten
-        return null;
+        return add(makeNode(C.RECEIVE_IR_ACTION));
     }
 
     @Override

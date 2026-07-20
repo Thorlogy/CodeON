@@ -465,7 +465,7 @@ function fetchRSSFeed() {
     };
     let successFn = function (response) {
         var $newsContainer = $(
-            '<section class="section--white" id="section--news"><div class="container-fluid"><div class="row justify-content-center"><div class="col col-12 col-xl-10 col-xxl-8 col-xxxl-6 my-4"><div class="teaser-news"><div class="row justify-content-between align-items-center"><div class="col col-12 col-md-6"><div class="teaser-news--header">Neues aus dem Open Roberta Lab</div><div class="teaser-news--body" id="teaser-news--rss"></div></div><div class="col col-12 col-md-6 col-lg-4 offset-md-0 offset-lg-2 mt-5 mt-md-0" id="teaser-news--rss-image"></div></div></div></div></div></div></section>'
+            '<section class="section--white" id="section--news"><div class="container-fluid"><div class="row justify-content-center"><div class="col col-12 col-xl-10 col-xxl-8 col-xxxl-6 my-4"><div class="teaser-news"><div class="row justify-content-between align-items-center"><div class="col col-12 col-md-6"><div class="teaser-news--header">Neues aus dem CodeON-Projekt</div><div class="teaser-news--body" id="teaser-news--rss"></div></div><div class="col col-12 col-md-6 col-lg-4 offset-md-0 offset-lg-2 mt-5 mt-md-0" id="teaser-news--rss-image"></div></div></div></div></div></div></section>'
         );
         $newsContainer.insertBefore('footer');
         $(response)

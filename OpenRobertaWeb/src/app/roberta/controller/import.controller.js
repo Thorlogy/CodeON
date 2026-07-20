@@ -95,7 +95,7 @@ function loadProgramFromXML(name, xml) {
 
             // on server side we only test case insensitive block names, displaying xml can still fail:
             result.programSaved = false;
-            result.name = 'NEPOprog';
+            result.name = 'CodeONprog';
             result.programShared = false;
             result.programTimestamp = '';
             var nameConfOld = GUISTATE_C.getConfigurationName();

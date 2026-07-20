@@ -11,7 +11,7 @@
 
     <artifactId>RobotSpike</artifactId>
     <name>RobotSpike</name>
-    <description>the robot related part of the OpenRoberta application</description>
+    <description>CodeON plugin for LEGO SPIKE robots</description>
 
     <dependencies>
         <dependency>

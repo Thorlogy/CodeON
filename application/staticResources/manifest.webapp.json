@@ -4,8 +4,8 @@
   "version": "${openRobertaServer.version}",
   "description": "CodeON – Programmieren und Lernen mit Robotern",
   "developer": {
-    "name": "Open Roberta",
-    "url": "${project.parent.url}"
+    "name": "CodeON",
+    "url": "https://github.com/Thorlogy/CodeON"
   },
   "default_locale": "en",
   "start_url": "index.html",

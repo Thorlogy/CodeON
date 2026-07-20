@@ -456,10 +456,11 @@ public final class RcxNqcVisitor extends AbstractCppVisitor implements IRcxVisit
 
     @Override
     public Void visitSendIRAction(SendIRAction sendIRAction) {
-        // IR-Nachricht senden: 1 Byte, gueltige Werte 1-255 (RCX-Firmware)
-        this.src.add("SendMessage(");
+        // Die RCX-Firmware akzeptiert Nachrichten von 1 bis 255. Auch
+        // berechnete Werte werden begrenzt, nicht nur konstante Blockwerte.
+        this.src.add("SendMessage(MIN(MAX(");
         sendIRAction.code.accept(this);
-        this.src.add(");");
+        this.src.add(", 1), 255));");
         return null;
     }
 

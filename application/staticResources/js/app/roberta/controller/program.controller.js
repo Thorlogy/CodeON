@@ -1,1 +1,713 @@
-define(["require","exports","message","log","util.roberta","guiState.controller","robot.controller","nn.controller","program.model","user.model","configuration.controller","blockly","jquery","aceEditor","jquery-validate"],(function(o,e,r,a,t,n,i,s,l,O,c,g,T,m){var _,C;Object.defineProperty(e,"__esModule",{value:!0}),e.programToBlocklyWorkspace=e.loadExternalToolbox=e.loadToolbox=e.resetView=e.reloadView=e.reloadProgram=e.getBlocklyWorkspace=e.exportAllXml=e.exportXml=e.linkProgram=e.newProgram=e.initProgramEnvironment=e.showSaveAsModal=e.initProgramForms=e.loadFromGallery=e.saveToServer=e.init=e.getPassword=e.setPassword=e.getSSID=e.setSSID=void 0;var u=!0,d=!1,f="",A="";function B(){return f}function R(){return A}function p(){T(".modal").modal("hide");var o=g.Xml.workspaceToDom(C),e=g.Xml.domToText(o),t=!n.isConfigurationStandard()&&!n.isConfigurationAnonymous()?n.getConfigurationName():void 0,i=n.isConfigurationAnonymous()?n.getConfigurationXML():void 0;l.saveProgramToServer(n.getProgramName(),n.getProgramOwnerName(),e,t,i,n.getProgramTimestamp(),(function(o){"ok"===o.rc&&(n.setProgramTimestamp(o.lastChanged),n.setProgramSaved(!0),n.setConfigurationSaved(!0),a.info("save program "+n.getProgramName())),r.displayInformation(o,"MESSAGE_EDIT_SAVE_PROGRAM",o.message,n.getProgramName())}))}function L(){if(_.validate(),_.valid()){T(".modal").modal("hide");var o=T("#singleModalInput").val().trim(),e=g.Xml.workspaceToDom(C),t=g.Xml.domToText(e),i=!n.isConfigurationStandard()&&!n.isConfigurationAnonymous()?n.getConfigurationName():void 0,s=n.isConfigurationAnonymous()?n.getConfigurationXML():void 0,O=n.getUserAccountName();a.info("saveAs program "+n.getProgramName()),l.saveAsProgramToServer(o,O,t,i,s,n.getProgramTimestamp(),(function(e){if("ok"===e.rc)a.info("saved program "+n.getProgramName()+" as "+o),e.name=o,e.programShared=!1,n.setProgram(e,O,O),r.displayInformation(e,"MESSAGE_EDIT_SAVE_PROGRAM_AS",e.message,n.getProgramName());else if("ORA_PROGRAM_SAVE_AS_ERROR_PROGRAM_EXISTS"===e.cause){var c=e.lastChanged,m=g.Msg.POPUP_BACKGROUND_REPLACE||"A program with the same name already exists! <br> Would you like to replace it?";T("#show-message-confirm").oneWrap("shown.bs.modal",(function(e){T("#confirm").off(),T("#confirm").onWrap("click",(function(e){e.preventDefault(),l.saveProgramToServer(o,O,t,i,s,c,(function(e){"ok"===e.rc?(a.info("saved program "+n.getProgramName()+" as "+o+" and overwrote old content"),e.name=o,n.setProgram(e,O,O),r.displayInformation(e,"MESSAGE_EDIT_SAVE_PROGRAM_AS",e.message,n.getProgramName())):(a.info("failed to overwrite "+o),r.displayMessage(e.message,"POPUP",""))}))}),"confirm modal"),T("#confirmCancel").off(),T("#confirmCancel").onWrap("click",(function(o){o.preventDefault(),T(".modal").modal("hide")}),"cancel modal")})),r.displayPopupMessage("ORA_PROGRAM_SAVE_AS_ERROR_PROGRAM_EXISTS",m,g.Msg.POPUP_REPLACE,g.Msg.POPUP_CANCEL)}}))}}function b(){_=T("#single-modal-form"),T("#buttonCancelFirmwareUpdateAndRun").onWrap("click",(function(){start()}),"cancel firmware update and run")}function P(){var o,e;T(window).width()<768?(o=T(window).width()/50,e=25):(o=T(window).width()/5,e=50),X(n.getProgramProg());var r=C.getTopBlocks(!0);if(r[0]){var a=r[0].getRelativeToSurfaceXY();r[0].moveBy(o-a.x,e-a.y)}}function v(o){var e;o||!1||n.isProgramSaved()?(e={rc:"ok",name:"NEPOprog",programShared:!1,lastChanged:""},n.setProgram(e),P(),s.programWasReplaced(),a.info("New program loaded")):(T("#show-message-confirm").oneWrap("shown.bs.modal",(function(o){T("#confirm").off(),T("#confirm").on("click",(function(o){o.preventDefault(),v(!0)})),T("#confirmCancel").off(),T("#confirmCancel").on("click",(function(o){o.preventDefault(),T(".modal").modal("hide")}))})),n.isUserLoggedIn()?r.displayMessage("POPUP_BEFOREUNLOAD_LOGGEDIN","POPUP","",!0):r.displayMessage("POPUP_BEFOREUNLOAD","POPUP","",!0))}function y(o,e){var r;o?(r=o.progXML,T.isEmptyObject(o.confAnnos)||(n.confAnnos=o.confAnnos,t.alertTab("tabConfiguration"))):r=n.getProgramXML(),X(r,e)}function E(){if("tabProgram"==n.getView()){var o=g.Xml.workspaceToDom(C);X(g.Xml.domToText(o));var e=n.getProgramToolbox();C.updateToolbox(G(e)),I(),d=!0}else d=!1}function N(o){n.setProgramToolboxLevel(o);var e=n.getToolbox(o);e&&(C.updateToolbox(G(e)),I()),"beginner"===o?T(".help.expert").hide():T(".help.expert").show()}function I(){window.requestAnimationFrame((function(){T("#program .blocklyTreeRow").each((function(){var o=T(this).find(".blocklyTreeLabel");if(o.hasClass("blocklyTreeSub"))o.css("color","#4a4a4a");else{var e=window.getComputedStyle(this).borderLeftColor;e&&"rgba(0, 0, 0, 0)"!==e&&(this.style.backgroundColor=e,o.css("color","#fff"))}}))}))}function G(o){if(!o)return o;var e=n.getTheme();if(!e||!e.category)return o;var r={TOOLBOX_ACTION:"CAT_ACTION_RGB",TOOLBOX_SENSOR:"CAT_SENSOR_RGB",TOOLBOX_CONTROL:"CAT_CONTROL_RGB",TOOLBOX_LOGIC:"CAT_LOGIC_RGB",TOOLBOX_MATH:"CAT_MATH_RGB",TOOLBOX_TEXT:"CAT_TEXT_RGB",TOOLBOX_LIST:"CAT_LIST_RGB",TOOLBOX_COLOUR:"CAT_COLOUR_RGB",TOOLBOX_VARIABLE:"CAT_VARIABLE_RGB",TOOLBOX_PROCEDURE:"CAT_PROCEDURE_RGB",TOOLBOX_COMMUNICATION:"CAT_COMMUNICATION_RGB",TOOLBOX_IMAGE:"CAT_IMAGE_RGB",TOOLBOX_DAEMON:"CAT_DAEMON_RGB",TOOLBOX_DRIVE:"CAT_ACTION_RGB",TOOLBOX_MOVE:"CAT_ACTION_RGB",TOOLBOX_DISPLAY:"CAT_ACTION_RGB",TOOLBOX_SOUND:"CAT_ACTION_RGB",TOOLBOX_LIGHT:"CAT_ACTION_RGB",TOOLBOX_PIN:"CAT_ACTION_RGB",TOOLBOX_WAIT:"CAT_CONTROL_RGB",TOOLBOX_DECISION:"CAT_CONTROL_RGB",TOOLBOX_LOOP:"CAT_CONTROL_RGB"};try{for(var a=(new DOMParser).parseFromString(o,"text/xml"),t=a.getElementsByTagName("category"),i=0;i<t.length;i++){var s=t[i].getAttribute("name");s&&r[s]&&e.category[r[s]]&&t[i].setAttribute("colour",e.category[r[s]])}return(new XMLSerializer).serializeToString(a)}catch(e){return console.error("Error patching toolbox XML:",e),o}}function X(o,e){if(o){u=!1,C.clear();var r=g.Xml.textToDom(o,C);g.Xml.domToWorkspace(r,C),C.setVersion(r.getAttribute("xmlversion")),T("#infoContent").html(C.description),"string"==typeof C.description&&C.description.length?T("#infoButton").addClass("notEmpty"):T("#infoButton").removeClass("notEmpty");var a=C.tags;T("#infoTags").tagsinput("removeAll"),T(".bootstrap-tagsinput input").attr("placeholder","Tags"),T("#infoTags").tagsinput("add",a);n.getConfigurationXML(),r=g.Xml.workspaceToDom(C);var t=g.Xml.domToText(r),i=!n.isConfigurationStandard()&&!n.isConfigurationAnonymous()?n.getConfigurationName():void 0,s=n.isConfigurationAnonymous()?n.getConfigurationXML():void 0;n.setProgramSaved(!0);var O=n.getLanguage();T("#codeDiv").hasClass("rightActive")&&e&&l.showSourceProgram(n.getProgramName(),i,t,s,O,B(),R(),(function(o){m.setViewCode(o.sourceCode)})),setTimeout((function(){u=!0}),500)}}e.setSSID=function(o){f=o},e.getSSID=B,e.setPassword=function(o){A=o},e.getPassword=R,e.init=function(){!function(){var o,e=n.getProgramToolbox(),r=n.getTheme(),a="undefined"!=typeof window&&window.Blockly&&window.Blockly.Theme?window.Blockly:g;if(r&&r.category){var t={TOOLBOX_ACTION:"CAT_ACTION_RGB",TOOLBOX_SENSOR:"CAT_SENSOR_RGB",TOOLBOX_CONTROL:"CAT_CONTROL_RGB",TOOLBOX_LOGIC:"CAT_LOGIC_RGB",TOOLBOX_MATH:"CAT_MATH_RGB",TOOLBOX_TEXT:"CAT_TEXT_RGB",TOOLBOX_LIST:"CAT_LIST_RGB",TOOLBOX_COLOUR:"CAT_COLOUR_RGB",TOOLBOX_VARIABLE:"CAT_VARIABLE_RGB",TOOLBOX_PROCEDURE:"CAT_PROCEDURE_RGB",TOOLBOX_COMMUNICATION:"CAT_COMMUNICATION_RGB",TOOLBOX_IMAGE:"CAT_IMAGE_RGB",TOOLBOX_DAEMON:"CAT_DAEMON_RGB",TOOLBOX_DRIVE:"CAT_ACTION_RGB",TOOLBOX_MOVE:"CAT_ACTION_RGB",TOOLBOX_DISPLAY:"CAT_ACTION_RGB",TOOLBOX_SOUND:"CAT_ACTION_RGB",TOOLBOX_LIGHT:"CAT_ACTION_RGB",TOOLBOX_PIN:"CAT_ACTION_RGB",TOOLBOX_WAIT:"CAT_CONTROL_RGB",TOOLBOX_DECISION:"CAT_CONTROL_RGB",TOOLBOX_LOOP:"CAT_CONTROL_RGB"};for(var i in t){var s=t[i];if(r.category[s])a["CAT_"+i.toUpperCase().replace("TOOLBOX_","")+"_RGB"]=r.category[s]}}if(r&&a.Theme){var l={},O={};if(r.category){t={TOOLBOX_ACTION:"CAT_ACTION_RGB",TOOLBOX_SENSOR:"CAT_SENSOR_RGB",TOOLBOX_CONTROL:"CAT_CONTROL_RGB",TOOLBOX_LOGIC:"CAT_LOGIC_RGB",TOOLBOX_MATH:"CAT_MATH_RGB",TOOLBOX_TEXT:"CAT_TEXT_RGB",TOOLBOX_LIST:"CAT_LIST_RGB",TOOLBOX_COLOUR:"CAT_COLOUR_RGB",TOOLBOX_VARIABLE:"CAT_VARIABLE_RGB",TOOLBOX_PROCEDURE:"CAT_PROCEDURE_RGB",TOOLBOX_COMMUNICATION:"CAT_COMMUNICATION_RGB",TOOLBOX_IMAGE:"CAT_IMAGE_RGB",TOOLBOX_DAEMON:"CAT_DAEMON_RGB",TOOLBOX_DRIVE:"CAT_ACTION_RGB",TOOLBOX_MOVE:"CAT_ACTION_RGB",TOOLBOX_DISPLAY:"CAT_ACTION_RGB",TOOLBOX_SOUND:"CAT_ACTION_RGB",TOOLBOX_LIGHT:"CAT_ACTION_RGB",TOOLBOX_PIN:"CAT_ACTION_RGB",TOOLBOX_WAIT:"CAT_CONTROL_RGB",TOOLBOX_DECISION:"CAT_CONTROL_RGB",TOOLBOX_LOOP:"CAT_CONTROL_RGB"};for(var i in t)r.category[t[i]]&&(l[i]={colour:r.category[t[i]]});e=G(e)}if(r.category&&(O.logic_blocks={colourPrimary:r.category.CAT_LOGIC_RGB},O.loop_blocks={colourPrimary:r.category.CAT_CONTROL_RGB},O.math_blocks={colourPrimary:r.category.CAT_MATH_RGB},O.text_blocks={colourPrimary:r.category.CAT_TEXT_RGB},O.list_blocks={colourPrimary:r.category.CAT_LIST_RGB},O.colour_blocks={colourPrimary:r.category.CAT_COLOUR_RGB},O.variable_blocks={colourPrimary:r.category.CAT_VARIABLE_RGB},O.procedure_blocks={colourPrimary:r.category.CAT_PROCEDURE_RGB},O.robActions_blocks={colourPrimary:r.category.CAT_ACTION_RGB},O.robSensors_blocks={colourPrimary:r.category.CAT_SENSOR_RGB},O.robControls_blocks={colourPrimary:r.category.CAT_CONTROL_RGB},O.robBrick_blocks={colourPrimary:r.category.CAT_ACTION_RGB}),a.Blocks)for(var c in a.Blocks)if(a.Blocks.hasOwnProperty(c)){var m=a.Blocks[c];c.startsWith("robActions")?m.style="robActions_blocks":c.startsWith("robSensors")?m.style="robSensors_blocks":c.startsWith("robControls")?m.style="robControls_blocks":c.startsWith("robBrick")&&(m.style="robBrick_blocks")}o=a.Theme.defineTheme("CreateV10",{base:a.Themes.Classic,categoryStyles:l,blockStyles:O,componentStyles:{workspaceBackgroundColour:"#ffffff",toolboxBackgroundColour:"#DDDDDD",toolboxForegroundColour:"#000000",flyoutBackgroundColour:"#dddddd",flyoutForegroundColour:"#000000",flyoutOpacity:1,scrollbarColour:"#797979",insertionMarkerColour:"#fff",insertionMarkerOpacity:.3,scrollbarOpacity:.4,cursorColour:"#d0d0d0"},fontStyle:{family:'"Helvetica Neue", Helvetica, Arial, sans-serif',weight:"normal",size:12}})}C=a.inject(document.getElementById("blocklyDiv"),{path:"/blockly/",toolbox:e,theme:o||n.getTheme(),trashcan:!0,scrollbars:!0,media:"../blockly/media/",zoom:{controls:!0,wheel:!1,startScale:1,maxScale:4,minScale:.25,scaleSpeed:1.1},variableDeclaration:!0,robControls:!0}),T(window).resize(),C.setDevice({group:n.getRobotGroup(),robot:n.getRobot()}),n.setBlocklyWorkspace(C),C.robControls.disable("saveProgram"),C.robControls.refreshTooltips(n.getRobotRealName()),n.checkSim(),T("#program").find(".blocklyToolboxDiv:first").wrap("<div id='toolboxDiv' style='position: absolute;'></div>"),T("#toolboxDiv").prepend('<ul class="nav nav-tabs levelTabs"><li class="nav-item"><a class="nav-link typcn typcn-media-stop-outline active beginner" href="#beginner" data-bs-toggle="tab">1</a></li><li class="nav-item"><a href="#expert" class="nav-link typcn typcn-star-outline expert" data-bs-toggle="tab">2</a></li></ul>')}(),P(),T("#sliderDiv").draggable({axis:"x",cursor:"col-resize"}),T("#tabProgram").onWrap("click",(function(o){if(o.preventDefault(),"tabConfiguration"===n.getView()&&n.isUserLoggedIn()&&!n.isConfigurationSaved()&&!n.isConfigurationAnonymous())return T("#show-message-confirm").oneWrap("shown.bs.modal",(function(o){T("#confirm").off(),T("#confirm").on("click",(function(o){o.preventDefault(),n.setConfigurationName(""),T("#tabProgram").tabWrapShow()})),T("#confirmCancel").off(),T("#confirmCancel").on("click",(function(o){o.preventDefault(),T(".modal").modal("hide")}))})),r.displayMessage("POPUP_CONFIGURATION_UNSAVED","POPUP","",!0),!1;T("#tabProgram").tabWrapShow()})),T("#tabProgram").onWrap("show.bs.tab",(function(o){n.setView("tabProgram")})),T("#tabProgram").onWrap("shown.bs.tab",(function(o){C.markFocused(),C.setVisible(!0),d||E(),T(window).resize(),I()})),T("#tabProgram").onWrap("hide.bs.tab",(function(o){d=!1})),T("#tabProgram").onWrap("hidden.bs.tab",(function(o){C.setVisible(!1)})),T(".expert, .beginner").onWrap("click",(function(o){var e=T(o.target).attr("href")&&T(o.target).attr("href").substring(1)||T(o.target.parentElement).attr("href")&&T(o.target.parentElement).attr("href").substring(1);T('.levelTabs a[href="'+e+'"]').tabWrapShow(),o.preventDefault(),N(e),o.stopPropagation(),a.info("toolbox clicked, switched to "+e)})),T("#syncButton").onWrap("click",(function(o){o.preventDefault(),T("#codeButton").hasClass("rightActive")?T("#codeSynchronize").trigger("click"):T("#codeButton").trigger("click")})),g.bindEvent_(C.robControls.saveProgram,"mousedown",null,(function(o){return a.info("saveProgram from blockly button"),p(),!1})),C.robControls.disable("saveProgram"),C.addChangeListener((function(o){if(u&&o.type!=g.Events.UI&&n.isProgramSaved()&&n.setProgramSaved(!1),o.type===g.Events.DELETE&&0===C.getAllBlocks().length&&v(!0),T(".selectedHelp").removeClass("selectedHelp"),g.selected&&T("#blocklyDiv").hasClass("rightActive")){var e=g.selected.type;T("#"+e).addClass("selectedHelp"),T("#helpContent").scrollTo("#"+e,1e3,{offset:-10})}return o.type!==g.Events.UI&&T("#sourceCodeEditorPane").is(":visible")&&(clearTimeout(C.syncTimeout),C.syncTimeout=setTimeout((function(){var o=g.Xml.workspaceToDom(C),e=g.Xml.domToText(o),r=n.isConfigurationAnonymous()?n.getConfigurationXML():void 0,a=n.isConfigurationStandard()||n.isConfigurationAnonymous()?void 0:n.getConfigurationName(),t=n.getLanguage();l.showSourceProgram(n.getProgramName(),a,e,r,t,B(),R(),(function(o){m.setEditorCode(o.sourceCode)}))}),2e3)),!1})),b()},e.saveToServer=p,e.loadFromGallery=function(o){var e,a=o[1],t=o[3],s=o[0];e=s===n.getRobotGroup()?n.getRobot():n.findRobot(s);var O="Gallery";i.switchRobot(e,{},!1,(function(){l.loadProgramFromListing(a,O,t,(function(o){"ok"===o.rc&&(o.programShared="READ",o.name=a,n.setProgram(o,O,t),n.setProgramXML(o.progXML),void 0===o.configName?void 0===o.confXML?(n.setConfigurationNameDefault(),n.setConfigurationXML(n.getConfigurationConf())):(n.setConfigurationName(""),n.setConfigurationXML(o.confXML)):(n.setConfigurationName(o.configName),n.setConfigurationXML(o.confXML)),T("#tabProgram").oneWrap("shown.bs.tab",(function(o){c.reloadConf(),y()})),T("#tabProgram").tabWrapShow()),r.displayInformation(o,"",o.message)}))}))},e.initProgramForms=b,e.showSaveAsModal=function(){T.validator.addMethod("regex",(function(o,e,r){return(o=o.trim()).match(r)}),"No special Characters allowed here. Use only upper and lowercase letters (A through Z; a through z) and numbers."),t.showSingleModal((function(){T("#singleModalInput").attr("type","text"),T("#single-modal h5").text(g.Msg.MENU_SAVE_AS),T("#single-modal label").text(g.Msg.POPUP_NAME)}),L,(function(){}),{rules:{singleModalInput:{required:!0,regex:/^[a-zA-Z_öäüÖÄÜß$€][a-zA-Z0-9_öäüÖÄÜß$€]{0,254}$/}},errorClass:"form-invalid",errorPlacement:function(o,e){o.insertAfter(e)},messages:{singleModalInput:{required:g.Msg.VALIDATION_FIELD_REQUIRED,regex:g.Msg.MESSAGE_INVALID_NAME}}})},e.initProgramEnvironment=P,e.newProgram=v,e.linkProgram=function(){var o=g.Xml.workspaceToDom(C),e=g.Xml.domToText(o);e='<export xmlns="http://de.fhg.iais.roberta.blockly"><program>'+e+"</program><config>"+n.getConfigurationXML()+"</config></export>";var t=new URL(document.location),i=t.protocol+"//"+t.host+"?loadSystem=";i+=n.getRobot(),i+="&loadProgram="+e,i=encodeURI(i);var s=T("<input>");T("body").append(s),s.val(i).select(),document.execCommand("copy"),s.remove();var l='</br><textarea readonly style="width:100%;" type="text">'+i+"</textarea>";a.info("ProgramLinkShare"),r.displayMessage("POPUP_GET_LINK","POPUP",l)},e.exportXml=function(){var o=g.Xml.workspaceToDom(C),e='<export xmlns="http://de.fhg.iais.roberta.blockly"><program>'+g.Xml.domToText(o)+"</program><config>"+n.getConfigurationXML()+"</config></export>";a.info("ProgramExport"),t.download(n.getProgramName()+".xml",e),r.displayMessage("MENU_MESSAGE_DOWNLOAD","TOAST",n.getProgramName())},e.exportAllXml=function(){O.userLoggedInCheck((function(o){"ok"===o.rc?l.exportAllProgramsXml():r.displayMessage(o.cause,"TOAST","Log in check failed for Export")}))},e.getBlocklyWorkspace=function(){return C},e.reloadProgram=y,e.reloadView=E,e.resetView=function(){if(C){C.setDevice({group:n.getRobotGroup(),robot:n.getRobot()}),P();var o=n.getProgramToolbox();C.updateToolbox(G(o)),I()}},e.loadToolbox=N,e.loadExternalToolbox=function(o){o&&(C.updateToolbox(G(o)),I())},e.programToBlocklyWorkspace=X}));
+define(["require", "exports", "message", "log", "util.roberta", "guiState.controller", "robot.controller", "nn.controller", "program.model", "user.model", "configuration.controller", "blockly", "jquery", "aceEditor", "jquery-validate"], function (require, exports, MSG, LOG, UTIL, GUISTATE_C, ROBOT_C, NN_C, PROGRAM, USER, CONFIGURATION_C, Blockly, $, ACE_EDITOR) {
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.programToBlocklyWorkspace = exports.loadExternalToolbox = exports.loadToolbox = exports.resetView = exports.reloadView = exports.reloadProgram = exports.getBlocklyWorkspace = exports.exportAllXml = exports.exportXml = exports.linkProgram = exports.newProgram = exports.initProgramEnvironment = exports.showSaveAsModal = exports.initProgramForms = exports.loadFromGallery = exports.saveToServer = exports.init = exports.getPassword = exports.setPassword = exports.getSSID = exports.setSSID = void 0;
+    var $formSingleModal;
+    var blocklyWorkspace;
+    var listenToBlocklyEvents = true;
+    // Force one toolbox refresh after the program tab first becomes visible.
+    // During injection the RCX theme colours are not guaranteed to be ready yet.
+    var seen = false;
+    var _SSID = '';
+    var _password = '';
+    function setSSID(SSID) {
+        _SSID = SSID;
+    }
+    exports.setSSID = setSSID;
+    function getSSID() {
+        return _SSID;
+    }
+    exports.getSSID = getSSID;
+    function setPassword(password) {
+        _password = password;
+    }
+    exports.setPassword = setPassword;
+    function getPassword() {
+        return _password;
+    }
+    exports.getPassword = getPassword;
+    /**
+     * Inject Blockly with initial toolbox
+     */
+    function init() {
+        initView();
+        initProgramEnvironment();
+        initEvents();
+        initProgramForms();
+    }
+    exports.init = init;
+    function initView() {
+        var toolbox = GUISTATE_C.getProgramToolbox();
+        var serverTheme = GUISTATE_C.getTheme();
+        var blocklyTheme;
+        // Determine the active Blockly instance.
+        // If running V10, window.Blockly should be set and have Theme support.
+        // Otherwise, use the imported Blockly (legacy).
+        var activeBlockly = (typeof window !== 'undefined' && window.Blockly && window.Blockly.Theme) ? window.Blockly : Blockly;
+        if (serverTheme && activeBlockly.Theme) {
+            var categoryStyles = {};
+            var blockStyles = {};
+            // Map OpenRoberta categories to Blockly V10 categoryStyles
+            if (serverTheme.category) {
+                var catMap = {
+                    "TOOLBOX_ACTION": "CAT_ACTION_RGB",
+                    "TOOLBOX_SENSOR": "CAT_SENSOR_RGB",
+                    "TOOLBOX_CONTROL": "CAT_CONTROL_RGB",
+                    "TOOLBOX_LOGIC": "CAT_LOGIC_RGB",
+                    "TOOLBOX_MATH": "CAT_MATH_RGB",
+                    "TOOLBOX_TEXT": "CAT_TEXT_RGB",
+                    "TOOLBOX_LIST": "CAT_LIST_RGB",
+                    "TOOLBOX_COLOUR": "CAT_COLOUR_RGB",
+                    "TOOLBOX_VARIABLE": "CAT_VARIABLE_RGB",
+                    "TOOLBOX_PROCEDURE": "CAT_PROCEDURE_RGB",
+                    "TOOLBOX_COMMUNICATION": "CAT_COMMUNICATION_RGB",
+                    "TOOLBOX_IMAGE": "CAT_IMAGE_RGB",
+                    "TOOLBOX_DAEMON": "CAT_DAEMON_RGB",
+                    // Expert categories
+                    "TOOLBOX_DRIVE": "CAT_ACTION_RGB",
+                    "TOOLBOX_MOVE": "CAT_ACTION_RGB",
+                    "TOOLBOX_DISPLAY": "CAT_ACTION_RGB",
+                    "TOOLBOX_SOUND": "CAT_ACTION_RGB",
+                    "TOOLBOX_LIGHT": "CAT_ACTION_RGB",
+                    "TOOLBOX_PIN": "CAT_ACTION_RGB",
+                    "TOOLBOX_WAIT": "CAT_CONTROL_RGB",
+                    "TOOLBOX_DECISION": "CAT_CONTROL_RGB",
+                    "TOOLBOX_LOOP": "CAT_CONTROL_RGB"
+                };
+                for (var key in catMap) {
+                    if (serverTheme.category[catMap[key]]) {
+                        categoryStyles[key] = {
+                            "colour": serverTheme.category[catMap[key]]
+                        };
+                    }
+                }
+                // 1. Inject categorystyle into the Toolbox XML
+                if (toolbox) {
+                    try {
+                        var parser = new DOMParser();
+                        var xmlDoc = parser.parseFromString(toolbox, "text/xml");
+                        var categories = xmlDoc.getElementsByTagName("category");
+                        for (var i = 0; i < categories.length; i++) {
+                            var catName = categories[i].getAttribute("name");
+                            if (catName && categoryStyles[catName]) {
+                                categories[i].setAttribute("categorystyle", catName);
+                            }
+                        }
+                        var serializer = new XMLSerializer();
+                        toolbox = serializer.serializeToString(xmlDoc);
+                    }
+                    catch (e) {
+                        console.error("Error patching toolbox XML:", e);
+                    }
+                }
+            }
+            // Define standard block styles using theme colors
+            if (serverTheme.category) {
+                blockStyles["logic_blocks"] = { "colourPrimary": serverTheme.category["CAT_LOGIC_RGB"] };
+                blockStyles["loop_blocks"] = { "colourPrimary": serverTheme.category["CAT_CONTROL_RGB"] };
+                blockStyles["math_blocks"] = { "colourPrimary": serverTheme.category["CAT_MATH_RGB"] };
+                blockStyles["text_blocks"] = { "colourPrimary": serverTheme.category["CAT_TEXT_RGB"] };
+                blockStyles["list_blocks"] = { "colourPrimary": serverTheme.category["CAT_LIST_RGB"] };
+                blockStyles["colour_blocks"] = { "colourPrimary": serverTheme.category["CAT_COLOUR_RGB"] };
+                blockStyles["variable_blocks"] = { "colourPrimary": serverTheme.category["CAT_VARIABLE_RGB"] };
+                blockStyles["procedure_blocks"] = { "colourPrimary": serverTheme.category["CAT_PROCEDURE_RGB"] };
+                // Custom OpenRoberta Styles
+                blockStyles["robActions_blocks"] = { "colourPrimary": serverTheme.category["CAT_ACTION_RGB"] };
+                blockStyles["robSensors_blocks"] = { "colourPrimary": serverTheme.category["CAT_SENSOR_RGB"] };
+                blockStyles["robControls_blocks"] = { "colourPrimary": serverTheme.category["CAT_CONTROL_RGB"] };
+                blockStyles["robBrick_blocks"] = { "colourPrimary": serverTheme.category["CAT_ACTION_RGB"] };
+            }
+            // 2. Assign styles to OpenRoberta blocks in Blockly.Blocks
+            if (activeBlockly.Blocks) {
+                for (var blockName in activeBlockly.Blocks) {
+                    if (activeBlockly.Blocks.hasOwnProperty(blockName)) {
+                        var block = activeBlockly.Blocks[blockName];
+                        if (blockName.startsWith("robActions")) {
+                            block.style = "robActions_blocks";
+                        }
+                        else if (blockName.startsWith("robSensors")) {
+                            block.style = "robSensors_blocks";
+                        }
+                        else if (blockName.startsWith("robControls")) {
+                            block.style = "robControls_blocks";
+                        }
+                        else if (blockName.startsWith("robBrick")) {
+                            block.style = "robBrick_blocks";
+                        }
+                    }
+                }
+            }
+            blocklyTheme = activeBlockly.Theme.defineTheme('CreateV10', {
+                'base': activeBlockly.Themes.Classic,
+                'categoryStyles': categoryStyles,
+                'blockStyles': blockStyles,
+                'componentStyles': {
+                    'workspaceBackgroundColour': '#ffffff',
+                    'toolboxBackgroundColour': '#DDDDDD',
+                    'toolboxForegroundColour': '#000000',
+                    'flyoutBackgroundColour': '#dddddd',
+                    'flyoutForegroundColour': '#000000',
+                    'flyoutOpacity': 1,
+                    'scrollbarColour': '#797979',
+                    'insertionMarkerColour': '#fff',
+                    'insertionMarkerOpacity': 0.3,
+                    'scrollbarOpacity': 0.4,
+                    'cursorColour': '#d0d0d0'
+                },
+                'fontStyle': {
+                    'family': '"Helvetica Neue", Helvetica, Arial, sans-serif',
+                    'weight': 'normal',
+                    'size': 12
+                }
+            });
+        }
+        blocklyWorkspace = activeBlockly.inject(document.getElementById('blocklyDiv'), {
+            path: '/blockly/',
+            toolbox: toolbox,
+            theme: blocklyTheme || GUISTATE_C.getTheme(),
+            trashcan: true,
+            scrollbars: true,
+            media: '../blockly/media/',
+            zoom: {
+                controls: true,
+                wheel: false,
+                startScale: 1.0,
+                maxScale: 4,
+                minScale: 0.25,
+                scaleSpeed: 1.1,
+            },
+            variableDeclaration: true,
+            robControls: true,
+        });
+        $(window).resize();
+        blocklyWorkspace.setDevice({
+            group: GUISTATE_C.getRobotGroup(),
+            robot: GUISTATE_C.getRobot(),
+        });
+        GUISTATE_C.setBlocklyWorkspace(blocklyWorkspace);
+        blocklyWorkspace.robControls.disable('saveProgram');
+        blocklyWorkspace.robControls.refreshTooltips(GUISTATE_C.getRobotRealName());
+        GUISTATE_C.checkSim();
+        $('#program').find('.blocklyToolboxDiv:first').wrap("<div id='toolboxDiv' style='position: absolute;'></div>");
+        $('#toolboxDiv').prepend('<ul class="nav nav-tabs levelTabs"><li class="nav-item"><a class="nav-link typcn typcn-media-stop-outline active beginner" href="#beginner" data-bs-toggle="tab">1</a></li><li class="nav-item"><a href="#expert" class="nav-link typcn typcn-star-outline expert" data-bs-toggle="tab">2</a></li></ul>');
+    }
+    function initEvents() {
+        $('#sliderDiv').draggable({
+            axis: 'x',
+            cursor: 'col-resize',
+        });
+        $('#tabProgram').onWrap('click', function (e) {
+            e.preventDefault();
+            if (GUISTATE_C.getView() === 'tabConfiguration' &&
+                GUISTATE_C.isUserLoggedIn() &&
+                !GUISTATE_C.isConfigurationSaved() &&
+                !GUISTATE_C.isConfigurationAnonymous()) {
+                $('#show-message-confirm').oneWrap('shown.bs.modal', function (e) {
+                    $('#confirm').off();
+                    $('#confirm').on('click', function (e) {
+                        e.preventDefault();
+                        // TODO, check if we want to give the user the opportunity to convert the named configuration into an anonymous one
+                        GUISTATE_C.setConfigurationName('');
+                        // or reset to last saved version:
+                        //$('#tabConfiguration').trigger('reload');
+                        $('#tabProgram').tabWrapShow();
+                    });
+                    $('#confirmCancel').off();
+                    $('#confirmCancel').on('click', function (e) {
+                        e.preventDefault();
+                        $('.modal').modal('hide');
+                    });
+                });
+                MSG.displayMessage('POPUP_CONFIGURATION_UNSAVED', 'POPUP', '', true);
+                return false;
+            }
+            else {
+                $('#tabProgram').tabWrapShow();
+            }
+        });
+        $('#tabProgram').onWrap('show.bs.tab', function (e) {
+            GUISTATE_C.setView('tabProgram');
+        });
+        $('#tabProgram').onWrap('shown.bs.tab', function (e) {
+            blocklyWorkspace.markFocused();
+            blocklyWorkspace.setVisible(true);
+            if (!seen) {
+                // TODO may need to be removed if program tab can receive changes while in background
+                reloadView();
+            }
+            $(window).resize();
+            refreshToolboxCategoryAppearance();
+        });
+        $('#tabProgram').onWrap('hide.bs.tab', function (e) {
+            seen = false;
+        });
+        $('#tabProgram').onWrap('hidden.bs.tab', function (e) {
+            blocklyWorkspace.setVisible(false);
+        });
+        $('.expert, .beginner').onWrap('click', function (e) {
+            var target = ($(e.target).attr('href') && $(e.target).attr('href').substring(1)) ||
+                ($(e.target.parentElement).attr('href') && $(e.target.parentElement).attr('href').substring(1)); // activated tab
+            $('.levelTabs a[href="' + target + '"]').tabWrapShow();
+            e.preventDefault();
+            loadToolbox(target);
+            e.stopPropagation();
+            LOG.info('toolbox clicked, switched to ' + target);
+        });
+        $('#syncButton').onWrap('click', function (e) {
+            e.preventDefault();
+            // The source-code controller owns the conversion because it has the
+            // current Ace content and knows the active robot language (NQC, Python,
+            // ...). Opening the editor first avoids generating over a user's code.
+            if (!$('#codeButton').hasClass('rightActive')) {
+                $('#codeButton').trigger('click');
+                return;
+            }
+            $('#codeSynchronize').trigger('click');
+        });
+        bindControl();
+        blocklyWorkspace.addChangeListener(function (event) {
+            if (listenToBlocklyEvents && event.type != Blockly.Events.UI && GUISTATE_C.isProgramSaved()) {
+                GUISTATE_C.setProgramSaved(false);
+            }
+            if (event.type === Blockly.Events.DELETE) {
+                if (blocklyWorkspace.getAllBlocks().length === 0) {
+                    newProgram(true);
+                }
+            }
+            $('.selectedHelp').removeClass('selectedHelp');
+            if (Blockly.selected && $('#blocklyDiv').hasClass('rightActive')) {
+                var block = Blockly.selected.type;
+                $('#' + block).addClass('selectedHelp');
+                $('#helpContent').scrollTo('#' + block, 1000, {
+                    offset: -10,
+                });
+            }
+            // Auto-Sync: Update Source Code Editor if visible
+            if (event.type !== Blockly.Events.UI && $('#sourceCodeEditorPane').is(':visible')) {
+                clearTimeout(blocklyWorkspace.syncTimeout);
+                blocklyWorkspace.syncTimeout = setTimeout(function () {
+                    var dom = Blockly.Xml.workspaceToDom(blocklyWorkspace);
+                    var xmlProgram = Blockly.Xml.domToText(dom);
+                    var xmlConfigText = GUISTATE_C.isConfigurationAnonymous() ? GUISTATE_C.getConfigurationXML() : undefined;
+                    var isNamedConfig = !GUISTATE_C.isConfigurationStandard() && !GUISTATE_C.isConfigurationAnonymous();
+                    var configName = isNamedConfig ? GUISTATE_C.getConfigurationName() : undefined;
+                    var language = GUISTATE_C.getLanguage();
+                    PROGRAM.showSourceProgram(GUISTATE_C.getProgramName(), configName, xmlProgram, xmlConfigText, language, getSSID(), getPassword(), function (result) {
+                        ACE_EDITOR.setEditorCode(result.sourceCode);
+                    });
+                }, 2000);
+            }
+            return false;
+        });
+    }
+    /**
+     * Save program to server
+     */
+    function saveToServer() {
+        $('.modal').modal('hide'); // close all opened popups
+        var xmlProgram = Blockly.Xml.workspaceToDom(blocklyWorkspace);
+        var xmlProgramText = Blockly.Xml.domToText(xmlProgram);
+        var isNamedConfig = !GUISTATE_C.isConfigurationStandard() && !GUISTATE_C.isConfigurationAnonymous();
+        var configName = isNamedConfig ? GUISTATE_C.getConfigurationName() : undefined;
+        var xmlConfigText = GUISTATE_C.isConfigurationAnonymous() ? GUISTATE_C.getConfigurationXML() : undefined;
+        PROGRAM.saveProgramToServer(GUISTATE_C.getProgramName(), GUISTATE_C.getProgramOwnerName(), xmlProgramText, configName, xmlConfigText, GUISTATE_C.getProgramTimestamp(), function (result) {
+            if (result.rc === 'ok') {
+                GUISTATE_C.setProgramTimestamp(result.lastChanged);
+                GUISTATE_C.setProgramSaved(true);
+                GUISTATE_C.setConfigurationSaved(true);
+                LOG.info('save program ' + GUISTATE_C.getProgramName());
+            }
+            MSG.displayInformation(result, 'MESSAGE_EDIT_SAVE_PROGRAM', result.message, GUISTATE_C.getProgramName());
+        });
+    }
+    exports.saveToServer = saveToServer;
+    /**
+     * Save program with new name to server
+     */
+    function saveAsProgramToServer() {
+        $formSingleModal.validate();
+        if ($formSingleModal.valid()) {
+            $('.modal').modal('hide'); // close all opened popups
+            var progName = $('#singleModalInput').val().trim();
+            var xmlProgram = Blockly.Xml.workspaceToDom(blocklyWorkspace);
+            var xmlProgramText = Blockly.Xml.domToText(xmlProgram);
+            var isNamedConfig = !GUISTATE_C.isConfigurationStandard() && !GUISTATE_C.isConfigurationAnonymous();
+            var configName = isNamedConfig ? GUISTATE_C.getConfigurationName() : undefined;
+            var xmlConfigText = GUISTATE_C.isConfigurationAnonymous() ? GUISTATE_C.getConfigurationXML() : undefined;
+            var userAccountName = GUISTATE_C.getUserAccountName();
+            LOG.info('saveAs program ' + GUISTATE_C.getProgramName());
+            PROGRAM.saveAsProgramToServer(progName, userAccountName, xmlProgramText, configName, xmlConfigText, GUISTATE_C.getProgramTimestamp(), function (result) {
+                if (result.rc === 'ok') {
+                    LOG.info('saved program ' + GUISTATE_C.getProgramName() + ' as ' + progName);
+                    result.name = progName;
+                    result.programShared = false;
+                    GUISTATE_C.setProgram(result, userAccountName, userAccountName);
+                    MSG.displayInformation(result, 'MESSAGE_EDIT_SAVE_PROGRAM_AS', result.message, GUISTATE_C.getProgramName());
+                }
+                else {
+                    if (result.cause === 'ORA_PROGRAM_SAVE_AS_ERROR_PROGRAM_EXISTS') {
+                        //show replace option
+                        //get last changed of program to overwrite
+                        var lastChanged = result.lastChanged;
+                        var modalMessage = Blockly.Msg.POPUP_BACKGROUND_REPLACE || 'A program with the same name already exists! <br> Would you like to replace it?';
+                        $('#show-message-confirm').oneWrap('shown.bs.modal', function (e) {
+                            $('#confirm').off();
+                            $('#confirm').onWrap('click', function (e) {
+                                e.preventDefault();
+                                PROGRAM.saveProgramToServer(progName, userAccountName, xmlProgramText, configName, xmlConfigText, lastChanged, function (result) {
+                                    if (result.rc === 'ok') {
+                                        LOG.info('saved program ' + GUISTATE_C.getProgramName() + ' as ' + progName + ' and overwrote old content');
+                                        result.name = progName;
+                                        GUISTATE_C.setProgram(result, userAccountName, userAccountName);
+                                        MSG.displayInformation(result, 'MESSAGE_EDIT_SAVE_PROGRAM_AS', result.message, GUISTATE_C.getProgramName());
+                                    }
+                                    else {
+                                        LOG.info('failed to overwrite ' + progName);
+                                        MSG.displayMessage(result.message, 'POPUP', '');
+                                    }
+                                });
+                            }, 'confirm modal');
+                            $('#confirmCancel').off();
+                            $('#confirmCancel').onWrap('click', function (e) {
+                                e.preventDefault();
+                                $('.modal').modal('hide');
+                            }, 'cancel modal');
+                        });
+                        MSG.displayPopupMessage('ORA_PROGRAM_SAVE_AS_ERROR_PROGRAM_EXISTS', modalMessage, Blockly.Msg.POPUP_REPLACE, Blockly.Msg.POPUP_CANCEL);
+                    }
+                }
+            });
+        }
+    }
+    /**
+     * Load the program that was selected in gallery list
+     */
+    function loadFromGallery(program) {
+        var programName = program[1];
+        var user = program[3];
+        var robotGroup = program[0];
+        var robotType;
+        if (robotGroup === GUISTATE_C.getRobotGroup()) {
+            robotType = GUISTATE_C.getRobot();
+        }
+        else {
+            robotType = GUISTATE_C.findRobot(robotGroup);
+        }
+        var owner = 'Gallery';
+        function loadProgramFromGallery() {
+            PROGRAM.loadProgramFromListing(programName, owner, user, function (result) {
+                if (result.rc === 'ok') {
+                    result.programShared = 'READ';
+                    result.name = programName;
+                    GUISTATE_C.setProgram(result, owner, user);
+                    GUISTATE_C.setProgramXML(result.progXML);
+                    //                    GUISTATE_C.setConfigurationName('');
+                    //                    GUISTATE_C.setConfigurationXML(result.confXML);
+                    if (result.configName === undefined) {
+                        if (result.confXML === undefined) {
+                            GUISTATE_C.setConfigurationNameDefault();
+                            GUISTATE_C.setConfigurationXML(GUISTATE_C.getConfigurationConf());
+                        }
+                        else {
+                            GUISTATE_C.setConfigurationName('');
+                            GUISTATE_C.setConfigurationXML(result.confXML);
+                        }
+                    }
+                    else {
+                        GUISTATE_C.setConfigurationName(result.configName);
+                        GUISTATE_C.setConfigurationXML(result.confXML);
+                    }
+                    $('#tabProgram').oneWrap('shown.bs.tab', function (e) {
+                        CONFIGURATION_C.reloadConf();
+                        reloadProgram();
+                    });
+                    $('#tabProgram').tabWrapShow();
+                }
+                MSG.displayInformation(result, '', result.message);
+            });
+        }
+        //TODO !!!!
+        ROBOT_C.switchRobot(robotType, {}, false, loadProgramFromGallery);
+    }
+    exports.loadFromGallery = loadFromGallery;
+    function initProgramForms() {
+        $formSingleModal = $('#single-modal-form');
+        $('#buttonCancelFirmwareUpdateAndRun').onWrap('click', function () {
+            start();
+        }, 'cancel firmware update and run');
+    }
+    exports.initProgramForms = initProgramForms;
+    function showSaveAsModal() {
+        $.validator.addMethod('regex', function (value, element, regexp) {
+            value = value.trim();
+            return value.match(regexp);
+        }, 'No special Characters allowed here. Use only upper and lowercase letters (A through Z; a through z) and numbers.');
+        UTIL.showSingleModal(function () {
+            $('#singleModalInput').attr('type', 'text');
+            $('#single-modal h5').text(Blockly.Msg['MENU_SAVE_AS']);
+            $('#single-modal label').text(Blockly.Msg['POPUP_NAME']);
+        }, saveAsProgramToServer, function () { }, {
+            rules: {
+                singleModalInput: {
+                    required: true,
+                    regex: /^[a-zA-Z_öäüÖÄÜß$€][a-zA-Z0-9_öäüÖÄÜß$€]{0,254}$/,
+                },
+            },
+            errorClass: 'form-invalid',
+            errorPlacement: function (label, element) {
+                label.insertAfter(element);
+            },
+            messages: {
+                singleModalInput: {
+                    required: Blockly.Msg['VALIDATION_FIELD_REQUIRED'],
+                    regex: Blockly.Msg['MESSAGE_INVALID_NAME'],
+                },
+            },
+        });
+    }
+    exports.showSaveAsModal = showSaveAsModal;
+    function initProgramEnvironment() {
+        var x, y;
+        if ($(window).width() < 768) {
+            x = $(window).width() / 50;
+            y = 25;
+        }
+        else {
+            x = $(window).width() / 5;
+            y = 50;
+        }
+        var program = GUISTATE_C.getProgramProg();
+        programToBlocklyWorkspace(program);
+        var blocks = blocklyWorkspace.getTopBlocks(true);
+        if (blocks[0]) {
+            var coord = blocks[0].getRelativeToSurfaceXY();
+            blocks[0].moveBy(x - coord.x, y - coord.y);
+        }
+    }
+    exports.initProgramEnvironment = initProgramEnvironment;
+    /**
+     * New program
+     */
+    function newProgram(opt_further) {
+        var further = opt_further || false;
+        function loadNewProgram() {
+            var result = {};
+            result.rc = 'ok';
+            result.name = 'CodeONprog';
+            result.programShared = false;
+            result.lastChanged = '';
+            GUISTATE_C.setProgram(result);
+            initProgramEnvironment();
+            NN_C.programWasReplaced();
+            LOG.info('New program loaded');
+        }
+        if (further || GUISTATE_C.isProgramSaved()) {
+            loadNewProgram();
+        }
+        else {
+            confirmLoadProgram();
+        }
+    }
+    exports.newProgram = newProgram;
+    function confirmLoadProgram() {
+        $('#show-message-confirm').oneWrap('shown.bs.modal', function (e) {
+            $('#confirm').off();
+            $('#confirm').on('click', function (e) {
+                e.preventDefault();
+                newProgram(true);
+            });
+            $('#confirmCancel').off();
+            $('#confirmCancel').on('click', function (e) {
+                e.preventDefault();
+                $('.modal').modal('hide');
+            });
+        });
+        if (GUISTATE_C.isUserLoggedIn()) {
+            MSG.displayMessage('POPUP_BEFOREUNLOAD_LOGGEDIN', 'POPUP', '', true);
+        }
+        else {
+            MSG.displayMessage('POPUP_BEFOREUNLOAD', 'POPUP', '', true);
+        }
+    }
+    function linkProgram() {
+        var dom = Blockly.Xml.workspaceToDom(blocklyWorkspace);
+        var xml = Blockly.Xml.domToText(dom);
+        //TODO this should be removed after the next release
+        xml = '<export xmlns="http://de.fhg.iais.roberta.blockly"><program>' + xml + '</program><config>' + GUISTATE_C.getConfigurationXML() + '</config></export>';
+        var location = new URL(document.location);
+        var clean_uri = location.protocol + '//' + location.host;
+        var link = clean_uri + '?loadSystem=';
+        link += GUISTATE_C.getRobot();
+        link += '&loadProgram=' + xml;
+        link = encodeURI(link);
+        var $temp = $('<input>');
+        $('body').append($temp);
+        $temp.val(link).select();
+        document.execCommand('copy');
+        $temp.remove();
+        var displayLink = '</br><textarea readonly style="width:100%;" type="text">' + link + '</textarea>';
+        LOG.info('ProgramLinkShare');
+        MSG.displayMessage('POPUP_GET_LINK', 'POPUP', displayLink);
+    }
+    exports.linkProgram = linkProgram;
+    /**
+     * Create a file from the blocks and download it.
+     */
+    function exportXml() {
+        var dom = Blockly.Xml.workspaceToDom(blocklyWorkspace);
+        var xml = '<export xmlns="http://de.fhg.iais.roberta.blockly"><program>' +
+            Blockly.Xml.domToText(dom) +
+            '</program><config>' +
+            GUISTATE_C.getConfigurationXML() +
+            '</config></export>';
+        LOG.info('ProgramExport');
+        UTIL.download(GUISTATE_C.getProgramName() + '.xml', xml);
+        MSG.displayMessage('MENU_MESSAGE_DOWNLOAD', 'TOAST', GUISTATE_C.getProgramName());
+    }
+    exports.exportXml = exportXml;
+    /**
+     * Download all programs by the current User
+     */
+    function exportAllXml() {
+        USER.userLoggedInCheck(function (result) {
+            if (result.rc === 'ok') {
+                PROGRAM.exportAllProgramsXml();
+            }
+            else {
+                MSG.displayMessage(result.cause, 'TOAST', 'Log in check failed for Export');
+            }
+        });
+    }
+    exports.exportAllXml = exportAllXml;
+    function getBlocklyWorkspace() {
+        return blocklyWorkspace;
+    }
+    exports.getBlocklyWorkspace = getBlocklyWorkspace;
+    function bindControl() {
+        Blockly.bindEvent_(blocklyWorkspace.robControls.saveProgram, 'mousedown', null, function (e) {
+            LOG.info('saveProgram from blockly button');
+            saveToServer();
+            return false;
+        });
+        blocklyWorkspace.robControls.disable('saveProgram');
+    }
+    function reloadProgram(opt_result, opt_fromShowSource) {
+        var program;
+        if (opt_result) {
+            program = opt_result.progXML;
+            if (!$.isEmptyObject(opt_result.confAnnos)) {
+                GUISTATE_C.confAnnos = opt_result.confAnnos;
+                UTIL.alertTab('tabConfiguration');
+            }
+        }
+        else {
+            program = GUISTATE_C.getProgramXML();
+        }
+        programToBlocklyWorkspace(program, opt_fromShowSource);
+    }
+    exports.reloadProgram = reloadProgram;
+    function reloadView() {
+        if (isVisible()) {
+            var dom = Blockly.Xml.workspaceToDom(blocklyWorkspace);
+            var xml = Blockly.Xml.domToText(dom);
+            programToBlocklyWorkspace(xml);
+            var toolbox = GUISTATE_C.getProgramToolbox();
+            blocklyWorkspace.updateToolbox(toolbox);
+            refreshToolboxCategoryAppearance();
+            seen = true;
+        }
+        else {
+            seen = false;
+        }
+    }
+    exports.reloadView = reloadView;
+    function resetView() {
+        blocklyWorkspace.setDevice({
+            group: GUISTATE_C.getRobotGroup(),
+            robot: GUISTATE_C.getRobot(),
+        });
+        initProgramEnvironment();
+        var toolbox = GUISTATE_C.getProgramToolbox();
+        blocklyWorkspace.updateToolbox(toolbox);
+        refreshToolboxCategoryAppearance();
+    }
+    exports.resetView = resetView;
+    function loadToolbox(level) {
+        GUISTATE_C.setProgramToolboxLevel(level);
+        var xml = GUISTATE_C.getToolbox(level);
+        if (xml) {
+            blocklyWorkspace.updateToolbox(xml);
+            refreshToolboxCategoryAppearance();
+        }
+        if (level === 'beginner') {
+            $('.help.expert').hide();
+        }
+        else {
+            $('.help.expert').show();
+        }
+    }
+    exports.loadToolbox = loadToolbox;
+    function refreshToolboxCategoryAppearance() {
+        window.requestAnimationFrame(function () {
+            $('#program .blocklyTreeRow').each(function () {
+                var $label = $(this).find('.blocklyTreeLabel');
+                if ($label.hasClass('blocklyTreeSub')) {
+                    $label.css('color', '#4a4a4a');
+                    return;
+                }
+                var colour = window.getComputedStyle(this).borderLeftColor;
+                if (colour && colour !== 'rgba(0, 0, 0, 0)') {
+                    this.style.backgroundColor = colour;
+                    $label.css('color', '#fff');
+                }
+            });
+        });
+    }
+    function loadExternalToolbox(toolbox) {
+        if (toolbox) {
+            blocklyWorkspace.updateToolbox(toolbox);
+            refreshToolboxCategoryAppearance();
+        }
+    }
+    exports.loadExternalToolbox = loadExternalToolbox;
+    function isVisible() {
+        return GUISTATE_C.getView() == 'tabProgram';
+    }
+    function programToBlocklyWorkspace(xml, opt_fromShowSource) {
+        if (!xml) {
+            return;
+        }
+        listenToBlocklyEvents = false;
+        blocklyWorkspace.clear();
+        var dom = Blockly.Xml.textToDom(xml, blocklyWorkspace);
+        Blockly.Xml.domToWorkspace(dom, blocklyWorkspace);
+        blocklyWorkspace.setVersion(dom.getAttribute('xmlversion'));
+        $('#infoContent').html(blocklyWorkspace.description);
+        if (typeof blocklyWorkspace.description === 'string' && blocklyWorkspace.description.length) {
+            $('#infoButton').addClass('notEmpty');
+        }
+        else {
+            $('#infoButton').removeClass('notEmpty');
+        }
+        var tmpTags = blocklyWorkspace.tags;
+        $('#infoTags').tagsinput('removeAll');
+        $('.bootstrap-tagsinput input').attr('placeholder', 'Tags');
+        $('#infoTags').tagsinput('add', tmpTags);
+        var xmlConfiguration = GUISTATE_C.getConfigurationXML();
+        var dom = Blockly.Xml.workspaceToDom(blocklyWorkspace);
+        var xmlProgram = Blockly.Xml.domToText(dom);
+        var isNamedConfig = !GUISTATE_C.isConfigurationStandard() && !GUISTATE_C.isConfigurationAnonymous();
+        var configName = isNamedConfig ? GUISTATE_C.getConfigurationName() : undefined;
+        var xmlConfigText = GUISTATE_C.isConfigurationAnonymous() ? GUISTATE_C.getConfigurationXML() : undefined;
+        GUISTATE_C.setProgramSaved(true);
+        var language = GUISTATE_C.getLanguage();
+        if ($('#codeDiv').hasClass('rightActive') && opt_fromShowSource) {
+            PROGRAM.showSourceProgram(GUISTATE_C.getProgramName(), configName, xmlProgram, xmlConfigText, language, getSSID(), getPassword(), function (result) {
+                ACE_EDITOR.setViewCode(result.sourceCode);
+            });
+        }
+        setTimeout(function () {
+            listenToBlocklyEvents = true;
+        }, 500);
+    }
+    exports.programToBlocklyWorkspace = programToBlocklyWorkspace;
+});

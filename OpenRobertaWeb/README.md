@@ -1,4 +1,4 @@
-### Typescript support for the OpenRoberta lab
+# CodeON frontend
 
 ### Getting Started
 
@@ -8,14 +8,14 @@
 
 **Installing**
 
-1. Go into the OpenRobertaLab folder
+1. Go into the `OpenRobertaWeb` folder
 2. Install all the dependencies use `npm i`
 2. Run typesript compiler and gulp process use `npx gulp`
 
 **Developing**
 Compile typescript (and roberta.css) in watch mode use `npx gulp watch`
 
-### Typescript support for the OpenRoberta lab (Intellij Ultimate / Webstorm)
+### IntelliJ Ultimate / WebStorm
 
 IntelliJ Ultimate supports typescript without third-party plugins.
 But make sure the JavaScript and TypeScript bundled plugin is enabled on the **Settings/Preferences | Plugins page**
@@ -23,13 +23,13 @@ But make sure the JavaScript and TypeScript bundled plugin is enabled on the **S
 **Setup**
 
 1. Start with [Getting Started](#getting-started)
-2. Install the IntelliJ formatter from `Resources/formatter/openRobertaIdea.xml`
+2. Install the IntelliJ formatter from `Resources/formatter/openRobertaIdea.xml` (historical compatibility filename)
 3. Go to **Settings/Preferences | Language & Frameworks | Typescript | Select Typescript Compiler (./node_modules/typescript)**
 
 **Developing**
 Our typescript compiler is configured to compile to `OpenRobertaServer/staticResources`.
 
-1. Start open Roberta Server (either `./ora.sh start-from-git` or use the IDE Starter)
+1. Start CodeON (either `./ora.sh start-from-git` or use the IDE starter)
 2. To compile with typescript click the Typescript Widget in the status bar choose **Compile | Compile All**
 3. To compile everytime on change go to **Settings/Preferences | Language & Frameworks | Typescript** and select **Recompile on changes**
 4. Everytime you changed a typescript file reload the page, since we don't have a live reloader

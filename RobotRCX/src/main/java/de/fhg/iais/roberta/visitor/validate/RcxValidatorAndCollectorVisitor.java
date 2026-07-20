@@ -158,16 +158,14 @@ public class RcxValidatorAndCollectorVisitor extends CommonNepoAndMotorValidator
                     addErrorToPhrase(sendIRAction, "IR-Nachricht muss zwischen 1 und 255 liegen");
                 }
             } catch ( NumberFormatException e ) {
-                // nicht auswertbar -> zur Laufzeit pruefen lassen
+                // Nicht konstant: Der NQC-Generator begrenzt den Wert zur Laufzeit.
             }
         }
-        addToPhraseIfUnsupportedInSim(sendIRAction, false, this.isSim);
         return null;
     }
 
     @Override
     public Void visitReceiveIRAction(ReceiveIRAction receiveIRAction) {
-        addToPhraseIfUnsupportedInSim(receiveIRAction, true, this.isSim);
         return null;
     }
 

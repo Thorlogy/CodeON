@@ -1,11 +1,11 @@
 import * as $ from 'jquery';
 
 /**
- * Fetch RSS from the roberta homepage
+ * Fetch CodeON release news
  */
 export function fetchRSS(successFn, errorFn) {
     $.ajax({
-        url: 'https://www.roberta-home.de/?type=9818',
+        url: 'https://github.com/Thorlogy/CodeON/releases.atom',
         dataType: 'xml',
         error: errorFn,
         success: successFn,

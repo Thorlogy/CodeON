@@ -55,6 +55,14 @@ export abstract class ARobotBehaviour {
 
     abstract getVolumeAction(s: State): void;
 
+    sendIRAction(_message: number): void {
+        // Communication is optional for robot behaviours.
+    }
+
+    receiveIRAction(s: State): void {
+        s.push(0);
+    }
+
     abstract setLanguage(language: string): void;
 
     abstract sayTextAction(text: string, speed: number, pitch: number): number;

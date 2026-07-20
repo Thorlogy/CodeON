@@ -15,9 +15,9 @@
     <artifactId>OpenRobertaParent</artifactId>
     <version>5.3.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>RobertaParent</name>
-    <description>the parent project of the OpenRoberta application</description>
-    <url>http://www.open-roberta.org</url>
+    <name>CodeON Parent</name>
+    <description>Parent build for the CodeON robot programming environment</description>
+    <url>https://github.com/Thorlogy/CodeON</url>
     <inceptionYear>2014</inceptionYear>
     <properties>
         <robot.menutype>custom</robot.menutype>
@@ -38,20 +38,10 @@
 
     <modules>
         <module>OpenRobertaRobot</module>
-        <module>RobotEV3</module>
-        <module>RobotNXT</module>
-        <module>RobotRCX</module>
-        <module>RobotArdu</module>
-        <module>RobotNAO</module>
-        <module>RobotMbed</module>
-        <module>RobotWeDo</module>
         <module>RobotEdison</module>
-        <module>OpenRobertaServer</module>
-        <module>RobotCyberpi</module>
-        <module>RobotThymio</module>
-        <module>RobotRobotino</module>
         <module>RobotSpike</module>
-        <module>RobotFischertechnik</module>
+        <module>RobotRCX</module>
+        <module>OpenRobertaServer</module>
     </modules>
     <pluginRepositories>
         <pluginRepository>
@@ -80,42 +70,7 @@
             </dependency>
             <dependency>
                 <groupId>de.fhg.iais.openroberta</groupId>
-                <artifactId>RobotArdu</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>de.fhg.iais.openroberta</groupId>
-                <artifactId>RobotEV3</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>de.fhg.iais.openroberta</groupId>
-                <artifactId>RobotMbed</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>de.fhg.iais.openroberta</groupId>
-                <artifactId>RobotNAO</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>de.fhg.iais.openroberta</groupId>
-                <artifactId>RobotNXT</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>de.fhg.iais.openroberta</groupId>
                 <artifactId>RobotRCX</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>de.fhg.iais.openroberta</groupId>
-                <artifactId>RaspberryPi</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>de.fhg.iais.openroberta</groupId>
-                <artifactId>RobotWeDo</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -125,27 +80,7 @@
             </dependency>
             <dependency>
                 <groupId>de.fhg.iais.openroberta</groupId>
-                <artifactId>RobotCyberpi</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>de.fhg.iais.openroberta</groupId>
-                <artifactId>RobotThymio</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>de.fhg.iais.openroberta</groupId>
-                <artifactId>RobotRobotino</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>de.fhg.iais.openroberta</groupId>
                 <artifactId>RobotSpike</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>de.fhg.iais.openroberta</groupId>
-                <artifactId>RobotFischertechnik</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

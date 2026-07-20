@@ -275,6 +275,7 @@ export const RANDOM_DOUBLE: string = "randDouble";
 export const RANDOM_INT: string = "randInt";
 export const RATE: string = "rate";
 export const RECALL: string = "recall";
+export const RECEIVE_IR_ACTION: string = "receiveIrAction";
 export const RED: string = "red";
 export const REMEMBER: string = "remember";
 export const REMOVE: string = "remove";
@@ -294,6 +295,7 @@ export const SEEK: string = "presence";
 export const SENSOR_MODE: string = "sensorMode";
 export const SENSOR_TYPE: string = "sensorType";
 export const SERIAL_WRITE_ACTION: string = "serialWriteAction";
+export const SEND_IR_ACTION: string = "sendIrAction";
 
 export const SET: string = "set";
 export const SET_LANGUAGE_ACTION: string = "SetLanguageAction";

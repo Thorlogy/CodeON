@@ -695,6 +695,14 @@ export class Interpreter {
                     this.robotBehaviour.debugAction(value);
                     break;
                 }
+                case C.SEND_IR_ACTION: {
+                    this.robotBehaviour.sendIRAction(this.state.pop());
+                    return [0, true];
+                }
+                case C.RECEIVE_IR_ACTION: {
+                    this.robotBehaviour.receiveIRAction(this.state);
+                    break;
+                }
                 case C.DEBUG_ACTION: {
                     const value = this.state.pop();
                     this.robotBehaviour.debugAction(value);

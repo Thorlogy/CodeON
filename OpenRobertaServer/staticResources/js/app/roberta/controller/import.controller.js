@@ -83,7 +83,7 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
                 GUISTATE_C.setConfigurationXML(xmlConfOld);
                 // on server side we only test case insensitive block names, displaying xml can still fail:
                 result.programSaved = false;
-                result.name = 'NEPOprog';
+                result.name = 'CodeONprog';
                 result.programShared = false;
                 result.programTimestamp = '';
                 var nameConfOld = GUISTATE_C.getConfigurationName();

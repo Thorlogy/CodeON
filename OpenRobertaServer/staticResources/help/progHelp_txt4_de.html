@@ -904,7 +904,7 @@
             <p>Mit diesem Block führst du eine Berechnungsschritt deines Neuronalen Netzwerks aus. Bevor du diesen Block verwendest, solltest du die Werte der Eingabe-Neuronen mit dem Block »Schreibe Wert Eingabe-Neuron ...« setzen.
                 <span
                     style='letter-spacing: 0.0px;'>Die Eingabe-Werte werden in das Netzwerk gegeben und die Werte der Ausgabe-Neuronen werden anhand des Netzes aus dem Tab »Neuronales Netz« berechnet. Eine detaillierte Beschreibung des Neuronalen Netzwerks findest du </span><a
-                    href='https://jira.iais.fraunhofer.de/wiki/display/ORInfo/Artificial+Neural+Networks'>hier</a><span
+                    href='https://github.com/Thorlogy/CodeON#dokumentation/Artificial+Neural+Networks'>hier</a><span
                     style='letter-spacing: 0.0px;'>. Die Werte der Ausgabe-Neuronen kannst du nach der Berechnung mit dem Block »gib Wert Ausgabe-Neuron ...« abfragen.</span>
             </p></div>
         <div id='robActions_set_inputneuron_val' class='help beginner'><h3
@@ -1023,7 +1023,7 @@
         <div id='robActions_eval_expr' class='help expert'><h3 style='text-align: left;'
             id='BlockbeschreibungTXT4.0Controller-»werte...als...«[Experten-Block]'>»werte ... als ...« <span class='typcn typcn-star'></span></h3>
             <p>Mit dem »werte ... als ...«-Block wird ein als Text eingegebener Ausdruck ("expression") ausgewertet und das Ergebnis zurückgegeben. Der Ausdruck kann z.B. "sqrt(a^2 + b^2)" sein. Er wird zu einer Zahl ausgewertet. Der Block ist sehr leistungsstark: nahezu alle Ausdrücke, die mit Blockly-Blöcken erzeugt werden können, lassen sich auch als Text schreiben.</p>
-            <p>Wie der Ausdruck aufgebaut werden kann, ist auf einer eigenen <a href='https://github.com/OpenRoberta/openroberta-lab/wiki/Textly#expression-block'
+            <p>Wie der Ausdruck aufgebaut werden kann, ist auf einer eigenen <a href='https://github.com/Thorlogy/CodeON#dokumentation'
                 class='external-link' rel='nofollow'
                 target='_blank'>Wiki-Seite</a> beschrieben. Bitte beachten: es gibt allgemeine Ausdrücke, die für jeden Roboter gültig sind, und spezifische Teile, die nur für den jeweils ausgewählten Roboter gelten. Das muss so sein, weil jeder Roboter eigene Sensoren und Aktoren unterstützt. Das ist detailliert auf der Wiki-Seite beschrieben.
             </p>
@@ -1054,7 +1054,7 @@
         <div id='text_cast_string_toNumber' class='help expert notWedo notNxt notBotnroll notNao notBob3 notSensebox notMbot notEdison notFestbionics notArduino'><h3
             id='BlockbeschreibungTXT4.0Controller-»wandle...uminZahl«[Experten-Block]'>»wandle ... um in Zahl« <span class='typcn typcn-star'></span></h3>
             <p><span
-                style='letter-spacing: -0.006em;'>Dieser Block wandelt eine Zeichenkette in eine Zahl um, falls dies möglich ist. Wenn eine Zeichenkette also nur Zahlen enthält, kann dieser Block die Zeichenkette in eine Zahl umwandeln. Wenn der Block keine Zahlen enthält, gibt dieser Block »NaN« in der Simulation des Open Roberta Labs weiter, kann aber auch ein anderes Verhalten aufweisen, welches von der verwendeten Programmiersprache des Roboters abhängt. </span><span
+                style='letter-spacing: -0.006em;'>Dieser Block wandelt eine Zeichenkette in eine Zahl um, falls dies möglich ist. Wenn eine Zeichenkette also nur Zahlen enthält, kann dieser Block die Zeichenkette in eine Zahl umwandeln. Wenn der Block keine Zahlen enthält, gibt dieser Block »NaN« in der Simulation des CodeON weiter, kann aber auch ein anderes Verhalten aufweisen, welches von der verwendeten Programmiersprache des Roboters abhängt. </span><span
                 style='letter-spacing: -0.006em;'>Falls die Zeichenkette zwar mit Zahlen beginnt, aber danach weitere Zeichen enthält, die keine Zahlen sind, gibt dieser Block nur die Zahlen weiter und stoppt, sobald das erste Zeichen in der Zeichenkette steht. Also als Beispiel macht dieser Block aus der Zeichenkette »52abcd« die Zahl 52.</span>
             </p>
             <p><span style='letter-spacing: -0.006em;'>Optionen und Eingabewerte:</span>

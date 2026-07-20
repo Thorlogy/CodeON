@@ -53,7 +53,7 @@ function init(language, opt_data) {
         setProgramOwnerName(null);
         setProgramAuthorName(null);
         setProgramShareRelation(null);
-        setProgramName('NEPOprog');
+        setProgramName('CodeONprog');
 
         if (GUISTATE.server.theme !== 'default') {
             var themePath = '../theme/' + GUISTATE.server.theme + '.json';
@@ -117,7 +117,7 @@ function hasExtension(value) {
  *
  */
 function isProgramStandard() {
-    return GUISTATE.program.name == 'NEPOprog';
+    return GUISTATE.program.name == 'CodeONprog';
 }
 
 function isProgramWritable() {
@@ -281,11 +281,11 @@ function setRobot(robot, result, opt_init) {
         setConfigurationSaved(true);
         if (findGroup(robot) != getRobotGroup()) {
             setConfigurationName(robotGroup.toUpperCase() + 'basis');
-            setProgramName('NEPOprog');
+            setProgramName('CodeONprog');
         }
     } else {
         setConfigurationName(robotGroup.toUpperCase() + 'basis');
-        setProgramName('NEPOprog');
+        setProgramName('CodeONprog');
     }
 
     $('#simRobot').removeClass('typcn-' + GUISTATE.gui.robotGroup);
@@ -981,7 +981,7 @@ function setLogout() {
     if (getView() === 'tabUserGroupList') {
         $('#' + getPrevView()).tabWrapShow();
     }
-    setProgramName('NEPOprog');
+    setProgramName('CodeONprog');
     setProgramOwnerName(null);
     setProgramAuthorName(null);
     setProgramShareRelation(null);
