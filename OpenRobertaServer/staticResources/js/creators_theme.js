@@ -36,8 +36,12 @@ define(['jquery'], function ($) {
             }
 
             /* Nested toolbox labels are created lazily when a category opens. */
-            #program .blocklyTreeLabel.blocklyTreeSub {
+            #program .blocklyTreeLabel.blocklyTreeSub,
+            #program [role="treeitem"][aria-level="2"] > .blocklyTreeRow:not(.blocklyTreeSelected) > .blocklyTreeLabel {
                 color: #4a4a4a !important;
+            }
+            #program [role="treeitem"][aria-level="2"] > .blocklyTreeRow.blocklyTreeSelected > .blocklyTreeLabel {
+                color: #fff !important;
             }
 
             /* AI Buddy Sidebar Button */
@@ -71,15 +75,6 @@ define(['jquery'], function ($) {
                 color: #172033;
             }
             .sidebar-panel.active { right: 0; }
-
-            /* Sidebar Synchronization */
-            #rightMenuDiv, #sliderBorder {
-                transition: right 0.3s ease-in-out !important;
-            }
-            body.ai-buddy-active #rightMenuDiv,
-            body.ai-buddy-active #sliderBorder {
-                right: 520px !important;
-            }
 
             .panel-header {
                 min-height: 80px;
@@ -223,7 +218,6 @@ define(['jquery'], function ($) {
             .ai-char-hint { margin-left: auto; color: #7b8c9b; font-size: 0.7rem; }
             @media (max-width: 760px) {
                 .sidebar-panel { width: 100vw; right: -101vw; }
-                body.ai-buddy-active #rightMenuDiv, body.ai-buddy-active #sliderBorder { right: 0 !important; }
                 #ai-model-badge { max-width: 180px; }
             }
         `;
