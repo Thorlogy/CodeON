@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "codeon-robot-bridge"
+version = "0.1.0"
+description = "Reusable local bridge core for CodeON robot integrations"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.optional-dependencies]
+cozmo = ["pycozmo==0.8.0"]
+server = ["websockets>=13.1,<17"]
+
+[project.scripts]
+codeon-robot-bridge = "codeon_robot_bridge.server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
