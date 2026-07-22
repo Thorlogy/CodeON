@@ -59,7 +59,14 @@ class CozmoAdapterTest(unittest.IsolatedAsyncioTestCase):
         await self.adapter.execute("setHead", {"angle": 4})
         await self.adapter.execute("setLift", {"height": 5})
         self.assertIn(("set_head_angle", (0.7,)), self.client.calls)
-        self.assertIn(("set_lift_height", (32.0, 10.0, 5.0, 2.0)), self.client.calls)
+        self.assertIn(("set_lift_height", (32.0, 10.0, 10.0, 0.0)), self.client.calls)
+
+    async def test_backpack_color_is_encoded_as_light_state(self):
+        await self.adapter.connect()
+        await self.adapter.execute("setBackpackLight", {"color": "#123456"})
+        name, arguments = self.client.calls[-1]
+        self.assertEqual("set_all_backpack_lights", name)
+        self.assertEqual("LightState", type(arguments[0]).__name__)
 
     async def test_display_face_uses_cozmo_screen_dimensions(self):
         await self.adapter.connect()
@@ -77,6 +84,17 @@ class CozmoAdapterTest(unittest.IsolatedAsyncioTestCase):
         await self.adapter.stop_all()
         self.assertFalse(self.adapter._camera_enabled)
         self.assertIsNone(self.adapter._face_tracking_task)
+
+    async def test_face_tracking_accepts_pycozmo_angle_objects(self):
+        class Angle:
+            radians = 0.2
+
+        await self.adapter.connect()
+        self.client.head_angle = Angle()
+        with self.adapter._face_lock:
+            self.adapter._face = {"detected": True, "x": 0.5, "y": 0.25}
+        await self.adapter._track_face_once(self.client)
+        self.assertIn(("set_head_angle", (0.2875,)), self.client.calls)
 
     async def test_tone_is_rendered_locally_and_sent_as_audio(self):
         await self.adapter.connect()

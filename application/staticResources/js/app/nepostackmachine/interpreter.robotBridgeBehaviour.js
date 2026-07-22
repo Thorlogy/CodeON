@@ -73,7 +73,7 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
                 ? Math.max(0, time)
                 : angle === undefined
                     ? 0
-                    : this.travelTimeMs(Math.PI * this.trackWidthMm * Math.abs(angle) / 360, wheelSpeed);
+                    : this.travelTimeMs((Math.PI * this.trackWidthMm * Math.abs(angle) / 360) * (90 / 70), wheelSpeed);
             this.startMotion(left, right, duration);
             return duration;
         };

@@ -143,10 +143,9 @@ class CozmoAdapter(RobotAdapter):
             await asyncio.to_thread(client.set_head_angle, angle)
         elif command == "setLift":
             height = self._clamp_number(params, "height", 32.0, 92.0)
-            # The lift covers a much longer mechanical path than the head.
-            # Keep its position controller active until the target can be
-            # reached; the program-level safety stop still releases it later.
-            await asyncio.to_thread(client.set_lift_height, height, 10.0, 5.0, 2.0)
+            # A duration of zero keeps PyCozmo's position controller active.
+            # This lets Cozmo hold an object until an explicit lower/stop.
+            await asyncio.to_thread(client.set_lift_height, height, 10.0, 10.0, 0.0)
         elif command == "setBackpackLight":
             color = self._parse_color(params.get("color", "#ffffff"))
             await asyncio.to_thread(client.set_all_backpack_lights, color)
@@ -393,7 +392,7 @@ class CozmoAdapter(RobotAdapter):
             face = dict(self._face)
         if not face.get("detected"):
             if self._tracking_motion:
-                await asyncio.to_thread(client.stop_all_motors)
+                await asyncio.to_thread(client.drive_wheels, 0.0, 0.0)
                 self._tracking_motion = False
             return
         x_error = float(face["x"]) - 0.5
@@ -404,9 +403,10 @@ class CozmoAdapter(RobotAdapter):
             self._tracking_motion = True
         else:
             if self._tracking_motion:
-                await asyncio.to_thread(client.stop_all_motors)
+                await asyncio.to_thread(client.drive_wheels, 0.0, 0.0)
                 self._tracking_motion = False
-        current = float(getattr(client, "head_angle", 0.0) or 0.0)
+        head_angle = getattr(client, "head_angle", 0.0) or 0.0
+        current = self._number(getattr(head_angle, "radians", head_angle))
         await asyncio.to_thread(client.set_head_angle, max(-0.4, min(0.7, current + y_error * 0.35)))
 
     @staticmethod
@@ -444,6 +444,7 @@ class CozmoAdapter(RobotAdapter):
     @staticmethod
     def _parse_color(value: Any):
         try:
+            from pycozmo import protocol_encoder
             from pycozmo.lights import Color
         except ImportError as error:
             raise AdapterError("PyCozmo is not installed") from error
@@ -454,7 +455,9 @@ class CozmoAdapter(RobotAdapter):
             rgb = tuple(int(text[index:index + 2], 16) for index in (0, 2, 4))
         except ValueError:
             rgb = (255, 255, 255)
-        return Color(rgb=rgb)
+        color = Color(rgb=rgb)
+        encoded = color.to_int16()
+        return protocol_encoder.LightState(on_color=encoded, off_color=encoded)
 
     @staticmethod
     def _component(value: Any, *names: str) -> float:

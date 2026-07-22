@@ -25,14 +25,26 @@ define(['blockly'], function (Blockly) {
         init: function () {
             this.setColour(Blockly.CAT_ACTION_RGB);
             this.appendValueInput('VALUE').setCheck('Number')
-                .appendField(new Blockly.FieldDropdown([
-                    [text('Kopf', 'head'), 'HEAD'],
-                    [text('Lift/Arm', 'lift/arm'), 'LIFT']
-                ]), 'ACTUATOR')
+                .appendField(new Blockly.FieldDropdown([[text('Kopf', 'head'), 'HEAD']]), 'ACTUATOR')
                 .appendField(text('Position %', 'position %'));
             this.setPreviousStatement(true);
             this.setNextStatement(true);
             this.setTooltip(text('Position von 0 bis 100 Prozent.', 'Position from 0 to 100 percent.'));
+        }
+    };
+
+    Blockly.Blocks.cozmoActions_lift = {
+        init: function () {
+            this.setColour(Blockly.CAT_ACTION_RGB);
+            this.appendDummyInput()
+                .appendField(text('Lift/Arm', 'lift/arm'))
+                .appendField(new Blockly.FieldDropdown([
+                    [text('anheben', 'raise'), 'UP'],
+                    [text('ablegen', 'lower'), 'DOWN']
+                ]), 'MODE');
+            this.setPreviousStatement(true);
+            this.setNextStatement(true);
+            this.setTooltip(text('Hebt den Lift vollständig an oder senkt ihn vollständig ab.', 'Raises or lowers the lift completely.'));
         }
     };
 

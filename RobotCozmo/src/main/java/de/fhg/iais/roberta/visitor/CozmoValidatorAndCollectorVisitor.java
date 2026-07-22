@@ -5,6 +5,7 @@ import de.fhg.iais.roberta.bean.IProjectBean;
 import de.fhg.iais.roberta.components.ConfigurationAst;
 import de.fhg.iais.roberta.syntax.action.cozmo.CozmoCameraAction;
 import de.fhg.iais.roberta.syntax.action.cozmo.CozmoDisplayFaceAction;
+import de.fhg.iais.roberta.syntax.action.cozmo.CozmoLiftAction;
 import de.fhg.iais.roberta.syntax.action.cozmo.CozmoSetActuatorAction;
 import de.fhg.iais.roberta.syntax.action.speech.SayTextAction;
 import de.fhg.iais.roberta.syntax.action.spike.PlayToneAction;
@@ -24,6 +25,7 @@ public final class CozmoValidatorAndCollectorVisitor extends RCJValidatorAndColl
     public Void visitAccelerometerSensor(AccelerometerSensor sensor) { return null; }
     public Void visitCozmoCameraAction(CozmoCameraAction action) { return null; }
     public Void visitCozmoDisplayFaceAction(CozmoDisplayFaceAction action) { return null; }
+    public Void visitCozmoLiftAction(CozmoLiftAction action) { return null; }
     public Void visitCozmoSetActuatorAction(CozmoSetActuatorAction action) { requiredComponentVisited(action, action.value); return null; }
     public Void visitCozmoBooleanSensor(CozmoBooleanSensor sensor) { return null; }
     public Void visitCozmoNumberSensor(CozmoNumberSensor sensor) { return null; }
