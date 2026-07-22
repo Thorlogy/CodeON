@@ -242,6 +242,10 @@ function setRobot(robot, result, opt_init) {
     GUISTATE.gui.binaryFileExtension = result.binaryFileExtension;
     GUISTATE.gui.firmwareDefault = result.firmwareDefault;
 
+    // Robots with fixed hardware still carry an internal configuration for
+    // validation, but users must not be offered an editable configuration tab.
+    $('#tabConfiguration').closest('li').toggleClass('hidden', !isConfigurationUsed());
+
     if (robotGroup === 'rcx') {
         $('#blocklyDiv, #bricklyDiv').css(
             'background',
@@ -249,6 +253,10 @@ function setRobot(robot, result, opt_init) {
         );
         $('#blocklyDiv, #bricklyDiv').css('background-size', 'cover, auto 88%');
         $('#blocklyDiv, #bricklyDiv').css('background-position', 'center');
+    } else if (robotGroup === 'cozmo') {
+        $('#blocklyDiv, #bricklyDiv').css('background', '#fff');
+        $('#blocklyDiv, #bricklyDiv').css('background-size', 'initial');
+        $('#blocklyDiv, #bricklyDiv').css('background-position', 'initial');
     } else {
         $('#blocklyDiv, #bricklyDiv').css('background', 'url(../../../../css/img/' + robotGroup + 'Background.jpg) repeat');
         $('#blocklyDiv, #bricklyDiv').css('background-size', '100%');

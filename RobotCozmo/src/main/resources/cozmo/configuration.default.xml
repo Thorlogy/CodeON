@@ -1,0 +1,28 @@
+<block_set xmlns="http://de.fhg.iais.roberta.blockly" robottype="cozmo" xmlversion="" description="" tags="">
+    <instance x="126" y="57">
+        <block type="robConf_differentialdrive" id="cozmo-drive" intask="true" deletable="false">
+            <field name="NAME">_D</field>
+            <field name="BRICK_WHEEL_DIAMETER">3.0</field>
+            <field name="BRICK_TRACK_WIDTH">7.0</field>
+            <field name="MOTOR_L">L</field>
+            <field name="MOTOR_R">R</field>
+        </block>
+    </instance>
+    <!--
+        Cozmo's wheel motors are built in and therefore not user configurable.
+        They still have to be present in the internal configuration so the
+        shared differential-drive validator can resolve the fixed L/R drive.
+    -->
+    <instance x="126" y="180">
+        <block type="robConf_motor" id="cozmo-motor-left" intask="true" deletable="false">
+            <field name="NAME">ML</field>
+            <field name="PORT">L</field>
+        </block>
+    </instance>
+    <instance x="360" y="180">
+        <block type="robConf_motor" id="cozmo-motor-right" intask="true" deletable="false">
+            <field name="NAME">MR</field>
+            <field name="PORT">R</field>
+        </block>
+    </instance>
+</block_set>

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import socket
 from collections.abc import Callable
 from typing import Any
 
@@ -44,6 +45,8 @@ class CozmoAdapter(RobotAdapter):
         self._client_factory = client_factory
         self._client = None
         self._connected = False
+        self._connect_lock = asyncio.Lock()
+        self._local_address: str | None = None
 
     @property
     def manifest(self) -> CapabilityManifest:
@@ -54,20 +57,23 @@ class CozmoAdapter(RobotAdapter):
         return self._connected
 
     async def connect(self) -> dict[str, Any]:
-        if self.connected:
+        async with self._connect_lock:
+            if self.connected:
+                return self._connection_result()
+            self._local_address = None
+            client = self._client_factory()
+            try:
+                self._bind_to_cozmo_network(client)
+                await asyncio.to_thread(client.start)
+                await asyncio.to_thread(client.connect)
+                await asyncio.to_thread(client.wait_for_robot, 8.0)
+            except Exception as error:
+                diagnostics = self._connection_diagnostics(client)
+                await self._close_failed_client(client)
+                raise AdapterError(f"failed to connect to Cozmo; transport={diagnostics}") from error
+            self._client = client
+            self._connected = True
             return self._connection_result()
-        client = self._client_factory()
-        try:
-            await asyncio.to_thread(client.start)
-            await asyncio.to_thread(client.connect)
-            await asyncio.to_thread(client.wait_for_robot, 8.0)
-        except Exception as error:
-            diagnostics = self._connection_diagnostics(client)
-            await self._close_failed_client(client)
-            raise AdapterError(f"failed to connect to Cozmo; transport={diagnostics}") from error
-        self._client = client
-        self._connected = True
-        return self._connection_result()
 
     async def disconnect(self) -> None:
         client = self._client
@@ -145,9 +151,19 @@ class CozmoAdapter(RobotAdapter):
             await asyncio.to_thread(client.stop)
         except Exception:
             pass
+        # PyCozmo's Connection.stop() cannot join threads that were never
+        # started. That happens when CodeON polls while the Mac is still on
+        # its normal Wi-Fi. Close the already-created UDP socket explicitly so
+        # a later attempt on Cozmo Wi-Fi starts with a clean transport.
+        connection = getattr(client, "conn", None)
+        robot_socket = getattr(connection, "sock", None)
+        if isinstance(robot_socket, socket.socket):
+            try:
+                robot_socket.close()
+            except OSError:
+                pass
 
-    @staticmethod
-    def _connection_diagnostics(client) -> dict[str, Any]:
+    def _connection_diagnostics(self, client) -> dict[str, Any]:
         connection = getattr(client, "conn", None)
         receiver = getattr(connection, "recv_thread", None)
         sender = getattr(connection, "send_thread", None)
@@ -160,4 +176,33 @@ class CozmoAdapter(RobotAdapter):
             "firmware": getattr(client, "robot_fw_sig", None),
             "headSerialSeen": getattr(client, "serial_number_head", None) is not None,
             "bodySerialSeen": getattr(client, "serial_number", None) is not None,
+            "localAddress": self._local_address,
         }
+
+    def _bind_to_cozmo_network(self, client) -> None:
+        """Pin PyCozmo's UDP socket to the active Cozmo Wi-Fi interface.
+
+        This is important on laptops that retain another default route while
+        connected to Cozmo's internet-less WLAN.
+        """
+        connection = getattr(client, "conn", None)
+        robot_socket = getattr(connection, "sock", None)
+        if not isinstance(robot_socket, socket.socket):
+            return
+        local_address = self._route_to_robot()
+        if not local_address.startswith("172.31.1."):
+            robot_socket.close()
+            raise AdapterError(
+                f"Mac is not routed through Cozmo Wi-Fi (local address: {local_address})"
+            )
+        robot_socket.bind((local_address, 0))
+        self._local_address = local_address
+
+    @staticmethod
+    def _route_to_robot() -> str:
+        route_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            route_socket.connect(("172.31.1.1", 5551))
+            return str(route_socket.getsockname()[0])
+        finally:
+            route_socket.close()

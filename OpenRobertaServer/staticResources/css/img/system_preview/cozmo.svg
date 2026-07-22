@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 320" role="img" aria-labelledby="title desc">
+  <title id="title">Cozmo</title>
+  <desc id="desc">Neutrale CodeON-Illustration eines kleinen Roboters mit Raupenketten</desc>
+  <rect width="520" height="320" rx="28" fill="#f4f7f9"/>
+  <g stroke="#133b5c" stroke-width="12" stroke-linejoin="round">
+    <path d="M120 218h280l-28 58H148z" fill="#e8edf1"/>
+    <path d="M168 196h184l28 56H140z" fill="#f7a928"/>
+    <path d="M202 72h116l28 112H174z" fill="#e8edf1"/>
+    <rect x="213" y="92" width="94" height="62" rx="13" fill="#133b5c"/>
+    <path d="M120 218h-38v-72h92" fill="none"/>
+  </g>
+  <g fill="#42c0d0">
+    <circle cx="238" cy="123" r="10"/>
+    <circle cx="282" cy="123" r="10"/>
+  </g>
+  <g fill="#133b5c">
+    <circle cx="155" cy="258" r="32"/>
+    <circle cx="365" cy="258" r="32"/>
+  </g>
+  <text x="260" y="302" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#133b5c">COZMO</text>
+</svg>

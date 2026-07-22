@@ -223,10 +223,18 @@ define(["require", "exports", "util.roberta", "message", "guiState.model", "prog
         GUISTATE.gui.sourceCodeFileExtension = result.sourceCodeFileExtension;
         GUISTATE.gui.binaryFileExtension = result.binaryFileExtension;
         GUISTATE.gui.firmwareDefault = result.firmwareDefault;
+        // Robots with fixed hardware still carry an internal configuration for
+        // validation, but users must not be offered an editable configuration tab.
+        $('#tabConfiguration').closest('li').toggleClass('hidden', !isConfigurationUsed());
         if (robotGroup === 'rcx') {
             $('#blocklyDiv, #bricklyDiv').css('background', 'linear-gradient(rgba(255,255,255,.88), rgba(255,255,255,.88)), url(../../../../css/img/rcx-brick.png) center / auto 88% no-repeat');
             $('#blocklyDiv, #bricklyDiv').css('background-size', 'cover, auto 88%');
             $('#blocklyDiv, #bricklyDiv').css('background-position', 'center');
+        }
+        else if (robotGroup === 'cozmo') {
+            $('#blocklyDiv, #bricklyDiv').css('background', '#fff');
+            $('#blocklyDiv, #bricklyDiv').css('background-size', 'initial');
+            $('#blocklyDiv, #bricklyDiv').css('background-position', 'initial');
         }
         else {
             $('#blocklyDiv, #bricklyDiv').css('background', 'url(../../../../css/img/' + robotGroup + 'Background.jpg) repeat');

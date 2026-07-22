@@ -18,9 +18,10 @@ Die ausführliche Anleitung steht in [RCX-ERSTE-SCHRITTE.md](RCX-ERSTE-SCHRITTE.
 - Windows: `CodeON-RCX-starten.cmd` doppelt anklicken
 - Linux: `./start-codeon-rcx.sh`
 
-Der Startassistent startet CodeON und die lokale RCX-Bridge. Zum Übertragen wird
-der freie NQC-Compiler benötigt. Die plattformspezifischen Installationswerkzeuge
-liegen im Wurzelverzeichnis.
+Der Startassistent startet CodeON sowie die RCX- und Cozmo-Bridge automatisch im
+Hintergrund. Danach genügt `http://localhost:1999`; beim Auswählen von Cozmo ist
+kein zusätzlicher Bridge-Start nötig. NQC wird nur für den RCX benötigt. Die
+plattformspezifischen Installationswerkzeuge liegen im Wurzelverzeichnis.
 
 ## Unterstützte Oberflächensprachen
 

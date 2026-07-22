@@ -32,6 +32,7 @@
 
 require.config({
     baseUrl: '.',
+    urlArgs: 'v=codeon-cozmo-20260722-22',
     paths: {
         ace: 'libs/ace/ace',
         ace_lang: 'libs/ace/ext-language_tools',
@@ -92,6 +93,7 @@ require.config({
         'progShare.controller': 'js/app/roberta/controller/progShare.controller',
         'robot.controller': 'js/app/roberta/controller/robot.controller',
         'robot.model': 'js/app/roberta/models/robot.model',
+        robotBridge: 'js/app/roberta/models/robotBridge',
         'tour.controller': 'js/app/roberta/controller/tour.controller',
         'user.controller': 'js/app/roberta/controller/user.controller',
         'userGroup.controller': 'js/app/roberta/controller/userGroup.controller',
@@ -149,6 +151,7 @@ require.config({
         'interpreter.aRobotBehaviour': 'js/app/nepostackmachine/interpreter.aRobotBehaviour',
         'interpreter.robotWeDoBehaviour': 'js/app/nepostackmachine/interpreter.robotWeDoBehaviour',
         'interpreter.robotSimBehaviour': 'js/app/nepostackmachine/interpreter.robotSimBehaviour',
+        'interpreter.robotBridgeBehaviour': 'js/app/nepostackmachine/interpreter.robotBridgeBehaviour',
         'interpreter.state': 'js/app/nepostackmachine/interpreter.state',
         'interpreter.util': 'js/app/nepostackmachine/interpreter.util',
 

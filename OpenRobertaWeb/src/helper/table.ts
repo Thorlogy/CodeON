@@ -38,7 +38,8 @@ export namespace CardView {
     }
 
     export function robotImage(robot: string, row): string {
-        return '<div class="text-center robotImage"><img src="/css/img/system_preview/' + robot + '.jpg" class="w-50" alt="' + row + '"/></div>';
+        const extension = robot === 'cozmo' ? '.svg' : '.jpg';
+        return '<div class="text-center robotImage"><img src="/css/img/system_preview/' + robot + extension + '" class="w-50" alt="' + row + '"/></div>';
     }
 
     export function name(value: string): string {

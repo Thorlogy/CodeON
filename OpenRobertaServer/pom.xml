@@ -90,6 +90,10 @@
         </dependency>
         <dependency>
             <groupId>de.fhg.iais.openroberta</groupId>
+            <artifactId>RobotCozmo</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>de.fhg.iais.openroberta</groupId>
             <artifactId>OpenRobertaRobot</artifactId>
         </dependency>
 

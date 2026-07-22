@@ -10,6 +10,7 @@ import platform
 import re
 import shutil
 import signal
+import socket
 import subprocess
 import sys
 import time
@@ -23,8 +24,12 @@ ROOT = Path(__file__).resolve().parent
 APPLICATION = ROOT / "application"
 RUNTIME = ROOT / ".codeon-runtime"
 BRIDGE_URL = "http://127.0.0.1:2222"
+COZMO_BRIDGE_HOST = "127.0.0.1"
+COZMO_BRIDGE_PORT = 2223
+COZMO_BRIDGE_PID_FILE = RUNTIME / "cozmo-bridge.pid"
 CODEON_URL = "http://localhost:1999"
-SUPPORTED_ROBOTS = ("rcx", "edisonv2", "rcj")
+CODEON_SERVER_PID_FILE = RUNTIME / "codeon-server.pid"
+SUPPORTED_ROBOTS = ("rcx", "edisonv2", "rcj", "cozmo")
 
 HELP_URLS = {
     "python": "https://www.python.org/downloads/",
@@ -102,6 +107,45 @@ def url_reachable(url: str, timeout: float = 1.0) -> bool:
         return False
 
 
+def tcp_reachable(host: str, port: int, timeout: float = 0.5) -> bool:
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
+
+
+def find_cozmo_python() -> Path | None:
+    candidates = [
+        ROOT / ".venv" / ("Scripts/python.exe" if platform.system() == "Windows" else "bin/python"),
+        ROOT / ".codeon-cozmo-venv" / ("Scripts/python.exe" if platform.system() == "Windows" else "bin/python"),
+        Path(sys.executable),
+    ]
+    for candidate in candidates:
+        if not executable(candidate):
+            continue
+        check = subprocess.run(
+            [str(candidate), "-c", "import pycozmo, websockets"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+        if check.returncode == 0:
+            return candidate
+    return None
+
+
+def wait_for_tcp(host: str, port: int, process: subprocess.Popen | None, timeout: float) -> bool:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if tcp_reachable(host, port):
+            return True
+        if process and process.poll() is not None:
+            return False
+        time.sleep(0.2)
+    return False
+
+
 def preflight() -> dict:
     nqc = find_nqc()
     firmware = find_firmware()
@@ -128,6 +172,7 @@ def preflight() -> dict:
         },
         "nqc": {
             "ok": nqc is not None,
+            "optional": True,
             "value": str(nqc) if nqc else None,
             "help": HELP_URLS["nqc"],
         },
@@ -149,7 +194,7 @@ def preflight() -> dict:
 
 
 def print_preflight(checks: dict) -> None:
-    print("\nCodeON RCX – Startprüfung")
+    print("\nCodeON – Startprüfung")
     print("=" * 56)
     labels = {
         "python": "Python 3",
@@ -162,7 +207,7 @@ def print_preflight(checks: dict) -> None:
     }
     for key in labels:
         item = checks[key]
-        optional = " (nur bei RCX ohne Firmware)" if item.get("optional") else ""
+        optional = " (für RCX)" if key == "nqc" else (" (nur bei RCX ohne Firmware)" if item.get("optional") else "")
         if key in ("bridge", "server"):
             state = "LÄUFT" if item["ok"] else "AUS"
         else:
@@ -177,18 +222,21 @@ def print_preflight(checks: dict) -> None:
 
 
 def required_missing(checks: dict) -> list[str]:
-    return [key for key in ("python", "java", "codeon", "nqc") if not checks[key]["ok"]]
+    return [key for key in ("python", "java", "codeon") if not checks[key]["ok"]]
 
 
-def prepare_environment(nqc: Path, firmware: Path | None) -> tuple[dict, Path]:
+def prepare_environment(nqc: Path | None, firmware: Path | None) -> tuple[dict, Path]:
     env = os.environ.copy()
-    env["NQC_PATH"] = str(nqc)
+    if nqc:
+        env["NQC_PATH"] = str(nqc)
     if firmware:
         env["RCX_FIRMWARE_PATH"] = str(firmware)
 
     compiler_base = RUNTIME / "crosscompiler"
     system = platform.system()
-    if system == "Darwin":
+    if not nqc:
+        compiler_target = None
+    elif system == "Darwin":
         compiler_target = compiler_base / "RobotRCX" / "osx" / "nqc"
     elif system == "Windows":
         compiler_target = compiler_base / "RobotRCX" / "windows" / "nqc.exe"
@@ -196,7 +244,7 @@ def prepare_environment(nqc: Path, firmware: Path | None) -> tuple[dict, Path]:
         compiler_target = None
         env["PATH"] = str(nqc.parent) + os.pathsep + env.get("PATH", "")
 
-    if compiler_target:
+    if nqc and compiler_target:
         compiler_target.parent.mkdir(parents=True, exist_ok=True)
         if not compiler_target.exists() or compiler_target.stat().st_mtime_ns != nqc.stat().st_mtime_ns:
             shutil.copy2(nqc, compiler_target)
@@ -243,6 +291,93 @@ def stop_process(process: subprocess.Popen | None) -> None:
         process.kill()
 
 
+def process_command(pid: int) -> str:
+    """Return a best-effort command line for a process without extra dependencies."""
+    if platform.system() == "Windows":
+        command = [
+            "powershell",
+            "-NoProfile",
+            "-Command",
+            f"(Get-CimInstance Win32_Process -Filter \"ProcessId={pid}\").CommandLine",
+        ]
+    else:
+        command = ["ps", "-p", str(pid), "-o", "command="]
+    try:
+        result = subprocess.run(command, capture_output=True, text=True, timeout=3, check=False)
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return result.stdout.strip()
+
+
+def stop_previous_cozmo_bridge() -> None:
+    """Stop only a bridge previously started and recorded by this launcher."""
+    try:
+        pid = int(COZMO_BRIDGE_PID_FILE.read_text(encoding="utf-8").strip())
+    except (OSError, ValueError):
+        return
+
+    command = process_command(pid)
+    if "codeon_robot_bridge.server" not in command or "--adapter cozmo" not in command:
+        COZMO_BRIDGE_PID_FILE.unlink(missing_ok=True)
+        return
+
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except ProcessLookupError:
+        pass
+    except OSError:
+        return
+
+    deadline = time.monotonic() + 5
+    while time.monotonic() < deadline and tcp_reachable(COZMO_BRIDGE_HOST, COZMO_BRIDGE_PORT):
+        time.sleep(0.1)
+    COZMO_BRIDGE_PID_FILE.unlink(missing_ok=True)
+
+
+def stop_previous_codeon_server() -> None:
+    """Stop only a CodeON server previously recorded by this launcher."""
+    try:
+        pid = int(CODEON_SERVER_PID_FILE.read_text(encoding="utf-8").strip())
+    except (OSError, ValueError):
+        pid = None
+
+    # Older launcher versions did not record the server PID. Recover it from
+    # the local listening port once, then apply the same strict command check.
+    if pid is None and platform.system() != "Windows" and shutil.which("lsof"):
+        try:
+            result = subprocess.run(
+                ["lsof", "-nP", "-iTCP:1999", "-sTCP:LISTEN", "-t"],
+                capture_output=True,
+                text=True,
+                timeout=3,
+                check=False,
+            )
+            candidates = [int(value) for value in result.stdout.split() if value.isdigit()]
+            pid = candidates[0] if len(candidates) == 1 else None
+        except (OSError, ValueError, subprocess.SubprocessError):
+            pid = None
+    if pid is None:
+        return
+
+    command = process_command(pid)
+    expected_application = str(APPLICATION.resolve())
+    if "de.fhg.iais.roberta.main.ServerStarter" not in command or expected_application not in command:
+        CODEON_SERVER_PID_FILE.unlink(missing_ok=True)
+        return
+
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except ProcessLookupError:
+        pass
+    except OSError:
+        return
+
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline and url_reachable(CODEON_URL, timeout=0.2):
+        time.sleep(0.1)
+    CODEON_SERVER_PID_FILE.unlink(missing_ok=True)
+
+
 def start(args: argparse.Namespace) -> int:
     checks = preflight()
     print_preflight(checks)
@@ -258,17 +393,27 @@ def start(args: argparse.Namespace) -> int:
     RUNTIME.mkdir(parents=True, exist_ok=True)
     logs = RUNTIME / "logs"
     logs.mkdir(exist_ok=True)
-    nqc = Path(checks["nqc"]["value"])
+    nqc = Path(checks["nqc"]["value"]) if checks["nqc"]["value"] else None
     firmware = Path(checks["firmware"]["value"]) if checks["firmware"]["value"] else None
     env, compiler_base = prepare_environment(nqc, firmware)
 
     bridge_process = None
+    cozmo_bridge_process = None
     server_process = None
     bridge_log_path = logs / "rcx-bridge.log"
+    cozmo_bridge_log_path = logs / "cozmo-bridge.log"
     server_log_path = logs / "codeon-server.log"
 
     try:
-        if not checks["bridge"]["ok"]:
+        # A second launch is an explicit restart request. This ensures updated
+        # robot plug-ins are actually reloaded instead of silently reusing an
+        # older Java process.
+        stop_previous_codeon_server()
+        checks["server"]["ok"] = url_reachable(CODEON_URL)
+
+        if not nqc:
+            print("\nRCX-Bridge wird nicht gestartet, weil NQC fehlt. Cozmo und die übrigen Systeme sind verfügbar.")
+        elif not checks["bridge"]["ok"]:
             bridge_log = bridge_log_path.open("a", encoding="utf-8")
             bridge_process = subprocess.Popen(
                 [sys.executable, "-u", str(ROOT / "RobotRCX" / "rcx-bridge.py")],
@@ -284,9 +429,60 @@ def start(args: argparse.Namespace) -> int:
         else:
             print(f"\nRCX-Bridge läuft bereits: {BRIDGE_URL}")
 
+        external_cozmo_bridge = os.environ.get("CODEON_COZMO_BRIDGE_EXTERNAL") == "1"
+        if not external_cozmo_bridge:
+            stop_previous_cozmo_bridge()
+        if tcp_reachable(COZMO_BRIDGE_HOST, COZMO_BRIDGE_PORT):
+            if external_cozmo_bridge:
+                print(f"Cozmo-Bridge läuft: ws://{COZMO_BRIDGE_HOST}:{COZMO_BRIDGE_PORT}")
+            else:
+                print(
+                    "Cozmo-Bridge läuft bereits, wurde aber nicht von diesem Startfenster gestartet. "
+                    "Sie wird aus Sicherheitsgründen nicht beendet."
+                )
+        elif external_cozmo_bridge:
+            print(
+                "Cozmo-Bridge konnte im Terminal-Kontext nicht gestartet werden. "
+                f"Protokoll: {cozmo_bridge_log_path}"
+            )
+        else:
+            cozmo_python = find_cozmo_python()
+            if cozmo_python:
+                cozmo_env = env.copy()
+                source_path = str(ROOT / "RobotIntegrationKit" / "python" / "src")
+                cozmo_env["PYTHONPATH"] = source_path + os.pathsep + cozmo_env.get("PYTHONPATH", "")
+                cozmo_bridge_log = cozmo_bridge_log_path.open("a", encoding="utf-8")
+                cozmo_bridge_process = subprocess.Popen(
+                    [
+                        str(cozmo_python),
+                        "-u",
+                        "-m",
+                        "codeon_robot_bridge.server",
+                        "--adapter",
+                        "cozmo",
+                        "--pid-file",
+                        str(COZMO_BRIDGE_PID_FILE),
+                    ],
+                    cwd=ROOT,
+                    env=cozmo_env,
+                    stdout=cozmo_bridge_log,
+                    stderr=subprocess.STDOUT,
+                )
+                COZMO_BRIDGE_PID_FILE.write_text(str(cozmo_bridge_process.pid), encoding="utf-8")
+                if wait_for_tcp(COZMO_BRIDGE_HOST, COZMO_BRIDGE_PORT, cozmo_bridge_process, 8):
+                    print(f"Cozmo-Bridge läuft: ws://{COZMO_BRIDGE_HOST}:{COZMO_BRIDGE_PORT}")
+                else:
+                    stop_process(cozmo_bridge_process)
+                    cozmo_bridge_process = None
+                    print(f"Cozmo-Bridge konnte nicht gestartet werden. Protokoll: {cozmo_bridge_log_path}")
+            else:
+                print("Hinweis: Cozmo-Unterstützung ist noch nicht installiert; die übrigen Roboter bleiben verfügbar.")
+
         if args.bridge_only:
             print("Bridge-Modus aktiv. Zum Beenden Strg+C drücken.")
-            while bridge_process and bridge_process.poll() is None:
+            while any(process and process.poll() is None for process in (bridge_process, cozmo_bridge_process)) or (
+                external_cozmo_bridge and tcp_reachable(COZMO_BRIDGE_HOST, COZMO_BRIDGE_PORT)
+            ):
                 time.sleep(0.5)
             return 0
 
@@ -294,9 +490,11 @@ def start(args: argparse.Namespace) -> int:
             print(f"CodeON läuft bereits: {CODEON_URL}")
             if not args.no_browser:
                 webbrowser.open(CODEON_URL)
-            if bridge_process:
-                print("Dieses Fenster offen lassen. Zum Beenden der Bridge Strg+C drücken.")
-                while bridge_process.poll() is None:
+            if bridge_process or cozmo_bridge_process or external_cozmo_bridge:
+                print("Dieses Fenster offen lassen. Zum Beenden der Bridges Strg+C drücken.")
+                while any(process and process.poll() is None for process in (bridge_process, cozmo_bridge_process)) or (
+                    external_cozmo_bridge and tcp_reachable(COZMO_BRIDGE_HOST, COZMO_BRIDGE_PORT)
+                ):
                     time.sleep(0.5)
             return 0
 
@@ -336,31 +534,48 @@ def start(args: argparse.Namespace) -> int:
             stdout=server_log,
             stderr=subprocess.STDOUT,
         )
+        CODEON_SERVER_PID_FILE.write_text(str(server_process.pid), encoding="utf-8")
         if not wait_for(CODEON_URL, server_process, 30, expect_json=False):
             print(f"\nCodeON konnte nicht gestartet werden. Protokoll: {server_log_path}")
             return 5
 
         print(f"CodeON ist bereit: {CODEON_URL}")
-        print("Dieses Fenster offen lassen. Zum Beenden von CodeON Strg+C drücken.")
+        print("Dieses Fenster offen lassen. RCX- und Cozmo-Bridge laufen automatisch im Hintergrund.")
         if not firmware:
             print("Hinweis: Eine Firmwaredatei wird nur benötigt, falls auf dem RCX keine Firmware installiert ist.")
         if not args.no_browser:
             webbrowser.open(CODEON_URL)
         return server_process.wait()
     except KeyboardInterrupt:
-        print("\nCodeON und RCX-Bridge werden beendet …")
+        print("\nCodeON und die Roboter-Bridges werden beendet …")
         return 0
     finally:
         stop_process(server_process)
+        if server_process:
+            try:
+                recorded_server_pid = int(CODEON_SERVER_PID_FILE.read_text(encoding="utf-8").strip())
+            except (OSError, ValueError):
+                recorded_server_pid = None
+            if recorded_server_pid == server_process.pid:
+                CODEON_SERVER_PID_FILE.unlink(missing_ok=True)
+        stop_process(cozmo_bridge_process)
+        if cozmo_bridge_process:
+            try:
+                recorded_pid = int(COZMO_BRIDGE_PID_FILE.read_text(encoding="utf-8").strip())
+            except (OSError, ValueError):
+                recorded_pid = None
+            if recorded_pid == cozmo_bridge_process.pid:
+                COZMO_BRIDGE_PID_FILE.unlink(missing_ok=True)
         stop_process(bridge_process)
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="CodeON und die lokale RCX-Bridge einfach starten")
+    parser = argparse.ArgumentParser(description="CodeON und die lokalen Roboter-Bridges einfach starten")
     parser.add_argument("--check", action="store_true", help="nur prüfen, nichts starten")
     parser.add_argument("--bridge-only", action="store_true", help="nur die RCX-Bridge starten")
     parser.add_argument("--no-browser", action="store_true", help="Browser nicht automatisch öffnen")
     parser.add_argument("--json", action="store_true", help="Prüfergebnis als JSON ausgeben")
+    parser.add_argument("--stop-running-server", action="store_true", help=argparse.SUPPRESS)
     return parser.parse_args()
 
 
@@ -370,6 +585,10 @@ def raise_keyboard_interrupt() -> None:
 
 if __name__ == "__main__":
     arguments = parse_args()
+    if arguments.stop_running_server:
+        stop_previous_codeon_server()
+        stop_previous_cozmo_bridge()
+        raise SystemExit(0)
     if arguments.json:
         print(json.dumps(preflight(), indent=2, ensure_ascii=False))
         raise SystemExit(0)

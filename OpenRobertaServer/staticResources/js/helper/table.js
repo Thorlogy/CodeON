@@ -37,7 +37,8 @@ define(["require", "exports", "guiState.controller", "blockly", "util.roberta"],
         }
         CardView.robot = robot;
         function robotImage(robot, row) {
-            return '<div class="text-center robotImage"><img src="/css/img/system_preview/' + robot + '.jpg" class="w-50" alt="' + row + '"/></div>';
+            var extension = robot === 'cozmo' ? '.svg' : '.jpg';
+            return '<div class="text-center robotImage"><img src="/css/img/system_preview/' + robot + extension + '" class="w-50" alt="' + row + '"/></div>';
         }
         CardView.robotImage = robotImage;
         function name(value) {

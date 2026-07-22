@@ -351,6 +351,12 @@ public class ProjectWorkflowRestController {
                 confXml = wfRequest.getConfXML() == null ? httpSessionState.getRobotFactory().getConfigurationDefault() : wfRequest.getConfXML();
             }
         }
+        // Robots such as Cozmo have fixed, non-editable hardware. Always use
+        // their built-in configuration so stale browser/session data cannot
+        // invalidate otherwise valid actuator blocks.
+        if ( !httpSessionState.getRobotFactory().hasConfiguration() ) {
+            confXml = httpSessionState.getRobotFactory().getConfigurationDefault();
+        }
         if ( isNepo ) {
             project.setProgramXml(progXml);
             project.setConfigurationXml(confXml);

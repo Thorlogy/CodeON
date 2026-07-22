@@ -18,6 +18,8 @@ import * as LOG from 'log';
 import * as IO from 'socket.io';
 import * as CONNECTION_C from 'connection.controller';
 import { Interpreter } from 'interpreter.interpreter';
+import { RobotBridgeBehaviour } from 'interpreter.robotBridgeBehaviour';
+import { RobotBridgeClient, RobotBridgeError, RobotBridgeManifest } from 'robotBridge';
 
 class ThymioDeviceManagerConnection extends AbstractConnection {
     static readonly URL = 'ws://localhost:8597';
@@ -2135,6 +2137,153 @@ export class RcjConnection extends AbstractConnection {
     protected run(result): void {}
 
     setState(): void {}
+}
+
+/** Cozmo connection through the local, reusable CodeON Robot Bridge. */
+export class CozmoConnection extends AbstractConnection {
+    private readonly bridge = new RobotBridgeClient();
+    private interpreter: Interpreter | undefined;
+    private retryTimer: number | undefined;
+    private connected = false;
+    private stopped = false;
+    private helpShown = false;
+
+    override init(): void {
+        this.stopped = false;
+        GUISTATE_C.setPing(false);
+        GUISTATE_C.setRunEnabled(false);
+        $('#runSourceCodeEditor').addClass('disabled');
+        $('#menuConnect').parent().addClass('disabled');
+        $('#head-navi-icon-robot').removeClass('error busy wait').addClass('busy');
+        // Cozmo's run button already changes into a working stop button while
+        // a program is active, so the permanent square stop button is redundant.
+        GUISTATE_C.getBlocklyWorkspace().robControls.hideStopProgram();
+        this.connectBridge();
+    }
+
+    isRobotConnected(): boolean {
+        return this.connected;
+    }
+
+    protected run(result: any): void {
+        if (result.rc !== 'ok' || !result.compiledCode) {
+            MSG.displayInformation(result, result.message, result.message, GUISTATE_C.getProgramName(), GUISTATE_C.getRobot());
+            GUISTATE_C.setConnectionState('error');
+            return;
+        }
+        try {
+            const program = JSON.parse(result.compiledCode);
+            const behaviour = new RobotBridgeBehaviour(this.bridge, 150, 70, (error) => this.hardwareError(error));
+            this.interpreter = new Interpreter(program, behaviour, () => this.programFinished(), [], GUISTATE_C.getProgramName(), false);
+            this.stopped = false;
+            GUISTATE_C.setConnectionState('busy');
+            GUISTATE_C.getBlocklyWorkspace().robControls.switchToStop();
+            this.runInterpreterStep();
+        } catch (error) {
+            this.hardwareError(error instanceof Error ? error : new Error(String(error)));
+        }
+    }
+
+    override stopProgram(): void {
+        this.stopped = true;
+        if (this.interpreter && !this.interpreter.isTerminated()) this.interpreter.terminate();
+        this.interpreter = undefined;
+        this.bridge.stopAll().catch((error) => this.hardwareError(error));
+        this.programFinished();
+    }
+
+    override terminate(): void {
+        this.stopped = true;
+        this.clearRetry();
+        if (this.interpreter && !this.interpreter.isTerminated()) this.interpreter.terminate();
+        this.interpreter = undefined;
+        this.connected = false;
+        this.bridge.stopAll().catch(() => undefined).finally(() => this.bridge.close());
+        super.terminate();
+    }
+
+    setState(): void {}
+
+    private async connectBridge(): Promise<void> {
+        try {
+            await this.bridge.open();
+            const manifest: RobotBridgeManifest = await this.bridge.capabilities();
+            if (manifest.robot !== 'cozmo' || !manifest.capabilities.differentialDrive) {
+                throw new Error('Die gestartete Robot-Bridge ist nicht für Cozmo geeignet.');
+            }
+            await this.bridge.connectRobot();
+            if (this.stopped) return;
+            this.clearRetry();
+            this.connected = true;
+            $('#head-navi-icon-robot').removeClass('error busy').addClass('wait').removeAttr('title');
+            GUISTATE_C.setRunEnabled(true);
+            $('#runSourceCodeEditor').removeClass('disabled');
+            GUISTATE_C.setConnectionState('wait');
+        } catch (error) {
+            this.connected = false;
+            if (error instanceof RobotBridgeError && error.code === 'SESSION_REPLACED') {
+                this.stopped = true;
+                this.clearRetry();
+                return;
+            }
+            $('#head-navi-icon-robot').removeClass('busy wait').addClass('error');
+            GUISTATE_C.setRunEnabled(false);
+            if (!this.helpShown) {
+                this.helpShown = true;
+                this.showBridgeHelp(error);
+            }
+            if (!this.stopped && this.retryTimer === undefined) {
+                this.retryTimer = window.setTimeout(() => {
+                    this.retryTimer = undefined;
+                    this.connectBridge();
+                }, 3000);
+            }
+        }
+    }
+
+    private clearRetry(): void {
+        if (this.retryTimer !== undefined) {
+            window.clearTimeout(this.retryTimer);
+            this.retryTimer = undefined;
+        }
+    }
+
+    private runInterpreterStep = (): void => {
+        if (!this.interpreter || this.stopped || this.interpreter.isTerminated()) return;
+        try {
+            const delay = Math.max(20, this.interpreter.run(Date.now() + 50));
+            window.setTimeout(this.runInterpreterStep, delay);
+        } catch (error) {
+            this.hardwareError(error instanceof Error ? error : new Error(String(error)));
+        }
+    };
+
+    private programFinished(): void {
+        this.interpreter = undefined;
+        if (!this.connected) return;
+        this.bridge.stopAll().catch((error) => this.hardwareError(error));
+        GUISTATE_C.getBlocklyWorkspace().robControls.switchToStart();
+        GUISTATE_C.setConnectionState('wait');
+    }
+
+    private hardwareError(error: Error): void {
+        this.stopped = true;
+        this.bridge.stopAll().catch(() => undefined);
+        if (this.interpreter && !this.interpreter.isTerminated()) this.interpreter.terminate();
+        this.interpreter = undefined;
+        GUISTATE_C.getBlocklyWorkspace().robControls.switchToStart();
+        GUISTATE_C.setConnectionState('error');
+        window.alert('Cozmo wurde sicher gestoppt.\n\n' + error.message);
+    }
+
+    private showBridgeHelp(error: unknown): void {
+        const detail = error instanceof Error ? error.message : String(error);
+        // A modal alert blocks the browser event loop and therefore also the
+        // automatic retry while the user changes Wi-Fi. Keep the diagnostic
+        // available without interrupting reconnection.
+        $('#head-navi-icon-robot').attr('title', 'Cozmo wird verbunden: ' + detail);
+        console.info('Cozmo wird im Hintergrund verbunden:', detail);
+    }
 }
 export class RcxConnection extends AbstractPromptConnection {
     private readonly bridgeUrl: string = 'http://127.0.0.1:2222';

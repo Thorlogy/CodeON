@@ -29,6 +29,7 @@ dbIptoCountry/
 **/data/test/output/*
 
 .venv/
+.codeon-cozmo-venv/
 
 # Local credentials must never enter the repository.
 .env

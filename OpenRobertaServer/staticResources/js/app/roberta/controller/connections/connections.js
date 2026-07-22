@@ -49,9 +49,9 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-define(["require", "exports", "abstract.connections", "jquery", "guiState.controller", "program.model", "util.roberta", "message", "guiState.model", "robot.controller", "dapjs", "blockly", "thymio", "program.controller", "webview.controller", "comm", "log", "socket.io", "connection.controller"], function (require, exports, abstract_connections_1, $, GUISTATE_C, PROGRAM, UTIL, MSG, GUISTATE, ROBOT_C, dapjs_1, Blockly, THYMIO_M, PROG_C, WEBVIEW_C, COMM, LOG, IO, CONNECTION_C) {
+define(["require", "exports", "abstract.connections", "jquery", "guiState.controller", "program.model", "util.roberta", "message", "guiState.model", "robot.controller", "dapjs", "blockly", "thymio", "program.controller", "webview.controller", "comm", "log", "socket.io", "connection.controller", "interpreter.interpreter", "interpreter.robotBridgeBehaviour", "robotBridge"], function (require, exports, abstract_connections_1, $, GUISTATE_C, PROGRAM, UTIL, MSG, GUISTATE, ROBOT_C, dapjs_1, Blockly, THYMIO_M, PROG_C, WEBVIEW_C, COMM, LOG, IO, CONNECTION_C, interpreter_interpreter_1, interpreter_robotBridgeBehaviour_1, robotBridge_1) {
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.RcxConnection = exports.RcjConnection = exports.LocalConnection = exports.WedoConnection = exports.ThymioConnection = exports.Txt4Connection = exports.SpikeConnection = exports.SpikePybricksConnection = exports.RobotinoROSConnection = exports.RobotinoConnection = exports.NxtConnection = exports.NaoConnection = exports.Calliopev3Connection = exports.Microbitv2Connection = exports.MicrobitConnection = exports.JoycarConnection = exports.Calliope2017NoBlueConnection = exports.Calliope2017Connection = exports.Calliope2016Connection = exports.XNNConnection = exports.Ev3lejosv1Connection = exports.Ev3lejosv0Connection = exports.Ev3devConnection = exports.Ev3c4ev3Connection = exports.Edisonv3Connection = exports.Edisonv2Connection = exports.Mbot2Connection = exports.Unowifirev2Connection = exports.UnoConnection = exports.SenseboxConnection = exports.Rob3rtaConnection = exports.Nano33bleConnection = exports.NanoConnection = exports.MegaConnection = exports.MbotConnection = exports.FestobionicConnection = exports.FestobionicflowerConnection = exports.BotnrollConnection = exports.Bob3Connection = void 0;
+    exports.RcxConnection = exports.CozmoConnection = exports.RcjConnection = exports.LocalConnection = exports.WedoConnection = exports.ThymioConnection = exports.Txt4Connection = exports.SpikeConnection = exports.SpikePybricksConnection = exports.RobotinoROSConnection = exports.RobotinoConnection = exports.NxtConnection = exports.NaoConnection = exports.Calliopev3Connection = exports.Microbitv2Connection = exports.MicrobitConnection = exports.JoycarConnection = exports.Calliope2017NoBlueConnection = exports.Calliope2017Connection = exports.Calliope2016Connection = exports.XNNConnection = exports.Ev3lejosv1Connection = exports.Ev3lejosv0Connection = exports.Ev3devConnection = exports.Ev3c4ev3Connection = exports.Edisonv3Connection = exports.Edisonv2Connection = exports.Mbot2Connection = exports.Unowifirev2Connection = exports.UnoConnection = exports.SenseboxConnection = exports.Rob3rtaConnection = exports.Nano33bleConnection = exports.NanoConnection = exports.MegaConnection = exports.MbotConnection = exports.FestobionicConnection = exports.FestobionicflowerConnection = exports.BotnrollConnection = exports.Bob3Connection = void 0;
     var ThymioDeviceManagerConnection = /** @class */ (function (_super) {
         __extends(ThymioDeviceManagerConnection, _super);
         function ThymioDeviceManagerConnection() {
@@ -2587,6 +2587,175 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
         return RcjConnection;
     }(abstract_connections_1.AbstractConnection));
     exports.RcjConnection = RcjConnection;
+    /** Cozmo connection through the local, reusable CodeON Robot Bridge. */
+    var CozmoConnection = /** @class */ (function (_super) {
+        __extends(CozmoConnection, _super);
+        function CozmoConnection() {
+            var _this = _super !== null && _super.apply(this, arguments) || this;
+            _this.bridge = new robotBridge_1.RobotBridgeClient();
+            _this.connected = false;
+            _this.stopped = false;
+            _this.helpShown = false;
+            _this.runInterpreterStep = function () {
+                if (!_this.interpreter || _this.stopped || _this.interpreter.isTerminated())
+                    return;
+                try {
+                    var delay = Math.max(20, _this.interpreter.run(Date.now() + 50));
+                    window.setTimeout(_this.runInterpreterStep, delay);
+                }
+                catch (error) {
+                    _this.hardwareError(error instanceof Error ? error : new Error(String(error)));
+                }
+            };
+            return _this;
+        }
+        CozmoConnection.prototype.init = function () {
+            this.stopped = false;
+            GUISTATE_C.setPing(false);
+            GUISTATE_C.setRunEnabled(false);
+            $('#runSourceCodeEditor').addClass('disabled');
+            $('#menuConnect').parent().addClass('disabled');
+            $('#head-navi-icon-robot').removeClass('error busy wait').addClass('busy');
+            // Cozmo's run button already changes into a working stop button while
+            // a program is active, so the permanent square stop button is redundant.
+            GUISTATE_C.getBlocklyWorkspace().robControls.hideStopProgram();
+            this.connectBridge();
+        };
+        CozmoConnection.prototype.isRobotConnected = function () {
+            return this.connected;
+        };
+        CozmoConnection.prototype.run = function (result) {
+            var _this = this;
+            if (result.rc !== 'ok' || !result.compiledCode) {
+                MSG.displayInformation(result, result.message, result.message, GUISTATE_C.getProgramName(), GUISTATE_C.getRobot());
+                GUISTATE_C.setConnectionState('error');
+                return;
+            }
+            try {
+                var program = JSON.parse(result.compiledCode);
+                var behaviour = new interpreter_robotBridgeBehaviour_1.RobotBridgeBehaviour(this.bridge, 150, 70, function (error) { return _this.hardwareError(error); });
+                this.interpreter = new interpreter_interpreter_1.Interpreter(program, behaviour, function () { return _this.programFinished(); }, [], GUISTATE_C.getProgramName(), false);
+                this.stopped = false;
+                GUISTATE_C.setConnectionState('busy');
+                GUISTATE_C.getBlocklyWorkspace().robControls.switchToStop();
+                this.runInterpreterStep();
+            }
+            catch (error) {
+                this.hardwareError(error instanceof Error ? error : new Error(String(error)));
+            }
+        };
+        CozmoConnection.prototype.stopProgram = function () {
+            var _this = this;
+            this.stopped = true;
+            if (this.interpreter && !this.interpreter.isTerminated())
+                this.interpreter.terminate();
+            this.interpreter = undefined;
+            this.bridge.stopAll().catch(function (error) { return _this.hardwareError(error); });
+            this.programFinished();
+        };
+        CozmoConnection.prototype.terminate = function () {
+            var _this = this;
+            this.stopped = true;
+            this.clearRetry();
+            if (this.interpreter && !this.interpreter.isTerminated())
+                this.interpreter.terminate();
+            this.interpreter = undefined;
+            this.connected = false;
+            this.bridge.stopAll().catch(function () { return undefined; }).finally(function () { return _this.bridge.close(); });
+            _super.prototype.terminate.call(this);
+        };
+        CozmoConnection.prototype.setState = function () { };
+        CozmoConnection.prototype.connectBridge = function () {
+            return __awaiter(this, void 0, void 0, function () {
+                var manifest, error_7;
+                var _this = this;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            _a.trys.push([0, 4, , 5]);
+                            return [4 /*yield*/, this.bridge.open()];
+                        case 1:
+                            _a.sent();
+                            return [4 /*yield*/, this.bridge.capabilities()];
+                        case 2:
+                            manifest = _a.sent();
+                            if (manifest.robot !== 'cozmo' || !manifest.capabilities.differentialDrive) {
+                                throw new Error('Die gestartete Robot-Bridge ist nicht für Cozmo geeignet.');
+                            }
+                            return [4 /*yield*/, this.bridge.connectRobot()];
+                        case 3:
+                            _a.sent();
+                            if (this.stopped)
+                                return [2 /*return*/];
+                            this.clearRetry();
+                            this.connected = true;
+                            $('#head-navi-icon-robot').removeClass('error busy').addClass('wait').removeAttr('title');
+                            GUISTATE_C.setRunEnabled(true);
+                            $('#runSourceCodeEditor').removeClass('disabled');
+                            GUISTATE_C.setConnectionState('wait');
+                            return [3 /*break*/, 5];
+                        case 4:
+                            error_7 = _a.sent();
+                            this.connected = false;
+                            if (error_7 instanceof robotBridge_1.RobotBridgeError && error_7.code === 'SESSION_REPLACED') {
+                                this.stopped = true;
+                                this.clearRetry();
+                                return [2 /*return*/];
+                            }
+                            $('#head-navi-icon-robot').removeClass('busy wait').addClass('error');
+                            GUISTATE_C.setRunEnabled(false);
+                            if (!this.helpShown) {
+                                this.helpShown = true;
+                                this.showBridgeHelp(error_7);
+                            }
+                            if (!this.stopped && this.retryTimer === undefined) {
+                                this.retryTimer = window.setTimeout(function () {
+                                    _this.retryTimer = undefined;
+                                    _this.connectBridge();
+                                }, 3000);
+                            }
+                            return [3 /*break*/, 5];
+                        case 5: return [2 /*return*/];
+                    }
+                });
+            });
+        };
+        CozmoConnection.prototype.clearRetry = function () {
+            if (this.retryTimer !== undefined) {
+                window.clearTimeout(this.retryTimer);
+                this.retryTimer = undefined;
+            }
+        };
+        CozmoConnection.prototype.programFinished = function () {
+            var _this = this;
+            this.interpreter = undefined;
+            if (!this.connected)
+                return;
+            this.bridge.stopAll().catch(function (error) { return _this.hardwareError(error); });
+            GUISTATE_C.getBlocklyWorkspace().robControls.switchToStart();
+            GUISTATE_C.setConnectionState('wait');
+        };
+        CozmoConnection.prototype.hardwareError = function (error) {
+            this.stopped = true;
+            this.bridge.stopAll().catch(function () { return undefined; });
+            if (this.interpreter && !this.interpreter.isTerminated())
+                this.interpreter.terminate();
+            this.interpreter = undefined;
+            GUISTATE_C.getBlocklyWorkspace().robControls.switchToStart();
+            GUISTATE_C.setConnectionState('error');
+            window.alert('Cozmo wurde sicher gestoppt.\n\n' + error.message);
+        };
+        CozmoConnection.prototype.showBridgeHelp = function (error) {
+            var detail = error instanceof Error ? error.message : String(error);
+            // A modal alert blocks the browser event loop and therefore also the
+            // automatic retry while the user changes Wi-Fi. Keep the diagnostic
+            // available without interrupting reconnection.
+            $('#head-navi-icon-robot').attr('title', 'Cozmo wird verbunden: ' + detail);
+            console.info('Cozmo wird im Hintergrund verbunden:', detail);
+        };
+        return CozmoConnection;
+    }(abstract_connections_1.AbstractConnection));
+    exports.CozmoConnection = CozmoConnection;
     var RcxConnection = /** @class */ (function (_super) {
         __extends(RcxConnection, _super);
         function RcxConnection() {

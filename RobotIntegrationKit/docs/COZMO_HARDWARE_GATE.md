@@ -1,7 +1,20 @@
 # Cozmo hardware gate
 
-The Cozmo adapter is **unverified** until this gate is completed on a real
-robot. The host must already be connected to Cozmo's Wi-Fi network.
+## Verification status
+
+The adapter and the complete CodeON execution path were successfully verified
+with real Cozmo hardware on macOS on 22 July 2026. The verified checks are:
+
+- connection and battery query;
+- head and lift initialization/motion;
+- short, low-speed wheel motion followed by direct stop;
+- watchdog stop after the heartbeat expires;
+- a CodeON block program containing straight and turning movements;
+- stopping the running block program with the Run/Stop toggle.
+
+The checks below remain the repeatable acceptance procedure for changes to the
+adapter, bridge or Cozmo program path. The host must already be connected to
+Cozmo's Wi-Fi network.
 
 Place Cozmo on a clear floor even for the connection-only probe. PyCozmo's
 connection initialization can calibrate and move the head or lift. Do not
@@ -30,8 +43,8 @@ PYTHONPATH=RobotIntegrationKit/python/src \
   .venv/bin/python RobotIntegrationKit/python/tools/cozmo_hardware_probe.py --enable-watchdog-test
 ```
 
-Before CodeON enables the adapter by default, repeat connection and stop tests
-ten times and document:
+For a release candidate, repeat connection and stop tests ten times and
+document:
 
 - Cozmo firmware version
 - operating system and version
@@ -40,4 +53,5 @@ ten times and document:
 - stop latency after browser close and Wi-Fi loss
 - battery, head and lift results
 
-Do not claim Windows or Linux support until the same gate passes there.
+Windows and Linux hardware support remains unverified until the same gate
+passes on those platforms.

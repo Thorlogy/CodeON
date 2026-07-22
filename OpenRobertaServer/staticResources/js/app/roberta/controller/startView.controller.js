@@ -65,7 +65,7 @@ define(["require", "exports", "guiState.controller", "startView.model", "table",
             });
         };
         var preloadAll = function (images) { return Promise.all(images.map(preload)); };
-        var images = robots.map(function (robot) { return '/css/img/system_preview/' + robot.name + '.jpg'; });
+        var images = robots.map(function (robot) { return '/css/img/system_preview/' + robot.name + (robot.name === 'cozmo' ? '.svg' : '.jpg'); });
         $.when(preloadAll(images)).then(function (images) {
             initRobotList();
             initRobotToolbar();

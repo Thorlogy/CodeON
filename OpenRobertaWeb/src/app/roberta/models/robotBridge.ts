@@ -58,7 +58,10 @@ export class RobotBridgeClient {
     }
 
     public connectRobot(): Promise<{ connected: boolean; serial?: string }> {
-        return this.request('connect');
+        // Starting PyCozmo and discovering the robot can take noticeably
+        // longer after a Wi-Fi switch. Keep ordinary commands on the short
+        // timeout, but give initial hardware discovery enough time to finish.
+        return this.request('connect', {}, 30000);
     }
 
     public status(): Promise<{ connected: boolean; robot: string }> {
@@ -95,7 +98,7 @@ export class RobotBridgeClient {
         this.socket = undefined;
     }
 
-    private request<T>(type: string, values: { [name: string]: any } = {}): Promise<T> {
+    private request<T>(type: string, values: { [name: string]: any } = {}, timeoutMs = this.requestTimeoutMs): Promise<T> {
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
             return Promise.reject(new RobotBridgeError('TRANSPORT_CLOSED', 'Robot bridge connection is closed'));
         }
@@ -105,7 +108,7 @@ export class RobotBridgeClient {
             const timeout = window.setTimeout(() => {
                 this.pending.delete(id);
                 reject(new RobotBridgeError('REQUEST_TIMEOUT', 'Robot bridge did not answer in time'));
-            }, this.requestTimeoutMs);
+            }, timeoutMs);
             this.pending.set(id, { resolve, reject, timeout });
             this.socket!.send(JSON.stringify(message));
         });

@@ -128,6 +128,9 @@
       "robot.model": [
         "app/roberta/models/robot.model"
       ],
+      "robotBridge": [
+        "app/roberta/models/robotBridge"
+      ],
       "tour.controller": [
         "app/roberta/controller/tour.controller"
       ],
@@ -280,6 +283,9 @@
       ],
       "interpreter.robotSimBehaviour": [
         "app/nepostackmachine/interpreter.robotSimBehaviour"
+      ],
+      "interpreter.robotBridgeBehaviour": [
+        "app/nepostackmachine/interpreter.robotBridgeBehaviour"
       ],
       "interpreter.state": [
         "app/nepostackmachine/interpreter.state"

@@ -40,6 +40,7 @@
         <module>OpenRobertaRobot</module>
         <module>RobotEdison</module>
         <module>RobotSpike</module>
+        <module>RobotCozmo</module>
         <module>RobotRCX</module>
         <module>OpenRobertaServer</module>
     </modules>
@@ -81,6 +82,11 @@
             <dependency>
                 <groupId>de.fhg.iais.openroberta</groupId>
                 <artifactId>RobotSpike</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>de.fhg.iais.openroberta</groupId>
+                <artifactId>RobotCozmo</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
