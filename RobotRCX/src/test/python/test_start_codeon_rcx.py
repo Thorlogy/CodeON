@@ -45,14 +45,14 @@ class CodeOnRcxStarterTest(unittest.TestCase):
         }
         self.assertEqual([], STARTER.required_missing(checks))
 
-    def test_missing_nqc_blocks_start_with_clear_key(self):
+    def test_missing_optional_nqc_does_not_block_non_rcx_use(self):
         checks = {
             "python": {"ok": True},
             "java": {"ok": True},
             "codeon": {"ok": True},
-            "nqc": {"ok": False},
+            "nqc": {"ok": False, "optional": True},
         }
-        self.assertEqual(["nqc"], STARTER.required_missing(checks))
+        self.assertEqual([], STARTER.required_missing(checks))
 
     def test_mac_environment_copies_user_nqc_for_server_and_bridge(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -77,7 +77,7 @@ class CodeOnRcxStarterTest(unittest.TestCase):
         application_js = root / "application/staticResources/js/app/roberta/controller/connections/connections.js"
         for javascript in (source_js, application_js):
             text = javascript.read_text(encoding="utf-8")
-            self.assertIn("CodeON-RCX-starten.command", text)
+            self.assertIn("CodeON-Starten.command", text)
             self.assertIn("feature/sim-3d-toggle/RobotRCX/README.md", text)
 
     def test_ready_to_run_application_uses_nqc_path_from_assistant(self):
@@ -88,11 +88,11 @@ class CodeOnRcxStarterTest(unittest.TestCase):
 
     def test_clickable_launchers_are_present(self):
         root = STARTER_PATH.parent
-        for name in ("CodeON-RCX-starten.command", "CodeON-RCX-starten.cmd", "start-codeon-rcx.sh"):
+        for name in ("CodeON-Starten.command", "CodeON-Starten.cmd", "start-codeon.sh"):
             self.assertTrue((root / name).is_file(), name)
 
     def test_only_supported_robot_plugins_are_enabled(self):
-        self.assertEqual(("rcx", "edisonv2", "rcj"), STARTER.SUPPORTED_ROBOTS)
+        self.assertEqual(("rcx", "edisonv2", "rcj", "cozmo"), STARTER.SUPPORTED_ROBOTS)
         source = STARTER_PATH.read_text(encoding="utf-8")
         self.assertIn('"robot.whitelist=" + ",".join(SUPPORTED_ROBOTS)', source)
         self.assertIn('"robot.default=rcx"', source)
@@ -103,16 +103,17 @@ class CodeOnRcxStarterTest(unittest.TestCase):
             with zipfile.ZipFile(archive_path) as archive:
                 names = set(archive.namelist())
 
-        self.assertIn("CodeON-RCX-test/CodeON-RCX-starten.command", names)
+        self.assertIn("CodeON-RCX-test/CodeON-Starten.command", names)
         self.assertIn("CodeON-RCX-test/application/lib/RobotRCX.jar", names)
         self.assertIn("CodeON-RCX-test/application/lib/RobotEdison.jar", names)
         self.assertIn("CodeON-RCX-test/application/lib/RobotSpike.jar", names)
+        self.assertIn("CodeON-RCX-test/application/lib/RobotCozmo.jar", names)
         robot_jars = {
             name.rsplit("/", 1)[-1]
             for name in names
             if "/application/lib/Robot" in name and name.endswith(".jar")
         }
-        self.assertEqual({"RobotRCX.jar", "RobotEdison.jar", "RobotSpike.jar"}, robot_jars)
+        self.assertEqual({"RobotRCX.jar", "RobotEdison.jar", "RobotSpike.jar", "RobotCozmo.jar"}, robot_jars)
         self.assertFalse(any("/application/db-embedded/" in name for name in names))
         self.assertIn("CodeON-RCX-test/RobotRCX/rcx-bridge.py", names)
         self.assertNotIn("CodeON-RCX-test/RobotRCX/bin/nqc", names)

@@ -89,6 +89,7 @@ require.config({
         'robot.controller': 'js/app/roberta/controller/robot.controller',
         'robot.model': 'js/app/roberta/models/robot.model',
         robotBridge: 'js/app/roberta/models/robotBridge',
+        'cozmo.blocks': 'js/app/roberta/cozmo.blocks',
         'tour.controller': 'js/app/roberta/controller/tour.controller',
         'user.controller': 'js/app/roberta/controller/user.controller',
         'userGroup.controller': 'js/app/roberta/controller/userGroup.controller',

@@ -20,7 +20,7 @@ Komponenten können über `winget` installiert werden. Danach lädt
 BrickBot-Projekts, prüft die fest hinterlegte SHA256-Prüfsumme und legt
 `nqc.exe` unter `RobotRCX/bin` ab.
 
-Der normale Start erfolgt anschließend mit `CodeON-RCX-starten.cmd`. Für einen
+Der normale Start erfolgt anschließend mit `CodeON-Starten.cmd`. Für einen
 seriellen Infrarot-Turm wird der erkannte COM-Port dauerhaft über
 `RCX_TOWER`, zum Beispiel `COM3`, konfiguriert.
 

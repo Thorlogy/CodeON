@@ -14,9 +14,9 @@ Hinweise gelten unabhängig vom eigenständigen CodeON-Produktnamen.
 Für die normale RCX-Nutzung sind kein eigener Maven- oder npm-Build erforderlich.
 Die ausführliche Anleitung steht in [RCX-ERSTE-SCHRITTE.md](RCX-ERSTE-SCHRITTE.md).
 
-- macOS: `CodeON-RCX-starten.command` doppelt anklicken
-- Windows: `CodeON-RCX-starten.cmd` doppelt anklicken
-- Linux: `./start-codeon-rcx.sh`
+- macOS: `CodeON-Starten.command` doppelt anklicken
+- Windows: `CodeON-Starten.cmd` doppelt anklicken
+- Linux: `./start-codeon.sh`
 
 Der Startassistent startet CodeON sowie die RCX- und Cozmo-Bridge automatisch im
 Hintergrund. Danach genügt `http://localhost:1999`; beim Auswählen von Cozmo ist

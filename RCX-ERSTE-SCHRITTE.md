@@ -17,7 +17,7 @@ Entwicklerprogramm oder ein eigener CodeON-Build wird nicht benötigt.
 
 ### macOS
 
-`CodeON-RCX-starten.command` doppelt anklicken.
+`CodeON-Starten.command` doppelt anklicken.
 
 Falls macOS das erstmalige Öffnen verhindert: Die Datei mit der rechten
 Maustaste anklicken, **Öffnen** wählen und einmal bestätigen.
@@ -35,7 +35,7 @@ Der Assistent prüft Java und Python und installiert den freien NQC-Compiler
 lokal in den entpackten CodeON-Ordner. Falls Java oder Python neu installiert
 wurde, das Installationsfenster anschließend schließen.
 
-`CodeON-RCX-starten.cmd` doppelt anklicken.
+`CodeON-Starten.cmd` doppelt anklicken.
 
 Für einen **seriellen Infrarot-Turm** mit USB-Seriell-Adapter:
 
@@ -63,7 +63,7 @@ freigeben. Auf anderen Distributionen nennt es die offizielle Bezugsquelle.
 Danach starten:
 
 ```bash
-./start-codeon-rcx.sh
+./start-codeon.sh
 ```
 
 Für einen seriellen Turm mit USB-Seriell-Adapter vor dem Start setzen:
@@ -81,8 +81,8 @@ Starte immer den CodeON-Ordner, in dem diese Dateien und Ordner direkt
 nebeneinander liegen:
 
 ```text
-CodeON-RCX-starten.command
-start-codeon-rcx.sh
+CodeON-Starten.command
+start-codeon.sh
 start-codeon-rcx.py
 OpenRobertaServer/
 RobotRCX/
@@ -94,7 +94,7 @@ Auf diesem Laptop ist das der aktuelle CodeON-Arbeitsordner. Nicht den alten
 Am einfachsten:
 
 1. Diesen CodeON-Ordner im Finder öffnen.
-2. `CodeON-RCX-starten.command` doppelt anklicken.
+2. `CodeON-Starten.command` doppelt anklicken.
 3. Das Terminalfenster offen lassen.
 4. Im Browser `http://127.0.0.1:1999/` öffnen.
 
@@ -106,7 +106,7 @@ Alternativ im Terminal:
 
 ```bash
 cd /pfad/zum/CodeON-Ordner
-./start-codeon-rcx.sh
+./start-codeon.sh
 ```
 
 ## 3. Hinweise des Startassistenten beachten
@@ -152,7 +152,7 @@ nicht aus einem alten `application`-Export. So werden die aktuellen Dateien aus
 Empfohlener Start:
 
 ```bash
-./start-codeon-rcx.sh
+./start-codeon.sh
 ```
 
 Danach im Browser öffnen:
@@ -173,7 +173,7 @@ Seitenspeicher von `localhost`.
 
 ## Hilfe bei Problemen
 
-Erneut `CodeON-RCX-starten` ausführen. Der Assistent prüft die Installation
+Erneut `CodeON-Starten` ausführen. Der Assistent prüft die Installation
 jedes Mal neu. Diagnoseprotokolle liegen unter:
 
 ```text

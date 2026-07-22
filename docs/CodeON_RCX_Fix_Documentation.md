@@ -48,7 +48,7 @@ zusätzliche Parameter der RCX-Crosscompiler-Pfad fehlt. Immer den vorgesehenen
 Starter verwenden:
 
 ```bash
-./start-codeon-rcx.sh
+./start-codeon.sh
 ```
 
 Dieser startet Server und Bridge mit dem richtigen
@@ -296,9 +296,9 @@ Laufzeitumgebung unter `.codeon-runtime`.
 
 Direkte Starter:
 
-- macOS: `CodeON-RCX-starten.command`
-- Windows: `CodeON-RCX-starten.cmd`
-- Linux: `start-codeon-rcx.sh`
+- macOS: `CodeON-Starten.command`
+- Windows: `CodeON-Starten.cmd`
+- Linux: `start-codeon.sh`
 
 Der Assistent prüft Python, Java, CodeON, NQC, die optionale Firmware, Bridge
 und Server. Fehlende zwingende Komponenten werden nicht nur gemeldet, sondern

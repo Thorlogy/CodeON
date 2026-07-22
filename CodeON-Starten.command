@@ -23,7 +23,7 @@ then
 fi
 
 # A second double-click means "restart CodeON". Stop an older local instance
-# before starting a fresh Cozmo bridge so both processes use the new files.
+# before starting fresh robot bridges so all processes use the new files.
 python3 start-codeon-rcx.py --stop-running-server
 
 # macOS assigns local-network permission according to the launching context.

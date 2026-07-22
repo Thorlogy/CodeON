@@ -54,4 +54,4 @@ echo " Serieller Turm mit USB-Seriell-Adapter:"
 echo "   export RCX_TOWER=/dev/ttyUSB0"
 echo " Der Geraetename kann abweichen; ggf. ist die Gruppe dialout erforderlich."
 echo
-echo " Fertig. Jetzt ./start-codeon-rcx.sh ausfuehren."
+echo " Fertig. Jetzt ./start-codeon.sh ausfuehren."

@@ -71,12 +71,17 @@ async def _serve(args: argparse.Namespace) -> None:
                         response = await session.handle(message)
                 message_type = message.get("type", "invalid") if isinstance(message, dict) else "invalid"
                 if message_type != "heartbeat":
+                    request_name = message_type
+                    if message_type == "command":
+                        request_name += f"/{message.get('command', 'unknown')}"
+                    elif message_type == "sensor":
+                        request_name += f"/{message.get('sensor', 'unknown')}"
                     if response.get("ok"):
-                        _log(f"request {message_type}: ok")
+                        _log(f"request {request_name}: ok")
                     else:
                         error = response.get("error", {})
                         _log(
-                            f"request {message_type}: {error.get('code', 'ERROR')} - "
+                            f"request {request_name}: {error.get('code', 'ERROR')} - "
                             f"{error.get('message', 'unknown error')}"
                         )
                 await connection.send(json.dumps(response, separators=(",", ":")))

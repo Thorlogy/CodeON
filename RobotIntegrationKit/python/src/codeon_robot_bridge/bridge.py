@@ -24,11 +24,14 @@ class BridgeSession:
             return {"id": request_id, "ok": True, "result": result}
         except BridgeError as error:
             return {"id": request_id, "ok": False, "error": {"code": error.code, "message": str(error)}}
-        except Exception:
+        except Exception as error:
             return {
                 "id": request_id,
                 "ok": False,
-                "error": {"code": "INTERNAL_ERROR", "message": "robot adapter failed"},
+                "error": {
+                    "code": "INTERNAL_ERROR",
+                    "message": f"{type(error).__name__}: {error or 'robot adapter failed'}",
+                },
             }
 
     async def watchdog_tick(self) -> bool:

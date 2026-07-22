@@ -1,6 +1,9 @@
 import asyncio
 import socket
+import threading
 import unittest
+import wave
+from unittest.mock import patch
 
 from codeon_robot_bridge import CozmoAdapter
 
@@ -26,7 +29,7 @@ class CozmoAdapterTest(unittest.IsolatedAsyncioTestCase):
         result = await self.adapter.connect()
         self.assertTrue(result["connected"])
         self.assertEqual(
-            [("start", ()), ("connect", ()), ("wait_for_robot", (8.0,))],
+            [("start", ()), ("connect", ()), ("wait_for_robot", (8.0,)), ("set_volume", (65535,))],
             self.client.calls,
         )
 
@@ -50,6 +53,82 @@ class CozmoAdapterTest(unittest.IsolatedAsyncioTestCase):
     async def test_battery_uses_latest_client_state(self):
         await self.adapter.connect()
         self.assertEqual(3.9, await self.adapter.read_sensor("battery", {}))
+
+    async def test_head_and_lift_commands_keep_hardware_limits(self):
+        await self.adapter.connect()
+        await self.adapter.execute("setHead", {"angle": 4})
+        await self.adapter.execute("setLift", {"height": 5})
+        self.assertIn(("set_head_angle", (0.7,)), self.client.calls)
+        self.assertIn(("set_lift_height", (32.0, 10.0, 5.0, 2.0)), self.client.calls)
+
+    async def test_display_face_uses_cozmo_screen_dimensions(self):
+        await self.adapter.connect()
+        await self.adapter.execute("displayFace", {"face": "HAPPY"})
+        name, arguments = self.client.calls[-1]
+        self.assertEqual("display_image", name)
+        self.assertEqual((128, 32), arguments[0].size)
+
+    async def test_face_tracking_runs_until_stop_without_program_loop(self):
+        await self.adapter.connect()
+        await self.adapter.execute("trackFace", {})
+        self.assertTrue(self.adapter._camera_enabled)
+        self.assertIsNotNone(self.adapter._face_tracking_task)
+        self.assertFalse(self.adapter._face_tracking_task.done())
+        await self.adapter.stop_all()
+        self.assertFalse(self.adapter._camera_enabled)
+        self.assertIsNone(self.adapter._face_tracking_task)
+
+    async def test_tone_is_rendered_locally_and_sent_as_audio(self):
+        await self.adapter.connect()
+        await self.adapter.execute("tone", {"frequency": 440, "duration": 20})
+        await asyncio.gather(*tuple(self.adapter._audio_tasks))
+        self.assertEqual("play_audio", self.client.calls[-1][0])
+
+    async def test_audio_command_acknowledges_while_rendering_continues(self):
+        await self.adapter.connect()
+        release = threading.Event()
+
+        def slow_audio(*_args):
+            release.wait(1)
+
+        with patch.object(self.adapter, "_play_tone", slow_audio):
+            await asyncio.wait_for(self.adapter.execute("tone", {"frequency": 440, "duration": 20}), 0.1)
+            self.assertTrue(self.adapter._audio_tasks)
+            release.set()
+            await asyncio.gather(*tuple(self.adapter._audio_tasks))
+
+    async def test_speech_is_generated_locally_on_macos(self):
+        await self.adapter.connect()
+
+        def synthesize(command, **_kwargs):
+            output = command[command.index("-o") + 1]
+            with wave.open(output, "wb") as audio_file:
+                audio_file.setparams((1, 2, 22050, 1, "NONE", "not compressed"))
+                audio_file.writeframes(b"\x00\x00")
+
+        with patch("codeon_robot_bridge.cozmo_adapter.platform.system", return_value="Darwin"), patch(
+            "codeon_robot_bridge.cozmo_adapter.subprocess.run", side_effect=synthesize
+        ) as run:
+            await self.adapter.execute("speak", {"text": "Hallo", "speed": 50})
+            await asyncio.gather(*tuple(self.adapter._audio_tasks))
+        self.assertEqual(1, run.call_count)
+        self.assertIn("--file-format=WAVE", run.call_args.args[0])
+        self.assertIn("--data-format=LEI16@22050", run.call_args.args[0])
+        self.assertEqual("play_audio", self.client.calls[-1][0])
+
+    async def test_snapshot_contains_only_abstract_sensor_data(self):
+        await self.adapter.connect()
+        snapshot = await self.adapter.read_sensor("snapshot", {})
+        self.assertEqual(3.9, snapshot["battery"])
+        self.assertIn("face", snapshot)
+        self.assertEqual(0, snapshot["cameraFrames"])
+        self.assertEqual(0, snapshot["faceDetections"])
+        self.assertNotIn("image", snapshot)
+        self.assertNotIn("frame", snapshot)
+
+    async def test_camera_capability_promises_no_image_transfer(self):
+        self.assertTrue(self.adapter.manifest.capabilities["camera"]["localFaceDetection"])
+        self.assertFalse(self.adapter.manifest.capabilities["camera"]["imagesLeaveBridge"])
 
     async def test_disconnect_stops_before_closing_transport(self):
         await self.adapter.connect()

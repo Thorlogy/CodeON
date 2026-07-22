@@ -1,8 +1,17 @@
 from __future__ import annotations
 
 import asyncio
+import math
+import platform
+import struct
+import subprocess
 import socket
+import tempfile
+import threading
+import time
+import wave
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 from .adapter import RobotAdapter
@@ -15,7 +24,10 @@ def _default_client_factory():
         import pycozmo
     except ImportError as error:
         raise AdapterError("PyCozmo is not installed; install the 'cozmo' extra") from error
-    return pycozmo.Client(enable_animations=False, enable_procedural_face=False)
+    # PyCozmo sends robot audio through its animation controller. Animations
+    # must therefore remain enabled even though CodeON does not use Cozmo's
+    # procedural face animation.
+    return pycozmo.Client(enable_animations=True, enable_procedural_face=False)
 
 
 class CozmoAdapter(RobotAdapter):
@@ -23,13 +35,16 @@ class CozmoAdapter(RobotAdapter):
 
     _manifest = CapabilityManifest(
         robot="cozmo",
-        adapter_version="0.1.0",
+        adapter_version="0.2.0",
         capabilities={
             "differentialDrive": True,
             "head": True,
             "lift": True,
-            "lights": [],
-            "sensors": ["battery"],
+            "lights": ["backpack", "head"],
+            "display": ["facePresets"],
+            "audio": ["tone", "localTextToSpeech"],
+            "camera": {"localFaceDetection": True, "imagesLeaveBridge": False},
+            "sensors": ["battery", "snapshot", "face"],
         },
         limits={
             "wheelSpeedMmPerSec": 150,
@@ -47,6 +62,23 @@ class CozmoAdapter(RobotAdapter):
         self._connected = False
         self._connect_lock = asyncio.Lock()
         self._local_address: str | None = None
+        self._camera_enabled = False
+        self._camera_handler = None
+        self._face_tracking_task: asyncio.Task | None = None
+        self._tracking_motion = False
+        self._face_lock = threading.Lock()
+        self._last_frame_time = 0.0
+        self._camera_frames = 0
+        self._face_detections = 0
+        self._camera_error: str | None = None
+        self._last_face_time = 0.0
+        self._face = self._empty_face()
+        self._cv2 = None
+        self._numpy = None
+        self._face_detector = None
+        self._audio_lock = asyncio.Lock()
+        self._audio_tasks: set[asyncio.Task] = set()
+        self._last_audio_error: str | None = None
 
     @property
     def manifest(self) -> CapabilityManifest:
@@ -73,6 +105,7 @@ class CozmoAdapter(RobotAdapter):
                 raise AdapterError(f"failed to connect to Cozmo; transport={diagnostics}") from error
             self._client = client
             self._connected = True
+            await asyncio.to_thread(client.set_volume, 65535)
             return self._connection_result()
 
     async def disconnect(self) -> None:
@@ -81,6 +114,8 @@ class CozmoAdapter(RobotAdapter):
             return
         try:
             try:
+                await self._stop_face_tracking()
+                await self._stop_camera()
                 await asyncio.to_thread(client.stop_all_motors)
             finally:
                 await asyncio.to_thread(client.disconnect)
@@ -88,6 +123,9 @@ class CozmoAdapter(RobotAdapter):
             try:
                 await asyncio.to_thread(client.stop)
             finally:
+                for task in tuple(self._audio_tasks):
+                    task.cancel()
+                self._audio_tasks.clear()
                 self._client = None
                 self._connected = False
 
@@ -105,7 +143,35 @@ class CozmoAdapter(RobotAdapter):
             await asyncio.to_thread(client.set_head_angle, angle)
         elif command == "setLift":
             height = self._clamp_number(params, "height", 32.0, 92.0)
-            await asyncio.to_thread(client.set_lift_height, height)
+            # The lift covers a much longer mechanical path than the head.
+            # Keep its position controller active until the target can be
+            # reached; the program-level safety stop still releases it later.
+            await asyncio.to_thread(client.set_lift_height, height, 10.0, 5.0, 2.0)
+        elif command == "setBackpackLight":
+            color = self._parse_color(params.get("color", "#ffffff"))
+            await asyncio.to_thread(client.set_all_backpack_lights, color)
+        elif command == "setHeadLight":
+            await asyncio.to_thread(client.set_head_light, bool(params.get("enabled", True)))
+        elif command == "tone":
+            frequency = self._clamp_number(params, "frequency", 40.0, 4000.0)
+            duration = self._clamp_number(params, "duration", 10.0, 10000.0)
+            self._queue_audio(self._play_tone, client, frequency, duration)
+        elif command == "speak":
+            text = str(params.get("text", "")).strip()[:250]
+            if text:
+                speed = self._clamp_number(params, "speed", 1.0, 100.0) if "speed" in params else 50.0
+                self._queue_audio(self._speak, client, text, speed)
+        elif command == "displayFace":
+            await asyncio.to_thread(self._display_face, client, str(params.get("face", "HAPPY")))
+        elif command == "camera":
+            if bool(params.get("enabled", True)):
+                await self._start_camera(client)
+            else:
+                await self._stop_face_tracking()
+                await self._stop_camera()
+        elif command == "trackFace":
+            await self._start_camera(client)
+            self._start_face_tracking(client)
         else:
             raise UnsupportedCommandError(f"unsupported command: {command}")
         return {"accepted": True}
@@ -119,11 +185,308 @@ class CozmoAdapter(RobotAdapter):
                     return value
                 await asyncio.sleep(0.05)
             return float(client.battery_voltage)
+        if sensor == "snapshot":
+            return self._snapshot(client)
+        if sensor == "face":
+            with self._face_lock:
+                return dict(self._face)
         raise UnsupportedCommandError(f"unsupported sensor: {sensor}")
 
     async def stop_all(self) -> None:
+        await self._stop_face_tracking()
+        await self._stop_camera()
         if self._client is not None:
             await asyncio.to_thread(self._client.stop_all_motors)
+
+    def _snapshot(self, client) -> dict[str, Any]:
+        with self._face_lock:
+            face = dict(self._face)
+        pose = getattr(client, "pose", None)
+        accel = getattr(client, "accelerometer", getattr(client, "accel", None))
+        gyro = getattr(client, "gyro", None)
+        status = getattr(client, "robot_status", None)
+        head_angle = getattr(client, "head_angle", 0.0)
+        lift_position = getattr(client, "lift_position", 0.0)
+        lift_height = getattr(getattr(lift_position, "height", None), "mm", lift_position)
+        return {
+            "battery": float(getattr(client, "battery_voltage", 0.0) or 0.0),
+            "headAngle": self._number(getattr(head_angle, "radians", head_angle)),
+            "liftHeight": self._number(lift_height),
+            "leftWheelSpeed": self._number(getattr(client, "left_wheel_speed", 0.0)),
+            "rightWheelSpeed": self._number(getattr(client, "right_wheel_speed", 0.0)),
+            "poseX": self._component(pose, "x"),
+            "poseY": self._component(pose, "y"),
+            "poseHeading": self._component(pose, "angle_z", "angle"),
+            "accelX": self._component(accel, "x"),
+            "accelY": self._component(accel, "y"),
+            "accelZ": self._component(accel, "z"),
+            "gyroX": self._component(gyro, "x"),
+            "gyroY": self._component(gyro, "y"),
+            "gyroZ": self._component(gyro, "z"),
+            "pickedUp": self._status(status, "is_picked_up", "picked_up"),
+            "moving": self._status(status, "is_moving", "moving"),
+            "onCharger": self._status(status, "is_on_charger", "on_charger"),
+            "cameraEnabled": self._camera_enabled,
+            "cameraFrames": self._camera_frames,
+            "faceDetections": self._face_detections,
+            "cameraError": self._camera_error,
+            "faceTracking": self._face_tracking_task is not None and not self._face_tracking_task.done(),
+            "audioBusy": bool(self._audio_tasks),
+            "audioError": self._last_audio_error,
+            "face": face,
+        }
+
+    def _queue_audio(self, function, *args) -> None:
+        task = asyncio.create_task(self._run_audio(function, *args))
+        self._audio_tasks.add(task)
+        task.add_done_callback(self._audio_tasks.discard)
+
+    async def _run_audio(self, function, *args) -> None:
+        async with self._audio_lock:
+            self._last_audio_error = None
+            try:
+                await asyncio.to_thread(function, *args)
+            except asyncio.CancelledError:
+                raise
+            except Exception as error:
+                self._last_audio_error = str(error)
+
+    async def _start_camera(self, client) -> None:
+        if self._camera_enabled:
+            return
+        try:
+            import cv2
+            import numpy
+            import pycozmo
+        except ImportError as error:
+            raise AdapterError("Local face detection requires the 'cozmo-vision' extra") from error
+        detector_path = Path(cv2.data.haarcascades) / "haarcascade_frontalface_default.xml"
+        detector = cv2.CascadeClassifier(str(detector_path))
+        if detector.empty():
+            raise AdapterError("Local face detector could not be loaded")
+        self._cv2, self._numpy, self._face_detector = cv2, numpy, detector
+        self._camera_frames = 0
+        self._face_detections = 0
+        self._camera_error = None
+        self._last_face_time = 0.0
+        event = pycozmo.event.EvtNewRawCameraImage
+        self._camera_handler = client.add_handler(event, self._on_camera_frame)
+        await asyncio.to_thread(client.enable_camera, True, False)
+        self._camera_enabled = True
+
+    async def _stop_camera(self) -> None:
+        client = self._client
+        if client is None or not self._camera_enabled:
+            return
+        try:
+            await asyncio.to_thread(client.enable_camera, False, False)
+        except Exception:
+            pass
+        if self._camera_handler is not None:
+            try:
+                import pycozmo
+                client.del_handler(pycozmo.event.EvtNewRawCameraImage, self._camera_handler)
+            except Exception:
+                pass
+        self._camera_handler = None
+        self._camera_enabled = False
+        with self._face_lock:
+            self._face = self._empty_face()
+
+    def _start_face_tracking(self, client) -> None:
+        if self._face_tracking_task is None or self._face_tracking_task.done():
+            self._face_tracking_task = asyncio.create_task(self._face_tracking_loop(client))
+
+    async def _stop_face_tracking(self) -> None:
+        task = self._face_tracking_task
+        self._face_tracking_task = None
+        if task is not None and task is not asyncio.current_task():
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+        self._tracking_motion = False
+
+    async def _face_tracking_loop(self, client) -> None:
+        try:
+            while self.connected and self._camera_enabled:
+                await self._track_face_once(client)
+                await asyncio.sleep(0.15)
+        except asyncio.CancelledError:
+            raise
+        finally:
+            if self._tracking_motion:
+                try:
+                    await asyncio.to_thread(client.stop_all_motors)
+                except Exception:
+                    pass
+            self._tracking_motion = False
+
+    def _on_camera_frame(self, *args) -> None:
+        now = time.monotonic()
+        if now - self._last_frame_time < 0.15 or not self._camera_enabled:
+            return
+        self._last_frame_time = now
+        image = args[-1]
+        try:
+            frame = self._numpy.asarray(image)
+            gray = self._cv2.cvtColor(frame, self._cv2.COLOR_RGB2GRAY) if frame.ndim == 3 else frame
+            gray = self._cv2.equalizeHist(gray)
+            faces = self._face_detector.detectMultiScale(gray, scaleFactor=1.05, minNeighbors=3, minSize=(20, 20))
+            height, width = gray.shape[:2]
+            self._camera_frames += 1
+            self._camera_error = None
+            result = self._empty_face()
+            result["count"] = int(len(faces))
+            if len(faces):
+                self._face_detections += 1
+                x, y, w, h = max(faces, key=lambda item: int(item[2]) * int(item[3]))
+                center_x, center_y = (x + w / 2) / width, (y + h / 2) / height
+                result.update({
+                    "detected": True,
+                    "x": round(float(center_x), 3),
+                    "y": round(float(center_y), 3),
+                    "size": round(float(w * h / (width * height)), 4),
+                    "position": "LEFT" if center_x < 0.4 else "RIGHT" if center_x > 0.6 else "CENTER",
+                    "ageMs": 0,
+                })
+                self._last_face_time = now
+            elif now - self._last_face_time < 1.2:
+                with self._face_lock:
+                    result = dict(self._face)
+                result["ageMs"] = round((now - self._last_face_time) * 1000)
+            with self._face_lock:
+                self._face = result
+        except Exception as error:
+            # A malformed camera frame must never stop the robot program.
+            self._camera_error = f"{type(error).__name__}: {error}"
+            return
+
+    @staticmethod
+    def _display_face(client, face: str) -> None:
+        from PIL import Image, ImageDraw
+
+        image = Image.new("1", (128, 32), color=0)
+        draw = ImageDraw.Draw(image)
+        expression = face.upper()
+        if expression == "BLINK":
+            draw.line((25, 13, 49, 13), fill=1, width=3)
+            draw.line((79, 13, 103, 13), fill=1, width=3)
+        else:
+            draw.ellipse((27, 5, 47, 19), outline=1, width=3)
+            draw.ellipse((81, 5, 101, 19), outline=1, width=3)
+            draw.ellipse((34, 9, 40, 15), fill=1)
+            draw.ellipse((88, 9, 94, 15), fill=1)
+        if expression == "SURPRISED":
+            draw.ellipse((58, 19, 70, 30), outline=1, width=2)
+        elif expression == "SAD":
+            draw.line((51, 29, 58, 24, 64, 22, 70, 24, 77, 29), fill=1, width=2)
+        elif expression == "NEUTRAL":
+            draw.line((52, 25, 76, 25), fill=1, width=2)
+        else:
+            draw.line((51, 22, 58, 27, 64, 29, 70, 27, 77, 22), fill=1, width=2)
+        client.display_image(image)
+
+    async def _track_face_once(self, client) -> None:
+        with self._face_lock:
+            face = dict(self._face)
+        if not face.get("detected"):
+            if self._tracking_motion:
+                await asyncio.to_thread(client.stop_all_motors)
+                self._tracking_motion = False
+            return
+        x_error = float(face["x"]) - 0.5
+        y_error = 0.5 - float(face["y"])
+        if abs(x_error) > 0.10:
+            turn = max(-45.0, min(45.0, x_error * 100.0))
+            await asyncio.to_thread(client.drive_wheels, turn, -turn)
+            self._tracking_motion = True
+        else:
+            if self._tracking_motion:
+                await asyncio.to_thread(client.stop_all_motors)
+                self._tracking_motion = False
+        current = float(getattr(client, "head_angle", 0.0) or 0.0)
+        await asyncio.to_thread(client.set_head_angle, max(-0.4, min(0.7, current + y_error * 0.35)))
+
+    @staticmethod
+    def _play_tone(client, frequency: float, duration_ms: float) -> None:
+        sample_rate = 22050
+        frame_count = max(1, int(sample_rate * duration_ms / 1000.0))
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temporary:
+            path = Path(temporary.name)
+        try:
+            with wave.open(str(path), "wb") as output:
+                output.setparams((1, 2, sample_rate, frame_count, "NONE", "not compressed"))
+                amplitude = 9000
+                output.writeframes(b"".join(struct.pack("<h", int(amplitude * math.sin(2 * math.pi * frequency * i / sample_rate))) for i in range(frame_count)))
+            client.play_audio(str(path))
+        finally:
+            path.unlink(missing_ok=True)
+
+    @staticmethod
+    def _speak(client, text: str, speed: float) -> None:
+        if platform.system() != "Darwin":
+            raise AdapterError("Local Cozmo speech is currently available on macOS")
+        words_per_minute = round(90 + speed * 1.8)
+        with tempfile.TemporaryDirectory(prefix="codeon-cozmo-speech-") as directory:
+            wav_path = Path(directory) / "speech.wav"
+            subprocess.run(
+                ["say", "-r", str(words_per_minute), "-o", str(wav_path), "--file-format=WAVE", "--data-format=LEI16@22050", "--channels=1", text],
+                check=True,
+                timeout=30,
+            )
+            with wave.open(str(wav_path), "rb") as audio_file:
+                if audio_file.getnframes() == 0:
+                    raise AdapterError("macOS speech synthesis produced no audio data")
+            client.play_audio(str(wav_path))
+
+    @staticmethod
+    def _parse_color(value: Any):
+        try:
+            from pycozmo.lights import Color
+        except ImportError as error:
+            raise AdapterError("PyCozmo is not installed") from error
+        text = str(value).lstrip("#")
+        if len(text) != 6:
+            text = "ffffff"
+        try:
+            rgb = tuple(int(text[index:index + 2], 16) for index in (0, 2, 4))
+        except ValueError:
+            rgb = (255, 255, 255)
+        return Color(rgb=rgb)
+
+    @staticmethod
+    def _component(value: Any, *names: str) -> float:
+        for name in names:
+            component = getattr(value, name, None)
+            if component is not None:
+                try:
+                    return float(component)
+                except (TypeError, ValueError):
+                    pass
+        return 0.0
+
+    @staticmethod
+    def _number(value: Any) -> float:
+        if callable(value):
+            return 0.0
+        try:
+            return float(value or 0.0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    @staticmethod
+    def _status(value: Any, *names: str) -> bool:
+        for name in names:
+            component = getattr(value, name, None)
+            if component is not None:
+                return bool(component() if callable(component) else component)
+        return False
+
+    @staticmethod
+    def _empty_face() -> dict[str, Any]:
+        return {"detected": False, "count": 0, "x": 0.5, "y": 0.5, "size": 0.0, "position": "NONE", "ageMs": 0}
 
     def _require_client(self):
         if not self.connected or self._client is None:

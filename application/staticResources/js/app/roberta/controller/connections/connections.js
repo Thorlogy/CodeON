@@ -49,7 +49,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-define(["require", "exports", "abstract.connections", "jquery", "guiState.controller", "program.model", "util.roberta", "message", "guiState.model", "robot.controller", "dapjs", "blockly", "thymio", "program.controller", "webview.controller", "comm", "log", "socket.io", "connection.controller", "interpreter.interpreter", "interpreter.robotBridgeBehaviour", "robotBridge"], function (require, exports, abstract_connections_1, $, GUISTATE_C, PROGRAM, UTIL, MSG, GUISTATE, ROBOT_C, dapjs_1, Blockly, THYMIO_M, PROG_C, WEBVIEW_C, COMM, LOG, IO, CONNECTION_C, interpreter_interpreter_1, interpreter_robotBridgeBehaviour_1, robotBridge_1) {
+define(["require", "exports", "abstract.connections", "jquery", "guiState.controller", "program.model", "util.roberta", "message", "guiState.model", "robot.controller", "dapjs", "blockly", "thymio", "program.controller", "webview.controller", "comm", "log", "socket.io", "connection.controller", "interpreter.interpreter", "interpreter.robotBridgeBehaviour", "robotBridge", "cozmo.blocks"], function (require, exports, abstract_connections_1, $, GUISTATE_C, PROGRAM, UTIL, MSG, GUISTATE, ROBOT_C, dapjs_1, Blockly, THYMIO_M, PROG_C, WEBVIEW_C, COMM, LOG, IO, CONNECTION_C, interpreter_interpreter_1, interpreter_robotBridgeBehaviour_1, robotBridge_1) {
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.RcxConnection = exports.CozmoConnection = exports.RcjConnection = exports.LocalConnection = exports.WedoConnection = exports.ThymioConnection = exports.Txt4Connection = exports.SpikeConnection = exports.SpikePybricksConnection = exports.RobotinoROSConnection = exports.RobotinoConnection = exports.NxtConnection = exports.NaoConnection = exports.Calliopev3Connection = exports.Microbitv2Connection = exports.MicrobitConnection = exports.JoycarConnection = exports.Calliope2017NoBlueConnection = exports.Calliope2017Connection = exports.Calliope2016Connection = exports.XNNConnection = exports.Ev3lejosv1Connection = exports.Ev3lejosv0Connection = exports.Ev3devConnection = exports.Ev3c4ev3Connection = exports.Edisonv3Connection = exports.Edisonv2Connection = exports.Mbot2Connection = exports.Unowifirev2Connection = exports.UnoConnection = exports.SenseboxConnection = exports.Rob3rtaConnection = exports.Nano33bleConnection = exports.NanoConnection = exports.MegaConnection = exports.MbotConnection = exports.FestobionicConnection = exports.FestobionicflowerConnection = exports.BotnrollConnection = exports.Bob3Connection = void 0;
     var ThymioDeviceManagerConnection = /** @class */ (function (_super) {
@@ -2736,14 +2736,27 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
             GUISTATE_C.setConnectionState('wait');
         };
         CozmoConnection.prototype.hardwareError = function (error) {
+            var _this = this;
             this.stopped = true;
             this.bridge.stopAll().catch(function () { return undefined; });
             if (this.interpreter && !this.interpreter.isTerminated())
                 this.interpreter.terminate();
             this.interpreter = undefined;
+            this.connected = false;
             GUISTATE_C.getBlocklyWorkspace().robControls.switchToStart();
             GUISTATE_C.setConnectionState('error');
+            GUISTATE_C.setRunEnabled(false);
             window.alert('Cozmo wurde sicher gestoppt.\n\n' + error.message);
+            // A transient timeout must not require restarting CodeON. Reopen the
+            // local bridge automatically and enable Run again after recovery.
+            this.bridge.close();
+            this.clearRetry();
+            $('#head-navi-icon-robot').removeClass('wait error').addClass('busy');
+            this.retryTimer = window.setTimeout(function () {
+                _this.retryTimer = undefined;
+                _this.stopped = false;
+                _this.connectBridge();
+            }, 500);
         };
         CozmoConnection.prototype.showBridgeHelp = function (error) {
             var detail = error instanceof Error ? error.message : String(error);
@@ -2813,7 +2826,7 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
                 .catch(function (err) {
                 $('body>.pace').fadeOut();
                 _this._bridgeError('Die RCX-Bridge ist nicht erreichbar. Starte CodeON bitte mit ' +
-                    '„CodeON-RCX-starten“ und stelle sicher, dass der USB-Tower ' +
+                    '„CodeON-Starten“ und stelle sicher, dass der USB-Tower ' +
                     'eingesteckt und der RCX eingeschaltet ist.\n\nTechnisch: ' +
                     err);
             });
@@ -2827,7 +2840,7 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
                 .then(function (status) {
                 if (!status || !status.nqc) {
                     _this._showSetupNoticeOnce('nqc', '<strong>Für die Übertragung auf den RCX fehlt noch NQC.</strong><br><br>' +
-                        'Starte im CodeON-Ordner die Datei <code>CodeON-RCX-starten</code>. ' +
+                        'Starte im CodeON-Ordner die Datei <code>CodeON-Starten</code>. ' +
                         'Der Startassistent prüft alle benötigten Komponenten und zeigt die passende Bezugsquelle.<br><br>' +
                         '<a href="' +
                         _this.setupGuideUrl +
@@ -2836,9 +2849,9 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
             })
                 .catch(function () {
                 _this._showSetupNoticeOnce('bridge', '<strong>Die lokale RCX-Übertragung ist noch nicht gestartet.</strong><br><br>' +
-                    'Öffne im CodeON-Ordner per Doppelklick <code>CodeON-RCX-starten.command</code> (macOS) ' +
-                    'oder <code>CodeON-RCX-starten.cmd</code> (Windows). Unter Linux verwendest du ' +
-                    '<code>./start-codeon-rcx.sh</code>.<br><br>' +
+                    'Öffne im CodeON-Ordner per Doppelklick <code>CodeON-Starten.command</code> (macOS) ' +
+                    'oder <code>CodeON-Starten.cmd</code> (Windows). Unter Linux verwendest du ' +
+                    '<code>./start-codeon.sh</code>.<br><br>' +
                     '<a href="' +
                     _this.setupGuideUrl +
                     '" target="_blank" rel="noopener noreferrer">RCX-Einsteigeranleitung öffnen</a>');

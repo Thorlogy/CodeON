@@ -7,9 +7,9 @@ Entwicklungsumgebung.
 
 1. `CodeON-RCX-preview-2026-07-13.zip` herunterladen und entpacken.
 2. Den Starter für das eigene System öffnen:
-   - macOS: `CodeON-RCX-starten.command`
-   - Windows: `CodeON-RCX-starten.cmd`
-   - Linux: `./start-codeon-rcx.sh`
+   - macOS: `CodeON-Starten.command`
+   - Windows: `CodeON-Starten.cmd`
+   - Linux: `./start-codeon.sh`
 3. Die verständliche Startprüfung beachten. Fehlende Komponenten werden mit
    ihrer offiziellen Bezugsquelle angezeigt.
 

@@ -30,9 +30,9 @@ def build_package(version: str, output: Path) -> Path:
 
         for name in (
             "start-codeon-rcx.py",
-            "start-codeon-rcx.sh",
-            "CodeON-RCX-starten.command",
-            "CodeON-RCX-starten.cmd",
+            "start-codeon.sh",
+            "CodeON-Starten.command",
+            "CodeON-Starten.cmd",
             "CodeON-Installation.cmd",
             "RCX-Werkzeuge-installieren.command",
             "RCX-Werkzeuge-installieren.cmd",

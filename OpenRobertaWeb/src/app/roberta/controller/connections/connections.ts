@@ -20,6 +20,8 @@ import * as CONNECTION_C from 'connection.controller';
 import { Interpreter } from 'interpreter.interpreter';
 import { RobotBridgeBehaviour } from 'interpreter.robotBridgeBehaviour';
 import { RobotBridgeClient, RobotBridgeError, RobotBridgeManifest } from 'robotBridge';
+// @ts-ignore AMD side-effect module that registers the Cozmo Blockly blocks.
+import 'cozmo.blocks';
 
 class ThymioDeviceManagerConnection extends AbstractConnection {
     static readonly URL = 'ws://localhost:8597';
@@ -2271,9 +2273,21 @@ export class CozmoConnection extends AbstractConnection {
         this.bridge.stopAll().catch(() => undefined);
         if (this.interpreter && !this.interpreter.isTerminated()) this.interpreter.terminate();
         this.interpreter = undefined;
+        this.connected = false;
         GUISTATE_C.getBlocklyWorkspace().robControls.switchToStart();
         GUISTATE_C.setConnectionState('error');
+        GUISTATE_C.setRunEnabled(false);
         window.alert('Cozmo wurde sicher gestoppt.\n\n' + error.message);
+        // A transient timeout must not require restarting CodeON. Reopen the
+        // local bridge automatically and enable Run again after recovery.
+        this.bridge.close();
+        this.clearRetry();
+        $('#head-navi-icon-robot').removeClass('wait error').addClass('busy');
+        this.retryTimer = window.setTimeout(() => {
+            this.retryTimer = undefined;
+            this.stopped = false;
+            this.connectBridge();
+        }, 500);
     }
 
     private showBridgeHelp(error: unknown): void {
@@ -2346,7 +2360,7 @@ export class RcxConnection extends AbstractPromptConnection {
                 $('body>.pace').fadeOut();
                 this._bridgeError(
                     'Die RCX-Bridge ist nicht erreichbar. Starte CodeON bitte mit ' +
-                        '„CodeON-RCX-starten“ und stelle sicher, dass der USB-Tower ' +
+                        '„CodeON-Starten“ und stelle sicher, dass der USB-Tower ' +
                         'eingesteckt und der RCX eingeschaltet ist.\n\nTechnisch: ' +
                         err
                 );
@@ -2363,7 +2377,7 @@ export class RcxConnection extends AbstractPromptConnection {
                     this._showSetupNoticeOnce(
                         'nqc',
                         '<strong>Für die Übertragung auf den RCX fehlt noch NQC.</strong><br><br>' +
-                            'Starte im CodeON-Ordner die Datei <code>CodeON-RCX-starten</code>. ' +
+                            'Starte im CodeON-Ordner die Datei <code>CodeON-Starten</code>. ' +
                             'Der Startassistent prüft alle benötigten Komponenten und zeigt die passende Bezugsquelle.<br><br>' +
                             '<a href="' +
                             this.setupGuideUrl +
@@ -2375,9 +2389,9 @@ export class RcxConnection extends AbstractPromptConnection {
                 this._showSetupNoticeOnce(
                     'bridge',
                     '<strong>Die lokale RCX-Übertragung ist noch nicht gestartet.</strong><br><br>' +
-                        'Öffne im CodeON-Ordner per Doppelklick <code>CodeON-RCX-starten.command</code> (macOS) ' +
-                        'oder <code>CodeON-RCX-starten.cmd</code> (Windows). Unter Linux verwendest du ' +
-                        '<code>./start-codeon-rcx.sh</code>.<br><br>' +
+                        'Öffne im CodeON-Ordner per Doppelklick <code>CodeON-Starten.command</code> (macOS) ' +
+                        'oder <code>CodeON-Starten.cmd</code> (Windows). Unter Linux verwendest du ' +
+                        '<code>./start-codeon.sh</code>.<br><br>' +
                         '<a href="' +
                         this.setupGuideUrl +
                         '" target="_blank" rel="noopener noreferrer">RCX-Einsteigeranleitung öffnen</a>'

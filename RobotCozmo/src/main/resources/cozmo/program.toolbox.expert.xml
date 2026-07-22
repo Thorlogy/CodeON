@@ -1,0 +1,48 @@
+<toolbox_set id="toolboxExpert" style="display: none">
+    <category name="TOOLBOX_ACTION" svg="true">
+        <category name="TOOLBOX_MOVE" svg="true">
+            <block type="actions_motorDiff_on_for"><value name="POWER"><block type="math_number"><field name="NUM">30</field></block></value><value name="DISTANCE"><block type="math_number"><field name="NUM">10</field></block></value></block>
+            <block type="actions_motorDiff_on"><value name="POWER"><block type="math_number"><field name="NUM">30</field></block></value></block>
+            <block type="actions_motorDiff_stop"/>
+            <block type="actions_motorDiff_turn_for"><value name="POWER"><block type="math_number"><field name="NUM">30</field></block></value><value name="DEGREES"><block type="math_number"><field name="NUM">90</field></block></value></block>
+            <block type="actions_motorDiff_curve"><value name="POWER_LEFT"><block type="math_number"><field name="NUM">20</field></block></value><value name="POWER_RIGHT"><block type="math_number"><field name="NUM">40</field></block></value></block>
+        </category>
+        <category name="TOOLBOX_MOTOR" svg="true">
+            <block type="cozmoActions_setActuator"><field name="ACTUATOR">HEAD</field><value name="VALUE"><block type="math_number"><field name="NUM">50</field></block></value></block>
+            <block type="cozmoActions_setActuator"><field name="ACTUATOR">LIFT</field><value name="VALUE"><block type="math_number"><field name="NUM">50</field></block></value></block>
+        </category>
+        <category name="TOOLBOX_SOUND" svg="true">
+            <block type="robActions_sayText"><value name="OUT"><block type="text"><field name="TEXT">Hallo!</field></block></value></block>
+            <block type="actions_play_tone"><value name="FREQUENCY"><block type="math_number"><field name="NUM">440</field></block></value><value name="DURATION"><block type="math_number"><field name="NUM">500</field></block></value></block>
+        </category>
+        <category name="TOOLBOX_LIGHT" svg="true">
+            <block type="actions_rgbLed_hidden_on"><value name="COLOUR"><block type="colour_picker_rcj"/></value></block>
+            <block type="actions_rgbLed_hidden_off"/>
+        </category>
+        <category name="TOOLBOX_CAMERA" svg="true">
+            <block type="cozmoActions_camera"><field name="MODE">START</field></block>
+            <block type="cozmoActions_camera"><field name="MODE">TRACK</field></block>
+            <block type="cozmoActions_camera"><field name="MODE">STOP</field></block>
+        </category>
+        <category name="TOOLBOX_DISPLAY" svg="true">
+            <block type="cozmoActions_displayFace"><field name="FACE">HAPPY</field></block>
+        </category>
+    </category>
+    <category name="TOOLBOX_SENSOR" svg="true">
+        <block type="robSensors_battery_getSample"/>
+        <block type="cozmoSensors_boolean"/>
+        <block type="cozmoSensors_number"/>
+        <block type="cozmoSensors_facePosition"/>
+        <block type="robSensors_accelerometer_getSample"/>
+        <block type="robSensors_gyro_getSample"/>
+    </category>
+    <category name="TOOLBOX_CONTROL" svg="true">
+        <block type="robControls_if"/><block type="robControls_ifElse"/><block type="robControls_loopForever"/>
+        <block type="controls_repeat_ext"><value name="TIMES"><block type="math_number"><field name="NUM">4</field></block></value></block>
+        <block type="robControls_wait_time"><value name="WAIT"><block type="math_number"><field name="NUM">500</field></block></value></block>
+    </category>
+    <category name="TOOLBOX_LOGIC" svg="true"><block type="logic_compare"/><block type="logic_operation"/><block type="logic_boolean"/></category>
+    <category name="TOOLBOX_MATH" svg="true"><block type="math_number"/><block type="math_arithmetic"/><block type="math_single"/></category>
+    <category name="TOOLBOX_TEXT" svg="true"><block type="text"/><block type="text_join"/><block type="text_comment"/></category>
+    <category name="TOOLBOX_VARIABLE" custom="VARIABLE" svg="true"/>
+</toolbox_set>

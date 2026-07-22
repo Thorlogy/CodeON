@@ -63,6 +63,6 @@ install -m 755 "$source_dir/build/bin/nqc" RobotRCX/bin/nqc
 
 echo
 echo "NQC wurde erfolgreich eingerichtet: RobotRCX/bin/nqc"
-echo "Du kannst CodeON jetzt mit 'CodeON-RCX-starten.command' öffnen."
+echo "Du kannst CodeON jetzt mit 'CodeON-Starten.command' öffnen."
 echo
 read -r -p "Drücke die Eingabetaste, um dieses Fenster zu schließen."

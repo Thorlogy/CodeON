@@ -57,10 +57,10 @@ if defined NEUSTART_NOETIG (
     echo   FAST GESCHAFFT!
     echo   Java oder Python wurde neu installiert.
     echo   Dieses Fenster bitte schliessen und danach
-    echo   "CodeON-RCX-starten.cmd" doppelt anklicken.
+    echo   "CodeON-Starten.cmd" doppelt anklicken.
 ) else (
     echo   FERTIG! CodeON ist eingerichtet.
-    echo   Jetzt "CodeON-RCX-starten.cmd" doppelt anklicken.
+    echo   Jetzt "CodeON-Starten.cmd" doppelt anklicken.
 )
 echo  =========================================
 echo.

@@ -4,13 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "codeon-robot-bridge"
-version = "0.1.0"
+version = "0.2.0"
 description = "Reusable local bridge core for CodeON robot integrations"
 requires-python = ">=3.9"
 dependencies = []
 
 [project.optional-dependencies]
 cozmo = ["pycozmo==0.8.0"]
+cozmo-vision = ["pycozmo==0.8.0", "opencv-python-headless>=4.8,<5", "numpy>=1.24,<3"]
 server = ["websockets>=13.1,<17"]
 
 [project.scripts]

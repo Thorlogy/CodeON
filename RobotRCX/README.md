@@ -21,7 +21,7 @@ jedoch aus Lizenzgründen weder NQC noch die LEGO-Firmware.
 ### macOS
 
 1. Repository herunterladen und entpacken.
-2. `CodeON-RCX-starten.command` doppelt anklicken.
+2. `CodeON-Starten.command` doppelt anklicken.
 3. Zeigt die Prüfung `NQC-Compiler: FEHLT`, einmal
    `RCX-Werkzeuge-installieren.command` doppelt anklicken. Danach den Start
    wiederholen.
@@ -35,7 +35,7 @@ Gründen nicht heruntergeladen.
 
 ```bash
 ./RCX-Werkzeuge-installieren.sh
-./start-codeon-rcx.sh
+./start-codeon.sh
 ```
 
 Der Werkzeugassistent installiert NQC auf Debian-/Ubuntu-Systemen aus den
@@ -54,7 +54,7 @@ nennt er die offizielle Bezugsquelle.
 Beim ersten Mal `CodeON-Installation.cmd` doppelt anklicken. Der Assistent
 prüft Java und Python und installiert NQC nach verifizierter SHA256-Prüfsumme
 lokal unter `RobotRCX/bin/nqc.exe`. Danach genügt
-`CodeON-RCX-starten.cmd`.
+`CodeON-Starten.cmd`.
 
 Für aktuelle 64-Bit-Windows-Systeme wird ein serieller Infrarot-Turm mit
 USB-Seriell-Adapter empfohlen. Sein COM-Port wird einmalig gesetzt, zum
@@ -124,7 +124,7 @@ des Servers wieder. Die Bridge schreibt ihr Laufzeitprotokoll nach
 `admin/logs/rcx-bridge.log`.
 
 Dieser Abschnitt ist für Entwickler. Anwender verwenden stattdessen den oben
-beschriebenen `CodeON-RCX-starten`-Assistenten.
+beschriebenen `CodeON-Starten`-Assistenten.
 
 Auf macOS erwartet der gemeinsame Start die Binary hier:
 
