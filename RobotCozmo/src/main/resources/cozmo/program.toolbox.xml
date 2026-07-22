@@ -19,7 +19,8 @@
         </block>
     </category>
     <category name="TOOLBOX_SENSOR" svg="true">
-        <block type="robSensors_battery_getSample"/>
+        <block type="cozmoSensors_boolean"><field name="MODE">faceDetected</field></block>
+        <block type="cozmoSensors_number"><field name="MODE">battery</field></block>
     </category>
     <category name="TOOLBOX_CONTROL" svg="true">
         <block type="robControls_if"/>

@@ -17,6 +17,7 @@
         <category name="TOOLBOX_LIGHT" svg="true">
             <block type="actions_rgbLed_hidden_on"><value name="COLOUR"><block type="colour_picker_rcj"/></value></block>
             <block type="actions_rgbLed_hidden_off"/>
+            <block type="cozmoActions_headLight"><field name="MODE">ON</field></block>
         </category>
         <category name="TOOLBOX_CAMERA" svg="true">
             <block type="cozmoActions_camera"><field name="MODE">START</field></block>
@@ -28,12 +29,35 @@
         </category>
     </category>
     <category name="TOOLBOX_SENSOR" svg="true">
-        <block type="robSensors_battery_getSample"/>
-        <block type="cozmoSensors_boolean"/>
-        <block type="cozmoSensors_number"/>
-        <block type="cozmoSensors_facePosition"/>
-        <block type="robSensors_accelerometer_getSample"/>
-        <block type="robSensors_gyro_getSample"/>
+        <category name="TOOLBOX_COZMO_FACE" svg="true">
+            <block type="cozmoSensors_boolean"><field name="MODE">faceDetected</field></block>
+            <block type="cozmoSensors_number"><field name="MODE">faceCount</field></block>
+            <block type="cozmoSensors_number"><field name="MODE">faceX</field></block>
+            <block type="cozmoSensors_number"><field name="MODE">faceY</field></block>
+            <block type="cozmoSensors_number"><field name="MODE">faceSize</field></block>
+            <block type="cozmoSensors_facePosition"/>
+        </category>
+        <category name="TOOLBOX_COZMO_MOTION" svg="true">
+            <block type="cozmoSensors_number"><field name="MODE">accelX</field></block>
+            <block type="cozmoSensors_number"><field name="MODE">accelY</field></block>
+            <block type="cozmoSensors_number"><field name="MODE">accelZ</field></block>
+            <block type="cozmoSensors_number"><field name="MODE">gyroX</field></block>
+            <block type="cozmoSensors_number"><field name="MODE">gyroY</field></block>
+            <block type="cozmoSensors_number"><field name="MODE">gyroZ</field></block>
+            <block type="cozmoSensors_number"><field name="MODE">leftWheelSpeed</field></block>
+            <block type="cozmoSensors_number"><field name="MODE">rightWheelSpeed</field></block>
+            <block type="cozmoSensors_number"><field name="MODE">poseX</field></block>
+            <block type="cozmoSensors_number"><field name="MODE">poseY</field></block>
+            <block type="cozmoSensors_number"><field name="MODE">poseHeading</field></block>
+        </category>
+        <category name="TOOLBOX_COZMO_STATE" svg="true">
+            <block type="cozmoSensors_number"><field name="MODE">battery</field></block>
+            <block type="cozmoSensors_number"><field name="MODE">headAngle</field></block>
+            <block type="cozmoSensors_number"><field name="MODE">liftHeight</field></block>
+            <block type="cozmoSensors_boolean"><field name="MODE">pickedUp</field></block>
+            <block type="cozmoSensors_boolean"><field name="MODE">moving</field></block>
+            <block type="cozmoSensors_boolean"><field name="MODE">onCharger</field></block>
+        </category>
     </category>
     <category name="TOOLBOX_CONTROL" svg="true">
         <block type="robControls_if"/><block type="robControls_ifElse"/><block type="robControls_loopForever"/>

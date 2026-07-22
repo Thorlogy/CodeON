@@ -8,6 +8,7 @@ import de.fhg.iais.roberta.components.ConfigurationAst;
 import de.fhg.iais.roberta.syntax.Phrase;
 import de.fhg.iais.roberta.syntax.action.cozmo.CozmoCameraAction;
 import de.fhg.iais.roberta.syntax.action.cozmo.CozmoDisplayFaceAction;
+import de.fhg.iais.roberta.syntax.action.cozmo.CozmoHeadLightAction;
 import de.fhg.iais.roberta.syntax.action.cozmo.CozmoLiftAction;
 import de.fhg.iais.roberta.syntax.action.cozmo.CozmoSetActuatorAction;
 import de.fhg.iais.roberta.syntax.action.speech.SayTextAction;
@@ -41,6 +42,9 @@ public final class CozmoStackMachineVisitor extends RCJStackMachineVisitor {
     }
     public Void visitCozmoDisplayFaceAction(CozmoDisplayFaceAction action) {
         return add(makeNode(C.LIGHT_ACTION).put(C.PORT, "display").put(C.MODE, action.face.toLowerCase()).put(C.COLOR, ""));
+    }
+    public Void visitCozmoHeadLightAction(CozmoHeadLightAction action) {
+        return add(makeNode(C.LIGHT_ACTION).put(C.PORT, "headlight").put(C.MODE, action.mode.toLowerCase()).put(C.COLOR, ""));
     }
     public Void visitCozmoLiftAction(CozmoLiftAction action) {
         new NumConst(null, action.mode.equalsIgnoreCase("UP") ? "100" : "0").accept(this);

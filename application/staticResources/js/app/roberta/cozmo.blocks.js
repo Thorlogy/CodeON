@@ -61,6 +61,20 @@ define(['blockly'], function (Blockly) {
             this.setTooltip(text('Zeigt Augen und Mund auf Cozmos 128×32-Display.', 'Shows eyes and a mouth on Cozmo’s 128×32 display.'));
         }
     };
+    Blockly.Blocks.cozmoActions_headLight = {
+        init: function () {
+            this.setColour(Blockly.CAT_ACTION_RGB);
+            this.appendDummyInput()
+                .appendField(text('IR-Scheinwerfer', 'IR head light'))
+                .appendField(new Blockly.FieldDropdown([
+                [text('einschalten', 'turn on'), 'ON'],
+                [text('ausschalten', 'turn off'), 'OFF']
+            ]), 'MODE');
+            this.setPreviousStatement(true);
+            this.setNextStatement(true);
+            this.setTooltip(text('Schaltet Cozmos Infrarot-Scheinwerfer an der Kamera ein oder aus.', 'Turns Cozmo’s infrared camera light on or off.'));
+        }
+    };
     Blockly.Blocks.cozmoSensors_boolean = {
         init: function () {
             this.setColour(Blockly.CAT_SENSOR_RGB);
@@ -77,6 +91,7 @@ define(['blockly'], function (Blockly) {
         init: function () {
             this.setColour(Blockly.CAT_SENSOR_RGB);
             this.appendDummyInput().appendField(text('Cozmo Messwert', 'Cozmo value')).appendField(new Blockly.FieldDropdown([
+                [text('Batteriespannung (V)', 'battery voltage (V)'), 'battery'],
                 [text('Anzahl Gesichter', 'face count'), 'faceCount'],
                 [text('Gesicht X', 'face X'), 'faceX'],
                 [text('Gesicht Y', 'face Y'), 'faceY'],
@@ -86,6 +101,11 @@ define(['blockly'], function (Blockly) {
                 [text('Beschleunigung X', 'acceleration X'), 'accelX'],
                 [text('Beschleunigung Y', 'acceleration Y'), 'accelY'],
                 [text('Beschleunigung Z', 'acceleration Z'), 'accelZ'],
+                [text('Drehrate X', 'gyro X'), 'gyroX'],
+                [text('Drehrate Y', 'gyro Y'), 'gyroY'],
+                [text('Drehrate Z', 'gyro Z'), 'gyroZ'],
+                [text('Raddrehzahl links', 'left wheel speed'), 'leftWheelSpeed'],
+                [text('Raddrehzahl rechts', 'right wheel speed'), 'rightWheelSpeed'],
                 [text('Position X', 'position X'), 'poseX'],
                 [text('Position Y', 'position Y'), 'poseY'],
                 [text('Ausrichtung', 'heading'), 'poseHeading']

@@ -123,6 +123,10 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
                 this.send('displayFace', { face: String(mode).toUpperCase() });
                 return;
             }
+            if (String(port).toLowerCase() === 'headlight') {
+                this.send('setHeadLight', { enabled: String(mode).toLowerCase() === 'on' });
+                return;
+            }
             if (String(port).toLowerCase() !== 'camera') {
                 _super.prototype.lightAction.call(this, mode, _color, port);
                 return;
@@ -152,6 +156,11 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
                 accelx: this.sensorSnapshot.accelX,
                 accely: this.sensorSnapshot.accelY,
                 accelz: this.sensorSnapshot.accelZ,
+                gyrox: this.sensorSnapshot.gyroX,
+                gyroy: this.sensorSnapshot.gyroY,
+                gyroz: this.sensorSnapshot.gyroZ,
+                leftwheelspeed: this.sensorSnapshot.leftWheelSpeed,
+                rightwheelspeed: this.sensorSnapshot.rightWheelSpeed,
                 posex: this.sensorSnapshot.poseX,
                 posey: this.sensorSnapshot.poseY,
                 poseheading: this.sensorSnapshot.poseHeading,
@@ -211,6 +220,7 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
                 tone: german ? 'Ton abspielen' : 'Playing tone',
                 speak: german ? 'Text sprechen' : 'Speaking text',
                 setBackpackLight: german ? 'Statusleuchte setzen' : 'Setting status light',
+                setHeadLight: german ? 'IR-Scheinwerfer schalten' : 'Switching IR head light',
                 camera: params.enabled ? (german ? 'Kamera starten' : 'Starting camera') : german ? 'Kamera stoppen' : 'Stopping camera',
                 trackFace: german ? 'Gesicht fortlaufend verfolgen' : 'Tracking face continuously',
                 displayFace: german ? 'Gesicht anzeigen' : 'Showing face',

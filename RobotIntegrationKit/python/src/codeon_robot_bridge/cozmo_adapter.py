@@ -44,7 +44,7 @@ class CozmoAdapter(RobotAdapter):
             "display": ["facePresets"],
             "audio": ["tone", "localTextToSpeech"],
             "camera": {"localFaceDetection": True, "imagesLeaveBridge": False},
-            "sensors": ["battery", "snapshot", "face"],
+            "sensors": ["battery", "accelerometer", "gyroscope", "wheelSpeed", "pose", "snapshot", "face"],
         },
         limits={
             "wheelSpeedMmPerSec": 150,

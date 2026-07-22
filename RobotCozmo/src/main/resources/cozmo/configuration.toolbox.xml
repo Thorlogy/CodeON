@@ -1,5 +1,3 @@
-<toolbox_set id="toolbox-Configuration" style="display: none">
-    <category name="TOOLBOX_ACTION" svg="true">
-        <block type="robConf_differentialdrive"/>
-    </category>
-</toolbox_set>
+<!-- Cozmo's components are built in. The tab shows a read-only overview, so
+     users must not add, remove or reconnect hardware blocks. -->
+<toolbox_set id="toolbox-Configuration" style="display: none"/>

@@ -125,4 +125,27 @@ public class CozmoFixedConfigurationTest {
         Assert.assertTrue(String.valueOf(project.getErrorAndWarningMessages()), project.hasSucceeded());
         Assert.assertEquals(0, project.getErrorCounter());
     }
+
+    @Test
+    public void headLightUsesBuiltInIrLightWithoutUserConfiguration() {
+        String program =
+            "<block_set xmlns=\"http://de.fhg.iais.roberta.blockly\" robottype=\"cozmo\" xmlversion=\"3.1\">"
+                + "<instance x=\"50\" y=\"50\"><block type=\"robControls_start\" id=\"start\" intask=\"true\" deletable=\"false\">"
+                + "<mutation declare=\"false\"/><statement name=\"ST\"><block type=\"cozmoActions_headLight\" id=\"headlight\" intask=\"true\">"
+                + "<field name=\"MODE\">ON</field></block></statement></block></instance></block_set>";
+
+        Project project =
+            new Project.Builder()
+                .setRobot("cozmo")
+                .setProgramName("CozmoHeadLightTest")
+                .setFactory(factory)
+                .setProgramXml(program)
+                .setConfigurationXml(factory.getConfigurationDefault())
+                .build();
+
+        new CozmoValidatorAndCollectorWorker().execute(project);
+
+        Assert.assertTrue(String.valueOf(project.getErrorAndWarningMessages()), project.hasSucceeded());
+        Assert.assertEquals(0, project.getErrorCounter());
+    }
 }

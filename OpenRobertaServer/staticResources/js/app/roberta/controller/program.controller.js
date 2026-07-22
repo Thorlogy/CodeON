@@ -51,6 +51,9 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
                 var catMap = {
                     "TOOLBOX_ACTION": "CAT_ACTION_RGB",
                     "TOOLBOX_SENSOR": "CAT_SENSOR_RGB",
+                    "TOOLBOX_COZMO_FACE": "CAT_SENSOR_RGB",
+                    "TOOLBOX_COZMO_MOTION": "CAT_SENSOR_RGB",
+                    "TOOLBOX_COZMO_STATE": "CAT_SENSOR_RGB",
                     "TOOLBOX_CONTROL": "CAT_CONTROL_RGB",
                     "TOOLBOX_LOGIC": "CAT_LOGIC_RGB",
                     "TOOLBOX_MATH": "CAT_MATH_RGB",
@@ -656,6 +659,9 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
         var catMap = {
             TOOLBOX_ACTION: 'CAT_ACTION_RGB',
             TOOLBOX_SENSOR: 'CAT_SENSOR_RGB',
+            TOOLBOX_COZMO_FACE: 'CAT_SENSOR_RGB',
+            TOOLBOX_COZMO_MOTION: 'CAT_SENSOR_RGB',
+            TOOLBOX_COZMO_STATE: 'CAT_SENSOR_RGB',
             TOOLBOX_CONTROL: 'CAT_CONTROL_RGB',
             TOOLBOX_LOGIC: 'CAT_LOGIC_RGB',
             TOOLBOX_MATH: 'CAT_MATH_RGB',

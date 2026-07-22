@@ -242,9 +242,22 @@ function setRobot(robot, result, opt_init) {
     GUISTATE.gui.binaryFileExtension = result.binaryFileExtension;
     GUISTATE.gui.firmwareDefault = result.firmwareDefault;
 
-    // Robots with fixed hardware still carry an internal configuration for
-    // validation, but users must not be offered an editable configuration tab.
     $('#tabConfiguration').closest('li').toggleClass('hidden', !isConfigurationUsed());
+
+    var fixedOverviewStyle = document.getElementById('cozmoFixedOverviewStyle');
+    if (!fixedOverviewStyle) {
+        fixedOverviewStyle = document.createElement('style');
+        fixedOverviewStyle.id = 'cozmoFixedOverviewStyle';
+        fixedOverviewStyle.textContent =
+            '#bricklyDiv.cozmo-fixed-overview .blocklyToolboxDiv,' +
+            '#bricklyDiv.cozmo-fixed-overview .blocklyFlyout,' +
+            '#bricklyDiv.cozmo-fixed-overview .blocklyBlockCanvas,' +
+            '#bricklyDiv.cozmo-fixed-overview .blocklyBubbleCanvas,' +
+            '#bricklyDiv.cozmo-fixed-overview .blocklyScrollbarHandle {display:none!important;}' +
+            '#bricklyDiv.cozmo-fixed-overview .blocklyMainBackground {fill:transparent!important;stroke:none!important;}';
+        document.head.appendChild(fixedOverviewStyle);
+    }
+    $('#bricklyDiv').toggleClass('cozmo-fixed-overview', robotGroup === 'cozmo');
 
     if (robotGroup === 'rcx') {
         $('#blocklyDiv, #bricklyDiv').css(
@@ -254,9 +267,15 @@ function setRobot(robot, result, opt_init) {
         $('#blocklyDiv, #bricklyDiv').css('background-size', 'cover, auto 88%');
         $('#blocklyDiv, #bricklyDiv').css('background-position', 'center');
     } else if (robotGroup === 'cozmo') {
-        $('#blocklyDiv, #bricklyDiv').css('background', '#fff');
-        $('#blocklyDiv, #bricklyDiv').css('background-size', 'initial');
-        $('#blocklyDiv, #bricklyDiv').css('background-position', 'initial');
+        var overviewLanguage = (document.documentElement.lang || 'de').toLowerCase().indexOf('de') === 0 ? 'de' : 'en';
+        $('#blocklyDiv').css('background', '#fff');
+        $('#bricklyDiv').css(
+            'background',
+            '#f4f7f9 url(../../../../css/img/cozmo-hardware-overview-' + overviewLanguage + '.svg) center / contain no-repeat'
+        );
+        $('#blocklyDiv').css('background-size', 'initial');
+        $('#bricklyDiv').css('background-size', 'contain');
+        $('#blocklyDiv, #bricklyDiv').css('background-position', 'center');
     } else {
         $('#blocklyDiv, #bricklyDiv').css('background', 'url(../../../../css/img/' + robotGroup + 'Background.jpg) repeat');
         $('#blocklyDiv, #bricklyDiv').css('background-size', '100%');
@@ -267,7 +286,7 @@ function setRobot(robot, result, opt_init) {
         $('#bricklyDiv').css('background', 'url(../../../../css/img/' + robotGroup + 'BackgroundConf.svg) no-repeat');
         $('#bricklyDiv').css('background-position', 'center');
         $('#bricklyDiv').css('background-size', '75% auto');
-    } else if (CV.CircuitVisualization.isRobotVisualized(robotGroup, robot)) {
+    } else if (robotGroup !== 'cozmo' && CV.CircuitVisualization.isRobotVisualized(robotGroup, robot)) {
         $('#bricklyDiv').css('background', '');
         $('#bricklyDiv').css('background-position', '');
         $('#bricklyDiv').css('background-size', '');
