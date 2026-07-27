@@ -30,7 +30,15 @@ export class Interpreter {
      * . @param robotBehaviour implementation of the ARobotBehaviour class
      * . @param cbOnTermination is called when the program has terminated
      */
-    constructor(generatedCode: any, r: ARobotBehaviour, cbOnTermination: () => void, simBreakpoints: any[], name: string, updateNNView: boolean) {
+    constructor(
+        generatedCode: any,
+        r: ARobotBehaviour,
+        cbOnTermination: () => void,
+        simBreakpoints: any[],
+        name: string,
+        updateNNView: boolean,
+        private readonly closeBehaviourOnTermination = true
+    ) {
         this.terminated = false;
         this.callbackOnTermination = cbOnTermination;
         const stmts = generatedCode[C.OPS];
@@ -98,7 +106,7 @@ export class Interpreter {
     public terminate() {
         this.terminated = true;
         this.callbackOnTermination();
-        this.robotBehaviour.close();
+        if (this.closeBehaviourOnTermination) this.robotBehaviour.close();
         this.state.removeHighlights([]);
     }
 
@@ -182,7 +190,7 @@ export class Interpreter {
             }
             if (this.terminated) {
                 // termination either requested by the client or by executing 'stop' or after last statement
-                this.robotBehaviour.close();
+                if (this.closeBehaviourOnTermination) this.robotBehaviour.close();
                 this.callbackOnTermination();
                 return 0;
             }

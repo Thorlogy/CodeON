@@ -2059,6 +2059,7 @@ Blockly.Msg.TO = "auf";
 Blockly.Msg.TODAY = "Heute";
 Blockly.Msg.TOLERANCE = "Toleranz";
 Blockly.Msg.TOOLBOX_ACTION = "Aktion";
+Blockly.Msg.TOOLBOX_TASKS = "Parallele Tasks";
 Blockly.Msg.TOOLBOX_ADD_ON = "Add-ons";  // untranslated
 Blockly.Msg.TOOLBOX_ANIMATION = "Animation";
 Blockly.Msg.TOOLBOX_CLEANING = "Reinigung";

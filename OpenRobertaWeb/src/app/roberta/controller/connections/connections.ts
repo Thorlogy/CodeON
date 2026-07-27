@@ -2145,6 +2145,15 @@ export class RcjConnection extends AbstractConnection {
 export class CozmoConnection extends AbstractConnection {
     private readonly bridge = new RobotBridgeClient();
     private interpreter: Interpreter | undefined;
+    private taskBehaviour: RobotBridgeBehaviour | undefined;
+    private taskRuntimes: Array<{
+        id: string;
+        name: string;
+        priority: number;
+        interpreter: Interpreter;
+        nextRunAt: number;
+    }> = [];
+    private taskRunTimer: number | undefined;
     private retryTimer: number | undefined;
     private connected = false;
     private stopped = false;
@@ -2176,11 +2185,16 @@ export class CozmoConnection extends AbstractConnection {
         try {
             const program = JSON.parse(result.compiledCode);
             const behaviour = new RobotBridgeBehaviour(this.bridge, 150, 70, (error) => this.hardwareError(error));
-            this.interpreter = new Interpreter(program, behaviour, () => this.programFinished(), [], GUISTATE_C.getProgramName(), false);
             this.stopped = false;
             GUISTATE_C.setConnectionState('busy');
             GUISTATE_C.getBlocklyWorkspace().robControls.switchToStop();
-            this.runInterpreterStep();
+            const tasks = this.extractParallelTasks(program);
+            if (tasks.length > 0) {
+                this.startParallelTasks(tasks, behaviour);
+            } else {
+                this.interpreter = new Interpreter(program, behaviour, () => this.programFinished(), [], GUISTATE_C.getProgramName(), false);
+                this.runInterpreterStep();
+            }
         } catch (error) {
             this.hardwareError(error instanceof Error ? error : new Error(String(error)));
         }
@@ -2188,8 +2202,15 @@ export class CozmoConnection extends AbstractConnection {
 
     override stopProgram(): void {
         this.stopped = true;
+        this.clearTaskRunTimer();
         if (this.interpreter && !this.interpreter.isTerminated()) this.interpreter.terminate();
         this.interpreter = undefined;
+        this.taskRuntimes.forEach((runtime) => {
+            if (!runtime.interpreter.isTerminated()) runtime.interpreter.terminate();
+        });
+        this.taskRuntimes = [];
+        this.taskBehaviour?.close();
+        this.taskBehaviour = undefined;
         this.bridge.stopAll().catch((error) => this.hardwareError(error));
         this.programFinished();
     }
@@ -2197,8 +2218,15 @@ export class CozmoConnection extends AbstractConnection {
     override terminate(): void {
         this.stopped = true;
         this.clearRetry();
+        this.clearTaskRunTimer();
         if (this.interpreter && !this.interpreter.isTerminated()) this.interpreter.terminate();
         this.interpreter = undefined;
+        this.taskRuntimes.forEach((runtime) => {
+            if (!runtime.interpreter.isTerminated()) runtime.interpreter.terminate();
+        });
+        this.taskRuntimes = [];
+        this.taskBehaviour?.close();
+        this.taskBehaviour = undefined;
         this.connected = false;
         this.bridge.stopAll().catch(() => undefined).finally(() => this.bridge.close());
         super.terminate();
@@ -2260,7 +2288,98 @@ export class CozmoConnection extends AbstractConnection {
         }
     };
 
+    private extractParallelTasks(program: any): Array<{ id: string; name: string; priority: number; program: any }> {
+        const operations = Array.isArray(program && program.ops) ? program.ops : [];
+        const tasks: Array<{ id: string; name: string; priority: number; program: any }> = [];
+        let current: { id: string; name: string; priority: number; operations: any[] } | undefined;
+        operations.forEach((operation) => {
+            if (operation && operation.opc === 'codeonTaskStart') {
+                current = {
+                    id: String(operation.taskId || `task-${tasks.length + 1}`),
+                    name: String(operation.taskName || `Task ${tasks.length + 1}`),
+                    priority: Math.max(0, Math.min(100, Number(operation.taskPriority) || 0)),
+                    operations: [],
+                };
+            } else if (operation && operation.opc === 'codeonTaskEnd') {
+                if (current) {
+                    tasks.push({ id: current.id, name: current.name, priority: current.priority, program: { ops: current.operations } });
+                    current = undefined;
+                }
+            } else if (current) {
+                current.operations.push(operation);
+            }
+        });
+        return tasks;
+    }
+
+    private startParallelTasks(
+        tasks: Array<{ id: string; name: string; priority: number; program: any }>,
+        behaviour: RobotBridgeBehaviour
+    ): void {
+        this.taskBehaviour = behaviour;
+        this.taskRuntimes = tasks.map((task) => {
+            const runtime = {
+                id: task.id,
+                name: task.name,
+                priority: task.priority,
+                interpreter: undefined as Interpreter,
+                nextRunAt: Date.now(),
+            };
+            runtime.interpreter = new Interpreter(
+                task.program,
+                behaviour,
+                () => behaviour.releaseTask(task.id),
+                [],
+                task.name,
+                false,
+                false
+            );
+            return runtime;
+        });
+        this.runParallelTaskStep();
+    }
+
+    private runParallelTaskStep = (): void => {
+        if (this.stopped || this.taskRuntimes.length === 0 || !this.taskBehaviour) return;
+        const now = Date.now();
+        const active = this.taskRuntimes
+            .filter((runtime) => !runtime.interpreter.isTerminated())
+            .sort((left, right) => right.priority - left.priority || left.id.localeCompare(right.id));
+
+        active.forEach((runtime) => {
+            if (this.stopped || runtime.nextRunAt > now || runtime.interpreter.isTerminated()) return;
+            try {
+                this.taskBehaviour!.setTaskContext(runtime.id, runtime.name, runtime.priority);
+                const delay = Math.max(20, runtime.interpreter.run(Date.now() + 20));
+                runtime.nextRunAt = Date.now() + delay;
+            } catch (error) {
+                this.hardwareError(error instanceof Error ? error : new Error(String(error)));
+            }
+        });
+
+        if (this.stopped) return;
+        if (this.taskRuntimes.every((runtime) => runtime.interpreter.isTerminated())) {
+            this.taskBehaviour.close();
+            this.taskBehaviour = undefined;
+            this.taskRuntimes = [];
+            this.programFinished();
+            return;
+        }
+        const nextRunAt = Math.min(
+            ...this.taskRuntimes.filter((runtime) => !runtime.interpreter.isTerminated()).map((runtime) => runtime.nextRunAt)
+        );
+        this.taskRunTimer = window.setTimeout(this.runParallelTaskStep, Math.max(10, Math.min(100, nextRunAt - Date.now())));
+    };
+
+    private clearTaskRunTimer(): void {
+        if (this.taskRunTimer !== undefined) {
+            window.clearTimeout(this.taskRunTimer);
+            this.taskRunTimer = undefined;
+        }
+    }
+
     private programFinished(): void {
+        this.clearTaskRunTimer();
         this.interpreter = undefined;
         if (!this.connected) return;
         this.bridge.stopAll().catch((error) => this.hardwareError(error));
@@ -2270,9 +2389,16 @@ export class CozmoConnection extends AbstractConnection {
 
     private hardwareError(error: Error): void {
         this.stopped = true;
+        this.clearTaskRunTimer();
         this.bridge.stopAll().catch(() => undefined);
         if (this.interpreter && !this.interpreter.isTerminated()) this.interpreter.terminate();
         this.interpreter = undefined;
+        this.taskRuntimes.forEach((runtime) => {
+            if (!runtime.interpreter.isTerminated()) runtime.interpreter.terminate();
+        });
+        this.taskRuntimes = [];
+        this.taskBehaviour?.close();
+        this.taskBehaviour = undefined;
         this.connected = false;
         GUISTATE_C.getBlocklyWorkspace().robControls.switchToStart();
         GUISTATE_C.setConnectionState('error');

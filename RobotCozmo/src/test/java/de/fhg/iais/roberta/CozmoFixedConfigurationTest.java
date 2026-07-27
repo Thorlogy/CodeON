@@ -10,6 +10,7 @@ import de.fhg.iais.roberta.components.Project;
 import de.fhg.iais.roberta.factory.RobotFactory;
 import de.fhg.iais.roberta.util.Util;
 import de.fhg.iais.roberta.util.ast.AstFactory;
+import de.fhg.iais.roberta.worker.cozmo.CozmoStackMachineGeneratorWorker;
 import de.fhg.iais.roberta.worker.cozmo.CozmoValidatorAndCollectorWorker;
 
 public class CozmoFixedConfigurationTest {
@@ -170,5 +171,42 @@ public class CozmoFixedConfigurationTest {
 
         Assert.assertTrue(String.valueOf(project.getErrorAndWarningMessages()), project.hasSucceeded());
         Assert.assertEquals(0, project.getErrorCounter());
+    }
+
+    @Test
+    public void parallelTaskMetadataSurvivesValidationAndCodeGeneration() {
+        String program =
+            "<block_set xmlns=\"http://de.fhg.iais.roberta.blockly\" robottype=\"cozmo\" xmlversion=\"3.1\">"
+                + "<instance x=\"50\" y=\"50\"><block type=\"robControls_start\" id=\"main\" intask=\"true\" deletable=\"false\">"
+                + "<mutation declare=\"false\"/><field name=\"DEBUG\">FALSE</field></block>"
+                + "<block type=\"robControls_wait_time\" id=\"mainWait\" intask=\"true\"><value name=\"WAIT\">"
+                + "<block type=\"math_number\" id=\"mainDuration\" intask=\"true\"><field name=\"NUM\">100</field></block>"
+                + "</value></block></instance>"
+                + "<instance x=\"350\" y=\"50\"><block type=\"cozmo_parallel_task\" id=\"task\" intask=\"true\">"
+                + "<field name=\"TASK_NAME\">Kamera</field><field name=\"TASK_TRIGGER\">START</field>"
+                + "<field name=\"TASK_PRIORITY\">80</field></block>"
+                + "<block type=\"robControls_wait_time\" id=\"taskWait\" intask=\"true\"><value name=\"WAIT\">"
+                + "<block type=\"math_number\" id=\"taskDuration\" intask=\"true\"><field name=\"NUM\">200</field></block>"
+                + "</value></block></instance></block_set>";
+
+        Project project =
+            new Project.Builder()
+                .setRobot("cozmo")
+                .setProgramName("CozmoParallelTaskTest")
+                .setFactory(factory)
+                .setProgramXml(program)
+                .setConfigurationXml(factory.getConfigurationDefault())
+                .build();
+
+        new CozmoValidatorAndCollectorWorker().execute(project);
+        Assert.assertTrue(String.valueOf(project.getErrorAndWarningMessages()), project.hasSucceeded());
+
+        new CozmoStackMachineGeneratorWorker().execute(project);
+        String generated = project.getCompiledHex();
+        Assert.assertTrue(generated, generated.contains("\"opc\": \"codeonTaskStart\""));
+        Assert.assertTrue(generated, generated.contains("\"taskName\": \"Kamera\""));
+        Assert.assertTrue(generated, generated.contains("\"taskPriority\": 80"));
+        Assert.assertEquals(2, generated.split("\"opc\": \"codeonTaskStart\"", -1).length - 1);
+        Assert.assertEquals(2, generated.split("\"opc\": \"codeonTaskEnd\"", -1).length - 1);
     }
 }

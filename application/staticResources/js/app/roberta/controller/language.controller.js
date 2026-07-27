@@ -1,6 +1,9 @@
 define(["require", "exports", "log", "jquery", "guiState.controller", "blockly", "bootstrap"], function (require, exports, LOG, $, GUISTATE_C, Blockly) {
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.translate = exports.init = void 0;
+    function setCodeOnMessages(language) {
+        Blockly.Msg.TOOLBOX_TASKS = language === 'de' ? 'Parallele Tasks' : 'Parallel tasks';
+    }
     /**
      * Initialize language switching
      */
@@ -22,6 +25,7 @@ define(["require", "exports", "log", "jquery", "guiState.controller", "blockly",
             .addClass('disabled');
         var url = 'blockly/msg/js/' + language + '.js';
         getCachedScript(url).done(function (data) {
+            setCodeOnMessages(language);
             translate();
             ready.resolve(language);
         });
@@ -45,6 +49,7 @@ define(["require", "exports", "log", "jquery", "guiState.controller", "blockly",
         var url = 'blockly/msg/js/' + language + '.js?v=2';
         getCachedScript(url).done(function (data) {
             GUISTATE_C.setLanguage(language);
+            setCodeOnMessages(language);
             translate();
         });
         LOG.info('language switched to ' + language);

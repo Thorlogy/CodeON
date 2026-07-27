@@ -16,6 +16,11 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
     private sensorTimer: number | undefined;
     private lastAction = '';
     private lastError = '';
+    private taskContext: { id: string; name: string; priority: number } | undefined;
+    private readonly resourceOwners: {
+        [resource: string]: { taskId: string; taskName: string; priority: number; validUntil: number };
+    } = {};
+    private taskConflictReported = false;
 
     constructor(private readonly bridge: RobotBridgeClient, maxWheelSpeedMmPerSec = 150, trackWidthMm = 70, private readonly onError?: (error: Error) => void) {
         super();
@@ -28,7 +33,7 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
     override driveAction(_name: string, direction: string, speed: number, distance: number, time: number): number {
         const signedSpeed = this.directionSign(direction) * this.toWheelSpeed(speed);
         if (distance === 0) {
-            this.stopMotion();
+            this.stopMotion(this.taskContext?.id);
             return 0;
         }
         const duration = time !== undefined ? Math.max(0, time) : distance === undefined ? 0 : this.travelTimeMs(distance * 10, signedSpeed);
@@ -41,7 +46,7 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
         const left = sign * this.toWheelSpeed(speedL);
         const right = sign * this.toWheelSpeed(speedR);
         if (distance === 0) {
-            this.stopMotion();
+            this.stopMotion(this.taskContext?.id);
             return 0;
         }
         const duration =
@@ -55,7 +60,7 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
         const left = direction === C.LEFT ? -wheelSpeed : wheelSpeed;
         const right = -left;
         if (angle === 0) {
-            this.stopMotion();
+            this.stopMotion(this.taskContext?.id);
             return 0;
         }
         const duration =
@@ -69,7 +74,7 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
     }
 
     override driveStop(_name: string): void {
-        this.stopMotion();
+        this.stopMotion(this.taskContext?.id);
     }
 
     override close(): void {
@@ -85,53 +90,62 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
         const normalizedPort = String(port || '').toLowerCase();
         const percent = Math.max(0, Math.min(100, Number(speed) || 0));
         if (normalizedPort === 'h') {
-            this.send('setHead', { angle: -0.4 + percent * 0.011 });
+            if (this.claimResource('HEAD', 650)) this.send('setHead', { angle: -0.4 + percent * 0.011 });
             // Position blocks are complete actions: allow Cozmo enough time
             // to reach the requested position before executing the next block.
             return 650;
         }
         if (normalizedPort === 'a') {
-            this.send('setLift', { height: 32 + percent * 0.6 });
+            if (this.claimResource('LIFT', 2200)) this.send('setLift', { height: 32 + percent * 0.6 });
             return 2200;
         }
         return super.motorOnAction(name, port, durationType, duration, speed, time);
     }
 
     override toneAction(_name: string, frequency: number, duration: number): number {
-        this.send('tone', { frequency, duration });
+        if (this.claimResource('AUDIO', Math.max(0, Number(duration) || 0))) this.send('tone', { frequency, duration });
         return Math.max(0, Number(duration) || 0);
     }
 
     override sayTextAction(text: string, speed: number, _pitch: number): number {
-        this.send('speak', { text: String(text), speed });
-        return Math.max(500, String(text).length * 75);
+        const duration = Math.max(500, String(text).length * 75);
+        if (this.claimResource('AUDIO', duration)) this.send('speak', { text: String(text), speed });
+        return duration;
     }
 
     override ledOnAction(_name: string, _port: number, color: any): void {
-        this.send('setBackpackLight', { color });
+        if (this.claimResource('BACKPACK_LIGHT', 250)) this.send('setBackpackLight', { color });
     }
 
     override ledOffAction(_name: string, _port: number): void {
-        this.send('setBackpackLight', { color: '#000000' });
+        if (this.claimResource('BACKPACK_LIGHT', 250)) this.send('setBackpackLight', { color: '#000000' });
     }
 
     override lightAction(mode: string, _color: string, port: string): void {
         if (String(port).toLowerCase() === 'behavior') {
             if (String(mode).toLowerCase() === 'start') {
-                this.send('startBehavior', { preset: 'faceSearchAndFollow' });
-                this.setCameraPrivacyIndicator(true);
-            } else {
+                const ownsDrive = this.claimResource('DRIVE', Number.POSITIVE_INFINITY);
+                const ownsCamera = ownsDrive && this.claimResource('CAMERA', Number.POSITIVE_INFINITY);
+                if (ownsDrive && ownsCamera) {
+                    this.send('startBehavior', { preset: 'faceSearchAndFollow' });
+                    this.setCameraPrivacyIndicator(true);
+                } else if (ownsDrive) {
+                    this.releaseResource('DRIVE');
+                }
+            } else if (this.claimResource('DRIVE', 250) && this.claimResource('CAMERA', 250)) {
                 this.send('stopBehavior', {});
+                this.releaseResource('DRIVE');
+                this.releaseResource('CAMERA');
                 this.setCameraPrivacyIndicator(false);
             }
             return;
         }
         if (String(port).toLowerCase() === 'display') {
-            this.send('displayFace', { face: String(mode).toUpperCase() });
+            if (this.claimResource('DISPLAY', 1000)) this.send('displayFace', { face: String(mode).toUpperCase() });
             return;
         }
         if (String(port).toLowerCase() === 'headlight') {
-            this.send('setHeadLight', { enabled: String(mode).toLowerCase() === 'on' });
+            if (this.claimResource('HEAD_LIGHT', 250)) this.send('setHeadLight', { enabled: String(mode).toLowerCase() === 'on' });
             return;
         }
         if (String(port).toLowerCase() !== 'camera') {
@@ -140,13 +154,21 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
         }
         const normalizedMode = String(mode).toLowerCase();
         if (normalizedMode === 'track') {
-            this.send('trackFace', {});
-            this.setCameraPrivacyIndicator(true);
+            if (this.claimResource('CAMERA', Number.POSITIVE_INFINITY)) {
+                this.send('trackFace', {});
+                this.setCameraPrivacyIndicator(true);
+            }
         }
         else {
             const enabled = normalizedMode === 'start' || normalizedMode === 'on';
-            this.send('camera', { enabled });
-            this.setCameraPrivacyIndicator(enabled);
+            if (enabled && this.claimResource('CAMERA', Number.POSITIVE_INFINITY)) {
+                this.send('camera', { enabled });
+                this.setCameraPrivacyIndicator(true);
+            } else if (!enabled && this.claimResource('CAMERA', 250)) {
+                this.send('camera', { enabled: false });
+                this.releaseResource('CAMERA');
+                this.setCameraPrivacyIndicator(false);
+            }
         }
     }
 
@@ -202,19 +224,79 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
         this.sensorTimer = window.setInterval(update, 150);
     }
 
+    public setTaskContext(id: string, name: string, priority: number): void {
+        if (this.taskContext && this.taskContext.id === id && this.taskContext.name === name && this.taskContext.priority === priority) return;
+        this.taskContext = { id, name, priority };
+        this.updateStatusPanel();
+    }
+
+    public releaseTask(taskId: string): void {
+        if (this.resourceOwners.DRIVE?.taskId === taskId) this.stopMotion(taskId);
+        if (this.resourceOwners.CAMERA?.taskId === taskId) {
+            this.send('stopBehavior', {});
+            this.send('camera', { enabled: false });
+            this.setCameraPrivacyIndicator(false);
+        }
+        Object.keys(this.resourceOwners).forEach((resource) => {
+            if (this.resourceOwners[resource].taskId === taskId) delete this.resourceOwners[resource];
+        });
+    }
+
     private startMotion(left: number, right: number, durationMs: number): void {
+        if (!this.claimResource('DRIVE', durationMs)) return;
+        const ownerTaskId = this.taskContext?.id;
         const generation = ++this.motionGeneration;
         this.send('drive', { left, right });
         if (durationMs > 0) {
             window.setTimeout(() => {
-                if (generation === this.motionGeneration) this.stopMotion();
+                if (generation === this.motionGeneration) this.stopMotion(ownerTaskId);
             }, durationMs);
         }
     }
 
-    private stopMotion(): void {
+    private stopMotion(ownerTaskId?: string): void {
+        if (ownerTaskId && this.resourceOwners.DRIVE && this.resourceOwners.DRIVE.taskId !== ownerTaskId) return;
         ++this.motionGeneration;
-        this.bridge.stopAll().catch((error) => this.report(error));
+        delete this.resourceOwners.DRIVE;
+        this.bridge.command('stopDrive', {}).catch((error) => this.report(error));
+    }
+
+    private claimResource(resource: string, durationMs: number): boolean {
+        if (!this.taskContext) return true;
+        const now = Date.now();
+        const existing = this.resourceOwners[resource];
+        if (existing && existing.validUntil <= now) delete this.resourceOwners[resource];
+        const owner = this.resourceOwners[resource];
+        if (owner && owner.taskId !== this.taskContext.id) {
+            if (owner.priority > this.taskContext.priority) {
+                this.lastAction = `${this.taskContext.name} · ${this.isGerman() ? 'wartet auf' : 'waiting for'} ${resource}`;
+                this.updateStatusPanel();
+                return false;
+            }
+            if (owner.priority === this.taskContext.priority) {
+                if (!this.taskConflictReported) {
+                    this.taskConflictReported = true;
+                    this.report(
+                        new Error(
+                            `${this.isGerman() ? 'Task-Konflikt' : 'Task conflict'}: ${owner.taskName} / ${this.taskContext.name} · ${resource} · ${this.taskContext.priority}`
+                        )
+                    );
+                }
+                return false;
+            }
+        }
+        this.resourceOwners[resource] = {
+            taskId: this.taskContext.id,
+            taskName: this.taskContext.name,
+            priority: this.taskContext.priority,
+            validUntil: Number.isFinite(durationMs) ? now + Math.max(50, durationMs) : Number.POSITIVE_INFINITY,
+        };
+        return true;
+    }
+
+    private releaseResource(resource: string): void {
+        const owner = this.resourceOwners[resource];
+        if (!owner || !this.taskContext || owner.taskId === this.taskContext.id) delete this.resourceOwners[resource];
     }
 
     private send(command: string, params: { [name: string]: any }): void {
@@ -348,6 +430,9 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
             : german
               ? 'aus'
               : 'off';
+        const visualTask = this.taskContext
+            ? `${this.taskContext.name} · ${this.isGerman() ? 'Priorität' : 'priority'} ${this.taskContext.priority}`
+            : behaviorStatus;
         panel.textContent =
             `🤖 Cozmo ${german ? 'Status' : 'status'}\n${german ? 'Aktion' : 'Action'}: ${this.lastAction || (german ? 'Bereit' : 'Ready')}\n` +
             `${german ? 'Kamera' : 'Camera'}: ${camera}${cameraDetail}\n${german ? 'Gesicht' : 'Face'}: ${
@@ -364,7 +449,7 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
                         : 'not detected yet'
             }\n` +
             `${german ? 'Audio' : 'Audio'}: ${audio}\n${position}` +
-            `\n${german ? 'Tasks' : 'Tasks'}: ${behaviorStatus}` +
+            `\n${german ? 'Task' : 'Task'}: ${visualTask}` +
             (error || cameraError ? `\n⚠ ${error || cameraError}` : '');
     }
 

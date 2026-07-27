@@ -265,11 +265,13 @@ public abstract class CommonNepoValidatorAndCollectorVisitor extends AbstractVal
 
     @Override
     public Void visitMainTask(MainTask mainTask) {
-        String optError = this.nnBeanBuilder.setNN(mainTask.data);
-        if ( optError != null ) {
-            addErrorToPhrase(mainTask, optError);
+        if ( !mainTask.getProperty().blockType.equals("cozmo_parallel_task") ) {
+            String optError = this.nnBeanBuilder.setNN(mainTask.data);
+            if ( optError != null ) {
+                addErrorToPhrase(mainTask, optError);
+            }
+            this.nnBean = this.nnBeanBuilder.build();
         }
-        this.nnBean = this.nnBeanBuilder.build();
         requiredComponentVisited(mainTask, mainTask.variables);
         return null;
     }

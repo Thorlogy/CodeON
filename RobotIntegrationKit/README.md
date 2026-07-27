@@ -69,3 +69,26 @@ Suggested first hardware program:
 3. start camera analysis and wait until `face detected` is true;
 4. track the face once and stop camera analysis;
 5. stop the program and verify that all motors and the camera stop immediately.
+
+## Cozmo parallel tasks
+
+The Cozmo expert toolbox contains a `Parallel task` category. Each task header
+starts a separate, visually independent block stack. Place the task stacks
+next to each other in the Blockly workspace to make simultaneous behaviours
+visible.
+
+- All task headers currently use the `program start` trigger.
+- Priorities range from 0 to 100; the higher number wins.
+- Tasks may run simultaneously while they use different resources, for
+  example driving and speech.
+- If two tasks request the same resource, the higher-priority task takes it
+  over. Equal priorities produce a visible conflict and stop the program
+  safely.
+- Driving, head, lift, audio, camera/face tracking, display and lights are
+  arbitrated independently.
+- Finishing or stopping a task releases its resources. The global stop button
+  terminates every task and sends the hardware emergency stop.
+
+Programs without a parallel-task header retain the original single-stack
+execution path. The parallel-task format is currently Cozmo-specific so other
+robots are unaffected.

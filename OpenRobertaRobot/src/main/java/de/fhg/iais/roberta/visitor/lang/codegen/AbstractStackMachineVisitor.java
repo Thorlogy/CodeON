@@ -678,7 +678,7 @@ public abstract class AbstractStackMachineVisitor extends BaseVisitor<Void> {
             generateNNVars();
         }
         mainTask.variables.accept(this);
-        if ( mainTask.debug.equals("TRUE") ) {
+        if ( "TRUE".equals(mainTask.debug) ) {
             JSONObject o = makeNode(C.CREATE_DEBUG_ACTION);
             return add(o);
         }
@@ -1139,6 +1139,14 @@ public abstract class AbstractStackMachineVisitor extends BaseVisitor<Void> {
     }
 
     public final void generateCodeFromPhrases(List<List<Phrase>> phrasesSet) {
+        boolean containsParallelTasks = phrasesSet
+            .stream()
+            .flatMap(List::stream)
+            .anyMatch(phrase -> phrase instanceof MainTask && phrase.getProperty().blockType.equals("cozmo_parallel_task"));
+        if ( containsParallelTasks ) {
+            generateParallelTaskCode(phrasesSet);
+            return;
+        }
         List<Phrase> methods = new ArrayList<>();
         for ( List<Phrase> phrases : phrasesSet ) {
             for ( Phrase phrase : phrases ) {
@@ -1153,6 +1161,44 @@ public abstract class AbstractStackMachineVisitor extends BaseVisitor<Void> {
         add(makeNode(C.STOP));
         for ( Phrase method : methods ) {
             method.accept(this);
+        }
+    }
+
+    private void generateParallelTaskCode(List<List<Phrase>> phrasesSet) {
+        List<Phrase> methods = phrasesSet
+            .stream()
+            .flatMap(List::stream)
+            .filter(phrase -> phrase instanceof MethodVoid || phrase instanceof MethodReturn)
+            .collect(Collectors.toList());
+        for ( List<Phrase> phrases : phrasesSet ) {
+            MainTask task = phrases
+                .stream()
+                .filter(MainTask.class::isInstance)
+                .map(MainTask.class::cast)
+                .findFirst()
+                .orElse(null);
+            if ( task == null ) {
+                continue;
+            }
+
+            boolean parallel = task.getProperty().blockType.equals("cozmo_parallel_task");
+            String taskName = parallel && task.taskName != null ? task.taskName : "Hauptprogramm";
+            int priority = parallel ? task.taskPriority : 0;
+            add(makeNode("codeonTaskStart")
+                .put("taskId", task.getProperty().blocklyId)
+                .put("taskName", taskName)
+                .put("taskPriority", priority)
+                .put("taskTrigger", parallel ? task.taskTrigger : "START"));
+            for ( Phrase phrase : phrases ) {
+                if ( !(phrase instanceof MethodVoid) && !(phrase instanceof MethodReturn) ) {
+                    phrase.accept(this);
+                }
+            }
+            add(makeNode(C.STOP));
+            for ( Phrase method : methods ) {
+                method.accept(this);
+            }
+            add(makeNode("codeonTaskEnd"));
         }
     }
 

@@ -47,6 +47,11 @@ function init() {
 }
 
 function initView() {
+    // Robot-specific block modules may be loaded after the initial toolbox.
+    // Define labels needed by the toolbox itself before Blockly renders it.
+    if (!Blockly.Msg.TOOLBOX_TASKS) {
+        Blockly.Msg.TOOLBOX_TASKS = GUISTATE_C.getLanguage() === 'de' ? 'Parallele Tasks' : 'Parallel tasks';
+    }
     var toolbox = GUISTATE_C.getProgramToolbox();
 
     var serverTheme = GUISTATE_C.getTheme();
@@ -63,6 +68,7 @@ function initView() {
         // Map OpenRoberta categories to Blockly V10 categoryStyles
         if (serverTheme.category) {
             var catMap = {
+                "TOOLBOX_TASKS": "CAT_CONTROL_RGB",
                 "TOOLBOX_ACTION": "CAT_ACTION_RGB",
                 "TOOLBOX_SENSOR": "CAT_SENSOR_RGB",
                 "TOOLBOX_COZMO_FACE": "CAT_SENSOR_RGB",
@@ -731,6 +737,7 @@ function injectThemeCategoryStyles(xmlString) {
     if (!serverTheme || !serverTheme.category) return xmlString;
 
     var catMap = {
+        TOOLBOX_TASKS: 'CAT_CONTROL_RGB',
         TOOLBOX_ACTION: 'CAT_ACTION_RGB',
         TOOLBOX_SENSOR: 'CAT_SENSOR_RGB',
         TOOLBOX_COZMO_FACE: 'CAT_SENSOR_RGB',

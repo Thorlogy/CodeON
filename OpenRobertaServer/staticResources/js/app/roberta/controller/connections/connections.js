@@ -2593,6 +2593,7 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
         function CozmoConnection() {
             var _this = _super !== null && _super.apply(this, arguments) || this;
             _this.bridge = new robotBridge_1.RobotBridgeClient();
+            _this.taskRuntimes = [];
             _this.connected = false;
             _this.stopped = false;
             _this.helpShown = false;
@@ -2606,6 +2607,37 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
                 catch (error) {
                     _this.hardwareError(error instanceof Error ? error : new Error(String(error)));
                 }
+            };
+            _this.runParallelTaskStep = function () {
+                if (_this.stopped || _this.taskRuntimes.length === 0 || !_this.taskBehaviour)
+                    return;
+                var now = Date.now();
+                var active = _this.taskRuntimes
+                    .filter(function (runtime) { return !runtime.interpreter.isTerminated(); })
+                    .sort(function (left, right) { return right.priority - left.priority || left.id.localeCompare(right.id); });
+                active.forEach(function (runtime) {
+                    if (_this.stopped || runtime.nextRunAt > now || runtime.interpreter.isTerminated())
+                        return;
+                    try {
+                        _this.taskBehaviour.setTaskContext(runtime.id, runtime.name, runtime.priority);
+                        var delay = Math.max(20, runtime.interpreter.run(Date.now() + 20));
+                        runtime.nextRunAt = Date.now() + delay;
+                    }
+                    catch (error) {
+                        _this.hardwareError(error instanceof Error ? error : new Error(String(error)));
+                    }
+                });
+                if (_this.stopped)
+                    return;
+                if (_this.taskRuntimes.every(function (runtime) { return runtime.interpreter.isTerminated(); })) {
+                    _this.taskBehaviour.close();
+                    _this.taskBehaviour = undefined;
+                    _this.taskRuntimes = [];
+                    _this.programFinished();
+                    return;
+                }
+                var nextRunAt = Math.min.apply(Math, _this.taskRuntimes.filter(function (runtime) { return !runtime.interpreter.isTerminated(); }).map(function (runtime) { return runtime.nextRunAt; }));
+                _this.taskRunTimer = window.setTimeout(_this.runParallelTaskStep, Math.max(10, Math.min(100, nextRunAt - Date.now())));
             };
             return _this;
         }
@@ -2634,11 +2666,17 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
             try {
                 var program = JSON.parse(result.compiledCode);
                 var behaviour = new interpreter_robotBridgeBehaviour_1.RobotBridgeBehaviour(this.bridge, 150, 70, function (error) { return _this.hardwareError(error); });
-                this.interpreter = new interpreter_interpreter_1.Interpreter(program, behaviour, function () { return _this.programFinished(); }, [], GUISTATE_C.getProgramName(), false);
                 this.stopped = false;
                 GUISTATE_C.setConnectionState('busy');
                 GUISTATE_C.getBlocklyWorkspace().robControls.switchToStop();
-                this.runInterpreterStep();
+                var tasks = this.extractParallelTasks(program);
+                if (tasks.length > 0) {
+                    this.startParallelTasks(tasks, behaviour);
+                }
+                else {
+                    this.interpreter = new interpreter_interpreter_1.Interpreter(program, behaviour, function () { return _this.programFinished(); }, [], GUISTATE_C.getProgramName(), false);
+                    this.runInterpreterStep();
+                }
             }
             catch (error) {
                 this.hardwareError(error instanceof Error ? error : new Error(String(error)));
@@ -2646,20 +2684,38 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
         };
         CozmoConnection.prototype.stopProgram = function () {
             var _this = this;
+            var _a;
             this.stopped = true;
+            this.clearTaskRunTimer();
             if (this.interpreter && !this.interpreter.isTerminated())
                 this.interpreter.terminate();
             this.interpreter = undefined;
+            this.taskRuntimes.forEach(function (runtime) {
+                if (!runtime.interpreter.isTerminated())
+                    runtime.interpreter.terminate();
+            });
+            this.taskRuntimes = [];
+            (_a = this.taskBehaviour) === null || _a === void 0 ? void 0 : _a.close();
+            this.taskBehaviour = undefined;
             this.bridge.stopAll().catch(function (error) { return _this.hardwareError(error); });
             this.programFinished();
         };
         CozmoConnection.prototype.terminate = function () {
             var _this = this;
+            var _a;
             this.stopped = true;
             this.clearRetry();
+            this.clearTaskRunTimer();
             if (this.interpreter && !this.interpreter.isTerminated())
                 this.interpreter.terminate();
             this.interpreter = undefined;
+            this.taskRuntimes.forEach(function (runtime) {
+                if (!runtime.interpreter.isTerminated())
+                    runtime.interpreter.terminate();
+            });
+            this.taskRuntimes = [];
+            (_a = this.taskBehaviour) === null || _a === void 0 ? void 0 : _a.close();
+            this.taskBehaviour = undefined;
             this.connected = false;
             this.bridge.stopAll().catch(function () { return undefined; }).finally(function () { return _this.bridge.close(); });
             _super.prototype.terminate.call(this);
@@ -2726,8 +2782,55 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
                 this.retryTimer = undefined;
             }
         };
+        CozmoConnection.prototype.extractParallelTasks = function (program) {
+            var operations = Array.isArray(program && program.ops) ? program.ops : [];
+            var tasks = [];
+            var current;
+            operations.forEach(function (operation) {
+                if (operation && operation.opc === 'codeonTaskStart') {
+                    current = {
+                        id: String(operation.taskId || "task-".concat(tasks.length + 1)),
+                        name: String(operation.taskName || "Task ".concat(tasks.length + 1)),
+                        priority: Math.max(0, Math.min(100, Number(operation.taskPriority) || 0)),
+                        operations: [],
+                    };
+                }
+                else if (operation && operation.opc === 'codeonTaskEnd') {
+                    if (current) {
+                        tasks.push({ id: current.id, name: current.name, priority: current.priority, program: { ops: current.operations } });
+                        current = undefined;
+                    }
+                }
+                else if (current) {
+                    current.operations.push(operation);
+                }
+            });
+            return tasks;
+        };
+        CozmoConnection.prototype.startParallelTasks = function (tasks, behaviour) {
+            this.taskBehaviour = behaviour;
+            this.taskRuntimes = tasks.map(function (task) {
+                var runtime = {
+                    id: task.id,
+                    name: task.name,
+                    priority: task.priority,
+                    interpreter: undefined,
+                    nextRunAt: Date.now(),
+                };
+                runtime.interpreter = new interpreter_interpreter_1.Interpreter(task.program, behaviour, function () { return behaviour.releaseTask(task.id); }, [], task.name, false, false);
+                return runtime;
+            });
+            this.runParallelTaskStep();
+        };
+        CozmoConnection.prototype.clearTaskRunTimer = function () {
+            if (this.taskRunTimer !== undefined) {
+                window.clearTimeout(this.taskRunTimer);
+                this.taskRunTimer = undefined;
+            }
+        };
         CozmoConnection.prototype.programFinished = function () {
             var _this = this;
+            this.clearTaskRunTimer();
             this.interpreter = undefined;
             if (!this.connected)
                 return;
@@ -2737,11 +2840,20 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
         };
         CozmoConnection.prototype.hardwareError = function (error) {
             var _this = this;
+            var _a;
             this.stopped = true;
+            this.clearTaskRunTimer();
             this.bridge.stopAll().catch(function () { return undefined; });
             if (this.interpreter && !this.interpreter.isTerminated())
                 this.interpreter.terminate();
             this.interpreter = undefined;
+            this.taskRuntimes.forEach(function (runtime) {
+                if (!runtime.interpreter.isTerminated())
+                    runtime.interpreter.terminate();
+            });
+            this.taskRuntimes = [];
+            (_a = this.taskBehaviour) === null || _a === void 0 ? void 0 : _a.close();
+            this.taskBehaviour = undefined;
             this.connected = false;
             GUISTATE_C.getBlocklyWorkspace().robControls.switchToStart();
             GUISTATE_C.setConnectionState('error');

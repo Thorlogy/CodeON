@@ -5,6 +5,32 @@ define(['blockly'], function (Blockly) {
     Blockly.Msg.TOOLBOX_CAMERA = text('Kamera', 'Camera');
     Blockly.Msg.TOOLBOX_DISPLAY = text('Display', 'Display');
     Blockly.Msg.TOOLBOX_BEHAVIOR = text('Verhaltenssteuerung', 'Behavior control');
+    Blockly.Msg.TOOLBOX_TASKS = text('Parallele Tasks', 'Parallel tasks');
+
+    Blockly.Blocks.cozmo_parallel_task = {
+        init: function () {
+            this.setColour(285);
+            this.appendDummyInput()
+                .appendField(text('Parallel-Task', 'parallel task'))
+                .appendField(new Blockly.FieldTextInput(text('Task 1', 'Task 1')), 'TASK_NAME');
+            this.appendDummyInput()
+                .appendField(text('Start', 'trigger'))
+                .appendField(new Blockly.FieldDropdown([
+                    [text('beim Programmstart', 'when program starts'), 'START']
+                ]), 'TASK_TRIGGER')
+                .appendField(text('Priorität', 'priority'))
+                .appendField(new Blockly.FieldDropdown([
+                    [text('niedrig (10)', 'low (10)'), '10'],
+                    [text('normal (50)', 'normal (50)'), '50'],
+                    [text('hoch (80)', 'high (80)'), '80']
+                ]), 'TASK_PRIORITY');
+            this.setNextStatement(true);
+            this.setTooltip(text(
+                'Startet eine eigenständige, kooperativ ausgeführte Programmkette. Höhere Prioritäten haben bei gleichzeitig benötigten Aktoren Vorrang.',
+                'Starts an independent, cooperatively executed program chain. Higher priorities win when tasks need the same actuator at the same time.'
+            ));
+        }
+    };
 
     Blockly.Blocks.cozmoActions_behavior = {
         init: function () {

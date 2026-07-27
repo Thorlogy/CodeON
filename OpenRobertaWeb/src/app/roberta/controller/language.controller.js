@@ -4,6 +4,10 @@ import 'bootstrap';
 import * as GUISTATE_C from 'guiState.controller';
 import * as Blockly from 'blockly';
 
+function setCodeOnMessages(language) {
+    Blockly.Msg.TOOLBOX_TASKS = language === 'de' ? 'Parallele Tasks' : 'Parallel tasks';
+}
+
 /**
  * Initialize language switching
  */
@@ -24,6 +28,7 @@ function init() {
         .addClass('disabled');
     var url = 'blockly/msg/js/' + language + '.js';
     getCachedScript(url).done(function (data) {
+        setCodeOnMessages(language);
         translate();
         ready.resolve(language);
     });
@@ -50,6 +55,7 @@ function switchLanguage(language) {
     var url = 'blockly/msg/js/' + language + '.js?v=2';
     getCachedScript(url).done(function (data) {
         GUISTATE_C.setLanguage(language);
+        setCodeOnMessages(language);
         translate();
     });
     LOG.info('language switched to ' + language);

@@ -442,7 +442,14 @@ public abstract class TransformerVisitor implements IVisitor<Phrase> {
     }
 
     public Phrase visitMainTask(MainTask mainTask) {
-        return new MainTask(mainTask.getProperty(), (StmtList) mainTask.variables.modify(this), mainTask.debug, mainTask.data);
+        return new MainTask(
+            mainTask.getProperty(),
+            (StmtList) mainTask.variables.modify(this),
+            mainTask.debug,
+            mainTask.data,
+            mainTask.taskName,
+            mainTask.taskPriority,
+            mainTask.taskTrigger);
     }
 
     public Phrase visitWaitStmt(WaitStmt waitStmt) {

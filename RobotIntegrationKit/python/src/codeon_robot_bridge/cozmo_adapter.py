@@ -142,6 +142,8 @@ class CozmoAdapter(RobotAdapter):
             left = self._clamp_number(params, "left", -150.0, 150.0)
             right = self._clamp_number(params, "right", -150.0, 150.0)
             await asyncio.to_thread(client.drive_wheels, left, right)
+        elif command == "stopDrive":
+            await asyncio.to_thread(client.drive_wheels, 0.0, 0.0)
         elif command == "turn":
             await self._stop_behavior_before_direct_drive()
             speed = self._clamp_number(params, "speed", -150.0, 150.0)

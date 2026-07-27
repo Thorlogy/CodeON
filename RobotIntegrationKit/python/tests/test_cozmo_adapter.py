@@ -45,6 +45,11 @@ class CozmoAdapterTest(unittest.IsolatedAsyncioTestCase):
         await self.adapter.execute("drive", {"left": 500, "right": -500})
         self.assertEqual(("drive_wheels", (150.0, -150.0)), self.client.calls[-1])
 
+    async def test_stop_drive_only_stops_the_wheels(self):
+        await self.adapter.connect()
+        await self.adapter.execute("stopDrive", {})
+        self.assertEqual(("drive_wheels", (0.0, 0.0)), self.client.calls[-1])
+
     async def test_turn_uses_opposite_wheel_speeds(self):
         await self.adapter.connect()
         await self.adapter.execute("turn", {"speed": 40})

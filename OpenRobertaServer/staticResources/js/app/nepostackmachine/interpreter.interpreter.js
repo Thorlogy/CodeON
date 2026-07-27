@@ -8,7 +8,9 @@ define(["require", "exports", "./interpreter.state", "./neuralnetwork.ui", "./in
          * . @param robotBehaviour implementation of the ARobotBehaviour class
          * . @param cbOnTermination is called when the program has terminated
          */
-        function Interpreter(generatedCode, r, cbOnTermination, simBreakpoints, name, updateNNView) {
+        function Interpreter(generatedCode, r, cbOnTermination, simBreakpoints, name, updateNNView, closeBehaviourOnTermination) {
+            if (closeBehaviourOnTermination === void 0) { closeBehaviourOnTermination = true; }
+            this.closeBehaviourOnTermination = closeBehaviourOnTermination;
             this.terminated = false;
             this.callbackOnTermination = undefined;
             this.debugDelay = 2;
@@ -78,7 +80,8 @@ define(["require", "exports", "./interpreter.state", "./neuralnetwork.ui", "./in
         Interpreter.prototype.terminate = function () {
             this.terminated = true;
             this.callbackOnTermination();
-            this.robotBehaviour.close();
+            if (this.closeBehaviourOnTermination)
+                this.robotBehaviour.close();
             this.state.removeHighlights([]);
         };
         Interpreter.prototype.getRobotBehaviour = function () {
@@ -154,7 +157,8 @@ define(["require", "exports", "./interpreter.state", "./neuralnetwork.ui", "./in
                 }
                 if (this.terminated) {
                     // termination either requested by the client or by executing 'stop' or after last statement
-                    this.robotBehaviour.close();
+                    if (this.closeBehaviourOnTermination)
+                        this.robotBehaviour.close();
                     this.callbackOnTermination();
                     return 0;
                 }
