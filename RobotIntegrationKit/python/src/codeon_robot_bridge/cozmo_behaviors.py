@@ -78,9 +78,9 @@ def cozmo_face_behaviors(config: CozmoFaceBehaviorConfig | None = None) -> tuple
         return [_drive(context, "face-follow", 50, 0.0, 0.0, reason="target distance reached")]
 
     def face_search(context: BehaviorContext) -> list[ActuatorProposal]:
-        face = _face(context.sensors)
-        if face.get("detected") and _number(face.get("ageMs")) <= settings.maximum_face_age_ms:
-            return []
+        # This low-priority baseline remains active. Face-follow suppresses it
+        # whenever a current face is available and the safety layer can
+        # suppress both.
         return [
             _drive(
                 context,

@@ -10,12 +10,15 @@ import tempfile
 import threading
 import time
 import wave
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any
 
 from .adapter import RobotAdapter
 from .capabilities import CapabilityManifest
+from .behavior import BehaviorScheduler
+from .behavior_runtime import BehaviorRuntime
+from .cozmo_behaviors import cozmo_face_behaviors
 from .errors import AdapterError, NotConnectedError, UnsupportedCommandError
 
 
@@ -44,6 +47,7 @@ class CozmoAdapter(RobotAdapter):
             "display": ["facePresets"],
             "audio": ["tone", "localTextToSpeech"],
             "camera": {"localFaceDetection": True, "imagesLeaveBridge": False},
+            "behaviors": ["faceSearchAndFollow"],
             "sensors": ["battery", "accelerometer", "gyroscope", "wheelSpeed", "pose", "snapshot", "face"],
         },
         limits={
@@ -79,6 +83,7 @@ class CozmoAdapter(RobotAdapter):
         self._audio_lock = asyncio.Lock()
         self._audio_tasks: set[asyncio.Task] = set()
         self._last_audio_error: str | None = None
+        self._behavior_runtime: BehaviorRuntime | None = None
 
     @property
     def manifest(self) -> CapabilityManifest:
@@ -115,6 +120,7 @@ class CozmoAdapter(RobotAdapter):
         try:
             try:
                 await self._stop_face_tracking()
+                await self._stop_behavior_control()
                 await self._stop_camera()
                 await asyncio.to_thread(client.stop_all_motors)
             finally:
@@ -132,10 +138,12 @@ class CozmoAdapter(RobotAdapter):
     async def execute(self, command: str, params: dict[str, Any]) -> Any:
         client = self._require_client()
         if command == "drive":
+            await self._stop_behavior_before_direct_drive()
             left = self._clamp_number(params, "left", -150.0, 150.0)
             right = self._clamp_number(params, "right", -150.0, 150.0)
             await asyncio.to_thread(client.drive_wheels, left, right)
         elif command == "turn":
+            await self._stop_behavior_before_direct_drive()
             speed = self._clamp_number(params, "speed", -150.0, 150.0)
             await asyncio.to_thread(client.drive_wheels, -speed, speed)
         elif command == "setHead":
@@ -171,6 +179,13 @@ class CozmoAdapter(RobotAdapter):
         elif command == "trackFace":
             await self._start_camera(client)
             self._start_face_tracking(client)
+        elif command == "startBehavior":
+            preset = str(params.get("preset", "faceSearchAndFollow"))
+            if preset != "faceSearchAndFollow":
+                raise UnsupportedCommandError(f"unsupported behavior preset: {preset}")
+            await self._start_behavior_control(client)
+        elif command == "stopBehavior":
+            await self._stop_behavior_control()
         else:
             raise UnsupportedCommandError(f"unsupported command: {command}")
         return {"accepted": True}
@@ -192,6 +207,7 @@ class CozmoAdapter(RobotAdapter):
         raise UnsupportedCommandError(f"unsupported sensor: {sensor}")
 
     async def stop_all(self) -> None:
+        await self._stop_behavior_control()
         await self._stop_face_tracking()
         await self._stop_camera()
         if self._client is not None:
@@ -232,8 +248,46 @@ class CozmoAdapter(RobotAdapter):
             "faceTracking": self._face_tracking_task is not None and not self._face_tracking_task.done(),
             "audioBusy": bool(self._audio_tasks),
             "audioError": self._last_audio_error,
+            "behaviorControl": self._behavior_runtime.status() if self._behavior_runtime is not None else {"running": False},
             "face": face,
         }
+
+    async def _start_behavior_control(self, client) -> None:
+        await self._stop_face_tracking()
+        await self._start_camera(client)
+        if self._behavior_runtime is None:
+            self._behavior_runtime = BehaviorRuntime(
+                BehaviorScheduler(cozmo_face_behaviors()),
+                lambda: self._behavior_snapshot(client),
+                lambda command, params: self._send_behavior_command(client, command, params),
+                lambda: asyncio.to_thread(client.stop_all_motors),
+            )
+        await self._behavior_runtime.start()
+
+    async def _stop_behavior_control(self) -> None:
+        runtime = self._behavior_runtime
+        if runtime is not None:
+            await runtime.stop()
+
+    async def _stop_behavior_before_direct_drive(self) -> None:
+        runtime = self._behavior_runtime
+        if runtime is not None and runtime.running:
+            await runtime.stop()
+
+    async def _behavior_snapshot(self, client) -> dict[str, Any]:
+        snapshot = self._snapshot(client)
+        snapshot["snapshotAgeMs"] = 0
+        return snapshot
+
+    @staticmethod
+    async def _send_behavior_command(client, command: str, params: Mapping[str, Any]) -> None:
+        if command != "drive":
+            raise UnsupportedCommandError(f"unsupported behavior command: {command}")
+        await asyncio.to_thread(
+            client.drive_wheels,
+            float(params.get("left", 0.0)),
+            float(params.get("right", 0.0)),
+        )
 
     def _queue_audio(self, function, *args) -> None:
         task = asyncio.create_task(self._run_audio(function, *args))

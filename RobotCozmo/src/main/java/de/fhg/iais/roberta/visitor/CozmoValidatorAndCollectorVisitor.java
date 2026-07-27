@@ -4,6 +4,7 @@ import com.google.common.collect.ClassToInstanceMap;
 import de.fhg.iais.roberta.bean.IProjectBean;
 import de.fhg.iais.roberta.components.ConfigurationAst;
 import de.fhg.iais.roberta.syntax.action.cozmo.CozmoCameraAction;
+import de.fhg.iais.roberta.syntax.action.cozmo.CozmoBehaviorAction;
 import de.fhg.iais.roberta.syntax.action.cozmo.CozmoDisplayFaceAction;
 import de.fhg.iais.roberta.syntax.action.cozmo.CozmoHeadLightAction;
 import de.fhg.iais.roberta.syntax.action.cozmo.CozmoLiftAction;
@@ -25,6 +26,7 @@ public final class CozmoValidatorAndCollectorVisitor extends RCJValidatorAndColl
     public Void visitVoltageSensor(VoltageSensor sensor) { return null; }
     public Void visitAccelerometerSensor(AccelerometerSensor sensor) { return null; }
     public Void visitCozmoCameraAction(CozmoCameraAction action) { return null; }
+    public Void visitCozmoBehaviorAction(CozmoBehaviorAction action) { return null; }
     public Void visitCozmoDisplayFaceAction(CozmoDisplayFaceAction action) { return null; }
     public Void visitCozmoHeadLightAction(CozmoHeadLightAction action) { return null; }
     public Void visitCozmoLiftAction(CozmoLiftAction action) { return null; }

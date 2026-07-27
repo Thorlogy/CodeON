@@ -119,6 +119,17 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
             this.send('setBackpackLight', { color: '#000000' });
         };
         RobotBridgeBehaviour.prototype.lightAction = function (mode, _color, port) {
+            if (String(port).toLowerCase() === 'behavior') {
+                if (String(mode).toLowerCase() === 'start') {
+                    this.send('startBehavior', { preset: 'faceSearchAndFollow' });
+                    this.setCameraPrivacyIndicator(true);
+                }
+                else {
+                    this.send('stopBehavior', {});
+                    this.setCameraPrivacyIndicator(false);
+                }
+                return;
+            }
             if (String(port).toLowerCase() === 'display') {
                 this.send('displayFace', { face: String(mode).toUpperCase() });
                 return;
@@ -224,6 +235,8 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
                 camera: params.enabled ? (german ? 'Kamera starten' : 'Starting camera') : german ? 'Kamera stoppen' : 'Stopping camera',
                 trackFace: german ? 'Gesicht fortlaufend verfolgen' : 'Tracking face continuously',
                 displayFace: german ? 'Gesicht anzeigen' : 'Showing face',
+                startBehavior: german ? 'Parallele Tasks starten' : 'Starting parallel tasks',
+                stopBehavior: german ? 'Parallele Tasks stoppen' : 'Stopping parallel tasks',
             };
             this.lastAction = labels[command] || command;
             this.lastError = '';
@@ -329,6 +342,13 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
             var faceDetections = Number(this.sensorSnapshot.faceDetections) || 0;
             var cameraDetail = " \u00B7 ".concat(cameraFrames, " ").concat(german ? 'Bilder' : 'frames');
             var cameraError = this.sensorSnapshot.cameraError;
+            var behavior = this.sensorSnapshot.behaviorControl || {};
+            var driveDecision = behavior.decisions && behavior.decisions.DRIVE;
+            var behaviorStatus = behavior.running
+                ? "".concat(driveDecision && driveDecision.owner ? driveDecision.owner : german ? 'läuft' : 'running', " \u00B7 Tick ").concat(Number(behavior.tickId) || 0)
+                : german
+                    ? 'aus'
+                    : 'off';
             panel.textContent =
                 "\uD83E\uDD16 Cozmo ".concat(german ? 'Status' : 'status', "\n").concat(german ? 'Aktion' : 'Action', ": ").concat(this.lastAction || (german ? 'Bereit' : 'Ready'), "\n") +
                     "".concat(german ? 'Kamera' : 'Camera', ": ").concat(camera).concat(cameraDetail, "\n").concat(german ? 'Gesicht' : 'Face', ": ").concat(face.detected
@@ -343,6 +363,7 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
                                 ? 'noch nicht erkannt'
                                 : 'not detected yet', "\n") +
                     "".concat(german ? 'Audio' : 'Audio', ": ").concat(audio, "\n").concat(position) +
+                    "\n".concat(german ? 'Tasks' : 'Tasks', ": ").concat(behaviorStatus) +
                     (error || cameraError ? "\n\u26A0 ".concat(error || cameraError) : '');
         };
         RobotBridgeBehaviour.prototype.isGerman = function () {

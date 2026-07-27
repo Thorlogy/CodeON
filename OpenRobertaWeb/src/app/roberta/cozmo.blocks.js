@@ -4,6 +4,25 @@ define(['blockly'], function (Blockly) {
     Blockly.Msg.TOOLBOX_MOTOR = text('Kopf und Lift', 'Head and lift');
     Blockly.Msg.TOOLBOX_CAMERA = text('Kamera', 'Camera');
     Blockly.Msg.TOOLBOX_DISPLAY = text('Display', 'Display');
+    Blockly.Msg.TOOLBOX_BEHAVIOR = text('Verhaltenssteuerung', 'Behavior control');
+
+    Blockly.Blocks.cozmoActions_behavior = {
+        init: function () {
+            this.setColour(Blockly.CAT_ACTION_RGB);
+            this.appendDummyInput()
+                .appendField(text('Parallele Tasks', 'Parallel tasks'))
+                .appendField(new Blockly.FieldDropdown([
+                    [text('Gesicht suchen und folgen starten', 'start face search and follow'), 'START'],
+                    [text('stoppen', 'stop'), 'STOP']
+                ]), 'MODE');
+            this.setPreviousStatement(true);
+            this.setNextStatement(true);
+            this.setTooltip(text(
+                'Startet Sicherheitsstopp, Gesichtssuche und Gesichtsfolge parallel mit festen Prioritäten. Mit einem Warte- oder Schleifenblock aktiv halten.',
+                'Runs safety stop, face search, and face follow concurrently at fixed priorities. Keep it active with a wait or loop block.'
+            ));
+        }
+    };
 
     Blockly.Blocks.cozmoActions_camera = {
         init: function () {

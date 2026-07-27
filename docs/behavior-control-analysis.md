@@ -1,13 +1,16 @@
 # Verhaltenssteuerung: Architekturanalyse und Cozmo-MVP
 
-Stand: 22. Juli 2026  
+Stand: 27. Juli 2026
 Branch: `feature/cozmo-behavior-control`
 
 ## Ziel
 
 CodeON soll mehrere gleichzeitig aktive Verhaltensweisen auswerten können, ohne dass mehrere Programmteile direkt dieselben Aktoren ansteuern. Der erste sichere Vertikalschnitt wird mit Cozmo umgesetzt; die Bausteine bleiben robot-unabhängig und sollen als Blaupause für weitere Modelle dienen.
 
-In Phase 1 werden **keine neuen Fahrbefehle an echte Hardware gesendet**. Zuerst entstehen ein deterministischer Prioritätsentscheider, Tests und verbindliche Sicherheitsregeln.
+Die Grundlage aus Phase 1 ist abgeschlossen. Der erste Cozmo-Vertikalschnitt ist
+inzwischen über die lokale Bridge und einen Expertenblock angebunden. Die
+automatisierten Tests sind erfolgreich; die abschließende Freigabe an echter
+Cozmo-Hardware steht noch aus.
 
 ## Bestehende Ausführungspfade
 
@@ -64,10 +67,10 @@ Nach einem Sicherheitsfehler bleibt die Bewegung gesperrt, bis ein bewusster Neu
 
 ## Umsetzung in Paketen
 
-1. **Prioritätsentscheider (jetzt):** Reine, robot-unabhängige Logik im Python-Integrationskit; vollständig mit Fake-Adapter/Unit-Tests prüfbar.
-2. **Kooperativer Scheduler:** Fester Takt, getrennte Verhaltenszustände, Vorschlags-Gültigkeit und Fehler-Latch; weiterhin ohne echte Bewegung.
-3. **Cozmo-Vertikalschnitt:** Gesicht suchen/verfolgen und Sicherheitsstopp über den bestehenden Bridgepfad; zunächst mit niedrigen Geschwindigkeiten und Hardware-Freigabetest.
-4. **Blockly-Anbindung:** Verhaltensblöcke und Prioritäten. Alte Programme verwenden weiterhin den bisherigen sequenziellen Modus.
+1. **Prioritätsentscheider (erledigt):** Reine, robot-unabhängige Logik im Python-Integrationskit; vollständig mit Fake-Adapter/Unit-Tests geprüft.
+2. **Kooperativer Scheduler (erledigt):** Fester Takt, Vorschlags-Gültigkeit sowie Konflikt-, Fehler- und Sicherheits-Latch.
+3. **Cozmo-Vertikalschnitt (implementiert):** Gesicht suchen/verfolgen und Sicherheitsstopp über den bestehenden Bridgepfad; Hardware-Freigabetest noch offen.
+4. **Blockly-Anbindung (MVP erledigt):** Expertenblock zum Starten und Stoppen des festen Demonstrators. Alte Programme verwenden weiterhin den bisherigen sequenziellen Modus.
 5. **Simulation:** Derselbe Scheduler erhält eine deterministische Simulationsuhr; Grafikframes und Verhaltenstakte bleiben getrennt.
 
 ## Abnahmekriterien für Phase 1
@@ -84,4 +87,3 @@ Nach einem Sicherheitsfehler bleibt die Bewegung gesperrt, bis ein bewusster Neu
 - Scheduler-Prototyp und Sicherheits-Latch: 1–2 Tage
 - Cozmo-Vertikalschnitt samt Hardwaretests: 2–4 Tage
 - Blockly-Integration und Bedienoberfläche: 3–5 Tage
-

@@ -116,6 +116,16 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
     }
 
     override lightAction(mode: string, _color: string, port: string): void {
+        if (String(port).toLowerCase() === 'behavior') {
+            if (String(mode).toLowerCase() === 'start') {
+                this.send('startBehavior', { preset: 'faceSearchAndFollow' });
+                this.setCameraPrivacyIndicator(true);
+            } else {
+                this.send('stopBehavior', {});
+                this.setCameraPrivacyIndicator(false);
+            }
+            return;
+        }
         if (String(port).toLowerCase() === 'display') {
             this.send('displayFace', { face: String(mode).toUpperCase() });
             return;
@@ -220,6 +230,8 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
             camera: params.enabled ? (german ? 'Kamera starten' : 'Starting camera') : german ? 'Kamera stoppen' : 'Stopping camera',
             trackFace: german ? 'Gesicht fortlaufend verfolgen' : 'Tracking face continuously',
             displayFace: german ? 'Gesicht anzeigen' : 'Showing face',
+            startBehavior: german ? 'Parallele Tasks starten' : 'Starting parallel tasks',
+            stopBehavior: german ? 'Parallele Tasks stoppen' : 'Stopping parallel tasks',
         };
         this.lastAction = labels[command] || command;
         this.lastError = '';
@@ -329,6 +341,13 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
         const faceDetections = Number(this.sensorSnapshot.faceDetections) || 0;
         const cameraDetail = ` · ${cameraFrames} ${german ? 'Bilder' : 'frames'}`;
         const cameraError = this.sensorSnapshot.cameraError;
+        const behavior = this.sensorSnapshot.behaviorControl || {};
+        const driveDecision = behavior.decisions && behavior.decisions.DRIVE;
+        const behaviorStatus = behavior.running
+            ? `${driveDecision && driveDecision.owner ? driveDecision.owner : german ? 'läuft' : 'running'} · Tick ${Number(behavior.tickId) || 0}`
+            : german
+              ? 'aus'
+              : 'off';
         panel.textContent =
             `🤖 Cozmo ${german ? 'Status' : 'status'}\n${german ? 'Aktion' : 'Action'}: ${this.lastAction || (german ? 'Bereit' : 'Ready')}\n` +
             `${german ? 'Kamera' : 'Camera'}: ${camera}${cameraDetail}\n${german ? 'Gesicht' : 'Face'}: ${
@@ -345,6 +364,7 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
                         : 'not detected yet'
             }\n` +
             `${german ? 'Audio' : 'Audio'}: ${audio}\n${position}` +
+            `\n${german ? 'Tasks' : 'Tasks'}: ${behaviorStatus}` +
             (error || cameraError ? `\n⚠ ${error || cameraError}` : '');
     }
 

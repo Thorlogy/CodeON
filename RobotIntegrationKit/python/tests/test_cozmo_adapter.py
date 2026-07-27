@@ -96,6 +96,45 @@ class CozmoAdapterTest(unittest.IsolatedAsyncioTestCase):
         await self.adapter._track_face_once(self.client)
         self.assertIn(("set_head_angle", (0.2875,)), self.client.calls)
 
+    async def test_prioritized_face_behavior_starts_and_stops_cooperatively(self):
+        await self.adapter.connect()
+
+        async def start_camera(_client):
+            self.adapter._camera_enabled = True
+
+        with patch.object(self.adapter, "_start_camera", side_effect=start_camera):
+            await self.adapter.execute("startBehavior", {"preset": "faceSearchAndFollow"})
+            await asyncio.sleep(0)
+            self.assertTrue(self.adapter._behavior_runtime.running)
+            self.assertIn("drive_wheels", [name for name, _ in self.client.calls])
+
+            await self.adapter.execute("stopBehavior", {})
+
+        self.assertFalse(self.adapter._behavior_runtime.running)
+        self.assertEqual("stop_all_motors", self.client.calls[-1][0])
+
+    async def test_unknown_behavior_preset_is_rejected(self):
+        await self.adapter.connect()
+        with self.assertRaisesRegex(Exception, "unsupported behavior preset"):
+            await self.adapter.execute("startBehavior", {"preset": "unknown"})
+
+    async def test_direct_drive_stops_behavior_before_taking_wheel_control(self):
+        await self.adapter.connect()
+
+        async def start_camera(_client):
+            self.adapter._camera_enabled = True
+
+        with patch.object(self.adapter, "_start_camera", side_effect=start_camera):
+            await self.adapter.execute("startBehavior", {"preset": "faceSearchAndFollow"})
+            await asyncio.sleep(0)
+            await self.adapter.execute("drive", {"left": 30, "right": 30})
+
+        self.assertFalse(self.adapter._behavior_runtime.running)
+        self.assertEqual(
+            ["stop_all_motors", "drive_wheels"],
+            [name for name, _ in self.client.calls[-2:]],
+        )
+
     async def test_tone_is_rendered_locally_and_sent_as_audio(self):
         await self.adapter.connect()
         await self.adapter.execute("tone", {"frequency": 440, "duration": 20})

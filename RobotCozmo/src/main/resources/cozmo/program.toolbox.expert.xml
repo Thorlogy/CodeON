@@ -27,6 +27,10 @@
         <category name="TOOLBOX_DISPLAY" svg="true">
             <block type="cozmoActions_displayFace"><field name="FACE">HAPPY</field></block>
         </category>
+        <category name="TOOLBOX_BEHAVIOR" svg="true">
+            <block type="cozmoActions_behavior"><field name="MODE">START</field></block>
+            <block type="cozmoActions_behavior"><field name="MODE">STOP</field></block>
+        </category>
     </category>
     <category name="TOOLBOX_SENSOR" svg="true">
         <category name="TOOLBOX_COZMO_FACE" svg="true">
