@@ -40,6 +40,8 @@ class ApitorBleProbeTest(unittest.TestCase):
     def test_low_speed_robot_x_drive_packets(self):
         self.assertEqual(motor_frame(6, 1, 4).hex(), "55aa03060104")
         self.assertEqual(motor_frame(7, 1, 4).hex(), "55aa03070104")
+        self.assertEqual(motor_frame(6, 1, 8).hex(), "55aa03060108")
+        self.assertEqual(motor_frame(8, 1, 8).hex(), "55aa03080108")
 
     def test_led_test_packets_match_apitor_kit_413(self):
         self.assertEqual(ALL_LEDS_BLUE, led_frame(4, 6))

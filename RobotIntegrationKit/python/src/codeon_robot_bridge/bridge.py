@@ -10,7 +10,7 @@ from .safety import MotionWatchdog
 class BridgeSession:
     """Transport-neutral protocol handler shared by WebSocket and test clients."""
 
-    MOTION_COMMANDS = frozenset({"drive", "turn"})
+    MOTION_COMMANDS = frozenset({"drive", "turn", "setMotor"})
 
     def __init__(self, adapter: RobotAdapter, watchdog: MotionWatchdog | None = None) -> None:
         self.adapter = adapter

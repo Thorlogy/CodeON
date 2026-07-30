@@ -214,11 +214,19 @@ async def led_test(identifier: str, timeout: float, duration: float, color: str 
     }
 
 
-async def motor_test(identifier: str, timeout: float, duration: float) -> dict[str, Any]:
-    """Run both Robot X drive motors briefly at low speed, then stop safely."""
+async def motor_test(
+    identifier: str,
+    timeout: float,
+    duration: float,
+    motor: str = "both",
+    direction: int = 1,
+    speed: int = 4,
+) -> dict[str, Any]:
+    """Run selected Robot X motor ports briefly at low speed, then stop safely."""
     client_type, _ = _load_bleak()
     writes: list[str] = []
-    drive_packets = (motor_frame(6, 1, 4), motor_frame(7, 1, 4))
+    motor_indices = {"m1": (6,), "m2": (7,), "m3": (8,), "both": (6, 7)}
+    drive_packets = tuple(motor_frame(index, direction, speed) for index in motor_indices[motor])
     client = client_type(identifier, timeout=timeout)
     connected = False
     try:
@@ -253,7 +261,9 @@ async def motor_test(identifier: str, timeout: float, duration: float) -> dict[s
         "ok": True,
         "motorMotionRequested": True,
         "durationSeconds": duration,
-        "speedLevel": 4,
+        "motor": motor,
+        "direction": direction,
+        "speedLevel": speed,
         "safetyStopSent": STOP_ALL_MOTORS.hex() in writes,
         "writes": writes,
     }
@@ -262,7 +272,14 @@ async def motor_test(identifier: str, timeout: float, duration: float) -> dict[s
 async def _run(args: argparse.Namespace) -> int:
     try:
         if args.motor_test:
-            report = await motor_test(args.motor_test, args.timeout, args.motor_duration)
+            report = await motor_test(
+                args.motor_test,
+                args.timeout,
+                args.motor_duration,
+                args.motor,
+                args.motor_direction,
+                args.motor_speed,
+            )
         elif args.led_test:
             report = await led_test(args.led_test, args.timeout, args.led_duration, args.led_color)
         elif args.inspect:
@@ -325,6 +342,26 @@ def main() -> None:
         type=float,
         default=0.5,
         help="motor duration in seconds (default: 0.5; maximum: 1.0)",
+    )
+    parser.add_argument(
+        "--motor",
+        choices=("m1", "m2", "m3", "both"),
+        default="both",
+        help="motor port used by --motor-test (default: both)",
+    )
+    parser.add_argument(
+        "--motor-direction",
+        type=int,
+        choices=(1, 2),
+        default=1,
+        help="motor direction used by --motor-test (default: 1)",
+    )
+    parser.add_argument(
+        "--motor-speed",
+        type=int,
+        choices=range(1, 13),
+        default=4,
+        help="motor speed level from 1 to 12 (default: 4)",
     )
     args = parser.parse_args()
     selected_modes = sum(bool(value) for value in (args.inspect, args.led_test, args.motor_test))

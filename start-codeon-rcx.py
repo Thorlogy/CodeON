@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Einsteigerfreundlicher Startassistent fuer CodeON mit LEGO RCX."""
+"""Einsteigerfreundlicher Startassistent für CodeON und lokale Roboter-Bridges."""
 
 from __future__ import annotations
 
@@ -27,9 +27,11 @@ BRIDGE_URL = "http://127.0.0.1:2222"
 COZMO_BRIDGE_HOST = "127.0.0.1"
 COZMO_BRIDGE_PORT = 2223
 COZMO_BRIDGE_PID_FILE = RUNTIME / "cozmo-bridge.pid"
+APITOR_BRIDGE_PORT = 2224
+APITOR_BRIDGE_PID_FILE = RUNTIME / "apitor-bridge.pid"
 CODEON_URL = "http://localhost:1999"
 CODEON_SERVER_PID_FILE = RUNTIME / "codeon-server.pid"
-SUPPORTED_ROBOTS = ("rcx", "edisonv2", "rcj", "cozmo")
+SUPPORTED_ROBOTS = ("rcx", "edisonv2", "rcj", "cozmo", "apitor")
 
 HELP_URLS = {
     "python": "https://www.python.org/downloads/",
@@ -126,6 +128,25 @@ def find_cozmo_python() -> Path | None:
             continue
         check = subprocess.run(
             [str(candidate), "-c", "import pycozmo, websockets"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+        if check.returncode == 0:
+            return candidate
+    return None
+
+
+def find_apitor_python() -> Path | None:
+    candidates = [
+        ROOT / ".venv" / ("Scripts/python.exe" if platform.system() == "Windows" else "bin/python"),
+        Path(sys.executable),
+    ]
+    for candidate in candidates:
+        if not executable(candidate):
+            continue
+        check = subprocess.run(
+            [str(candidate), "-c", "import bleak, websockets"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             check=False,
@@ -334,6 +355,28 @@ def stop_previous_cozmo_bridge() -> None:
     COZMO_BRIDGE_PID_FILE.unlink(missing_ok=True)
 
 
+def stop_previous_apitor_bridge() -> None:
+    """Stop only an Apitor bridge previously started by this launcher."""
+    try:
+        pid = int(APITOR_BRIDGE_PID_FILE.read_text(encoding="utf-8").strip())
+    except (OSError, ValueError):
+        return
+    command = process_command(pid)
+    if "codeon_robot_bridge.server" not in command or "--adapter apitor" not in command:
+        APITOR_BRIDGE_PID_FILE.unlink(missing_ok=True)
+        return
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except ProcessLookupError:
+        pass
+    except OSError:
+        return
+    deadline = time.monotonic() + 5
+    while time.monotonic() < deadline and tcp_reachable(COZMO_BRIDGE_HOST, APITOR_BRIDGE_PORT):
+        time.sleep(0.1)
+    APITOR_BRIDGE_PID_FILE.unlink(missing_ok=True)
+
+
 def stop_previous_codeon_server() -> None:
     """Stop only a CodeON server previously recorded by this launcher."""
     try:
@@ -399,9 +442,11 @@ def start(args: argparse.Namespace) -> int:
 
     bridge_process = None
     cozmo_bridge_process = None
+    apitor_bridge_process = None
     server_process = None
     bridge_log_path = logs / "rcx-bridge.log"
     cozmo_bridge_log_path = logs / "cozmo-bridge.log"
+    apitor_bridge_log_path = logs / "apitor-bridge.log"
     server_log_path = logs / "codeon-server.log"
 
     try:
@@ -478,9 +523,37 @@ def start(args: argparse.Namespace) -> int:
             else:
                 print("Hinweis: Cozmo-Unterstützung ist noch nicht installiert; die übrigen Roboter bleiben verfügbar.")
 
+        stop_previous_apitor_bridge()
+        if tcp_reachable(COZMO_BRIDGE_HOST, APITOR_BRIDGE_PORT):
+            print(f"Apitor-Bridge läuft bereits: ws://{COZMO_BRIDGE_HOST}:{APITOR_BRIDGE_PORT}")
+        else:
+            apitor_python = find_apitor_python()
+            if apitor_python:
+                apitor_env = env.copy()
+                source_path = str(ROOT / "RobotIntegrationKit" / "python" / "src")
+                apitor_env["PYTHONPATH"] = source_path + os.pathsep + apitor_env.get("PYTHONPATH", "")
+                apitor_bridge_log = apitor_bridge_log_path.open("a", encoding="utf-8")
+                apitor_bridge_process = subprocess.Popen(
+                    [
+                        str(apitor_python), "-u", "-m", "codeon_robot_bridge.server",
+                        "--adapter", "apitor", "--port", str(APITOR_BRIDGE_PORT),
+                        "--pid-file", str(APITOR_BRIDGE_PID_FILE),
+                    ],
+                    cwd=ROOT, env=apitor_env, stdout=apitor_bridge_log, stderr=subprocess.STDOUT,
+                )
+                APITOR_BRIDGE_PID_FILE.write_text(str(apitor_bridge_process.pid), encoding="utf-8")
+                if wait_for_tcp(COZMO_BRIDGE_HOST, APITOR_BRIDGE_PORT, apitor_bridge_process, 8):
+                    print(f"Apitor-Bridge läuft: ws://{COZMO_BRIDGE_HOST}:{APITOR_BRIDGE_PORT}")
+                else:
+                    stop_process(apitor_bridge_process)
+                    apitor_bridge_process = None
+                    print(f"Apitor-Bridge konnte nicht gestartet werden. Protokoll: {apitor_bridge_log_path}")
+            else:
+                print("Hinweis: Apitor-Unterstützung ist nicht installiert; installiere bleak und websockets in .venv.")
+
         if args.bridge_only:
             print("Bridge-Modus aktiv. Zum Beenden Strg+C drücken.")
-            while any(process and process.poll() is None for process in (bridge_process, cozmo_bridge_process)) or (
+            while any(process and process.poll() is None for process in (bridge_process, cozmo_bridge_process, apitor_bridge_process)) or (
                 external_cozmo_bridge and tcp_reachable(COZMO_BRIDGE_HOST, COZMO_BRIDGE_PORT)
             ):
                 time.sleep(0.5)
@@ -490,9 +563,9 @@ def start(args: argparse.Namespace) -> int:
             print(f"CodeON läuft bereits: {CODEON_URL}")
             if not args.no_browser:
                 webbrowser.open(CODEON_URL)
-            if bridge_process or cozmo_bridge_process or external_cozmo_bridge:
+            if bridge_process or cozmo_bridge_process or apitor_bridge_process or external_cozmo_bridge:
                 print("Dieses Fenster offen lassen. Zum Beenden der Bridges Strg+C drücken.")
-                while any(process and process.poll() is None for process in (bridge_process, cozmo_bridge_process)) or (
+                while any(process and process.poll() is None for process in (bridge_process, cozmo_bridge_process, apitor_bridge_process)) or (
                     external_cozmo_bridge and tcp_reachable(COZMO_BRIDGE_HOST, COZMO_BRIDGE_PORT)
                 ):
                     time.sleep(0.5)
@@ -540,7 +613,7 @@ def start(args: argparse.Namespace) -> int:
             return 5
 
         print(f"CodeON ist bereit: {CODEON_URL}")
-        print("Dieses Fenster offen lassen. RCX- und Cozmo-Bridge laufen automatisch im Hintergrund.")
+        print("Dieses Fenster offen lassen. RCX-, Cozmo- und Apitor-Bridge laufen automatisch im Hintergrund.")
         if not firmware:
             print("Hinweis: Eine Firmwaredatei wird nur benötigt, falls auf dem RCX keine Firmware installiert ist.")
         if not args.no_browser:
@@ -566,13 +639,21 @@ def start(args: argparse.Namespace) -> int:
                 recorded_pid = None
             if recorded_pid == cozmo_bridge_process.pid:
                 COZMO_BRIDGE_PID_FILE.unlink(missing_ok=True)
+        stop_process(apitor_bridge_process)
+        if apitor_bridge_process:
+            try:
+                recorded_pid = int(APITOR_BRIDGE_PID_FILE.read_text(encoding="utf-8").strip())
+            except (OSError, ValueError):
+                recorded_pid = None
+            if recorded_pid == apitor_bridge_process.pid:
+                APITOR_BRIDGE_PID_FILE.unlink(missing_ok=True)
         stop_process(bridge_process)
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="CodeON und die lokalen Roboter-Bridges einfach starten")
     parser.add_argument("--check", action="store_true", help="nur prüfen, nichts starten")
-    parser.add_argument("--bridge-only", action="store_true", help="nur die RCX-Bridge starten")
+    parser.add_argument("--bridge-only", action="store_true", help="nur die lokalen Roboter-Bridges starten")
     parser.add_argument("--no-browser", action="store_true", help="Browser nicht automatisch öffnen")
     parser.add_argument("--json", action="store_true", help="Prüfergebnis als JSON ausgeben")
     parser.add_argument("--stop-running-server", action="store_true", help=argparse.SUPPRESS)
@@ -588,6 +669,7 @@ if __name__ == "__main__":
     if arguments.stop_running_server:
         stop_previous_codeon_server()
         stop_previous_cozmo_bridge()
+        stop_previous_apitor_bridge()
         raise SystemExit(0)
     if arguments.json:
         print(json.dumps(preflight(), indent=2, ensure_ascii=False))

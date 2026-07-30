@@ -10,6 +10,7 @@ from datetime import datetime
 from pathlib import Path
 
 from .bridge import BridgeSession
+from .apitor_adapter import ApitorAdapter
 from .cozmo_adapter import CozmoAdapter
 from .fake_adapter import FakeRobotAdapter
 
@@ -35,7 +36,12 @@ async def _serve(args: argparse.Namespace) -> None:
     except ImportError as error:
         raise SystemExit("Install the server extra: pip install -e '.[server]'") from error
 
-    adapter = FakeRobotAdapter() if args.adapter == "fake" else CozmoAdapter()
+    if args.adapter == "fake":
+        adapter = FakeRobotAdapter()
+    elif args.adapter == "apitor":
+        adapter = ApitorAdapter(args.device)
+    else:
+        adapter = CozmoAdapter()
     session = BridgeSession(adapter)
     stopped = asyncio.Event()
     watchdog_task = asyncio.create_task(_watchdog(session, stopped))
@@ -64,7 +70,7 @@ async def _serve(args: argparse.Namespace) -> None:
                             "ok": False,
                             "error": {
                                 "code": "SESSION_REPLACED",
-                                "message": "a newer CodeON view controls the Cozmo bridge",
+                                "message": "a newer CodeON view controls this robot bridge",
                             },
                         }
                     else:
@@ -123,7 +129,8 @@ async def _serve(args: argparse.Namespace) -> None:
 
 def _arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="CodeON local robot bridge")
-    parser.add_argument("--adapter", choices=("fake", "cozmo"), default="fake")
+    parser.add_argument("--adapter", choices=("fake", "cozmo", "apitor"), default="fake")
+    parser.add_argument("--device", help="optional vendor device identifier (for example macOS BLE UUID)")
     parser.add_argument("--host", default="127.0.0.1", choices=("127.0.0.1", "::1"))
     parser.add_argument("--port", default=2223, type=int)
     parser.add_argument("--origin", action="append", default=list(DEFAULT_ORIGINS))

@@ -1,0 +1,17 @@
+<toolbox_set id="toolboxBeginner" style="display: none">
+    <category name="TOOLBOX_ACTION" svg="true">
+        <block type="apitorActions_motor"><field name="PORT">M1</field><field name="DIRECTION">FORWARD</field><field name="SPEED">6</field></block>
+        <block type="apitorActions_stopMotor"><field name="PORT">M1</field></block>
+    </category>
+    <category name="TOOLBOX_CONTROL" svg="true">
+        <block type="robControls_if"/>
+        <block type="robControls_ifElse"/>
+        <block type="robControls_loopForever"/>
+        <block type="controls_repeat_ext"><value name="TIMES"><block type="math_number"><field name="NUM">4</field></block></value></block>
+        <block type="robControls_wait_time"><value name="WAIT"><block type="math_number"><field name="NUM">1000</field></block></value></block>
+    </category>
+    <category name="TOOLBOX_LOGIC" svg="true"><block type="logic_compare"/><block type="logic_boolean"/></category>
+    <category name="TOOLBOX_MATH" svg="true"><block type="math_number"/><block type="math_arithmetic"/></category>
+    <category name="TOOLBOX_TEXT" svg="true"><block type="text"/><block type="text_comment"/></category>
+    <category name="TOOLBOX_VARIABLE" custom="VARIABLE" svg="true"/>
+</toolbox_set>

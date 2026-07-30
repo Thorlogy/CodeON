@@ -49,9 +49,9 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-define(["require", "exports", "abstract.connections", "jquery", "guiState.controller", "program.model", "util.roberta", "message", "guiState.model", "robot.controller", "dapjs", "blockly", "thymio", "program.controller", "webview.controller", "comm", "log", "socket.io", "connection.controller", "interpreter.interpreter", "interpreter.robotBridgeBehaviour", "robotBridge", "cozmo.blocks"], function (require, exports, abstract_connections_1, $, GUISTATE_C, PROGRAM, UTIL, MSG, GUISTATE, ROBOT_C, dapjs_1, Blockly, THYMIO_M, PROG_C, WEBVIEW_C, COMM, LOG, IO, CONNECTION_C, interpreter_interpreter_1, interpreter_robotBridgeBehaviour_1, robotBridge_1) {
+define(["require", "exports", "abstract.connections", "jquery", "guiState.controller", "program.model", "util.roberta", "message", "guiState.model", "robot.controller", "dapjs", "blockly", "thymio", "program.controller", "webview.controller", "comm", "log", "socket.io", "connection.controller", "interpreter.interpreter", "interpreter.robotBridgeBehaviour", "interpreter.apitorRobotBridgeBehaviour", "robotBridge", "cozmo.blocks", "apitor.blocks"], function (require, exports, abstract_connections_1, $, GUISTATE_C, PROGRAM, UTIL, MSG, GUISTATE, ROBOT_C, dapjs_1, Blockly, THYMIO_M, PROG_C, WEBVIEW_C, COMM, LOG, IO, CONNECTION_C, interpreter_interpreter_1, interpreter_robotBridgeBehaviour_1, interpreter_apitorRobotBridgeBehaviour_1, robotBridge_1) {
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.RcxConnection = exports.CozmoConnection = exports.RcjConnection = exports.LocalConnection = exports.WedoConnection = exports.ThymioConnection = exports.Txt4Connection = exports.SpikeConnection = exports.SpikePybricksConnection = exports.RobotinoROSConnection = exports.RobotinoConnection = exports.NxtConnection = exports.NaoConnection = exports.Calliopev3Connection = exports.Microbitv2Connection = exports.MicrobitConnection = exports.JoycarConnection = exports.Calliope2017NoBlueConnection = exports.Calliope2017Connection = exports.Calliope2016Connection = exports.XNNConnection = exports.Ev3lejosv1Connection = exports.Ev3lejosv0Connection = exports.Ev3devConnection = exports.Ev3c4ev3Connection = exports.Edisonv3Connection = exports.Edisonv2Connection = exports.Mbot2Connection = exports.Unowifirev2Connection = exports.UnoConnection = exports.SenseboxConnection = exports.Rob3rtaConnection = exports.Nano33bleConnection = exports.NanoConnection = exports.MegaConnection = exports.MbotConnection = exports.FestobionicConnection = exports.FestobionicflowerConnection = exports.BotnrollConnection = exports.Bob3Connection = void 0;
+    exports.RcxConnection = exports.ApitorConnection = exports.CozmoConnection = exports.RcjConnection = exports.LocalConnection = exports.WedoConnection = exports.ThymioConnection = exports.Txt4Connection = exports.SpikeConnection = exports.SpikePybricksConnection = exports.RobotinoROSConnection = exports.RobotinoConnection = exports.NxtConnection = exports.NaoConnection = exports.Calliopev3Connection = exports.Microbitv2Connection = exports.MicrobitConnection = exports.JoycarConnection = exports.Calliope2017NoBlueConnection = exports.Calliope2017Connection = exports.Calliope2016Connection = exports.XNNConnection = exports.Ev3lejosv1Connection = exports.Ev3lejosv0Connection = exports.Ev3devConnection = exports.Ev3c4ev3Connection = exports.Edisonv3Connection = exports.Edisonv2Connection = exports.Mbot2Connection = exports.Unowifirev2Connection = exports.UnoConnection = exports.SenseboxConnection = exports.Rob3rtaConnection = exports.Nano33bleConnection = exports.NanoConnection = exports.MegaConnection = exports.MbotConnection = exports.FestobionicConnection = exports.FestobionicflowerConnection = exports.BotnrollConnection = exports.Bob3Connection = void 0;
     var ThymioDeviceManagerConnection = /** @class */ (function (_super) {
         __extends(ThymioDeviceManagerConnection, _super);
         function ThymioDeviceManagerConnection() {
@@ -2593,6 +2593,7 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
         function CozmoConnection() {
             var _this = _super !== null && _super.apply(this, arguments) || this;
             _this.bridge = new robotBridge_1.RobotBridgeClient();
+            _this.taskRuntimes = [];
             _this.connected = false;
             _this.stopped = false;
             _this.helpShown = false;
@@ -2606,6 +2607,37 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
                 catch (error) {
                     _this.hardwareError(error instanceof Error ? error : new Error(String(error)));
                 }
+            };
+            _this.runParallelTaskStep = function () {
+                if (_this.stopped || _this.taskRuntimes.length === 0 || !_this.taskBehaviour)
+                    return;
+                var now = Date.now();
+                var active = _this.taskRuntimes
+                    .filter(function (runtime) { return !runtime.interpreter.isTerminated(); })
+                    .sort(function (left, right) { return right.priority - left.priority || left.id.localeCompare(right.id); });
+                active.forEach(function (runtime) {
+                    if (_this.stopped || runtime.nextRunAt > now || runtime.interpreter.isTerminated())
+                        return;
+                    try {
+                        _this.taskBehaviour.setTaskContext(runtime.id, runtime.name, runtime.priority);
+                        var delay = Math.max(20, runtime.interpreter.run(Date.now() + 20));
+                        runtime.nextRunAt = Date.now() + delay;
+                    }
+                    catch (error) {
+                        _this.hardwareError(error instanceof Error ? error : new Error(String(error)));
+                    }
+                });
+                if (_this.stopped)
+                    return;
+                if (_this.taskRuntimes.every(function (runtime) { return runtime.interpreter.isTerminated(); })) {
+                    _this.taskBehaviour.close();
+                    _this.taskBehaviour = undefined;
+                    _this.taskRuntimes = [];
+                    _this.programFinished();
+                    return;
+                }
+                var nextRunAt = Math.min.apply(Math, _this.taskRuntimes.filter(function (runtime) { return !runtime.interpreter.isTerminated(); }).map(function (runtime) { return runtime.nextRunAt; }));
+                _this.taskRunTimer = window.setTimeout(_this.runParallelTaskStep, Math.max(10, Math.min(100, nextRunAt - Date.now())));
             };
             return _this;
         }
@@ -2634,11 +2666,17 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
             try {
                 var program = JSON.parse(result.compiledCode);
                 var behaviour = new interpreter_robotBridgeBehaviour_1.RobotBridgeBehaviour(this.bridge, 150, 70, function (error) { return _this.hardwareError(error); });
-                this.interpreter = new interpreter_interpreter_1.Interpreter(program, behaviour, function () { return _this.programFinished(); }, [], GUISTATE_C.getProgramName(), false);
                 this.stopped = false;
                 GUISTATE_C.setConnectionState('busy');
                 GUISTATE_C.getBlocklyWorkspace().robControls.switchToStop();
-                this.runInterpreterStep();
+                var tasks = this.extractParallelTasks(program);
+                if (tasks.length > 0) {
+                    this.startParallelTasks(tasks, behaviour);
+                }
+                else {
+                    this.interpreter = new interpreter_interpreter_1.Interpreter(program, behaviour, function () { return _this.programFinished(); }, [], GUISTATE_C.getProgramName(), false);
+                    this.runInterpreterStep();
+                }
             }
             catch (error) {
                 this.hardwareError(error instanceof Error ? error : new Error(String(error)));
@@ -2646,20 +2684,38 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
         };
         CozmoConnection.prototype.stopProgram = function () {
             var _this = this;
+            var _a;
             this.stopped = true;
+            this.clearTaskRunTimer();
             if (this.interpreter && !this.interpreter.isTerminated())
                 this.interpreter.terminate();
             this.interpreter = undefined;
+            this.taskRuntimes.forEach(function (runtime) {
+                if (!runtime.interpreter.isTerminated())
+                    runtime.interpreter.terminate();
+            });
+            this.taskRuntimes = [];
+            (_a = this.taskBehaviour) === null || _a === void 0 ? void 0 : _a.close();
+            this.taskBehaviour = undefined;
             this.bridge.stopAll().catch(function (error) { return _this.hardwareError(error); });
             this.programFinished();
         };
         CozmoConnection.prototype.terminate = function () {
             var _this = this;
+            var _a;
             this.stopped = true;
             this.clearRetry();
+            this.clearTaskRunTimer();
             if (this.interpreter && !this.interpreter.isTerminated())
                 this.interpreter.terminate();
             this.interpreter = undefined;
+            this.taskRuntimes.forEach(function (runtime) {
+                if (!runtime.interpreter.isTerminated())
+                    runtime.interpreter.terminate();
+            });
+            this.taskRuntimes = [];
+            (_a = this.taskBehaviour) === null || _a === void 0 ? void 0 : _a.close();
+            this.taskBehaviour = undefined;
             this.connected = false;
             this.bridge.stopAll().catch(function () { return undefined; }).finally(function () { return _this.bridge.close(); });
             _super.prototype.terminate.call(this);
@@ -2726,8 +2782,55 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
                 this.retryTimer = undefined;
             }
         };
+        CozmoConnection.prototype.extractParallelTasks = function (program) {
+            var operations = Array.isArray(program && program.ops) ? program.ops : [];
+            var tasks = [];
+            var current;
+            operations.forEach(function (operation) {
+                if (operation && operation.opc === 'codeonTaskStart') {
+                    current = {
+                        id: String(operation.taskId || "task-".concat(tasks.length + 1)),
+                        name: String(operation.taskName || "Task ".concat(tasks.length + 1)),
+                        priority: Math.max(0, Math.min(100, Number(operation.taskPriority) || 0)),
+                        operations: [],
+                    };
+                }
+                else if (operation && operation.opc === 'codeonTaskEnd') {
+                    if (current) {
+                        tasks.push({ id: current.id, name: current.name, priority: current.priority, program: { ops: current.operations } });
+                        current = undefined;
+                    }
+                }
+                else if (current) {
+                    current.operations.push(operation);
+                }
+            });
+            return tasks;
+        };
+        CozmoConnection.prototype.startParallelTasks = function (tasks, behaviour) {
+            this.taskBehaviour = behaviour;
+            this.taskRuntimes = tasks.map(function (task) {
+                var runtime = {
+                    id: task.id,
+                    name: task.name,
+                    priority: task.priority,
+                    interpreter: undefined,
+                    nextRunAt: Date.now(),
+                };
+                runtime.interpreter = new interpreter_interpreter_1.Interpreter(task.program, behaviour, function () { return behaviour.releaseTask(task.id); }, [], task.name, false, false);
+                return runtime;
+            });
+            this.runParallelTaskStep();
+        };
+        CozmoConnection.prototype.clearTaskRunTimer = function () {
+            if (this.taskRunTimer !== undefined) {
+                window.clearTimeout(this.taskRunTimer);
+                this.taskRunTimer = undefined;
+            }
+        };
         CozmoConnection.prototype.programFinished = function () {
             var _this = this;
+            this.clearTaskRunTimer();
             this.interpreter = undefined;
             if (!this.connected)
                 return;
@@ -2737,11 +2840,20 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
         };
         CozmoConnection.prototype.hardwareError = function (error) {
             var _this = this;
+            var _a;
             this.stopped = true;
+            this.clearTaskRunTimer();
             this.bridge.stopAll().catch(function () { return undefined; });
             if (this.interpreter && !this.interpreter.isTerminated())
                 this.interpreter.terminate();
             this.interpreter = undefined;
+            this.taskRuntimes.forEach(function (runtime) {
+                if (!runtime.interpreter.isTerminated())
+                    runtime.interpreter.terminate();
+            });
+            this.taskRuntimes = [];
+            (_a = this.taskBehaviour) === null || _a === void 0 ? void 0 : _a.close();
+            this.taskBehaviour = undefined;
             this.connected = false;
             GUISTATE_C.getBlocklyWorkspace().robControls.switchToStart();
             GUISTATE_C.setConnectionState('error');
@@ -2769,6 +2881,171 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
         return CozmoConnection;
     }(abstract_connections_1.AbstractConnection));
     exports.CozmoConnection = CozmoConnection;
+    /** Apitor Robot X connection through its dedicated local BLE bridge. */
+    var ApitorConnection = /** @class */ (function (_super) {
+        __extends(ApitorConnection, _super);
+        function ApitorConnection() {
+            var _this = _super !== null && _super.apply(this, arguments) || this;
+            _this.bridge = new robotBridge_1.RobotBridgeClient('ws://127.0.0.1:2224', 5000);
+            _this.connected = false;
+            _this.stopped = false;
+            _this.runInterpreterStep = function () {
+                if (!_this.interpreter || _this.stopped || _this.interpreter.isTerminated())
+                    return;
+                try {
+                    var delay = Math.max(20, _this.interpreter.run(Date.now() + 50));
+                    window.setTimeout(_this.runInterpreterStep, delay);
+                }
+                catch (error) {
+                    _this.hardwareError(error instanceof Error ? error : new Error(String(error)));
+                }
+            };
+            return _this;
+        }
+        ApitorConnection.prototype.init = function () {
+            this.stopped = false;
+            GUISTATE_C.setPing(false);
+            GUISTATE_C.setRunEnabled(false);
+            $('#runSourceCodeEditor').addClass('disabled');
+            $('#menuConnect').parent().addClass('disabled');
+            $('#head-navi-icon-robot').removeClass('error busy wait').addClass('busy');
+            GUISTATE_C.getBlocklyWorkspace().robControls.hideStopProgram();
+            this.connectBridge();
+        };
+        ApitorConnection.prototype.isRobotConnected = function () {
+            return this.connected;
+        };
+        ApitorConnection.prototype.run = function (result) {
+            var _this = this;
+            if (result.rc !== 'ok' || !result.compiledCode) {
+                MSG.displayInformation(result, result.message, result.message, GUISTATE_C.getProgramName(), GUISTATE_C.getRobot());
+                GUISTATE_C.setConnectionState('error');
+                return;
+            }
+            try {
+                var program = JSON.parse(result.compiledCode);
+                var behaviour = new interpreter_apitorRobotBridgeBehaviour_1.ApitorRobotBridgeBehaviour(this.bridge, function (error) { return _this.hardwareError(error); });
+                this.stopped = false;
+                GUISTATE_C.setConnectionState('busy');
+                GUISTATE_C.getBlocklyWorkspace().robControls.switchToStop();
+                this.interpreter = new interpreter_interpreter_1.Interpreter(program, behaviour, function () { return _this.programFinished(); }, [], GUISTATE_C.getProgramName(), false);
+                this.runInterpreterStep();
+            }
+            catch (error) {
+                this.hardwareError(error instanceof Error ? error : new Error(String(error)));
+            }
+        };
+        ApitorConnection.prototype.stopProgram = function () {
+            var _this = this;
+            this.stopped = true;
+            if (this.interpreter && !this.interpreter.isTerminated())
+                this.interpreter.terminate();
+            this.interpreter = undefined;
+            this.bridge.stopAll().catch(function (error) { return _this.hardwareError(error); });
+            this.programFinished();
+        };
+        ApitorConnection.prototype.terminate = function () {
+            var _this = this;
+            var _a;
+            this.stopped = true;
+            this.clearRetry();
+            if (this.interpreter && !this.interpreter.isTerminated())
+                this.interpreter.terminate();
+            this.interpreter = undefined;
+            this.connected = false;
+            (_a = document.getElementById('codeon-apitor-status')) === null || _a === void 0 ? void 0 : _a.remove();
+            this.bridge.stopAll().catch(function () { return undefined; }).finally(function () { return _this.bridge.close(); });
+            _super.prototype.terminate.call(this);
+        };
+        ApitorConnection.prototype.setState = function () { };
+        ApitorConnection.prototype.connectBridge = function () {
+            return __awaiter(this, void 0, void 0, function () {
+                var manifest, error_8, detail;
+                var _this = this;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            _a.trys.push([0, 4, , 5]);
+                            return [4 /*yield*/, this.bridge.open()];
+                        case 1:
+                            _a.sent();
+                            return [4 /*yield*/, this.bridge.capabilities()];
+                        case 2:
+                            manifest = _a.sent();
+                            if (manifest.robot !== 'apitor' || !manifest.capabilities.individualMotorControl) {
+                                throw new Error('Die gestartete Robot-Bridge ist nicht für Apitor geeignet.');
+                            }
+                            return [4 /*yield*/, this.bridge.connectRobot()];
+                        case 3:
+                            _a.sent();
+                            if (this.stopped)
+                                return [2 /*return*/];
+                            this.clearRetry();
+                            this.connected = true;
+                            $('#head-navi-icon-robot').removeClass('error busy').addClass('wait').removeAttr('title');
+                            GUISTATE_C.setRunEnabled(true);
+                            $('#runSourceCodeEditor').removeClass('disabled');
+                            GUISTATE_C.setConnectionState('wait');
+                            return [3 /*break*/, 5];
+                        case 4:
+                            error_8 = _a.sent();
+                            this.connected = false;
+                            $('#head-navi-icon-robot').removeClass('busy wait').addClass('error');
+                            GUISTATE_C.setRunEnabled(false);
+                            detail = error_8 instanceof Error ? error_8.message : String(error_8);
+                            $('#head-navi-icon-robot').attr('title', 'Apitor wird verbunden: ' + detail);
+                            console.info('Apitor wird im Hintergrund verbunden:', detail);
+                            if (!this.stopped && this.retryTimer === undefined) {
+                                this.retryTimer = window.setTimeout(function () {
+                                    _this.retryTimer = undefined;
+                                    _this.connectBridge();
+                                }, 3000);
+                            }
+                            return [3 /*break*/, 5];
+                        case 5: return [2 /*return*/];
+                    }
+                });
+            });
+        };
+        ApitorConnection.prototype.programFinished = function () {
+            var _this = this;
+            this.interpreter = undefined;
+            if (!this.connected)
+                return;
+            this.bridge.stopAll().catch(function (error) { return _this.hardwareError(error); });
+            GUISTATE_C.getBlocklyWorkspace().robControls.switchToStart();
+            GUISTATE_C.setConnectionState('wait');
+        };
+        ApitorConnection.prototype.hardwareError = function (error) {
+            var _this = this;
+            this.stopped = true;
+            this.bridge.stopAll().catch(function () { return undefined; });
+            if (this.interpreter && !this.interpreter.isTerminated())
+                this.interpreter.terminate();
+            this.interpreter = undefined;
+            this.connected = false;
+            GUISTATE_C.getBlocklyWorkspace().robControls.switchToStart();
+            GUISTATE_C.setConnectionState('error');
+            GUISTATE_C.setRunEnabled(false);
+            $('#head-navi-icon-robot').removeClass('wait busy').addClass('error').attr('title', error.message);
+            console.error('Apitor wurde sicher gestoppt:', error);
+            this.bridge.close();
+            this.clearRetry();
+            this.retryTimer = window.setTimeout(function () {
+                _this.retryTimer = undefined;
+                _this.stopped = false;
+                _this.connectBridge();
+            }, 1000);
+        };
+        ApitorConnection.prototype.clearRetry = function () {
+            if (this.retryTimer !== undefined) {
+                window.clearTimeout(this.retryTimer);
+                this.retryTimer = undefined;
+            }
+        };
+        return ApitorConnection;
+    }(abstract_connections_1.AbstractConnection));
+    exports.ApitorConnection = ApitorConnection;
     var RcxConnection = /** @class */ (function (_super) {
         __extends(RcxConnection, _super);
         function RcxConnection() {

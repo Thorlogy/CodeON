@@ -19,9 +19,12 @@ import * as IO from 'socket.io';
 import * as CONNECTION_C from 'connection.controller';
 import { Interpreter } from 'interpreter.interpreter';
 import { RobotBridgeBehaviour } from 'interpreter.robotBridgeBehaviour';
+import { ApitorRobotBridgeBehaviour } from 'interpreter.apitorRobotBridgeBehaviour';
 import { RobotBridgeClient, RobotBridgeError, RobotBridgeManifest } from 'robotBridge';
 // @ts-ignore AMD side-effect module that registers the Cozmo Blockly blocks.
 import 'cozmo.blocks';
+// @ts-ignore AMD side-effect module that registers the Apitor Blockly blocks.
+import 'apitor.blocks';
 
 class ThymioDeviceManagerConnection extends AbstractConnection {
     static readonly URL = 'ws://localhost:8597';
@@ -2425,6 +2428,147 @@ export class CozmoConnection extends AbstractConnection {
         console.info('Cozmo wird im Hintergrund verbunden:', detail);
     }
 }
+
+/** Apitor Robot X connection through its dedicated local BLE bridge. */
+export class ApitorConnection extends AbstractConnection {
+    private readonly bridge = new RobotBridgeClient('ws://127.0.0.1:2224', 5000);
+    private interpreter: Interpreter | undefined;
+    private retryTimer: number | undefined;
+    private connected = false;
+    private stopped = false;
+
+    override init(): void {
+        this.stopped = false;
+        GUISTATE_C.setPing(false);
+        GUISTATE_C.setRunEnabled(false);
+        $('#runSourceCodeEditor').addClass('disabled');
+        $('#menuConnect').parent().addClass('disabled');
+        $('#head-navi-icon-robot').removeClass('error busy wait').addClass('busy');
+        GUISTATE_C.getBlocklyWorkspace().robControls.hideStopProgram();
+        this.connectBridge();
+    }
+
+    isRobotConnected(): boolean {
+        return this.connected;
+    }
+
+    protected run(result: any): void {
+        if (result.rc !== 'ok' || !result.compiledCode) {
+            MSG.displayInformation(result, result.message, result.message, GUISTATE_C.getProgramName(), GUISTATE_C.getRobot());
+            GUISTATE_C.setConnectionState('error');
+            return;
+        }
+        try {
+            const program = JSON.parse(result.compiledCode);
+            const behaviour = new ApitorRobotBridgeBehaviour(this.bridge, (error) => this.hardwareError(error));
+            this.stopped = false;
+            GUISTATE_C.setConnectionState('busy');
+            GUISTATE_C.getBlocklyWorkspace().robControls.switchToStop();
+            this.interpreter = new Interpreter(program, behaviour, () => this.programFinished(), [], GUISTATE_C.getProgramName(), false);
+            this.runInterpreterStep();
+        } catch (error) {
+            this.hardwareError(error instanceof Error ? error : new Error(String(error)));
+        }
+    }
+
+    override stopProgram(): void {
+        this.stopped = true;
+        if (this.interpreter && !this.interpreter.isTerminated()) this.interpreter.terminate();
+        this.interpreter = undefined;
+        this.bridge.stopAll().catch((error) => this.hardwareError(error));
+        this.programFinished();
+    }
+
+    override terminate(): void {
+        this.stopped = true;
+        this.clearRetry();
+        if (this.interpreter && !this.interpreter.isTerminated()) this.interpreter.terminate();
+        this.interpreter = undefined;
+        this.connected = false;
+        document.getElementById('codeon-apitor-status')?.remove();
+        this.bridge.stopAll().catch(() => undefined).finally(() => this.bridge.close());
+        super.terminate();
+    }
+
+    setState(): void {}
+
+    private async connectBridge(): Promise<void> {
+        try {
+            await this.bridge.open();
+            const manifest: RobotBridgeManifest = await this.bridge.capabilities();
+            if (manifest.robot !== 'apitor' || !manifest.capabilities.individualMotorControl) {
+                throw new Error('Die gestartete Robot-Bridge ist nicht für Apitor geeignet.');
+            }
+            await this.bridge.connectRobot();
+            if (this.stopped) return;
+            this.clearRetry();
+            this.connected = true;
+            $('#head-navi-icon-robot').removeClass('error busy').addClass('wait').removeAttr('title');
+            GUISTATE_C.setRunEnabled(true);
+            $('#runSourceCodeEditor').removeClass('disabled');
+            GUISTATE_C.setConnectionState('wait');
+        } catch (error) {
+            this.connected = false;
+            $('#head-navi-icon-robot').removeClass('busy wait').addClass('error');
+            GUISTATE_C.setRunEnabled(false);
+            const detail = error instanceof Error ? error.message : String(error);
+            $('#head-navi-icon-robot').attr('title', 'Apitor wird verbunden: ' + detail);
+            console.info('Apitor wird im Hintergrund verbunden:', detail);
+            if (!this.stopped && this.retryTimer === undefined) {
+                this.retryTimer = window.setTimeout(() => {
+                    this.retryTimer = undefined;
+                    this.connectBridge();
+                }, 3000);
+            }
+        }
+    }
+
+    private runInterpreterStep = (): void => {
+        if (!this.interpreter || this.stopped || this.interpreter.isTerminated()) return;
+        try {
+            const delay = Math.max(20, this.interpreter.run(Date.now() + 50));
+            window.setTimeout(this.runInterpreterStep, delay);
+        } catch (error) {
+            this.hardwareError(error instanceof Error ? error : new Error(String(error)));
+        }
+    };
+
+    private programFinished(): void {
+        this.interpreter = undefined;
+        if (!this.connected) return;
+        this.bridge.stopAll().catch((error) => this.hardwareError(error));
+        GUISTATE_C.getBlocklyWorkspace().robControls.switchToStart();
+        GUISTATE_C.setConnectionState('wait');
+    }
+
+    private hardwareError(error: Error): void {
+        this.stopped = true;
+        this.bridge.stopAll().catch(() => undefined);
+        if (this.interpreter && !this.interpreter.isTerminated()) this.interpreter.terminate();
+        this.interpreter = undefined;
+        this.connected = false;
+        GUISTATE_C.getBlocklyWorkspace().robControls.switchToStart();
+        GUISTATE_C.setConnectionState('error');
+        GUISTATE_C.setRunEnabled(false);
+        $('#head-navi-icon-robot').removeClass('wait busy').addClass('error').attr('title', error.message);
+        console.error('Apitor wurde sicher gestoppt:', error);
+        this.bridge.close();
+        this.clearRetry();
+        this.retryTimer = window.setTimeout(() => {
+            this.retryTimer = undefined;
+            this.stopped = false;
+            this.connectBridge();
+        }, 1000);
+    }
+
+    private clearRetry(): void {
+        if (this.retryTimer !== undefined) {
+            window.clearTimeout(this.retryTimer);
+            this.retryTimer = undefined;
+        }
+    }
+}
+
 export class RcxConnection extends AbstractPromptConnection {
     private readonly bridgeUrl: string = 'http://127.0.0.1:2222';
     private readonly setupGuideUrl: string = 'https://github.com/Thorlogy/CodeON/blob/feature/sim-3d-toggle/RobotRCX/README.md';

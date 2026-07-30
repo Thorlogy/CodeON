@@ -70,7 +70,7 @@ export class RobotBridgeClient {
 
     public async command(command: string, params: { [name: string]: any } = {}): Promise<any> {
         const result = await this.request('command', { command, params });
-        if (command === 'drive' || command === 'turn') {
+        if (command === 'drive' || command === 'turn' || command === 'setMotor') {
             this.startHeartbeat();
         }
         return result;

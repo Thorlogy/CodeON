@@ -1,7 +1,7 @@
 # CodeON Apitor Robot X BLE protocol
 
-Status: BLE transport, authorization, drive-motor commands and global stop
-verified on a physical Robot X. LED control remains unverified.
+Status: BLE transport, authorization, all three motor-port commands and global
+stop verified on a physical Robot X. LED control remains unverified.
 
 ## Evidence policy
 
@@ -105,8 +105,51 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=RobotIntegrationKit/python/src \
 Observed on 2026-07-28: the motor turned and stopped. Packets were M1
 `55 aa 03 06 01 04`, M2 `55 aa 03 07 01 04`, followed by the global-stop
 packet three times. This verifies authorization, motor writes and the bounded
-stop path on the physical Robot X. Direction and wheel assignment still need
-calibration before exposing normal CodeON movement blocks.
+stop path on the physical Robot X.
+
+On 2026-07-30, the three hardware indices were tested sequentially with a
+one-second pause. The two connected motors on M2 and M3 moved independently;
+the unoccupied M1 port produced no movement, as expected. CodeON therefore
+exposes generic M1, M2 and M3 blocks rather than assuming a particular model
+or wheel assignment. A motor block starts one port in direction 1 or 2 at one
+of the twelve hardware speed levels. A wait block determines its running time,
+and a per-port stop block stops it. Program end, the global Stop button,
+browser disconnect and bridge shutdown all send the global-stop packet.
+
+The same M2 and M3 mapping was subsequently verified through the complete
+CodeON user path: select Apitor Robot X, connect the local bridge, create a
+block program and start it with the Run button. The initial disabled Run button
+was caused by a missing Blockly configuration definition for the three fixed
+Apitor motor ports. Registering M1, M2 and M3 and refreshing the static-resource
+cache fixed the selection and connection path.
+
+## Motor and encoder classification
+
+The verified `runMotor()` packet contains only motor index, direction and
+speed. Neither the recovered Apitor Kit 4.1.3 motor API nor the hardware
+notifications observed so far provide a target angle, step count, wheel
+position or encoder value. The official Robot X material lists three motors and
+lists its infrared and colour sensors separately; it does not document a wheel
+encoder.
+
+Consequently, CodeON currently treats M1, M2 and M3 as open-loop motors, not as
+stepper or encoder motors. Distance and angle must not be inferred from the
+current protocol. Position-controlled blocks may only be added if a future APK
+analysis or hardware capture identifies and verifies explicit position
+feedback.
+
+## CodeON integration
+
+The productive implementation consists of:
+
+- the `RobotApitor` server plugin and its beginner/expert toolboxes;
+- the local `ApitorAdapter` on WebSocket port `2224`;
+- automatic bridge startup through `CodeON-starten.command`; and
+- a browser-side stack-machine behaviour for independent M1/M2/M3 control.
+
+The current scope intentionally contains motors only. LED control and sensor
+support remain hidden until their packets and semantics have been verified on
+hardware.
 
 ## Safety gate
 

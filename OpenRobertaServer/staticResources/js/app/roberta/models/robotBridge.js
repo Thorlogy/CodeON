@@ -110,7 +110,7 @@ define(["require", "exports"], function (require, exports) {
                         case 0: return [4 /*yield*/, this.request('command', { command: command, params: params })];
                         case 1:
                             result = _a.sent();
-                            if (command === 'drive' || command === 'turn') {
+                            if (command === 'drive' || command === 'turn' || command === 'setMotor') {
                                 this.startHeartbeat();
                             }
                             return [2 /*return*/, result];

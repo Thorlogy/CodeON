@@ -1,0 +1,5 @@
+<block_set xmlns="http://de.fhg.iais.roberta.blockly" robottype="apitor" xmlversion="" description="" tags="">
+    <instance x="80" y="60"><block type="robConf_motor" id="apitor-m1" intask="true" deletable="false"><field name="NAME">M1</field><field name="PORT">M1</field></block></instance>
+    <instance x="310" y="60"><block type="robConf_motor" id="apitor-m2" intask="true" deletable="false"><field name="NAME">M2</field><field name="PORT">M2</field></block></instance>
+    <instance x="540" y="60"><block type="robConf_motor" id="apitor-m3" intask="true" deletable="false"><field name="NAME">M3</field><field name="PORT">M3</field></block></instance>
+</block_set>

@@ -6513,3 +6513,15 @@ Blockly.Blocks["robBrick_temperature"] = {
 
     console.log('\u2713 RCX-Patch: Sensor-Definitionen geladen');
 })();
+
+// CodeON: Apitor has three fixed motor ports. The default configuration uses
+// robConf_motor blocks, so Blockly needs a device-specific definition before
+// it can render the configuration and continue with the connection setup.
+confBlocks.motor.apitor = {
+    title: "MOTOR",
+    ports: [["BRICK_PORT", "PORT"]],
+    pins: function () {
+        return [["M1", "M1"], ["M2", "M2"], ["M3", "M3"]];
+    },
+    sensor: false
+};

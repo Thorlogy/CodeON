@@ -93,8 +93,9 @@ define(["require", "exports"], function (require, exports) {
             return this.request('capabilities');
         };
         RobotBridgeClient.prototype.connectRobot = function () {
-            // PyCozmo may need up to eight seconds to discover the robot on the
-            // first connection. Keep ordinary commands on the short timeout.
+            // Starting PyCozmo and discovering the robot can take noticeably
+            // longer after a Wi-Fi switch. Keep ordinary commands on the short
+            // timeout, but give initial hardware discovery enough time to finish.
             return this.request('connect', {}, 30000);
         };
         RobotBridgeClient.prototype.status = function () {
@@ -109,7 +110,7 @@ define(["require", "exports"], function (require, exports) {
                         case 0: return [4 /*yield*/, this.request('command', { command: command, params: params })];
                         case 1:
                             result = _a.sent();
-                            if (command === 'drive' || command === 'turn') {
+                            if (command === 'drive' || command === 'turn' || command === 'setMotor') {
                                 this.startHeartbeat();
                             }
                             return [2 /*return*/, result];

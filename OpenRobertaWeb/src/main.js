@@ -32,7 +32,7 @@
 
 require.config({
     baseUrl: '.',
-    urlArgs: 'v=codeon-cozmo-behavior-20260727-1',
+    urlArgs: 'v=codeon-apitor-config-20260730-1',
     paths: {
         ace: 'libs/ace/ace',
         ace_lang: 'libs/ace/ext-language_tools',
@@ -95,6 +95,7 @@ require.config({
         'robot.model': 'js/app/roberta/models/robot.model',
         robotBridge: 'js/app/roberta/models/robotBridge',
         'cozmo.blocks': 'js/app/roberta/cozmo.blocks',
+        'apitor.blocks': 'js/app/roberta/apitor.blocks',
         'tour.controller': 'js/app/roberta/controller/tour.controller',
         'user.controller': 'js/app/roberta/controller/user.controller',
         'userGroup.controller': 'js/app/roberta/controller/userGroup.controller',
@@ -153,6 +154,7 @@ require.config({
         'interpreter.robotWeDoBehaviour': 'js/app/nepostackmachine/interpreter.robotWeDoBehaviour',
         'interpreter.robotSimBehaviour': 'js/app/nepostackmachine/interpreter.robotSimBehaviour',
         'interpreter.robotBridgeBehaviour': 'js/app/nepostackmachine/interpreter.robotBridgeBehaviour',
+        'interpreter.apitorRobotBridgeBehaviour': 'js/app/nepostackmachine/interpreter.apitorRobotBridgeBehaviour',
         'interpreter.state': 'js/app/nepostackmachine/interpreter.state',
         'interpreter.util': 'js/app/nepostackmachine/interpreter.util',
 

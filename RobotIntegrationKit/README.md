@@ -92,3 +92,26 @@ visible.
 Programs without a parallel-task header retain the original single-stack
 execution path. The parallel-task format is currently Cozmo-specific so other
 robots are unaffected.
+
+## Apitor Robot X
+
+The Apitor adapter uses local Bluetooth Low Energy and exposes the three
+hardware motor ports M1, M2 and M3 independently. Install the optional
+dependency with:
+
+```shell
+.venv/bin/pip install -e 'RobotIntegrationKit/python[server,apitor]'
+```
+
+`CodeON-starten.command` starts the bridge automatically on port `2224`.
+Switch on the Robot X before selecting it in CodeON. The beginner and expert
+toolboxes provide motor start and per-port stop blocks. Motors are stopped
+globally when a program ends, the browser disconnects, the watchdog expires,
+or the bridge shuts down.
+
+The protocol and physical acceptance evidence are documented in
+`docs/CodeON_Apitor_BLE_Protokoll.md`. LED and sensor blocks are deliberately
+not exposed yet because they have not passed hardware verification.
+M1, M2 and M3 are currently controlled by direction, speed level and elapsed
+time. No step-count or encoder feedback has been verified, so CodeON does not
+present these ports as position-controlled motors.
