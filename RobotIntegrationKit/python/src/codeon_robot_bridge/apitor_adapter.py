@@ -1,15 +1,21 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from collections.abc import Callable
 from typing import Any
 
 from .adapter import RobotAdapter
 from .apitor_ble_probe import (
+    APITOR_NOTIFY_UUID,
     APITOR_WRITE_UUID,
+    LED_COLORS,
     ROBOT_X_AUTHORIZE,
     STOP_ALL_MOTORS,
+    ApitorSensorPacket,
+    led_frame,
     motor_frame,
+    parse_sensor_packet,
 )
 from .capabilities import CapabilityManifest
 from .errors import AdapterError, NotConnectedError, UnsupportedCommandError
@@ -24,21 +30,28 @@ def _default_ble_factory():
 
 
 class ApitorAdapter(RobotAdapter):
-    """Hardware-verified Apitor Robot X motor adapter."""
+    """Apitor Robot X adapter with verified motors and APK-recovered I/O."""
 
     _manifest = CapabilityManifest(
         robot="apitor",
-        adapter_version="0.1.0",
+        adapter_version="0.2.0",
         capabilities={
             "motorPorts": ["M1", "M2", "M3"],
             "individualMotorControl": True,
-            "sensors": [],
+            "lights": ["L1", "L2"],
+            "lightColors": list(LED_COLORS),
+            "sensors": ["colorRaw", "colorGroup", "infrared1", "infrared2", "sensorSnapshot"],
+            "soundOutput": "host-only",
         },
         limits={
             "motorSpeedLevel": {"min": 1, "max": 12},
             "motorDirections": [1, 2],
             "heartbeatTimeoutMs": 1000,
-            "verification": "motor-hardware-verified",
+            "verification": {
+                "motors": "hardware-verified",
+                "lights": "apk-recovered-hardware-pending",
+                "sensors": "apk-recovered-hardware-pending",
+            },
         },
     )
     _motor_indices = {"M1": 6, "M2": 7, "M3": 8}
@@ -53,6 +66,8 @@ class ApitorAdapter(RobotAdapter):
         self._client = None
         self._connected = False
         self._connect_lock = asyncio.Lock()
+        self._sensor_packet: ApitorSensorPacket | None = None
+        self._sensor_timestamp: float | None = None
 
     @property
     def manifest(self) -> CapabilityManifest:
@@ -72,6 +87,7 @@ class ApitorAdapter(RobotAdapter):
             try:
                 await client.connect()
                 await client.write_gatt_char(APITOR_WRITE_UUID, ROBOT_X_AUTHORIZE, response=True)
+                await client.start_notify(APITOR_NOTIFY_UUID, self._on_notification)
                 await asyncio.sleep(0.5)
                 await client.write_gatt_char(APITOR_WRITE_UUID, STOP_ALL_MOTORS, response=True)
             except Exception as error:
@@ -93,10 +109,16 @@ class ApitorAdapter(RobotAdapter):
         finally:
             try:
                 if getattr(client, "is_connected", False):
+                    try:
+                        await client.stop_notify(APITOR_NOTIFY_UUID)
+                    except Exception:
+                        pass
                     await client.disconnect()
             finally:
                 self._client = None
                 self._connected = False
+                self._sensor_packet = None
+                self._sensor_timestamp = None
 
     async def execute(self, command: str, params: dict[str, Any]) -> Any:
         client = self._require_client()
@@ -109,12 +131,45 @@ class ApitorAdapter(RobotAdapter):
         elif command == "stopMotor":
             port = self._motor_port(params)
             await self._write(client, motor_frame(self._motor_indices[port], 0, 0))
+        elif command == "setLight":
+            port = str(params.get("port", "")).upper()
+            if port not in {"L1", "L2"}:
+                raise AdapterError("light port must be L1 or L2")
+            color_value = params.get("color", "off")
+            if isinstance(color_value, str):
+                color_name = color_value.lower()
+                if color_name == "off":
+                    color = 0
+                elif color_name in LED_COLORS:
+                    color = LED_COLORS[color_name]
+                else:
+                    raise AdapterError(f"unsupported light color: {color_value}")
+            else:
+                color = self._integer(params, "color", 0, 255)
+            await self._write(client, led_frame(int(port[1]), color))
         else:
             raise UnsupportedCommandError(f"unsupported command: {command}")
         return {"accepted": True}
 
     async def read_sensor(self, sensor: str, params: dict[str, Any]) -> Any:
         self._require_client()
+        packet = self._sensor_packet
+        if packet is None:
+            return None
+        values = {
+            "colorRaw": packet.color_raw,
+            "colorGroup": packet.color_group,
+            "infrared1": packet.infrared_1,
+            "infrared2": packet.infrared_2,
+        }
+        if sensor == "sensorSnapshot":
+            return {
+                **values,
+                "trailing": packet.trailing,
+                "ageMs": round((time.monotonic() - (self._sensor_timestamp or time.monotonic())) * 1000),
+            }
+        if sensor in values:
+            return values[sensor]
         raise UnsupportedCommandError(f"unsupported sensor: {sensor}")
 
     async def stop_all(self) -> None:
@@ -128,6 +183,12 @@ class ApitorAdapter(RobotAdapter):
 
     def _connection_result(self) -> dict[str, Any]:
         return {"connected": True, "identifier": self._identifier}
+
+    def _on_notification(self, _: Any, data: bytearray) -> None:
+        packet = parse_sensor_packet(data)
+        if packet is not None:
+            self._sensor_packet = packet
+            self._sensor_timestamp = time.monotonic()
 
     @staticmethod
     async def _find_robot(scanner_type) -> str:

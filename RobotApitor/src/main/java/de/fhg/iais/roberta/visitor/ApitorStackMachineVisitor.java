@@ -8,8 +8,13 @@ import de.fhg.iais.roberta.components.ConfigurationAst;
 import de.fhg.iais.roberta.syntax.Phrase;
 import de.fhg.iais.roberta.syntax.action.apitor.ApitorMotorAction;
 import de.fhg.iais.roberta.syntax.action.apitor.ApitorStopMotorAction;
+import de.fhg.iais.roberta.syntax.lang.expr.ColorConst;
 import de.fhg.iais.roberta.syntax.lang.expr.NumConst;
+import de.fhg.iais.roberta.syntax.sensor.apitor.ApitorColorSensor;
+import de.fhg.iais.roberta.syntax.sensor.apitor.ApitorInfraredSensor;
+import de.fhg.iais.roberta.syntax.sensor.apitor.ApitorSensorValue;
 import de.fhg.iais.roberta.util.basic.C;
+import de.fhg.iais.roberta.util.dbc.DbcException;
 
 public final class ApitorStackMachineVisitor extends RCJStackMachineVisitor {
     public ApitorStackMachineVisitor(ConfigurationAst configuration, List<List<Phrase>> phrases, UsedHardwareBean usedHardwareBean, NNBean nnBean) {
@@ -37,5 +42,65 @@ public final class ApitorStackMachineVisitor extends RCJStackMachineVisitor {
 
     public Void visitApitorStopMotorAction(ApitorStopMotorAction action) {
         return add(makeNode(C.MOTOR_STOP).put(C.PORT, action.port.toUpperCase()).put(C.NAME, "apitor"));
+    }
+
+    public Void visitApitorSensorValue(ApitorSensorValue sensor) {
+        return add(makeNode(C.GET_SAMPLE).put(C.GET_SAMPLE, "apitor").put(C.MODE, sensor.mode));
+    }
+
+    public Void visitApitorColorSensor(ApitorColorSensor sensor) {
+        return add(makeNode(C.GET_SAMPLE).put(C.GET_SAMPLE, "apitor").put(C.MODE, "colorRaw"));
+    }
+
+    public Void visitApitorInfraredSensor(ApitorInfraredSensor sensor) {
+        String mode;
+        switch ( sensor.mode.toUpperCase() ) {
+            case "S1_OUTSIDE":
+                mode = "infrared1Outside";
+                break;
+            case "S2_LINE":
+                mode = "infrared2Line";
+                break;
+            case "S2_OUTSIDE":
+                mode = "infrared2Outside";
+                break;
+            case "S1_LINE":
+            default:
+                mode = "infrared1Line";
+                break;
+        }
+        return add(makeNode(C.GET_SAMPLE).put(C.GET_SAMPLE, "apitor").put(C.MODE, mode));
+    }
+
+    /**
+     * Translate the four colours supported by Robot X directly to the raw values
+     * reported by the official Apitor Kit app: red=1, green=2, blue=3, white=4.
+     */
+    @Override
+    public Void visitColorConst(ColorConst colorConst) {
+        int apitorColor;
+        switch ( colorConst.getHexValueAsString().toUpperCase() ) {
+            case "#CC0000":
+            case "#FF0000":
+                apitorColor = 1;
+                break;
+            case "#33CC00":
+            case "#008000":
+            case "#00FF00":
+                apitorColor = 2;
+                break;
+            case "#3366FF":
+            case "#0057A6":
+            case "#0000FF":
+                apitorColor = 3;
+                break;
+            case "#FFFFFE":
+            case "#FFFFFF":
+                apitorColor = 4;
+                break;
+            default:
+                throw new DbcException("Apitor color sensor supports only red, green, blue and white");
+        }
+        return new NumConst(null, String.valueOf(apitorColor)).accept(this);
     }
 }

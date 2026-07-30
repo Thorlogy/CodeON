@@ -10,6 +10,7 @@ from codeon_robot_bridge.apitor_ble_probe import (
     diagnostic_hint,
     led_frame,
     motor_frame,
+    parse_sensor_packet,
 )
 
 
@@ -53,6 +54,25 @@ class ApitorBleProbeTest(unittest.TestCase):
             motor_frame(256, 0, 0)
         with self.assertRaises(ValueError):
             led_frame(4, -1)
+
+    def test_sensor_packet_matches_vendor_app_field_layout(self):
+        packet = parse_sensor_packet(bytes.fromhex("55aa058003112200"))
+        self.assertIsNotNone(packet)
+        self.assertEqual(packet.color_raw, 3)
+        self.assertEqual(packet.color_group, 2)
+        self.assertEqual(packet.infrared_1, 17)
+        self.assertEqual(packet.infrared_2, 34)
+        self.assertEqual(packet.trailing, 0)
+
+    def test_vendor_color_grouping_is_preserved_without_guessing_names(self):
+        expected = {1: 1, 3: 2, 2: 3, 4: 3, 0: 0, 9: 0}
+        for raw, group in expected.items():
+            packet = parse_sensor_packet(bytes((0x55, 0xAA, 0x05, 0x80, raw, 0, 0, 0)))
+            self.assertEqual(packet.color_group, group)
+
+    def test_unrelated_or_incomplete_notifications_are_ignored(self):
+        self.assertIsNone(parse_sensor_packet(bytes.fromhex("55aa0580010203")))
+        self.assertIsNone(parse_sensor_packet(bytes.fromhex("55aa048001020300")))
 
 
 if __name__ == "__main__":

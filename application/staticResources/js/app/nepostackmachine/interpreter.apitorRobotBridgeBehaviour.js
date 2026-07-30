@@ -24,6 +24,9 @@ define(["require", "exports", "./interpreter.robotSimBehaviour"], function (requ
             _this.bridge = bridge;
             _this.onError = onError;
             _this.lastAction = '';
+            _this.sensorSnapshot = {};
+            _this.motorStates = new Map();
+            _this.pollSensors();
             _this.updateStatus();
             return _this;
         }
@@ -33,24 +36,78 @@ define(["require", "exports", "./interpreter.robotSimBehaviour"], function (requ
             var level = Math.max(1, Math.min(12, Math.round(Math.abs(numericSpeed))));
             var direction = numericSpeed < 0 ? 2 : 1;
             var normalizedPort = String(port || '').toUpperCase();
+            var nextState = "".concat(direction, ":").concat(level);
+            if (this.motorStates.get(normalizedPort) === nextState) {
+                return 0;
+            }
+            this.motorStates.set(normalizedPort, nextState);
             this.lastAction = "".concat(normalizedPort, " \u00B7 ").concat(direction === 1 ? this.label('vorwärts', 'forward') : this.label('rückwärts', 'backward'), " \u00B7 ").concat(level);
             this.updateStatus();
-            this.bridge.command('setMotor', { port: normalizedPort, direction: direction, speed: level }).catch(function (error) { return _this.report(error); });
+            this.bridge.command('setMotor', { port: normalizedPort, direction: direction, speed: level }).catch(function (error) {
+                if (_this.motorStates.get(normalizedPort) === nextState) {
+                    _this.motorStates.delete(normalizedPort);
+                }
+                _this.report(error);
+            });
             return 0;
         };
         ApitorRobotBridgeBehaviour.prototype.motorStopAction = function (_name, port) {
             var _this = this;
             var normalizedPort = String(port || '').toUpperCase();
+            if (this.motorStates.get(normalizedPort) === 'stopped') {
+                return 0;
+            }
+            this.motorStates.set(normalizedPort, 'stopped');
             this.lastAction = "".concat(normalizedPort, " \u00B7 ").concat(this.label('gestoppt', 'stopped'));
             this.updateStatus();
-            this.bridge.command('stopMotor', { port: normalizedPort }).catch(function (error) { return _this.report(error); });
+            this.bridge.command('stopMotor', { port: normalizedPort }).catch(function (error) {
+                if (_this.motorStates.get(normalizedPort) === 'stopped') {
+                    _this.motorStates.delete(normalizedPort);
+                }
+                _this.report(error);
+            });
             return 0;
         };
         ApitorRobotBridgeBehaviour.prototype.close = function () {
             var _this = this;
+            if (this.sensorTimer !== undefined) {
+                window.clearInterval(this.sensorTimer);
+                this.sensorTimer = undefined;
+            }
+            this.motorStates.clear();
             this.bridge.stopAll().catch(function (error) { return _this.report(error); });
             this.lastAction = this.label('Alle Motoren gestoppt', 'All motors stopped');
             this.updateStatus();
+        };
+        ApitorRobotBridgeBehaviour.prototype.getSample = function (state, name, sensor, port, mode, slot) {
+            if (sensor !== 'apitor') {
+                _super.prototype.getSample.call(this, state, name, sensor, port, mode, slot);
+                return;
+            }
+            var key = String(mode || '');
+            if (key === 'infrared1Line' || key === 'infrared2Line' || key === 'infrared1Outside' || key === 'infrared2Outside') {
+                var isOutside = key.endsWith('Outside');
+                var rawKey = key.startsWith('infrared1') ? 'infrared1' : 'infrared2';
+                var isOnLine = Number(this.sensorSnapshot[rawKey]) >= 5;
+                state.push(isOutside ? !isOnLine : isOnLine);
+                return;
+            }
+            var value = this.sensorSnapshot[key];
+            state.push(value === undefined || value === null ? 0 : Number(value));
+        };
+        ApitorRobotBridgeBehaviour.prototype.pollSensors = function () {
+            var _this = this;
+            var update = function () {
+                return _this.bridge
+                    .sensor('sensorSnapshot')
+                    .then(function (response) {
+                    _this.sensorSnapshot = response.value || {};
+                    _this.updateStatus();
+                })
+                    .catch(function (error) { return console.warn('Apitor sensor sample delayed:', error); });
+            };
+            update();
+            this.sensorTimer = window.setInterval(update, 200);
         };
         ApitorRobotBridgeBehaviour.prototype.updateStatus = function () {
             var id = 'codeon-apitor-status';
@@ -66,7 +123,10 @@ define(["require", "exports", "./interpreter.robotSimBehaviour"], function (requ
                 });
                 document.body.appendChild(panel);
             }
-            panel.textContent = "\uD83E\uDD16 Apitor ".concat(this.label('Status', 'status'), "\n").concat(this.label('Aktion', 'Action'), ": ").concat(this.lastAction || this.label('Bereit', 'Ready'));
+            var sensorLine = this.sensorSnapshot.colorRaw === undefined
+                ? this.label('Sensoren: noch keine Daten', 'Sensors: no data yet')
+                : "".concat(this.label('Sensoren', 'Sensors'), ": Farbe ").concat(this.sensorSnapshot.colorRaw, "/").concat(this.sensorSnapshot.colorGroup, " \u00B7 S1 ").concat(this.sensorSnapshot.infrared1, " \u00B7 S2 ").concat(this.sensorSnapshot.infrared2);
+            panel.textContent = "\uD83E\uDD16 Apitor ".concat(this.label('Status', 'status'), "\n").concat(this.label('Aktion', 'Action'), ": ").concat(this.lastAction || this.label('Bereit', 'Ready'), "\n").concat(sensorLine);
         };
         ApitorRobotBridgeBehaviour.prototype.label = function (de, en) {
             var language = (document.documentElement.lang || navigator.language || 'de').toLowerCase();

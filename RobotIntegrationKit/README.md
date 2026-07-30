@@ -110,8 +110,14 @@ globally when a program ends, the browser disconnects, the watchdog expires,
 or the bridge shuts down.
 
 The protocol and physical acceptance evidence are documented in
-`docs/CodeON_Apitor_BLE_Protokoll.md`. LED and sensor blocks are deliberately
-not exposed yet because they have not passed hardware verification.
+`docs/CodeON_Apitor_BLE_Protokoll.md`. The bridge already supports the
+APK-recovered L1/L2 LED commands and caches raw colour-group and S1/S2 sensor
+notifications. Blockly blocks remain hidden until those meanings have passed
+hardware verification.
 M1, M2 and M3 are currently controlled by direction, speed level and elapsed
 time. No step-count or encoder feedback has been verified, so CodeON does not
 present these ports as position-controlled motors.
+
+The official app renders speech and sounds on the Android host. No Robot X hub
+speaker command was recovered, so future Apitor audio support must be labelled
+as Mac/tablet output.

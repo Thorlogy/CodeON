@@ -5,6 +5,7 @@ import asyncio
 import json
 import platform
 from collections.abc import Iterable
+from dataclasses import dataclass
 from typing import Any
 
 APITOR_SERVICE_UUID = "0000f0ff-0000-1000-8000-00805f9b34fb"
@@ -26,6 +27,39 @@ LED_COLORS = {
     "purple": 7,
     "white": 10,
 }
+SENSOR_PREFIX = bytes.fromhex("55aa0580")
+
+
+@dataclass(frozen=True)
+class ApitorSensorPacket:
+    """Decoded Robot X notification as exposed by Apitor Kit 4.1.3."""
+
+    color_raw: int
+    color_group: int
+    infrared_1: int
+    infrared_2: int
+    trailing: int
+
+
+def parse_sensor_packet(packet: bytes | bytearray) -> ApitorSensorPacket | None:
+    """Decode one complete eight-byte Robot X sensor notification.
+
+    The vendor app maps raw colour values into three groups but does not name
+    those groups. CodeON therefore preserves both values until hardware
+    calibration can attach reliable colour names.
+    """
+    data = bytes(packet)
+    if len(data) != 8 or not data.startswith(SENSOR_PREFIX):
+        return None
+    color_raw = data[4]
+    color_group = {1: 1, 3: 2, 2: 3, 4: 3}.get(color_raw, 0)
+    return ApitorSensorPacket(
+        color_raw=color_raw,
+        color_group=color_group,
+        infrared_1=data[5],
+        infrared_2=data[6],
+        trailing=data[7],
+    )
 
 
 def motor_frame(index: int, direction: int, speed: int) -> bytes:
@@ -156,7 +190,13 @@ async def inspect(identifier: str, timeout: float) -> dict[str, Any]:
     }
 
 
-async def led_test(identifier: str, timeout: float, duration: float, color: str = "blue") -> dict[str, Any]:
+async def led_test(
+    identifier: str,
+    timeout: float,
+    duration: float,
+    color: str = "blue",
+    port: str = "l1",
+) -> dict[str, Any]:
     """Run the first deliberately non-motion hardware test.
 
     The official Robot X authorization is followed by a global motor stop
@@ -165,7 +205,8 @@ async def led_test(identifier: str, timeout: float, duration: float, color: str 
     client_type, _ = _load_bleak()
     notifications: list[str] = []
     writes: list[str] = []
-    selected_led_frame = led_frame(4, LED_COLORS[color])
+    led_index = {"l1": 1, "l2": 2}[port]
+    selected_led_frame = led_frame(led_index, LED_COLORS[color])
 
     def record_notification(_: Any, data: bytearray) -> None:
         notifications.append(bytes(data).hex())
@@ -188,7 +229,13 @@ async def led_test(identifier: str, timeout: float, duration: float, color: str 
         await asyncio.sleep(duration)
     finally:
         if connected and client.is_connected:
-            for packet in (ALL_LEDS_OFF, STOP_ALL_MOTORS, STOP_ALL_MOTORS):
+            for packet in (
+                led_frame(1, 0),
+                led_frame(2, 0),
+                ALL_LEDS_OFF,
+                STOP_ALL_MOTORS,
+                STOP_ALL_MOTORS,
+            ):
                 try:
                     await client.write_gatt_char(APITOR_WRITE_UUID, packet, response=True)
                     writes.append(packet.hex())
@@ -205,12 +252,76 @@ async def led_test(identifier: str, timeout: float, duration: float, color: str 
         "mode": "confirmed-led-only-test",
         "platform": platform.platform(),
         "identifier": identifier,
+        "ledPort": port.upper(),
         "ledColor": color,
         "ok": True,
         "motorMotionRequested": False,
         "safetyStopSent": STOP_ALL_MOTORS.hex() in writes,
         "writes": writes,
         "notifications": notifications,
+    }
+
+
+async def sensor_test(identifier: str, timeout: float, duration: float) -> dict[str, Any]:
+    """Collect Robot X sensor notifications without requesting motor motion."""
+    client_type, _ = _load_bleak()
+    notifications: list[str] = []
+    samples: list[dict[str, int]] = []
+    writes: list[str] = []
+
+    def record_notification(_: Any, data: bytearray) -> None:
+        raw = bytes(data)
+        notifications.append(raw.hex())
+        packet = parse_sensor_packet(raw)
+        if packet is not None:
+            samples.append(
+                {
+                    "colorRaw": packet.color_raw,
+                    "colorGroup": packet.color_group,
+                    "infrared1": packet.infrared_1,
+                    "infrared2": packet.infrared_2,
+                    "trailing": packet.trailing,
+                }
+            )
+
+    client = client_type(identifier, timeout=timeout)
+    connected = False
+    try:
+        await client.connect()
+        connected = True
+        await client.write_gatt_char(APITOR_WRITE_UUID, ROBOT_X_AUTHORIZE, response=True)
+        writes.append(ROBOT_X_AUTHORIZE.hex())
+        await client.start_notify(APITOR_NOTIFY_UUID, record_notification)
+        await asyncio.sleep(0.15)
+        await client.write_gatt_char(APITOR_WRITE_UUID, STOP_ALL_MOTORS, response=True)
+        writes.append(STOP_ALL_MOTORS.hex())
+        await asyncio.sleep(duration)
+    finally:
+        if connected and client.is_connected:
+            for _ in range(2):
+                try:
+                    await client.write_gatt_char(APITOR_WRITE_UUID, STOP_ALL_MOTORS, response=True)
+                    writes.append(STOP_ALL_MOTORS.hex())
+                except Exception:
+                    pass
+            try:
+                await client.stop_notify(APITOR_NOTIFY_UUID)
+            except Exception:
+                pass
+            await client.disconnect()
+
+    return {
+        "mode": "confirmed-sensor-notification-test",
+        "platform": platform.platform(),
+        "identifier": identifier,
+        "ok": bool(samples),
+        "motorMotionRequested": False,
+        "durationSeconds": duration,
+        "sampleCount": len(samples),
+        "samples": samples,
+        "notifications": notifications,
+        "safetyStopSent": STOP_ALL_MOTORS.hex() in writes,
+        "writes": writes,
     }
 
 
@@ -281,18 +392,28 @@ async def _run(args: argparse.Namespace) -> int:
                 args.motor_speed,
             )
         elif args.led_test:
-            report = await led_test(args.led_test, args.timeout, args.led_duration, args.led_color)
+            report = await led_test(args.led_test, args.timeout, args.led_duration, args.led_color, args.led_port)
+        elif args.sensor_test:
+            report = await sensor_test(args.sensor_test, args.timeout, args.sensor_duration)
         elif args.inspect:
             report = await inspect(args.inspect, args.timeout)
         else:
             report = await scan(args.timeout)
     except Exception as error:
-        writes_enabled = bool(args.led_test or args.motor_test)
+        writes_enabled = bool(args.led_test or args.sensor_test or args.motor_test)
         report = {
             "mode": (
                 "short-motor-test"
                 if args.motor_test
-                else ("led-only-test" if args.led_test else ("gatt-inventory" if args.inspect else "scan-only"))
+                else (
+                    "led-only-test"
+                    if args.led_test
+                    else (
+                        "sensor-notification-test"
+                        if args.sensor_test
+                        else ("gatt-inventory" if args.inspect else "scan-only")
+                    )
+                )
             ),
             "writesPerformed": writes_enabled,
             "ok": False,
@@ -302,7 +423,7 @@ async def _run(args: argparse.Namespace) -> int:
         print(json.dumps(report, indent=2, sort_keys=True))
         return 2
     print(json.dumps(report, indent=2, sort_keys=True))
-    return 0
+    return 0 if report.get("ok", True) else 2
 
 
 def main() -> None:
@@ -331,6 +452,23 @@ def main() -> None:
         choices=tuple(LED_COLORS),
         default="blue",
         help="LED test color (default: blue)",
+    )
+    parser.add_argument(
+        "--led-port",
+        choices=("l1", "l2"),
+        default="l1",
+        help="LED port used by --led-test (default: l1)",
+    )
+    parser.add_argument(
+        "--sensor-test",
+        metavar="IDENTIFIER",
+        help="collect Robot X sensor notifications without requesting motor motion",
+    )
+    parser.add_argument(
+        "--sensor-duration",
+        type=float,
+        default=5.0,
+        help="sensor collection duration in seconds (default: 5.0; maximum: 30.0)",
     )
     parser.add_argument(
         "--motor-test",
@@ -364,13 +502,15 @@ def main() -> None:
         help="motor speed level from 1 to 12 (default: 4)",
     )
     args = parser.parse_args()
-    selected_modes = sum(bool(value) for value in (args.inspect, args.led_test, args.motor_test))
+    selected_modes = sum(bool(value) for value in (args.inspect, args.led_test, args.sensor_test, args.motor_test))
     if selected_modes > 1:
-        parser.error("--inspect, --led-test and --motor-test are mutually exclusive")
+        parser.error("--inspect, --led-test, --sensor-test and --motor-test are mutually exclusive")
     if not 0.1 <= args.led_duration <= 5.0:
         parser.error("--led-duration must be between 0.1 and 5.0 seconds")
     if not 0.1 <= args.motor_duration <= 1.0:
         parser.error("--motor-duration must be between 0.1 and 1.0 seconds")
+    if not 0.5 <= args.sensor_duration <= 30.0:
+        parser.error("--sensor-duration must be between 0.5 and 30.0 seconds")
     raise SystemExit(asyncio.run(_run(args)))
 
 

@@ -1,12 +1,17 @@
 import { RobotSimBehaviour } from './interpreter.robotSimBehaviour';
 import { RobotBridgeClient } from 'robotBridge';
+import { State } from './interpreter.state';
 
 /** Stack-machine behaviour for the three independently controlled Apitor ports. */
 export class ApitorRobotBridgeBehaviour extends RobotSimBehaviour {
     private lastAction = '';
+    private sensorSnapshot: any = {};
+    private sensorTimer: number | undefined;
+    private motorStates = new Map<string, string>();
 
     constructor(private readonly bridge: RobotBridgeClient, private readonly onError?: (error: Error) => void) {
         super();
+        this.pollSensors();
         this.updateStatus();
     }
 
@@ -15,24 +20,78 @@ export class ApitorRobotBridgeBehaviour extends RobotSimBehaviour {
         const level = Math.max(1, Math.min(12, Math.round(Math.abs(numericSpeed))));
         const direction = numericSpeed < 0 ? 2 : 1;
         const normalizedPort = String(port || '').toUpperCase();
+        const nextState = `${direction}:${level}`;
+        if (this.motorStates.get(normalizedPort) === nextState) {
+            return 0;
+        }
+        this.motorStates.set(normalizedPort, nextState);
         this.lastAction = `${normalizedPort} · ${direction === 1 ? this.label('vorwärts', 'forward') : this.label('rückwärts', 'backward')} · ${level}`;
         this.updateStatus();
-        this.bridge.command('setMotor', { port: normalizedPort, direction, speed: level }).catch((error) => this.report(error));
+        this.bridge.command('setMotor', { port: normalizedPort, direction, speed: level }).catch((error) => {
+            if (this.motorStates.get(normalizedPort) === nextState) {
+                this.motorStates.delete(normalizedPort);
+            }
+            this.report(error);
+        });
         return 0;
     }
 
     override motorStopAction(_name: string, port: any): number {
         const normalizedPort = String(port || '').toUpperCase();
+        if (this.motorStates.get(normalizedPort) === 'stopped') {
+            return 0;
+        }
+        this.motorStates.set(normalizedPort, 'stopped');
         this.lastAction = `${normalizedPort} · ${this.label('gestoppt', 'stopped')}`;
         this.updateStatus();
-        this.bridge.command('stopMotor', { port: normalizedPort }).catch((error) => this.report(error));
+        this.bridge.command('stopMotor', { port: normalizedPort }).catch((error) => {
+            if (this.motorStates.get(normalizedPort) === 'stopped') {
+                this.motorStates.delete(normalizedPort);
+            }
+            this.report(error);
+        });
         return 0;
     }
 
     override close(): void {
+        if (this.sensorTimer !== undefined) {
+            window.clearInterval(this.sensorTimer);
+            this.sensorTimer = undefined;
+        }
+        this.motorStates.clear();
         this.bridge.stopAll().catch((error) => this.report(error));
         this.lastAction = this.label('Alle Motoren gestoppt', 'All motors stopped');
         this.updateStatus();
+    }
+
+    override getSample(state: State, name: string, sensor: string, port: any, mode: string, slot: string): void {
+        if (sensor !== 'apitor') {
+            super.getSample(state, name, sensor, port, mode, slot);
+            return;
+        }
+        const key = String(mode || '');
+        if (key === 'infrared1Line' || key === 'infrared2Line' || key === 'infrared1Outside' || key === 'infrared2Outside') {
+            const isOutside = key.endsWith('Outside');
+            const rawKey = key.startsWith('infrared1') ? 'infrared1' : 'infrared2';
+            const isOnLine = Number(this.sensorSnapshot[rawKey]) >= 5;
+            state.push(isOutside ? !isOnLine : isOnLine);
+            return;
+        }
+        const value = this.sensorSnapshot[key];
+        state.push(value === undefined || value === null ? 0 : Number(value));
+    }
+
+    private pollSensors(): void {
+        const update = () =>
+            this.bridge
+                .sensor<any>('sensorSnapshot')
+                .then((response) => {
+                    this.sensorSnapshot = response.value || {};
+                    this.updateStatus();
+                })
+                .catch((error) => console.warn('Apitor sensor sample delayed:', error));
+        update();
+        this.sensorTimer = window.setInterval(update, 200);
     }
 
     private updateStatus(): void {
@@ -49,7 +108,10 @@ export class ApitorRobotBridgeBehaviour extends RobotSimBehaviour {
             });
             document.body.appendChild(panel);
         }
-        panel.textContent = `🤖 Apitor ${this.label('Status', 'status')}\n${this.label('Aktion', 'Action')}: ${this.lastAction || this.label('Bereit', 'Ready')}`;
+        const sensorLine = this.sensorSnapshot.colorRaw === undefined
+            ? this.label('Sensoren: noch keine Daten', 'Sensors: no data yet')
+            : `${this.label('Sensoren', 'Sensors')}: Farbe ${this.sensorSnapshot.colorRaw}/${this.sensorSnapshot.colorGroup} · S1 ${this.sensorSnapshot.infrared1} · S2 ${this.sensorSnapshot.infrared2}`;
+        panel.textContent = `🤖 Apitor ${this.label('Status', 'status')}\n${this.label('Aktion', 'Action')}: ${this.lastAction || this.label('Bereit', 'Ready')}\n${sensorLine}`;
     }
 
     private label(de: string, en: string): string {

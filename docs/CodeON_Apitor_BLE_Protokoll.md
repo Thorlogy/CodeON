@@ -1,7 +1,8 @@
 # CodeON Apitor Robot X BLE protocol
 
 Status: BLE transport, authorization, all three motor-port commands and global
-stop verified on a physical Robot X. LED control remains unverified.
+stop verified on a physical Robot X. L1/L2 LED commands and the sensor packet
+layout are recovered from Apitor Kit 4.1.3; hardware verification is pending.
 
 ## Evidence policy
 
@@ -68,11 +69,40 @@ Bluetooth MAC address printed by Android.
 | Heartbeat | unknown | open | APK and idle capture required |
 | Global motor stop | `55 aa 03 10 00 00` | recovered | Apitor Kit 4.1.3, `Robot.stopAllMotor()` |
 | Motor frame | `55 aa 03 INDEX DIRECTION SPEED` | recovered | Apitor Kit 4.1.3, `Robot.runMotor()` |
-| LED frame | `55 aa 04 INDEX COLOR 00 00` | recovered | Apitor Kit 4.1.3, `Robot.turnOnLed()` |
-| Sensor frames | unknown | open | APK and hardware verification required |
+| LED frame | `55 aa 04 INDEX COLOR 00 00`; L1=`01`, L2=`02` | recovered | Apitor Kit 4.1.3, `Robot.turnOnLed()` and `JsInterface.ledStatus()` |
+| Sensor frame | `55 aa 05 80 COLOR S1 S2 TRAILING` (exactly 8 bytes) | recovered | Apitor Kit 4.1.3, embedded `apitor_jsbridge.js` |
 
 `recovered` means that two cooperating methods in the official APK establish
 the packet semantics. Hardware verification is recorded separately below.
+
+### Sensor notification layout
+
+The adapter subscribes to F002 notifications after authorization and accepts
+only exact eight-byte sensor packets beginning with `55 aa 05 80`. It exposes:
+
+- `colorRaw`: the unmodified byte at offset 4. The official Apitor Kit 4.1.3
+  maps `1=red`, `2=green`, `3=blue`, `4=white`; all other values mean that no
+  supported colour was identified;
+- `colorGroup`: the official application's grouping
+  (`1→1`, `3→2`, `2|4→3`, otherwise `0`);
+- `infrared1`: byte 5;
+- `infrared2`: byte 6; and
+- `sensorSnapshot`: all values plus packet age for diagnostics.
+
+The group numbers are intentionally not given colour names until their physical
+meaning has been verified with the Robot X sensors.
+
+For a bounded five-second hardware capture:
+
+```shell
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=RobotIntegrationKit/python/src \
+  .venv/bin/python RobotIntegrationKit/python/tools/apitor_ble_probe.py \
+  --sensor-test 'MACOS-COREBLUETOOTH-IDENTIFIER'
+```
+
+This authorizes the hub and subscribes to notifications, but never requests
+motor motion. The report preserves both parsed samples and unrecognized raw
+notifications.
 
 ## First hardware write
 
@@ -83,7 +113,7 @@ off and sends global stop twice, including after exceptions:
 ```shell
 PYTHONPATH=RobotIntegrationKit/python/src .venv/bin/python \
   RobotIntegrationKit/python/tools/apitor_ble_probe.py \
-  --led-test 'MACOS-COREBLUETOOTH-IDENTIFIER'
+  --led-test 'MACOS-COREBLUETOOTH-IDENTIFIER' --led-port l1 --led-color red
 ```
 
 The JSON result must contain `"motorMotionRequested": false` and
@@ -147,9 +177,26 @@ The productive implementation consists of:
 - automatic bridge startup through `CodeON-starten.command`; and
 - a browser-side stack-machine behaviour for independent M1/M2/M3 control.
 
-The current scope intentionally contains motors only. LED control and sensor
-support remain hidden until their packets and semantics have been verified on
-hardware.
+The bridge now contains the recovered L1/L2 LED commands and a notification
+cache for the sensor values above. They remain a hardware-validation interface
+and are not yet exposed as beginner Blockly blocks. A later UI phase may expose
+only meanings confirmed on the physical Robot X.
+
+The APK's speech and sound functions use Android `TextToSpeech` and
+`MediaPlayer`. No command for a speaker in the Robot X hub was found. CodeON
+must therefore describe future Apitor sound blocks as output from the
+Mac/tablet, not as sound from the robot.
+
+## Known limitation: endless programs
+
+Hardware testing on 2026-07-30 confirmed the colour-sensor workflow and the
+new infrared-sensor block is available for testing. However, a program inside
+the Blockly `repeat forever` block still terminates unexpectedly instead of
+running until the user presses Stop. Repeated identical motor commands are
+already suppressed in the browser bridge, but this did not eliminate the
+termination. The remaining cause may be in the interpreter lifecycle, the
+bridge heartbeat/timeout path, or sensor polling. This checkpoint therefore
+records the endless-loop behavior as **open and not yet fixed**.
 
 ## Safety gate
 

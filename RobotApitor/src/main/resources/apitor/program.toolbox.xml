@@ -3,6 +3,10 @@
         <block type="apitorActions_motor"><field name="PORT">M1</field><field name="DIRECTION">FORWARD</field><field name="SPEED">6</field></block>
         <block type="apitorActions_stopMotor"><field name="PORT">M1</field></block>
     </category>
+    <category name="TOOLBOX_SENSOR" svg="true">
+        <block type="apitorSensors_colour"/>
+        <block type="apitorSensors_infrared"><field name="MODE">S1_LINE</field></block>
+    </category>
     <category name="TOOLBOX_CONTROL" svg="true">
         <block type="robControls_if"/>
         <block type="robControls_ifElse"/>
@@ -13,5 +17,11 @@
     <category name="TOOLBOX_LOGIC" svg="true"><block type="logic_compare"/><block type="logic_boolean"/></category>
     <category name="TOOLBOX_MATH" svg="true"><block type="math_number"/><block type="math_arithmetic"/></category>
     <category name="TOOLBOX_TEXT" svg="true"><block type="text"/><block type="text_comment"/></category>
+    <category name="TOOLBOX_COLOUR" svg="true">
+        <block type="robColour_picker"><field name="COLOUR">#cc0000</field></block>
+        <block type="robColour_picker"><field name="COLOUR">#33cc00</field></block>
+        <block type="robColour_picker"><field name="COLOUR">#3366ff</field></block>
+        <block type="robColour_picker"><field name="COLOUR">#ffffff</field></block>
+    </category>
     <category name="TOOLBOX_VARIABLE" custom="VARIABLE" svg="true"/>
 </toolbox_set>
