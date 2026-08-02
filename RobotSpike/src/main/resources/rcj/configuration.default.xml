@@ -48,6 +48,12 @@
             <field name="PORT">E</field>
         </block>
     </instance>
+    <instance x="635" y="310">
+        <block type="robConf_inductive" id="codeon-rcj-inductive-f" intask="true">
+            <field name="NAME">I</field>
+            <field name="PORT">F</field>
+        </block>
+    </instance>
     <instance x="200" y="439">
         <block type="robConf_buzzer" id="W3:Yn.C(/356snBah3a:" intask="true" deletable="false">
             <field name="NAME">_S</field>

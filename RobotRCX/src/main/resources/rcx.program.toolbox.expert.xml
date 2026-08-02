@@ -83,10 +83,6 @@
         <block type="robSensors_timer_reset"/>
         <block type="robSensors_battery_getSample"/>
     </category>
-    <category name="TOOLBOX_COMMUNICATION" svg="true">
-        <block type="edisonCommunication_ir_sendBlock"/>
-        <block type="edisonCommunication_ir_receiveBlock"/>
-    </category>
     <category name="TOOLBOX_CONTROL" svg="true">
         <category name="TOOLBOX_DECISION" svg="true">
             <block type="robControls_if"/>

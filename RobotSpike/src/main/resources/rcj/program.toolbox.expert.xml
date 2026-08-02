@@ -146,7 +146,6 @@
         <block type="robSensors_timer_getSample"/>
         <block type="robSensors_timer_reset"/>
         <block type="robSensors_gyro_getSample"/>
-        <block type="robSensors_touch_getSample"/>
         <block type="robSensors_inductive_getSample"/>
     </category>
     <category name="TOOLBOX_CONTROL" svg="true">
