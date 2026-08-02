@@ -28,7 +28,7 @@
 })();
 require.config({
     baseUrl: '.',
-    urlArgs: 'v=codeon-apitor-reflection-20260802-1',
+    urlArgs: 'v=codeon-apitor-simulation-20260802-1',
     paths: {
         ace: 'libs/ace/ace',
         ace_lang: 'libs/ace/ext-language_tools',
@@ -117,6 +117,7 @@ require.config({
         'robot.ev3': 'js/app/simulation/simulationLogic/robot.ev3',
         'robot.nxt': 'js/app/simulation/simulationLogic/robot.nxt',
         'robot.rcx': 'js/app/simulation/simulationLogic/robot.rcx',
+        'robot.apitor': 'js/app/simulation/simulationLogic/robot.apitor',
         'robot.rcj': 'js/app/simulation/simulationLogic/robot.rcj',
         'robot.xnn': 'js/app/simulation/simulationLogic/robot.xnn',
         'robot.thymio': 'js/app/simulation/simulationLogic/robot.thymio',

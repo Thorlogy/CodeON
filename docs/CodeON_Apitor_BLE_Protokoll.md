@@ -230,6 +230,27 @@ reports no whitespace errors. Physical Robot X validation is still required;
 in particular, the provisional threshold of `5` and the response to nearby
 objects must be checked with different distances, surfaces and ambient light.
 
+## Simulation MVP
+
+The first Apitor simulation reuses CodeON's established two-dimensional
+differential-drive physics and its optional 2D-to-3D visual adapter. It does
+not copy RCX branding, fixed RCX ports or RCX-specific sensor assumptions.
+Instead, `robot.apitor` supplies an Apitor Robot X profile with its own orange
+appearance and approximate chassis dimensions.
+
+For the Robot X standard driving model, M2 is mapped to the left drive and M3
+to the right drive. This agrees with the verified hardware model used during
+the CodeON motor tests. M1 remains an independent auxiliary motor and is not
+silently treated as a wheel. The native Apitor speed levels from `-12` to `12`
+are scaled to the simulation's percentage range without changing the values
+sent to physical hardware.
+
+The existing 2D simulation remains the authoritative source for pose and
+motion. The 3D view mirrors that state and renders an Apitor-specific body; it
+does not introduce a second physics engine. Exact dimensions, wheel calibration,
+sensor physics, M1 attachment animation and further Apitor construction models
+remain separate hardware-validation steps.
+
 ## Safety gate
 
 Further or longer motion tests require:

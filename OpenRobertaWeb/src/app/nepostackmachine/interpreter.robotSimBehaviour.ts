@@ -165,8 +165,12 @@ export class RobotSimBehaviour extends ARobotBehaviour {
         if (this.hardwareState.actions.motors == undefined) {
             this.hardwareState.actions.motors = {};
         }
-        this.hardwareState.actions.motors[port] = speed;
-        this.hardwareState.motors[port] = speed;
+        // Apitor exposes twelve hardware speed levels, while the simulator
+        // expects percentages. Preserve the real bridge protocol and only
+        // normalize the value in the simulation behaviour.
+        const simulatedSpeed = String(name).toLowerCase() === 'apitor' ? Math.max(-100, Math.min(100, speed * (100 / 12))) : speed;
+        this.hardwareState.actions.motors[port] = simulatedSpeed;
+        this.hardwareState.motors[port] = simulatedSpeed;
         if (time !== undefined) {
             return time;
         }

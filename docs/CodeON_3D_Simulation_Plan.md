@@ -12,6 +12,23 @@ Die bestehende 2D-Simulation bleibt die fuehrende Simulationslogik. Die 3D-Ansic
 
 Die bestehende CodeON-Simulation wird erweitert, aber nicht ersetzt. In der Simulationsansicht gibt es einen Button `3D`, der zwischen der vorhandenen 2D-Canvas-Ansicht und einer Three.js-Ansicht umschaltet.
 
+## Apitor Robot X MVP (2026-08-02)
+
+Die generische 2D-Fahrphysik und die bestehende 3D-Spiegelung werden nun auch
+fuer Apitor verwendet. Apitor besitzt dafuer ein eigenes Roboterprofil und
+keine Abhaengigkeit von RCX-Portbezeichnungen oder RCX-Branding.
+
+- M2 ist im Standardmodell das linke und M3 das rechte Antriebsrad.
+- M1 bleibt ein unabhaengiger Zusatzmotor.
+- Die Apitor-Geschwindigkeitsstufen `-12..12` werden nur innerhalb der
+  Simulation auf Prozentwerte skaliert.
+- Die 3D-Ansicht zeigt eine orange Apitor-Karosserie und spiegelt weiterhin
+  ausschliesslich die fuehrende 2D-Pose.
+- Abmessungen und Raddaten sind vorlaeufige Robot-X-Modellwerte und muessen
+  spaeter am realen Aufbau kalibriert werden.
+- Sensorphysik, sichtbare M1-Anbauten und weitere Apitor-Standardmodelle sind
+  bewusst nicht Bestandteil dieses ersten Fahr-MVPs.
+
 ## MVP-Umfang
 
 - 2D-Simulation bleibt unveraendert vorhanden.

@@ -13,9 +13,20 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 define(["require", "exports", "interpreter.constants", "simulation.math", "guiState.controller", "simulation.objects", "util.roberta", "jquery", "blockly"], function (require, exports, C, SIMATH, GUISTATE_C, simulation_objects_1, UTIL, $, Blockly) {
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Motors = exports.PinActuators = exports.MbotRGBLed = exports.ThymioSoundLed = exports.ThymioTemperatureLeds = exports.ThymioProxHLeds = exports.ThymioButtonLeds = exports.ThymioCircleLeds = exports.EdisonLeds = exports.ThymioRGBLeds = exports.CalliopeV3RGBLeds = exports.Txt4RGBLed = exports.RGBLed = exports.MbotDisplay = exports.MbedDisplay = exports.MatrixDisplay = exports.WebAudio = exports.TTS = exports.StatusLed = exports.MbotChassis = exports.ThymioChassis = exports.EdisonChassis = exports.Txt4Chassis = exports.RCJChassis = exports.RCXChassis = exports.NXTChassis = exports.EV3Chassis = exports.LegoChassis = exports.EncoderChassisDiffDrive = exports.RobotinoChassis = exports.ChassisDiffDrive = exports.ChassisMobile = void 0;
+    exports.Motors = exports.PinActuators = exports.MbotRGBLed = exports.ThymioSoundLed = exports.ThymioTemperatureLeds = exports.ThymioProxHLeds = exports.ThymioButtonLeds = exports.ThymioCircleLeds = exports.EdisonLeds = exports.ThymioRGBLeds = exports.CalliopeV3RGBLeds = exports.Txt4RGBLed = exports.RGBLed = exports.MbotDisplay = exports.MbedDisplay = exports.MatrixDisplay = exports.WebAudio = exports.TTS = exports.StatusLed = exports.MbotChassis = exports.ThymioChassis = exports.EdisonChassis = exports.Txt4Chassis = exports.RCJChassis = exports.ApitorChassis = exports.RCXChassis = exports.NXTChassis = exports.EV3Chassis = exports.LegoChassis = exports.EncoderChassisDiffDrive = exports.RobotinoChassis = exports.ChassisDiffDrive = exports.ChassisMobile = void 0;
     var ChassisMobile = /** @class */ (function () {
         function ChassisMobile(id) {
             this.drawPriority = 0;
@@ -1184,6 +1195,46 @@ define(["require", "exports", "interpreter.constants", "simulation.math", "guiSt
         return RCXChassis;
     }(LegoChassis));
     exports.RCXChassis = RCXChassis;
+    /**
+     * Simulation profile for the Apitor Robot X standard driving model.
+     * M2 and M3 form the differential drive; M1 remains available as the
+     * model-specific auxiliary motor. Dimensions are deliberately isolated
+     * here so they can later be calibrated without changing the block model.
+     */
+    var ApitorChassis = /** @class */ (function (_super) {
+        __extends(ApitorChassis, _super);
+        function ApitorChassis(id, configuration, maxRotation, pose) {
+            var _this = this;
+            var actuators = configuration['ACTUATORS'] || {};
+            var simulationConfiguration = __assign(__assign({}, configuration), { TRACKWIDTH: 0, WHEELDIAMETER: 0, ACTUATORS: __assign(__assign({}, actuators), { APITOR_DRIVE: {
+                        TYPE: 'DIFFERENTIALDRIVE',
+                        BRICK_TRACK_WIDTH: 11.5,
+                        BRICK_WHEEL_DIAMETER: 5.6,
+                        MOTOR_L: 'M2',
+                        MOTOR_R: 'M3',
+                    } }) });
+            _this = _super.call(this, id, simulationConfiguration, maxRotation, pose) || this;
+            _this.geom = {
+                x: -30,
+                y: -21,
+                w: 52,
+                h: 42,
+                radius: 4,
+                color: '#f58220',
+            };
+            _this.topView = '<svg id="brick' +
+                _this.id +
+                '" xmlns="http://www.w3.org/2000/svg" width="320px" height="210px" viewBox="0 0 640 420" preserveAspectRatio="xMidYMid meet">' +
+                '<image href="/css/img/system_preview/apitor.svg?v=apitor-sim-20260802" width="640" height="420" preserveAspectRatio="xMidYMid meet" />' +
+                '</svg>';
+            $('#simRobotContent').append(_this.topView);
+            $('#simRobotWindow button').removeClass('btn-close-white');
+            $('#brick' + _this.id).hide();
+            return _this;
+        }
+        return ApitorChassis;
+    }(LegoChassis));
+    exports.ApitorChassis = ApitorChassis;
     var RCJChassis = /** @class */ (function (_super) {
         __extends(RCJChassis, _super);
         function RCJChassis(id, configuration, maxRotation, pose) {

@@ -1265,6 +1265,52 @@ export class RCXChassis extends LegoChassis {
         $('#brick' + this.id).hide();
     }
 }
+
+/**
+ * Simulation profile for the Apitor Robot X standard driving model.
+ * M2 and M3 form the differential drive; M1 remains available as the
+ * model-specific auxiliary motor. Dimensions are deliberately isolated
+ * here so they can later be calibrated without changing the block model.
+ */
+export class ApitorChassis extends LegoChassis {
+    geom: Geometry = {
+        x: -30,
+        y: -21,
+        w: 52,
+        h: 42,
+        radius: 4,
+        color: '#f58220',
+    };
+    topView: string =
+        '<svg id="brick' +
+        this.id +
+        '" xmlns="http://www.w3.org/2000/svg" width="320px" height="210px" viewBox="0 0 640 420" preserveAspectRatio="xMidYMid meet">' +
+        '<image href="/css/img/system_preview/apitor.svg?v=apitor-sim-20260802" width="640" height="420" preserveAspectRatio="xMidYMid meet" />' +
+        '</svg>';
+
+    constructor(id: number, configuration: object, maxRotation: number, pose: Pose) {
+        const actuators = configuration['ACTUATORS'] || {};
+        const simulationConfiguration = {
+            ...configuration,
+            TRACKWIDTH: 0,
+            WHEELDIAMETER: 0,
+            ACTUATORS: {
+                ...actuators,
+                APITOR_DRIVE: {
+                    TYPE: 'DIFFERENTIALDRIVE',
+                    BRICK_TRACK_WIDTH: 11.5,
+                    BRICK_WHEEL_DIAMETER: 5.6,
+                    MOTOR_L: 'M2',
+                    MOTOR_R: 'M3',
+                },
+            },
+        };
+        super(id, simulationConfiguration, maxRotation, pose);
+        $('#simRobotContent').append(this.topView);
+        $('#simRobotWindow button').removeClass('btn-close-white');
+        $('#brick' + this.id).hide();
+    }
+}
 export class RCJChassis extends ChassisDiffDrive implements ILabel {
     axisDiff: number;
     geom: Geometry = {

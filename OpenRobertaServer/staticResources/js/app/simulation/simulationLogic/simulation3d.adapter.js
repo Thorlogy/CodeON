@@ -73,13 +73,25 @@
         return /rcx/i.test(robotType);
     }
 
+    function isApitorSelected(robot) {
+        var robotButton = getElement('simRobot');
+        if (robotButton && robotButton.classList.contains('typcn-apitor')) return true;
+        var robotType = robot
+            ? [robot.constructor && robot.constructor.name, robot.chassis && robot.chassis.constructor && robot.chassis.constructor.name].join(' ')
+            : '';
+        return /apitor/i.test(robotType);
+    }
+
     function updateRobotAppearance(robot) {
         if (!robotMesh) return;
         var isRcx = isRcxSelected(robot);
+        var isApitor = isApitorSelected(robot);
         var body = robotMesh.getObjectByName('robotBody');
+        var display = robotMesh.getObjectByName('robotDisplay');
         var direction = robotMesh.getObjectByName('directionMarker');
-        if (body) body.material.color.setHex(isRcx ? 0xf7d900 : 0xd8d8d8);
-        if (direction) direction.visible = !isRcx;
+        if (body) body.material.color.setHex(isApitor ? 0xf58220 : isRcx ? 0xf7d900 : 0xd8d8d8);
+        if (display) display.material.color.setHex(isApitor ? 0x24b7c7 : isRcx ? 0xbfc5c9 : 0x1155aa);
+        if (direction) direction.visible = !isRcx && !isApitor;
     }
 
     function getRobotSensorState(robot) {
@@ -119,13 +131,14 @@
     function buildRobot() {
         var group = new THREE.Group();
         var isRcx = isRcxSelected();
+        var isApitor = isApitorSelected();
 
         var bodyMaterial = new THREE.MeshPhongMaterial({
-            color: isRcx ? 0xf7d900 : 0x8a9bb5,
+            color: isApitor ? 0xf58220 : isRcx ? 0xf7d900 : 0x8a9bb5,
             shininess: 55,
         });
         var darkMaterial = new THREE.MeshPhongMaterial({ color: 0x172033, shininess: 30 });
-        var displayMaterial = new THREE.MeshPhongMaterial({ color: isRcx ? 0xbfc5c9 : 0x1155aa, shininess: 65 });
+        var displayMaterial = new THREE.MeshPhongMaterial({ color: isApitor ? 0x24b7c7 : isRcx ? 0xbfc5c9 : 0x1155aa, shininess: 65 });
 
         var body = new THREE.Mesh(
             new THREE.BoxGeometry(2.35, 1.15, 3.0),
@@ -143,6 +156,7 @@
         group.add(topPanel);
 
         var screen = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.1, 0.72), displayMaterial);
+        screen.name = 'robotDisplay';
         screen.position.set(0, 1.78, -0.48);
         screen.castShadow = true;
         group.add(screen);
@@ -210,7 +224,7 @@
         direction.name = 'directionMarker';
         direction.rotation.x = -Math.PI / 2;
         direction.position.set(0, 1.82, -1.75);
-        direction.visible = !isRcx;
+        direction.visible = !isRcx && !isApitor;
         group.add(direction);
 
         return group;
