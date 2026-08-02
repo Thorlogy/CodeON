@@ -7,8 +7,9 @@ import de.fhg.iais.roberta.typecheck.BlocklyType;
 import de.fhg.iais.roberta.util.ast.BlocklyProperties;
 
 /**
- * Child-friendly line detection using one of the two infrared sensors.
- * The official Apitor Kit app treats values >= 5 as being on the line.
+ * Child-friendly reflection detection using one of the two infrared sensors.
+ * It can be used for line following or nearby reflective objects. The official
+ * Apitor Kit app treats values >= 5 as a detection.
  */
 @NepoExpr(
     name = "APITOR_INFRARED_SENSOR",

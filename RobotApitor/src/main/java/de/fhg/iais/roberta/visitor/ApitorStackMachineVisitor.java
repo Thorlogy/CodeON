@@ -14,7 +14,6 @@ import de.fhg.iais.roberta.syntax.sensor.apitor.ApitorColorSensor;
 import de.fhg.iais.roberta.syntax.sensor.apitor.ApitorInfraredSensor;
 import de.fhg.iais.roberta.syntax.sensor.apitor.ApitorSensorValue;
 import de.fhg.iais.roberta.util.basic.C;
-import de.fhg.iais.roberta.util.dbc.DbcException;
 
 public final class ApitorStackMachineVisitor extends RCJStackMachineVisitor {
     public ApitorStackMachineVisitor(ConfigurationAst configuration, List<List<Phrase>> phrases, UsedHardwareBean usedHardwareBean, NNBean nnBean) {
@@ -55,15 +54,19 @@ public final class ApitorStackMachineVisitor extends RCJStackMachineVisitor {
     public Void visitApitorInfraredSensor(ApitorInfraredSensor sensor) {
         String mode;
         switch ( sensor.mode.toUpperCase() ) {
+            case "S1_CLEAR":
             case "S1_OUTSIDE":
                 mode = "infrared1Outside";
                 break;
+            case "S2_DETECTED":
             case "S2_LINE":
                 mode = "infrared2Line";
                 break;
+            case "S2_CLEAR":
             case "S2_OUTSIDE":
                 mode = "infrared2Outside";
                 break;
+            case "S1_DETECTED":
             case "S1_LINE":
             default:
                 mode = "infrared1Line";
@@ -99,7 +102,14 @@ public final class ApitorStackMachineVisitor extends RCJStackMachineVisitor {
                 apitorColor = 4;
                 break;
             default:
-                throw new DbcException("Apitor color sensor supports only red, green, blue and white");
+                // The generic Blockly colour picker can occur in imported or
+                // older programs with values that Robot X cannot recognise.
+                // Compile those values to an impossible sentinel instead of
+                // turning a valid program into a server error. This also keeps
+                // an unsupported colour from matching the sensor's real
+                // "unknown" value (0).
+                apitorColor = -1;
+                break;
         }
         return new NumConst(null, String.valueOf(apitorColor)).accept(this);
     }

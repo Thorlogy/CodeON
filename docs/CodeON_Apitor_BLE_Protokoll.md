@@ -89,6 +89,14 @@ only exact eight-byte sensor packets beginning with `55 aa 05 80`. It exposes:
 - `infrared2`: byte 6; and
 - `sensorSnapshot`: all values plus packet age for diagnostics.
 
+The colour byte is a classification code, not an independent ambient-light
+measurement. CodeON therefore does not label it as brightness. The two
+infrared bytes are exposed in the expert toolbox as relative reflected-light
+values from `0` to `255`. They are suitable for experiments and calibration,
+but are not calibrated distances in centimetres. The beginner block compares
+them with the official app's threshold (`>= 5`) and reports whether an object
+or line was detected.
+
 The group numbers are intentionally not given colour names until their physical
 meaning has been verified with the Robot X sensors.
 
@@ -177,10 +185,14 @@ The productive implementation consists of:
 - automatic bridge startup through `CodeON-starten.command`; and
 - a browser-side stack-machine behaviour for independent M1/M2/M3 control.
 
-The bridge now contains the recovered L1/L2 LED commands and a notification
-cache for the sensor values above. They remain a hardware-validation interface
-and are not yet exposed as beginner Blockly blocks. A later UI phase may expose
-only meanings confirmed on the physical Robot X.
+The bridge contains the recovered L1/L2 LED commands and a notification cache
+for the sensor values above. CodeON exposes the verified colour classes as a
+beginner-friendly colour-sensor block. The colour picker is deliberately
+limited to red, green, blue and white; unsupported Blockly colours no longer
+cause a server error. The infrared inputs are available as simple
+`detected`/`clear` choices in the beginner toolbox and as numerical reflected-
+light values (`0..255`) for S1 and S2 in the expert toolbox. Existing line-mode
+programs remain compatible.
 
 The APK's speech and sound functions use Android `TextToSpeech` and
 `MediaPlayer`. No command for a speaker in the Robot X hub was found. CodeON
@@ -210,6 +222,13 @@ verified colour-sensor program continued inside `repeat forever` and was ended
 deliberately with CodeON's Play/Stop button. The unexpected program termination
 is therefore considered fixed. The infrared-sensor hardware test remains the
 next integration step.
+
+Checkpoint on 2026-08-02: the beginner and expert infrared blocks, their stack-
+machine mapping and the four-colour validation were rebuilt into the packaged
+CodeON application. All 72 integration-kit tests pass and `git diff --check`
+reports no whitespace errors. Physical Robot X validation is still required;
+in particular, the provisional threshold of `5` and the response to nearby
+objects must be checked with different distances, surfaces and ambient light.
 
 ## Safety gate
 

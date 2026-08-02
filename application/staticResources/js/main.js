@@ -28,7 +28,7 @@
 })();
 require.config({
     baseUrl: '.',
-    urlArgs: 'v=codeon-apitor-infrared-20260730-2',
+    urlArgs: 'v=codeon-apitor-reflection-20260802-1',
     paths: {
         ace: 'libs/ace/ace',
         ace_lang: 'libs/ace/ext-language_tools',
