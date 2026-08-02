@@ -32,7 +32,7 @@
 
 require.config({
     baseUrl: '.',
-    urlArgs: 'v=codeon-apitor-simulation-20260802-1',
+    urlArgs: 'v=codeon-cozmo-simulation-20260802-5',
     paths: {
         ace: 'libs/ace/ace',
         ace_lang: 'libs/ace/ext-language_tools',
@@ -123,6 +123,7 @@ require.config({
         'robot.nxt': 'js/app/simulation/simulationLogic/robot.nxt',
         'robot.rcx': 'js/app/simulation/simulationLogic/robot.rcx',
         'robot.apitor': 'js/app/simulation/simulationLogic/robot.apitor',
+        'robot.cozmo': 'js/app/simulation/simulationLogic/robot.cozmo',
         'robot.rcj': 'js/app/simulation/simulationLogic/robot.rcj',
         'robot.xnn': 'js/app/simulation/simulationLogic/robot.xnn',
         'robot.thymio': 'js/app/simulation/simulationLogic/robot.thymio',
@@ -417,6 +418,8 @@ function initProgramming(robot, extensions, opt_callback, opt_params) {
             guiStateController.setInitialState();
             connectionController.initConnection(robot);
             $('#tabProgram').oneWrap('shown.bs.tab', function () {
+                // The final program view (including #simButton) now exists.
+                progSimController.createProgSimInstance();
                 callback && typeof callback === 'function' && callback(...params);
             });
             $('#tabProgram').tabWrapShow();
@@ -426,7 +429,13 @@ function initProgramming(robot, extensions, opt_callback, opt_params) {
             $('.mainTab').parent().removeClass('invisible');
             $('#header').addClass('shadow');
             $('.notStart').removeClass('disabled');
+            // Switching robots can replace/unbind controls in the programming
+            // view. Ensure the SIM button always targets the active robot.
+            progSimController.createProgSimInstance();
             $('#tabProgram').oneWrap('shown.bs.tab', function () {
+                // Robot switches rebuild the program controls. Bind SIM only
+                // after Bootstrap has activated the rebuilt program tab.
+                progSimController.createProgSimInstance();
                 callback && typeof callback === 'function' && callback(...params);
             });
             $('#tabProgram').tabWrapShow();

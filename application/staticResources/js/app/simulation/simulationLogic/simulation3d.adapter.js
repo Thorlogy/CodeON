@@ -8,6 +8,9 @@
     var camera;
     var renderer;
     var robotMesh;
+    var cozmoCube;
+    var cozmoCubePlaced = false;
+    var cozmoCubeHeld = false;
     var fieldMesh;
     var poseHud;
     var sceneLabel;
@@ -82,16 +85,26 @@
         return /apitor/i.test(robotType);
     }
 
+    function isCozmoSelected(robot) {
+        var robotButton = getElement('simRobot');
+        if (robotButton && robotButton.classList.contains('typcn-cozmo')) return true;
+        var robotType = robot
+            ? [robot.constructor && robot.constructor.name, robot.chassis && robot.chassis.constructor && robot.chassis.constructor.name].join(' ')
+            : '';
+        return /cozmo/i.test(robotType);
+    }
+
     function updateRobotAppearance(robot) {
         if (!robotMesh) return;
         var isRcx = isRcxSelected(robot);
         var isApitor = isApitorSelected(robot);
+        var isCozmo = isCozmoSelected(robot);
         var body = robotMesh.getObjectByName('robotBody');
         var display = robotMesh.getObjectByName('robotDisplay');
         var direction = robotMesh.getObjectByName('directionMarker');
-        if (body) body.material.color.setHex(isApitor ? 0xf58220 : isRcx ? 0xf7d900 : 0xd8d8d8);
-        if (display) display.material.color.setHex(isApitor ? 0x24b7c7 : isRcx ? 0xbfc5c9 : 0x1155aa);
-        if (direction) direction.visible = !isRcx && !isApitor;
+        if (body) body.material.color.setHex(isCozmo ? 0xe7ebef : isApitor ? 0xf58220 : isRcx ? 0xf7d900 : 0xd8d8d8);
+        if (display) display.material.color.setHex(isCozmo ? 0x132530 : isApitor ? 0x24b7c7 : isRcx ? 0xbfc5c9 : 0x1155aa);
+        if (direction) direction.visible = !isRcx && !isApitor && !isCozmo;
     }
 
     function getRobotSensorState(robot) {
@@ -128,7 +141,98 @@
         return state;
     }
 
+    function buildCozmoRobot() {
+        var group = new THREE.Group();
+        var shell = new THREE.MeshPhongMaterial({ color: 0xe7ebef, shininess: 62 });
+        var dark = new THREE.MeshPhongMaterial({ color: 0x121619, shininess: 22 });
+        var grey = new THREE.MeshPhongMaterial({ color: 0x737d84, shininess: 36 });
+        var cyan = new THREE.MeshPhongMaterial({ color: 0x36d5e8, emissive: 0x0b5260, shininess: 80 });
+        var orange = new THREE.MeshPhongMaterial({ color: 0xf39c12, shininess: 45 });
+
+        var body = new THREE.Mesh(new THREE.BoxGeometry(2.15, 0.9, 2.5), shell);
+        body.name = 'robotBody';
+        body.position.set(0, 0.92, 0.05);
+        body.castShadow = true;
+        body.receiveShadow = true;
+        group.add(body);
+
+        var rear = new THREE.Mesh(new THREE.BoxGeometry(1.72, 1.12, 1.05), shell);
+        rear.position.set(0, 1.35, 0.72);
+        rear.castShadow = true;
+        group.add(rear);
+
+        var head = new THREE.Mesh(new THREE.BoxGeometry(1.72, 1.12, 0.72), dark);
+        head.name = 'robotDisplay';
+        head.position.set(0, 2.12, -0.42);
+        head.rotation.x = -0.12;
+        head.castShadow = true;
+        group.add(head);
+        [-0.43, 0.43].forEach(function (x) {
+            var eye = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.18, 0.04), cyan);
+            eye.position.set(x, 2.18, -0.79);
+            eye.rotation.x = -0.12;
+            group.add(eye);
+        });
+
+        function makeTrack(side, x) {
+            var track = new THREE.Group();
+            track.position.x = x;
+            var belt = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.82, 2.85), dark);
+            belt.position.y = 0.61;
+            belt.castShadow = true;
+            track.add(belt);
+            [-0.9, 0, 0.9].forEach(function (z, index) {
+                var wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.49, 18), grey);
+                wheel.rotation.z = Math.PI / 2;
+                wheel.position.set(0, 0.61, z);
+                wheel.castShadow = true;
+                track.add(wheel);
+                if (index === 1) group.userData[side + 'Wheel'] = wheel;
+            });
+            for (var z = -1.25; z <= 1.25; z += 0.31) {
+                var tread = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 0.18), grey);
+                tread.position.set(0, 1.04, z);
+                track.add(tread);
+            }
+            group.add(track);
+        }
+        makeTrack('left', -1.23);
+        makeTrack('right', 1.23);
+
+        var lift = new THREE.Group();
+        lift.name = 'cozmoLift';
+        lift.position.set(0, 0.62, -1.18);
+        [-0.72, 0.72].forEach(function (x) {
+            var arm = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 1.65), orange);
+            arm.position.set(x, 0, -0.76);
+            arm.castShadow = true;
+            lift.add(arm);
+            var fork = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.12, 0.78), grey);
+            fork.position.set(x, -0.05, -1.72);
+            fork.castShadow = true;
+            lift.add(fork);
+        });
+        var crossbar = new THREE.Mesh(new THREE.BoxGeometry(1.65, 0.2, 0.22), orange);
+        crossbar.position.z = -0.35;
+        crossbar.castShadow = true;
+        lift.add(crossbar);
+        group.add(lift);
+        group.userData.cozmoLift = lift;
+        group.userData.isCozmo = true;
+        return group;
+    }
+
+    function createCozmoCube() {
+        var material = new THREE.MeshPhongMaterial({ color: 0xf4a62a, shininess: 42 });
+        var cube = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.62, 0.62), material);
+        cube.name = 'cozmoCube';
+        cube.castShadow = true;
+        cube.receiveShadow = true;
+        return cube;
+    }
+
     function buildRobot() {
+        if (isCozmoSelected()) return buildCozmoRobot();
         var group = new THREE.Group();
         var isRcx = isRcxSelected();
         var isApitor = isApitorSelected();
@@ -961,6 +1065,12 @@
 
         robotMesh = buildRobot();
         scene.add(robotMesh);
+        if (robotMesh.userData.isCozmo) {
+            cozmoCube = createCozmoCube();
+            scene.add(cozmoCube);
+            cozmoCubePlaced = false;
+            cozmoCubeHeld = false;
+        }
 
         attachNavigation();
         initialized = true;
@@ -1013,6 +1123,34 @@
         if (robotMesh.userData.rightWheel) robotMesh.userData.rightWheel.rotation.x = wheelRotation.right;
         lastRobotPose = { x: pose.x, y: pose.y, theta: pose.theta };
         return Math.abs(forwardDistance) > 0.01 || Math.abs(dTheta) > 0.0005;
+    }
+
+    function syncCozmoLift(robot) {
+        if (!robotMesh || !robotMesh.userData.isCozmo) return null;
+        var lift = robotMesh.userData.cozmoLift;
+        var height = robot.chassis && typeof robot.chassis.liftPosition === 'number' ? robot.chassis.liftPosition : 0;
+        if (lift) lift.rotation.x = height * 0.68;
+        robotMesh.updateMatrixWorld(true);
+
+        if (cozmoCube && !cozmoCubePlaced) {
+            var start = new THREE.Vector3(0, 0.34, -3.12).applyMatrix4(robotMesh.matrixWorld);
+            cozmoCube.position.copy(start);
+            cozmoCubePlaced = true;
+        }
+        if (cozmoCube && lift) {
+            var forkPosition = new THREE.Vector3(0, 0, -1.78).applyMatrix4(lift.matrixWorld);
+            if (!cozmoCubeHeld && height > 0.28 && cozmoCube.position.distanceTo(forkPosition) < 0.85) {
+                cozmoCubeHeld = true;
+            } else if (cozmoCubeHeld && height < 0.12) {
+                cozmoCube.position.y = Math.max(0.31, cozmoCube.position.y);
+                cozmoCubeHeld = false;
+            }
+            if (cozmoCubeHeld) {
+                cozmoCube.position.copy(forkPosition);
+                cozmoCube.position.y += 0.18;
+            }
+        }
+        return height;
     }
 
     function getStructureSurface(worldX, worldZ) {
@@ -1090,6 +1228,7 @@
         );
         robotMesh.rotation.order = 'YXZ';
         robotMesh.rotation.set(pitch, -robot.pose.theta - Math.PI / 2, 0);
+        var cozmoLiftHeight = syncCozmoLift(robot);
 
         if (!orbit.panned) {
             orbit.targetX = robotMesh.position.x;
@@ -1105,6 +1244,7 @@
                 'Richtung: ' + degrees + '°\n' +
                 'Fahrt: ' + (moving ? 'aktiv' : 'steht') + '\n' +
                 'Hoehe: ' + surface.elevation.toFixed(1) + '\n' +
+                (cozmoLiftHeight === null ? '' : 'Lift: ' + Math.round(cozmoLiftHeight * 100) + ' %\n') +
                 'Taster: ' + (sensorState.touchFound ? (sensorState.touch ? 'JA' : 'nein') : '--') +
                 '   Licht: ' + (sensorState.light === null ? '--' : Math.round(sensorState.light) + ' %');
         }

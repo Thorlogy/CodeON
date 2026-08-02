@@ -87,6 +87,7 @@ require.config({
         'robot.nxt': 'js/app/simulation/simulationLogic/robot.nxt',
         'robot.rcx': 'js/app/simulation/simulationLogic/robot.rcx',
         'robot.apitor': 'js/app/simulation/simulationLogic/robot.apitor',
+        'robot.cozmo': 'js/app/simulation/simulationLogic/robot.cozmo',
         'robot.rcj': 'js/app/simulation/simulationLogic/robot.rcj',
         'robot.xnn': 'js/app/simulation/simulationLogic/robot.xnn',
         'robot.thymio': 'js/app/simulation/simulationLogic/robot.thymio',

@@ -59,28 +59,50 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
             this.initEvents();
         }
         ProgSimController.createProgSimInstance = function () {
-            if (!this._progSimInstance) {
-                this._progSimInstance = new ProgSimController();
+            if (!ProgSimController._progSimInstance) {
+                ProgSimController._progSimInstance = new ProgSimController();
+            }
+            else {
+                // Robot changes rebuild parts of the programming view and may remove
+                // the direct SIM button listener. Rebind it to the current button.
+                ProgSimController._progSimInstance.initEvents();
             }
         };
         ProgSimController.prototype.initEvents = function () {
-            var C = this;
-            $('#simButton').off();
-            $('#simButton').onWrap('click touchend', function (event, multi) {
+            ProgSimController.installSimButtonListener();
+        };
+        /**
+         * The program view replaces #simButton while switching robots and toolbox
+         * levels. A single native listener on document survives those rebuilds and
+         * does not depend on the lifecycle of a particular jQuery button object.
+         */
+        ProgSimController.installSimButtonListener = function () {
+            if (ProgSimController._simButtonListenerInstalled) {
+                return;
+            }
+            ProgSimController._simButtonListenerInstalled = true;
+            document.addEventListener('click', function (event) {
+                var source = event.target;
+                var button = source instanceof Element ? source.closest('#simButton') : null;
+                if (!button) {
+                    return;
+                }
+                event.preventDefault();
+                ProgSimController.createProgSimInstance();
+                var controller = ProgSimController._progSimInstance;
                 if (GUISTATE_C.hasWebotsSim()) {
-                    C.SIM = simulation_webots_1.default;
+                    controller.SIM = simulation_webots_1.default;
                 }
                 else {
-                    C.SIM = simulation_roberta_1.SimulationRoberta.Instance;
+                    controller.SIM = simulation_roberta_1.SimulationRoberta.Instance;
                     if (simulation_roberta_1.SimulationRoberta.Instance.debugMode) {
                         simulation_roberta_1.SimulationRoberta.Instance.updateDebugMode(false);
                     }
                 }
                 // Workaround for IOS speech synthesis, speech must be triggered once by a button click explicitly before it can be used programmatically
                 window.speechSynthesis && window.speechSynthesis.speak && window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
-                C.toggleSim($(this));
-                return false;
-            }, 'sim open/close clicked');
+                controller.toggleSim($(button));
+            });
         };
         ProgSimController.prototype.addControlEvents = function () {
             var SIM = this.SIM;
@@ -316,8 +338,12 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
             var language = GUISTATE_C.getLanguage();
             PROGRAM.runInSim(GUISTATE_C.getProgramName(), configName, xmlTextProgram, xmlConfigText, language, callback);
         };
+        ProgSimController._simButtonListenerInstalled = false;
         return ProgSimController;
     }());
+    // Install the stable delegated listener as soon as the controller module is
+    // loaded. The concrete controller instance is created lazily on the first click.
+    ProgSimController.installSimButtonListener();
     exports.createProgSimInstance = ProgSimController.createProgSimInstance;
     var ProgSimDebugController = /** @class */ (function (_super) {
         __extends(ProgSimDebugController, _super);

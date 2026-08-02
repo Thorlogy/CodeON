@@ -36,6 +36,7 @@ export interface Simulation {
 class ProgSimController {
     protected SIM: Simulation;
     private static _progSimInstance: ProgSimController;
+    private static _simButtonListenerInstalled = false;
     protected readonly blocklyWorkspace: any;
 
     protected constructor() {
@@ -44,32 +45,50 @@ class ProgSimController {
     }
 
     public static createProgSimInstance(): void {
-        if (!this._progSimInstance) {
-            this._progSimInstance = new ProgSimController();
+        if (!ProgSimController._progSimInstance) {
+            ProgSimController._progSimInstance = new ProgSimController();
+        } else {
+            // Robot changes rebuild parts of the programming view and may remove
+            // the direct SIM button listener. Rebind it to the current button.
+            ProgSimController._progSimInstance.initEvents();
         }
     }
 
     initEvents() {
-        let C = this;
-        $('#simButton').off();
-        $('#simButton').onWrap(
-            'click touchend',
-            function (event, multi: boolean) {
-                if (GUISTATE_C.hasWebotsSim()) {
-                    C.SIM = WebotsSimulation;
-                } else {
-                    C.SIM = SimulationRoberta.Instance;
-                    if (SimulationRoberta.Instance.debugMode) {
-                        SimulationRoberta.Instance.updateDebugMode(false);
-                    }
+        ProgSimController.installSimButtonListener();
+    }
+
+    /**
+     * The program view replaces #simButton while switching robots and toolbox
+     * levels. A single native listener on document survives those rebuilds and
+     * does not depend on the lifecycle of a particular jQuery button object.
+     */
+    public static installSimButtonListener(): void {
+        if (ProgSimController._simButtonListenerInstalled) {
+            return;
+        }
+        ProgSimController._simButtonListenerInstalled = true;
+        document.addEventListener('click', function (event: MouseEvent) {
+            const source = event.target;
+            const button = source instanceof Element ? source.closest('#simButton') : null;
+            if (!button) {
+                return;
+            }
+            event.preventDefault();
+            ProgSimController.createProgSimInstance();
+            const controller = ProgSimController._progSimInstance;
+            if (GUISTATE_C.hasWebotsSim()) {
+                controller.SIM = WebotsSimulation;
+            } else {
+                controller.SIM = SimulationRoberta.Instance;
+                if (SimulationRoberta.Instance.debugMode) {
+                    SimulationRoberta.Instance.updateDebugMode(false);
                 }
-                // Workaround for IOS speech synthesis, speech must be triggered once by a button click explicitly before it can be used programmatically
-                window.speechSynthesis && window.speechSynthesis.speak && window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
-                C.toggleSim($(this));
-                return false;
-            },
-            'sim open/close clicked'
-        );
+            }
+            // Workaround for IOS speech synthesis, speech must be triggered once by a button click explicitly before it can be used programmatically
+            window.speechSynthesis && window.speechSynthesis.speak && window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+            controller.toggleSim($(button as HTMLElement));
+        });
     }
 
     protected addControlEvents() {
@@ -421,6 +440,9 @@ class ProgSimController {
     }
 }
 
+// Install the stable delegated listener as soon as the controller module is
+// loaded. The concrete controller instance is created lazily on the first click.
+ProgSimController.installSimButtonListener();
 export const createProgSimInstance = ProgSimController.createProgSimInstance;
 
 class ProgSimDebugController extends ProgSimController {

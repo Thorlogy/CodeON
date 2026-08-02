@@ -1311,6 +1311,130 @@ export class ApitorChassis extends LegoChassis {
         $('#brick' + this.id).hide();
     }
 }
+
+/**
+ * Cozmo's fixed hardware simulation. The two drive motors model the tracks;
+ * motor port "a" is reserved for the non-configurable front lift.
+ */
+export class CozmoChassis extends LegoChassis {
+    geom: Geometry = {
+        x: -29,
+        y: -20,
+        w: 50,
+        h: 40,
+        radius: 6,
+        color: '#e7ebef',
+    };
+    topView: string =
+        '<svg id="brick' +
+        this.id +
+        '" xmlns="http://www.w3.org/2000/svg" width="320px" height="210px" viewBox="0 0 640 420" preserveAspectRatio="xMidYMid meet">' +
+        '<image href="/css/img/system_preview/cozmo.svg?v=cozmo-sim-20260802" width="640" height="420" preserveAspectRatio="xMidYMid meet" />' +
+        '</svg>';
+
+    /** Normalized lift height, shared with the optional 3D renderer. */
+    public liftPosition = 0;
+    private liftTarget = 0;
+
+    constructor(id: number, configuration: object, maxRotation: number, pose: Pose) {
+        const actuators = configuration['ACTUATORS'] || {};
+        const simulationConfiguration = {
+            ...configuration,
+            TRACKWIDTH: 0,
+            WHEELDIAMETER: 0,
+            ACTUATORS: {
+                ...actuators,
+                COZMO_DRIVE: {
+                    TYPE: 'DIFFERENTIALDRIVE',
+                    BRICK_TRACK_WIDTH: 7.0,
+                    BRICK_WHEEL_DIAMETER: 3.0,
+                    MOTOR_L: 'L',
+                    MOTOR_R: 'R',
+                },
+                COZMO_LIFT: {
+                    TYPE: 'MOTOR',
+                    PORT: 'a',
+                },
+            },
+        };
+        super(id, simulationConfiguration, maxRotation, pose);
+
+        // Long rectangles communicate continuous tracks instead of wheels.
+        this.wheelLeft = { x: -27, y: -24, w: 47, h: 8, color: '#171a1d' };
+        this.wheelRight = { x: -27, y: 16, w: 47, h: 8, color: '#171a1d' };
+        this.wheelBack = { x: -31, y: -2, w: 4, h: 4, color: '#171a1d' };
+        this.wheelFrontLeft = { x: 20, y: -24, rx: 0, ry: 0, bumped: false };
+        this.wheelBackLeft = { x: -27, y: -24, rx: 0, ry: 0, bumped: false };
+        this.wheelFrontRight = { x: 20, y: 24, rx: 0, ry: 0, bumped: false };
+        this.wheelBackRight = { x: -27, y: 24, rx: 0, ry: 0, bumped: false };
+        SIMATH.transform(pose, this.wheelFrontRight);
+        SIMATH.transform(pose, this.wheelBackRight);
+        SIMATH.transform(pose, this.wheelFrontLeft);
+        SIMATH.transform(pose, this.wheelBackLeft);
+
+        $('#simRobotContent').append(this.topView);
+        $('#simRobotWindow button').removeClass('btn-close-white');
+        $('#brick' + this.id).hide();
+    }
+
+    override reset(): void {
+        super.reset();
+        this.liftPosition = 0;
+        this.liftTarget = 0;
+    }
+
+    override updateAction(myRobot: RobotBaseMobile, dt: number, interpreterRunning: boolean): void {
+        // Peek before the base chassis consumes the one-shot motor command.
+        const motors = myRobot.interpreter.getRobotBehaviour().getActionState('motors', false);
+        if (motors && motors['a'] != null) {
+            this.liftTarget = Number(motors['a']) > 0 ? 1 : 0;
+        }
+        super.updateAction(myRobot, dt, interpreterRunning);
+        const step = Math.min(1, dt * 1.7);
+        this.liftPosition += (this.liftTarget - this.liftPosition) * step;
+        if (Math.abs(this.liftTarget - this.liftPosition) < 0.01) {
+            this.liftPosition = this.liftTarget;
+        }
+    }
+
+    override draw(rCtx: CanvasRenderingContext2D, myRobot: RobotBaseMobile): void {
+        super.draw(rCtx, myRobot);
+        rCtx.save();
+
+        // Tread seams make the tracked drive unambiguous in the top view.
+        rCtx.strokeStyle = '#5e666d';
+        rCtx.lineWidth = 1;
+        for (let x = -23; x <= 17; x += 7) {
+            rCtx.beginPath();
+            rCtx.moveTo(x, -24);
+            rCtx.lineTo(x, -16);
+            rCtx.moveTo(x, 16);
+            rCtx.lineTo(x, 24);
+            rCtx.stroke();
+        }
+
+        // Face display and front lift. In 2D the lift height is shown by its
+        // colour and the small height bar, while its collision footprint stays fixed.
+        rCtx.fillStyle = '#17202a';
+        rCtx.fillRect(-4, -12, 13, 24);
+        rCtx.fillStyle = '#36d5e8';
+        rCtx.fillRect(1, -8, 3, 5);
+        rCtx.fillRect(1, 3, 3, 5);
+        rCtx.strokeStyle = this.liftPosition > 0.5 ? '#f39c12' : '#6f7b83';
+        rCtx.lineWidth = 4;
+        [-11, 11].forEach((y) => {
+            rCtx.beginPath();
+            rCtx.moveTo(18, y);
+            rCtx.lineTo(35, y);
+            rCtx.stroke();
+        });
+        rCtx.fillStyle = '#263746';
+        rCtx.fillRect(25, -4, 3, 8);
+        rCtx.fillStyle = '#36d5e8';
+        rCtx.fillRect(25, 4 - 8 * this.liftPosition, 3, 8 * this.liftPosition);
+        rCtx.restore();
+    }
+}
 export class RCJChassis extends ChassisDiffDrive implements ILabel {
     axisDiff: number;
     geom: Geometry = {

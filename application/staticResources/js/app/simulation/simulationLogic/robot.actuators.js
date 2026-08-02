@@ -26,7 +26,7 @@ var __assign = (this && this.__assign) || function () {
 };
 define(["require", "exports", "interpreter.constants", "simulation.math", "guiState.controller", "simulation.objects", "util.roberta", "jquery", "blockly"], function (require, exports, C, SIMATH, GUISTATE_C, simulation_objects_1, UTIL, $, Blockly) {
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Motors = exports.PinActuators = exports.MbotRGBLed = exports.ThymioSoundLed = exports.ThymioTemperatureLeds = exports.ThymioProxHLeds = exports.ThymioButtonLeds = exports.ThymioCircleLeds = exports.EdisonLeds = exports.ThymioRGBLeds = exports.CalliopeV3RGBLeds = exports.Txt4RGBLed = exports.RGBLed = exports.MbotDisplay = exports.MbedDisplay = exports.MatrixDisplay = exports.WebAudio = exports.TTS = exports.StatusLed = exports.MbotChassis = exports.ThymioChassis = exports.EdisonChassis = exports.Txt4Chassis = exports.RCJChassis = exports.ApitorChassis = exports.RCXChassis = exports.NXTChassis = exports.EV3Chassis = exports.LegoChassis = exports.EncoderChassisDiffDrive = exports.RobotinoChassis = exports.ChassisDiffDrive = exports.ChassisMobile = void 0;
+    exports.Motors = exports.PinActuators = exports.MbotRGBLed = exports.ThymioSoundLed = exports.ThymioTemperatureLeds = exports.ThymioProxHLeds = exports.ThymioButtonLeds = exports.ThymioCircleLeds = exports.EdisonLeds = exports.ThymioRGBLeds = exports.CalliopeV3RGBLeds = exports.Txt4RGBLed = exports.RGBLed = exports.MbotDisplay = exports.MbedDisplay = exports.MatrixDisplay = exports.WebAudio = exports.TTS = exports.StatusLed = exports.MbotChassis = exports.ThymioChassis = exports.EdisonChassis = exports.Txt4Chassis = exports.RCJChassis = exports.CozmoChassis = exports.ApitorChassis = exports.RCXChassis = exports.NXTChassis = exports.EV3Chassis = exports.LegoChassis = exports.EncoderChassisDiffDrive = exports.RobotinoChassis = exports.ChassisDiffDrive = exports.ChassisMobile = void 0;
     var ChassisMobile = /** @class */ (function () {
         function ChassisMobile(id) {
             this.drawPriority = 0;
@@ -1235,6 +1235,115 @@ define(["require", "exports", "interpreter.constants", "simulation.math", "guiSt
         return ApitorChassis;
     }(LegoChassis));
     exports.ApitorChassis = ApitorChassis;
+    /**
+     * Cozmo's fixed hardware simulation. The two drive motors model the tracks;
+     * motor port "a" is reserved for the non-configurable front lift.
+     */
+    var CozmoChassis = /** @class */ (function (_super) {
+        __extends(CozmoChassis, _super);
+        function CozmoChassis(id, configuration, maxRotation, pose) {
+            var _this = this;
+            var actuators = configuration['ACTUATORS'] || {};
+            var simulationConfiguration = __assign(__assign({}, configuration), { TRACKWIDTH: 0, WHEELDIAMETER: 0, ACTUATORS: __assign(__assign({}, actuators), { COZMO_DRIVE: {
+                        TYPE: 'DIFFERENTIALDRIVE',
+                        BRICK_TRACK_WIDTH: 7.0,
+                        BRICK_WHEEL_DIAMETER: 3.0,
+                        MOTOR_L: 'L',
+                        MOTOR_R: 'R',
+                    }, COZMO_LIFT: {
+                        TYPE: 'MOTOR',
+                        PORT: 'a',
+                    } }) });
+            _this = _super.call(this, id, simulationConfiguration, maxRotation, pose) || this;
+            _this.geom = {
+                x: -29,
+                y: -20,
+                w: 50,
+                h: 40,
+                radius: 6,
+                color: '#e7ebef',
+            };
+            _this.topView = '<svg id="brick' +
+                _this.id +
+                '" xmlns="http://www.w3.org/2000/svg" width="320px" height="210px" viewBox="0 0 640 420" preserveAspectRatio="xMidYMid meet">' +
+                '<image href="/css/img/system_preview/cozmo.svg?v=cozmo-sim-20260802" width="640" height="420" preserveAspectRatio="xMidYMid meet" />' +
+                '</svg>';
+            /** Normalized lift height, shared with the optional 3D renderer. */
+            _this.liftPosition = 0;
+            _this.liftTarget = 0;
+            // Long rectangles communicate continuous tracks instead of wheels.
+            _this.wheelLeft = { x: -27, y: -24, w: 47, h: 8, color: '#171a1d' };
+            _this.wheelRight = { x: -27, y: 16, w: 47, h: 8, color: '#171a1d' };
+            _this.wheelBack = { x: -31, y: -2, w: 4, h: 4, color: '#171a1d' };
+            _this.wheelFrontLeft = { x: 20, y: -24, rx: 0, ry: 0, bumped: false };
+            _this.wheelBackLeft = { x: -27, y: -24, rx: 0, ry: 0, bumped: false };
+            _this.wheelFrontRight = { x: 20, y: 24, rx: 0, ry: 0, bumped: false };
+            _this.wheelBackRight = { x: -27, y: 24, rx: 0, ry: 0, bumped: false };
+            SIMATH.transform(pose, _this.wheelFrontRight);
+            SIMATH.transform(pose, _this.wheelBackRight);
+            SIMATH.transform(pose, _this.wheelFrontLeft);
+            SIMATH.transform(pose, _this.wheelBackLeft);
+            $('#simRobotContent').append(_this.topView);
+            $('#simRobotWindow button').removeClass('btn-close-white');
+            $('#brick' + _this.id).hide();
+            return _this;
+        }
+        CozmoChassis.prototype.reset = function () {
+            _super.prototype.reset.call(this);
+            this.liftPosition = 0;
+            this.liftTarget = 0;
+        };
+        CozmoChassis.prototype.updateAction = function (myRobot, dt, interpreterRunning) {
+            // Peek before the base chassis consumes the one-shot motor command.
+            var motors = myRobot.interpreter.getRobotBehaviour().getActionState('motors', false);
+            if (motors && motors['a'] != null) {
+                this.liftTarget = Number(motors['a']) > 0 ? 1 : 0;
+            }
+            _super.prototype.updateAction.call(this, myRobot, dt, interpreterRunning);
+            var step = Math.min(1, dt * 1.7);
+            this.liftPosition += (this.liftTarget - this.liftPosition) * step;
+            if (Math.abs(this.liftTarget - this.liftPosition) < 0.01) {
+                this.liftPosition = this.liftTarget;
+            }
+        };
+        CozmoChassis.prototype.draw = function (rCtx, myRobot) {
+            _super.prototype.draw.call(this, rCtx, myRobot);
+            rCtx.save();
+            // Tread seams make the tracked drive unambiguous in the top view.
+            rCtx.strokeStyle = '#5e666d';
+            rCtx.lineWidth = 1;
+            for (var x = -23; x <= 17; x += 7) {
+                rCtx.beginPath();
+                rCtx.moveTo(x, -24);
+                rCtx.lineTo(x, -16);
+                rCtx.moveTo(x, 16);
+                rCtx.lineTo(x, 24);
+                rCtx.stroke();
+            }
+            // Face display and front lift. In 2D the lift height is shown by its
+            // colour and the small height bar, while its collision footprint stays fixed.
+            rCtx.fillStyle = '#17202a';
+            rCtx.fillRect(-4, -12, 13, 24);
+            rCtx.fillStyle = '#36d5e8';
+            rCtx.fillRect(1, -8, 3, 5);
+            rCtx.fillRect(1, 3, 3, 5);
+            rCtx.strokeStyle = this.liftPosition > 0.5 ? '#f39c12' : '#6f7b83';
+            rCtx.lineWidth = 4;
+            [-11, 11].forEach(function (y) {
+                rCtx.beginPath();
+                rCtx.moveTo(18, y);
+                rCtx.lineTo(35, y);
+                rCtx.stroke();
+            });
+            rCtx.fillStyle = '#263746';
+            rCtx.fillRect(25, -4, 3, 8);
+            rCtx.fillStyle = '#36d5e8';
+            rCtx.fillRect(25, 4 - 8 * this.liftPosition, 3, 8 * this.liftPosition);
+            rCtx.restore();
+        };
+        return CozmoChassis;
+    }(LegoChassis));
+    exports.CozmoChassis = CozmoChassis;
     var RCJChassis = /** @class */ (function (_super) {
         __extends(RCJChassis, _super);
         function RCJChassis(id, configuration, maxRotation, pose) {

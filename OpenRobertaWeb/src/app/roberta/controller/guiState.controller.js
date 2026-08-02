@@ -268,12 +268,15 @@ function setRobot(robot, result, opt_init) {
         $('#blocklyDiv, #bricklyDiv').css('background-position', 'center');
     } else if (robotGroup === 'cozmo') {
         var overviewLanguage = (document.documentElement.lang || 'de').toLowerCase().indexOf('de') === 0 ? 'de' : 'en';
-        $('#blocklyDiv').css('background', '#fff');
+        $('#blocklyDiv').css(
+            'background',
+            'linear-gradient(rgba(255,255,255,.91), rgba(255,255,255,.91)), url(../../../../css/img/system_preview/cozmo.svg) center / auto 72% no-repeat'
+        );
         $('#bricklyDiv').css(
             'background',
             '#f4f7f9 url(../../../../css/img/cozmo-hardware-overview-' + overviewLanguage + '.svg) center / contain no-repeat'
         );
-        $('#blocklyDiv').css('background-size', 'initial');
+        $('#blocklyDiv').css('background-size', 'cover, auto 72%');
         $('#bricklyDiv').css('background-size', 'contain');
         $('#blocklyDiv, #bricklyDiv').css('background-position', 'center');
     } else {
