@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import time
 from collections.abc import Callable
 from typing import Any
@@ -34,7 +35,7 @@ class ApitorAdapter(RobotAdapter):
 
     _manifest = CapabilityManifest(
         robot="apitor",
-        adapter_version="0.2.0",
+        adapter_version="0.2.1",
         capabilities={
             "motorPorts": ["M1", "M2", "M3"],
             "individualMotorControl": True,
@@ -75,15 +76,29 @@ class ApitorAdapter(RobotAdapter):
 
     @property
     def connected(self) -> bool:
-        return self._connected
+        return bool(
+            self._connected
+            and self._client is not None
+            and getattr(self._client, "is_connected", False)
+        )
 
     async def connect(self) -> dict[str, Any]:
         async with self._connect_lock:
             if self.connected:
                 return self._connection_result()
+            # A BLE disconnect may leave the adapter object alive. Never reuse
+            # that stale client: macOS then reports that service discovery has
+            # not been performed and an otherwise endless program is stopped.
+            stale_client = self._client
+            if stale_client is not None:
+                with contextlib.suppress(Exception):
+                    if getattr(stale_client, "is_connected", False):
+                        await stale_client.disconnect()
+                self._reset_connection()
             client_type, scanner_type = self._ble_factory()
             identifier = self._identifier or await self._find_robot(scanner_type)
-            client = client_type(identifier, timeout=8.0)
+            client = client_type(identifier, timeout=8.0, disconnected_callback=self._on_disconnect)
+            self._client = client
             try:
                 await client.connect()
                 await client.write_gatt_char(APITOR_WRITE_UUID, ROBOT_X_AUTHORIZE, response=True)
@@ -94,9 +109,9 @@ class ApitorAdapter(RobotAdapter):
                 if getattr(client, "is_connected", False):
                     await self._safe_stop(client)
                     await client.disconnect()
+                self._reset_connection()
                 raise AdapterError(f"failed to connect to Apitor Robot X: {error}") from error
             self._identifier = identifier
-            self._client = client
             self._connected = True
             return self._connection_result()
 
@@ -115,10 +130,7 @@ class ApitorAdapter(RobotAdapter):
                         pass
                     await client.disconnect()
             finally:
-                self._client = None
-                self._connected = False
-                self._sensor_packet = None
-                self._sensor_timestamp = None
+                self._reset_connection()
 
     async def execute(self, command: str, params: dict[str, Any]) -> Any:
         client = self._require_client()
@@ -190,6 +202,17 @@ class ApitorAdapter(RobotAdapter):
             self._sensor_packet = packet
             self._sensor_timestamp = time.monotonic()
 
+    def _on_disconnect(self, client: Any) -> None:
+        """Invalidate a dropped Bleak client so the next connect is real."""
+        if client is self._client:
+            self._reset_connection()
+
+    def _reset_connection(self) -> None:
+        self._client = None
+        self._connected = False
+        self._sensor_packet = None
+        self._sensor_timestamp = None
+
     @staticmethod
     async def _find_robot(scanner_type) -> str:
         devices = await scanner_type.discover(timeout=8.0)
@@ -215,12 +238,16 @@ class ApitorAdapter(RobotAdapter):
             raise AdapterError(f"{name} must be between {minimum} and {maximum}")
         return value
 
-    @staticmethod
-    async def _write(client, packet: bytes) -> None:
+    async def _write(self, client, packet: bytes) -> None:
         try:
             await client.write_gatt_char(APITOR_WRITE_UUID, packet, response=True)
         except Exception as error:
-            await ApitorAdapter._safe_stop(client)
+            await self._safe_stop(client)
+            with contextlib.suppress(Exception):
+                if getattr(client, "is_connected", False):
+                    await client.disconnect()
+            if client is self._client:
+                self._reset_connection()
             raise AdapterError(f"Apitor BLE write failed: {error}") from error
 
     @staticmethod

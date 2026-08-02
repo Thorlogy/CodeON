@@ -19,12 +19,13 @@ class FakeScanner:
 class FakeClient:
     instances = []
 
-    def __init__(self, identifier, timeout):
+    def __init__(self, identifier, timeout, disconnected_callback=None):
         self.identifier = identifier
         self.timeout = timeout
         self.is_connected = False
         self.writes = []
         self.notify_callbacks = {}
+        self.disconnected_callback = disconnected_callback
         FakeClient.instances.append(self)
 
     async def connect(self):
@@ -32,6 +33,8 @@ class FakeClient:
 
     async def disconnect(self):
         self.is_connected = False
+        if self.disconnected_callback:
+            self.disconnected_callback(self)
 
     async def write_gatt_char(self, characteristic, packet, response):
         self.writes.append((characteristic, packet, response))
@@ -93,6 +96,28 @@ class ApitorAdapterTest(unittest.IsolatedAsyncioTestCase):
 
     async def test_sensor_read_before_first_notification_is_unavailable(self):
         self.assertIsNone(await self.adapter.read_sensor("infrared1", {}))
+
+    async def test_unexpected_ble_disconnect_forces_a_real_reconnect(self):
+        self.client.is_connected = False
+        self.client.disconnected_callback(self.client)
+        self.assertFalse(self.adapter.connected)
+
+        result = await self.adapter.connect()
+
+        self.assertTrue(result["connected"])
+        self.assertIsNot(self.adapter._client, self.client)
+        self.assertEqual(len(FakeClient.instances), 2)
+
+    async def test_gatt_write_failure_invalidates_stale_connected_client(self):
+        async def fail_write(*_args, **_kwargs):
+            raise RuntimeError("Service Discovery has not been performed yet")
+
+        self.client.write_gatt_char = fail_write
+        with self.assertRaisesRegex(AdapterError, "Service Discovery"):
+            await self.adapter.execute("stopMotor", {"port": "M3"})
+
+        self.assertFalse(self.adapter.connected)
+        self.assertIsNone(self.adapter._client)
 
     async def test_unknown_command_is_rejected(self):
         with self.assertRaises(UnsupportedCommandError):

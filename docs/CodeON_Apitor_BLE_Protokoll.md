@@ -187,16 +187,29 @@ The APK's speech and sound functions use Android `TextToSpeech` and
 must therefore describe future Apitor sound blocks as output from the
 Mac/tablet, not as sound from the robot.
 
-## Known limitation: endless programs
+## Endless-program disconnect fix
 
 Hardware testing on 2026-07-30 confirmed the colour-sensor workflow and the
-new infrared-sensor block is available for testing. However, a program inside
-the Blockly `repeat forever` block still terminates unexpectedly instead of
-running until the user presses Stop. Repeated identical motor commands are
-already suppressed in the browser bridge, but this did not eliminate the
-termination. The remaining cause may be in the interpreter lifecycle, the
-bridge heartbeat/timeout path, or sensor polling. This checkpoint therefore
-records the endless-loop behavior as **open and not yet fixed**.
+new infrared-sensor block is available for testing. The bridge log then showed
+that the observed termination of a Blockly `repeat forever` program wasn't an
+interpreter exit: macOS had dropped the BLE GATT services while the adapter's
+cached connection flag still reported success. The next motor transition
+failed with `Service Discovery has not been performed yet`, and CodeON invoked
+its safety stop.
+
+Adapter 0.2.1 now checks the physical Bleak connection, invalidates the client
+through Bleak's disconnect callback and performs a real connection setup on
+the next CodeON connection attempt. The safety stop remains unchanged. A
+hardware acceptance run must verify that an endless sensor program continues
+until the user presses Stop.
+
+Checkpoint on 2026-08-01: all 72 Robot Integration Kit tests pass, including
+new regression tests for an unexpected BLE disconnect and the macOS stale-GATT
+write error. The subsequent hardware acceptance run was successful: the
+verified colour-sensor program continued inside `repeat forever` and was ended
+deliberately with CodeON's Play/Stop button. The unexpected program termination
+is therefore considered fixed. The infrared-sensor hardware test remains the
+next integration step.
 
 ## Safety gate
 
