@@ -1,4 +1,10 @@
 {
+  "scripts": {
+    "test:architecture-graph": "node scripts/test-codeon-architecture-graph.js",
+    "graph:validate": "node scripts/codeon-architecture-graph.js validate",
+    "graph:impact": "node scripts/codeon-architecture-graph.js impact",
+    "graph:robot": "node scripts/codeon-architecture-graph.js robot"
+  },
   "dependencies": {
     "puppeteer": "^25.3.0"
   }

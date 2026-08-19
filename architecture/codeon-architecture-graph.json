@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 1,
+  "description": "Reviewed CodeON robot capability, dependency, verification, and change-impact graph.",
+  "nodes": [
+    { "id": "module.robot-core", "type": "module", "label": "OpenRobertaRobot", "path": "OpenRobertaRobot", "artifactId": "OpenRobertaRobot" },
+    { "id": "module.server", "type": "module", "label": "OpenRobertaServer", "path": "OpenRobertaServer", "artifactId": "OpenRobertaServer", "pom": "OpenRobertaServer/pom.xml" },
+    { "id": "module.web", "type": "module", "label": "OpenRobertaWeb", "path": "OpenRobertaWeb" },
+    { "id": "module.runtime", "type": "module", "label": "Packaged runtime", "path": "application" },
+    { "id": "module.rcx", "type": "module", "label": "RobotRCX", "path": "RobotRCX", "artifactId": "RobotRCX", "pom": "RobotRCX/pom.xml" },
+    { "id": "module.edison", "type": "module", "label": "RobotEdison", "path": "RobotEdison", "artifactId": "RobotEdison", "pom": "RobotEdison/pom.xml" },
+    { "id": "module.rcj", "type": "module", "label": "RobotSpike / RCJ", "path": "RobotSpike", "artifactId": "RobotSpike", "pom": "RobotSpike/pom.xml" },
+    { "id": "module.cozmo", "type": "module", "label": "RobotCozmo", "path": "RobotCozmo", "artifactId": "RobotCozmo", "pom": "RobotCozmo/pom.xml" },
+    { "id": "module.apitor", "type": "module", "label": "RobotApitor", "path": "RobotApitor", "artifactId": "RobotApitor", "pom": "RobotApitor/pom.xml" },
+
+    { "id": "robot.rcx", "type": "robot", "label": "RCX", "propertiesPath": "RobotRCX/src/main/resources/rcx.properties", "configurationMode": "user-configurable" },
+    { "id": "robot.edison", "type": "robot", "label": "Edison V2", "propertiesPath": "RobotEdison/src/main/resources/edison.properties", "configurationMode": "built-in" },
+    { "id": "robot.rcj", "type": "robot", "label": "RCJ RescueOnlineSim", "propertiesPath": "RobotSpike/src/main/resources/rcj.properties", "configurationMode": "user-configurable" },
+    { "id": "robot.cozmo", "type": "robot", "label": "Cozmo", "propertiesPath": "RobotCozmo/src/main/resources/cozmo.properties", "configurationMode": "fixed" },
+    { "id": "robot.apitor", "type": "robot", "label": "Apitor Robot X", "propertiesPath": "RobotApitor/src/main/resources/apitor.properties", "configurationMode": "user-configurable" },
+
+    { "id": "test.graph", "type": "test", "label": "Architecture graph contract", "command": "npm run test:architecture-graph" },
+    { "id": "test.sensors", "type": "test", "label": "Cross-robot sensor toolboxes", "command": "node scripts/test-system-sensor-toolboxes.js" },
+    { "id": "test.cozmo-contract", "type": "test", "label": "Cozmo fixed-configuration contract", "command": "mvn -pl RobotCozmo -am -Dtest=CozmoFixedConfigurationTest -DfailIfNoTests=false -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test" },
+    { "id": "test.cozmo-simulation", "type": "test", "label": "Cozmo simulation contract", "command": "node scripts/test-cozmo-simulation-static.js" },
+    { "id": "test.apitor-simulation", "type": "test", "label": "Apitor simulation contract", "command": "node scripts/test-apitor-simulation-static.js" },
+    { "id": "test.simulation-3d", "type": "test", "label": "Shared 3D simulation contract", "command": "node scripts/test-codeon-3d-static.js" },
+    { "id": "test.buddy-security", "type": "test", "label": "Code Buddy credential and runtime security", "command": "node scripts/test-codeon-buddy-security.js" },
+    { "id": "test.java-reactor", "type": "test", "label": "Active robot Maven reactor tests", "command": "mvn -pl OpenRobertaRobot,RobotEdison,RobotSpike,RobotCozmo,RobotApitor,RobotRCX -am -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test" },
+    { "id": "test.server-package", "type": "test", "label": "Server reactor package build", "command": "mvn -pl OpenRobertaServer -am -DskipTests package" }
+  ],
+  "edges": [
+    { "from": "robot.rcx", "type": "implemented-by", "to": "module.rcx" },
+    { "from": "robot.edison", "type": "implemented-by", "to": "module.edison" },
+    { "from": "robot.rcj", "type": "implemented-by", "to": "module.rcj" },
+    { "from": "robot.cozmo", "type": "implemented-by", "to": "module.cozmo" },
+    { "from": "robot.apitor", "type": "implemented-by", "to": "module.apitor" },
+
+    { "from": "module.rcx", "type": "depends-on", "to": "module.robot-core" },
+    { "from": "module.rcx", "type": "depends-on", "to": "module.edison" },
+    { "from": "module.edison", "type": "depends-on", "to": "module.robot-core" },
+    { "from": "module.rcj", "type": "depends-on", "to": "module.robot-core" },
+    { "from": "module.cozmo", "type": "depends-on", "to": "module.rcj" },
+    { "from": "module.apitor", "type": "depends-on", "to": "module.rcj" },
+    { "from": "module.server", "type": "depends-on", "to": "module.robot-core" },
+    { "from": "module.server", "type": "depends-on", "to": "module.rcx" },
+    { "from": "module.server", "type": "depends-on", "to": "module.edison" },
+    { "from": "module.server", "type": "depends-on", "to": "module.rcj" },
+    { "from": "module.server", "type": "depends-on", "to": "module.cozmo" },
+    { "from": "module.server", "type": "depends-on", "to": "module.apitor" },
+
+    { "from": "robot.rcx", "type": "verified-by", "to": "test.sensors" },
+    { "from": "robot.edison", "type": "verified-by", "to": "test.sensors" },
+    { "from": "robot.rcj", "type": "verified-by", "to": "test.sensors" },
+    { "from": "robot.cozmo", "type": "verified-by", "to": "test.cozmo-contract" },
+    { "from": "robot.cozmo", "type": "verified-by", "to": "test.cozmo-simulation" },
+    { "from": "robot.apitor", "type": "verified-by", "to": "test.apitor-simulation" }
+  ],
+  "impactRules": [
+    {
+      "id": "project-documentation",
+      "paths": ["README.md", "CONTRIBUTING.md", "SECURITY.md", ".github/pull_request_template.md"],
+      "risk": "low",
+      "robots": [],
+      "tests": ["test.graph"],
+      "reason": "Public project, contribution, or security guidance changed."
+    },
+    {
+      "id": "architecture-contract",
+      "paths": ["AGENTS.md", "architecture/", "docs/CodeON_Architecture_Graph.md", ".github/workflows/codeon_architecture_graph.yml", "scripts/codeon-architecture-graph.js", "scripts/test-codeon-architecture-graph.js", "package.json"],
+      "risk": "medium",
+      "robots": [],
+      "tests": ["test.graph"],
+      "reason": "Developer guidance or the reviewed impact model changed."
+    },
+    {
+      "id": "parent-build",
+      "paths": ["pom.xml"],
+      "risk": "critical",
+      "robots": ["robot.rcx", "robot.edison", "robot.rcj", "robot.cozmo", "robot.apitor"],
+      "tests": ["test.graph", "test.java-reactor", "test.server-package"],
+      "reason": "The parent reactor controls all active robot modules."
+    },
+    {
+      "id": "shared-robot-core",
+      "paths": ["OpenRobertaRobot/"],
+      "risk": "critical",
+      "robots": ["robot.rcx", "robot.edison", "robot.rcj", "robot.cozmo", "robot.apitor"],
+      "tests": ["test.graph", "test.java-reactor", "test.sensors"],
+      "reason": "Every active robot plugin depends on the shared robot core."
+    },
+    {
+      "id": "server-workflow",
+      "paths": ["OpenRobertaServer/", "scripts/test-codeon-buddy-security.js"],
+      "risk": "high",
+      "robots": ["robot.rcx", "robot.edison", "robot.rcj", "robot.cozmo", "robot.apitor"],
+      "tests": ["test.graph", "test.java-reactor", "test.server-package", "test.sensors", "test.cozmo-simulation", "test.apitor-simulation", "test.simulation-3d", "test.buddy-security"],
+      "reason": "The server binds all active plugins and delivers shared browser resources."
+    },
+    {
+      "id": "web-simulation",
+      "paths": ["OpenRobertaWeb/"],
+      "risk": "high",
+      "robots": ["robot.rcx", "robot.edison", "robot.rcj", "robot.cozmo", "robot.apitor"],
+      "tests": ["test.sensors", "test.cozmo-simulation", "test.apitor-simulation", "test.simulation-3d"],
+      "reason": "Shared Blockly and simulation sources can change multiple robot frontends."
+    },
+    {
+      "id": "packaged-runtime",
+      "paths": ["application/"],
+      "risk": "high",
+      "robots": ["robot.rcx", "robot.edison", "robot.rcj", "robot.cozmo", "robot.apitor"],
+      "tests": ["test.sensors", "test.cozmo-simulation", "test.apitor-simulation", "test.simulation-3d", "test.buddy-security"],
+      "reason": "Packaged artifacts must remain synchronized with server resources and source builds."
+    },
+    {
+      "id": "rcx-plugin",
+      "paths": ["RobotRCX/"],
+      "risk": "high",
+      "robots": ["robot.rcx"],
+      "tests": ["test.graph", "test.sensors", "test.java-reactor"],
+      "reason": "RCX plugin behavior or its dependency on Edison changed."
+    },
+    {
+      "id": "edison-plugin",
+      "paths": ["RobotEdison/"],
+      "risk": "high",
+      "robots": ["robot.edison", "robot.rcx"],
+      "tests": ["test.graph", "test.sensors", "test.java-reactor"],
+      "reason": "RCX currently has a Maven dependency on RobotEdison."
+    },
+    {
+      "id": "rcj-shared-plugin",
+      "paths": ["RobotSpike/"],
+      "risk": "critical",
+      "robots": ["robot.rcj", "robot.cozmo", "robot.apitor"],
+      "tests": ["test.graph", "test.sensors", "test.java-reactor", "test.cozmo-contract", "test.cozmo-simulation", "test.apitor-simulation"],
+      "reason": "Cozmo and Apitor both depend on RobotSpike in addition to RCJ."
+    },
+    {
+      "id": "cozmo-plugin",
+      "paths": ["RobotCozmo/"],
+      "risk": "high",
+      "robots": ["robot.cozmo"],
+      "tests": ["test.graph", "test.sensors", "test.cozmo-contract", "test.cozmo-simulation"],
+      "reason": "Cozmo has a fixed configuration contract and dedicated simulation."
+    },
+    {
+      "id": "apitor-plugin",
+      "paths": ["RobotApitor/"],
+      "risk": "high",
+      "robots": ["robot.apitor"],
+      "tests": ["test.graph", "test.sensors", "test.apitor-simulation"],
+      "reason": "Apitor has a dedicated configuration and simulation contract."
+    }
+  ]
+}

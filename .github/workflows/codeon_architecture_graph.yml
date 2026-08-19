@@ -1,0 +1,24 @@
+name: CodeON architecture safety graph
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  architecture-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm run test:architecture-graph
+      - run: node scripts/test-system-sensor-toolboxes.js
+      - run: node scripts/test-cozmo-simulation-static.js
+      - run: node scripts/test-apitor-simulation-static.js
+      - run: node scripts/test-codeon-3d-static.js
+      - run: node scripts/test-codeon-buddy-security.js

@@ -12,6 +12,8 @@ const sourceThemePath = path.join(root, 'OpenRobertaServer/staticResources/js/cr
 const runtimeThemePath = path.join(root, 'application/staticResources/js/creators_theme.js');
 const sourceIndexPath = path.join(root, 'OpenRobertaServer/staticResources/index.html');
 const runtimeIndexPath = path.join(root, 'application/staticResources/index.html');
+const sourceMainPath = path.join(root, 'OpenRobertaServer/staticResources/js/main.js');
+const runtimeMainPath = path.join(root, 'application/staticResources/js/main.js');
 const sourceManifestPath = path.join(root, 'OpenRobertaServer/staticResources/manifest.webapp.json');
 const runtimeManifestPath = path.join(root, 'application/staticResources/manifest.webapp.json');
 const sourceIconPath = path.join(root, 'OpenRobertaServer/staticResources/css/img/codeon-favicon.svg');
@@ -23,12 +25,15 @@ const sourceTheme = fs.readFileSync(sourceThemePath, 'utf8');
 const runtimeTheme = fs.readFileSync(runtimeThemePath, 'utf8');
 const sourceIndex = fs.readFileSync(sourceIndexPath, 'utf8');
 const runtimeIndex = fs.readFileSync(runtimeIndexPath, 'utf8');
+const sourceMain = fs.readFileSync(sourceMainPath, 'utf8');
+const runtimeMain = fs.readFileSync(runtimeMainPath, 'utf8');
 const sourceManifest = fs.readFileSync(sourceManifestPath, 'utf8');
 const runtimeManifest = fs.readFileSync(runtimeManifestPath, 'utf8');
 
 assert.strictEqual(sourceController, runtimeController, 'Code-Buddy-Quell- und Laufzeitcontroller unterscheiden sich.');
 assert.strictEqual(sourceTheme, runtimeTheme, 'Code-Buddy-Quell- und Laufzeittheme unterscheiden sich.');
 assert.strictEqual(sourceIndex, runtimeIndex, 'Quell- und Laufzeitindex unterscheiden sich.');
+assert.strictEqual(sourceMain, runtimeMain, 'Quell- und Laufzeit-RequireJS-Konfiguration unterscheiden sich.');
 assert.strictEqual(sourceManifest, runtimeManifest, 'Quell- und Laufzeitmanifest unterscheiden sich.');
 assert.strictEqual(fs.readFileSync(sourceIconPath, 'utf8'), fs.readFileSync(runtimeIconPath, 'utf8'), 'Quell- und Laufzeitfavicon unterscheiden sich.');
 
@@ -74,7 +79,11 @@ assert.ok(sourceTheme.includes('.ai-icon-button'), 'Große, zugängliche Code-Bu
 assert.ok(sourceTheme.includes('#btn-clear-chat { width: 42px; height: 42px;'), 'Der Löschbutton ist nicht ausreichend groß.');
 assert.ok(sourceTheme.includes('#btn-send { width: 48px; height: 46px;'), 'Der Sendebutton ist nicht ausreichend groß.');
 assert.ok(sourceIndex.includes("codeon-favicon.svg?v=20260715"), 'Das CodeON-Favicon fehlt im Index.');
-assert.ok(sourceIndex.includes("v=codeon-buddy-20260715-2"), 'Die Code-Buddy-Cacheversion fehlt.');
+const indexCacheVersion = sourceIndex.match(/var require = \{ urlArgs: 'v=([^']+)' \}/);
+const mainCacheVersion = sourceMain.match(/urlArgs: 'v=([^']+)'/);
+assert.ok(indexCacheVersion && /^codeon-[a-z0-9-]+$/.test(indexCacheVersion[1]), 'Der Index braucht eine gültige CodeON-Cacheversion.');
+assert.ok(mainCacheVersion && /^codeon-[a-z0-9-]+$/.test(mainCacheVersion[1]), 'RequireJS braucht eine gültige CodeON-Cacheversion.');
+assert.ok(sourceMain.includes("'aiHelper.controller': 'js/app/roberta/controller/aiHelper.controller'"), 'Der Code-Buddy-Controller fehlt in RequireJS.');
 assert.strictEqual(JSON.parse(sourceManifest).short_name, 'CodeON', 'Das Web-App-Manifest ist nicht auf CodeON umgestellt.');
 
 console.log('CodeON-Code-Buddy-Sicherheitsprüfung erfolgreich.');
