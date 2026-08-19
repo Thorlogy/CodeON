@@ -10,7 +10,7 @@ The graph in `architecture/codeon-architecture-graph.json` records the small set
 - which robots and checks are affected by a changed path;
 - whether a robot uses a fixed, user-configurable, or built-in configuration.
 
-It is intentionally not a full symbol graph and not a vector RAG index. Source code and plugin property files remain authoritative. The validator fails if reviewed graph metadata disagrees with repository paths, Maven module dependencies, or robot configuration properties.
+It is intentionally separate from the generated local symbol graph and is not a vector RAG index. Source code and plugin property files remain authoritative. The validator fails if reviewed graph metadata disagrees with repository paths, Maven module dependencies, or robot configuration properties. The complementary local code graph is documented in `docs/CodeON_Local_Code_Graph.md`.
 
 ## Usage
 
@@ -52,4 +52,4 @@ These controls keep a manipulated graph or hostile filename from becoming a shel
 
 ## Deliberate limitations
 
-The graph does not yet index functions, classes, calls, or runtime traces. A compiler-based SCIP or CodeQL proof of concept should only be added after this impact layer is used on real changes and a benchmark demonstrates additional value. Any future Codex MCP adapter should be read-only, expose a narrow allowlist of queries, bind locally, have no shell execution, and treat all repository-derived text as untrusted output.
+This reviewed graph does not index functions, classes, calls, or runtime traces. The local code graph provides bounded symbol and dependency navigation, while keeping exact and heuristic relationships visibly distinct. A compiler-based SCIP or CodeQL proof of concept should only be added after a benchmark demonstrates additional value. Any future Codex adapter must remain read-only, expose a narrow allowlist of queries, bind locally, have no shell execution, and treat all repository-derived text as untrusted output.

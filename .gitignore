@@ -36,5 +36,6 @@ dbIptoCountry/
 .env.*
 !.env.example
 .codeon-secrets/
+/.codeon/
 *.pem
 *.key

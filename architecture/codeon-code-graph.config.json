@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "description": "Allowlisted source roots for the local CodeON symbol and dependency graph.",
+  "sourceRoots": [
+    { "path": "OpenRobertaRobot/src/main/java", "module": "OpenRobertaRobot", "scope": "production" },
+    { "path": "OpenRobertaRobot/src/test/java", "module": "OpenRobertaRobot", "scope": "test" },
+    { "path": "RobotEdison/src/main/java", "module": "RobotEdison", "scope": "production" },
+    { "path": "RobotSpike/src/main/java", "module": "RobotSpike", "scope": "production" },
+    { "path": "RobotCozmo/src/main/java", "module": "RobotCozmo", "scope": "production" },
+    { "path": "RobotCozmo/src/test/java", "module": "RobotCozmo", "scope": "test" },
+    { "path": "RobotApitor/src/main/java", "module": "RobotApitor", "scope": "production" },
+    { "path": "RobotRCX/src/main/java", "module": "RobotRCX", "scope": "production" },
+    { "path": "RobotRCX/src/test/java", "module": "RobotRCX", "scope": "test" },
+    { "path": "RobotRCX/src/test/python", "module": "RobotRCX", "scope": "test" },
+    { "path": "OpenRobertaServer/src/main/java", "module": "OpenRobertaServer", "scope": "production" },
+    { "path": "OpenRobertaServer/src/test/java", "module": "OpenRobertaServer", "scope": "test" },
+    { "path": "OpenRobertaWeb/src/app", "module": "OpenRobertaWeb", "scope": "production" },
+    { "path": "RobotIntegrationKit/python/src", "module": "RobotIntegrationKit", "scope": "production" },
+    { "path": "RobotIntegrationKit/python/tests", "module": "RobotIntegrationKit", "scope": "test" },
+    { "path": "RobotIntegrationKit/python/tools", "module": "RobotIntegrationKit", "scope": "tool" }
+  ],
+  "sourceFiles": [
+    { "path": "RobotRCX/rcx-bridge.py", "module": "RobotRCX", "scope": "production" },
+    { "path": "RobotRCX/tools/rcx-bridge/rcx-bridge.py", "module": "RobotRCX", "scope": "tool" },
+    { "path": "start-codeon-rcx.py", "module": "RobotRCX", "scope": "tool" }
+  ],
+  "extensions": [".java", ".js", ".ts", ".py"],
+  "excludedSegments": [
+    ".git",
+    ".idea",
+    ".vscode",
+    ".venv",
+    "venv",
+    "node_modules",
+    "target",
+    "build",
+    "dist",
+    "generated",
+    "staticResources"
+  ],
+  "limits": {
+    "maxFiles": 3000,
+    "maxFileBytes": 1048576,
+    "maxNodes": 60000,
+    "maxEdges": 180000,
+    "maxQueryLength": 200,
+    "maxResults": 100,
+    "maxIndexBytes": 16777216
+  }
+}

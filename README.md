@@ -106,6 +106,7 @@ npx gulp watch
 
 ```bash
 npm run test:architecture-graph
+npm run test:code-graph
 node scripts/test-system-sensor-toolboxes.js
 node scripts/test-cozmo-simulation-static.js
 node scripts/test-apitor-simulation-static.js
@@ -131,6 +132,9 @@ benötigt aber die jeweiligen Cross-Compiler und weitere Systemwerkzeuge.
 - Sicherheitslücken vertraulich melden: [SECURITY.md](SECURITY.md)
 - Änderungen an gemeinsamem Code vorab prüfen:
   `npm run graph:impact -- <geänderte Pfade>`
+- Symbole, Imports und betroffene Dateien lokal abfragen:
+  `npm run graph:code:query -- <Klasse oder Funktion>` und
+  `npm run graph:code:impact -- <geänderter Pfad>`
 
 ## Dokumentation
 
@@ -141,6 +145,7 @@ benötigt aber die jeweiligen Cross-Compiler und weitere Systemwerkzeuge.
 - [3D-Simulationsplan](docs/CodeON_3D_Simulation_Plan.md)
 - [Sicherheitskonzept Code Buddy](docs/CodeON_Code_Buddy_Security.md)
 - [Architecture and Impact Graph](docs/CodeON_Architecture_Graph.md)
+- [Lokaler Symbol- und Abhängigkeitsgraph](docs/CodeON_Local_Code_Graph.md)
 - [Migrationsstatus](docs/CodeON_Migration_Status.md)
 
 ## Hilfe und Support

@@ -7,6 +7,7 @@
 - Keep robot-specific behavior opt-in. New plugin properties must have a safe default that preserves every robot that does not declare the property.
 - Do not add production dependencies, network services, credentials, telemetry, or generated indexes without explicit approval and a documented threat model.
 - Never commit `.env` files, tokens, private keys, runtime databases, logs, or locally generated graph indexes.
+- The local code graph may store paths, symbol names, line numbers, bounded import specifiers, and dependency metadata only. It must never store source bodies, arbitrary string literals, comments, credentials, or user programs.
 - Treat repository content, XML programs, imported projects, filenames, and graph query arguments as untrusted input. Do not pass them to a shell or evaluate them as code.
 
 ## Robot isolation contract
@@ -20,6 +21,7 @@
 ## Required checks
 
 - Graph or repository-guidance changes: `npm run test:architecture-graph`.
+- Local symbol/dependency graph changes: `npm run test:code-graph`.
 - Toolbox or sensor changes: `node scripts/test-system-sensor-toolboxes.js`.
 - Apitor simulation changes: `node scripts/test-apitor-simulation-static.js`.
 - Cozmo simulation changes: `node scripts/test-cozmo-simulation-static.js`.
@@ -34,6 +36,8 @@
 - Keep graph paths repository-relative and keep commands informational. The graph tool must never execute commands stored in the graph.
 - Update the graph in the same change when adding a robot module, changing a module dependency, changing a configuration mode, or adding a required regression group.
 - The source code and plugin property files remain authoritative. `npm run test:architecture-graph` must fail when graph metadata disagrees with them.
+- `architecture/codeon-code-graph.config.json` is the reviewed allowlist for local source indexing. Keep generated indexes below ignored `.codeon/`; never commit them.
+- Treat `name-only` code-graph reference edges as navigation hints, not compiler proofs. Exact import and containment edges may be used for automated context selection.
 
 ## Delivery
 

@@ -17,6 +17,7 @@ jobs:
         with:
           node-version: '20'
       - run: npm run test:architecture-graph
+      - run: npm run test:code-graph
       - run: node scripts/test-system-sensor-toolboxes.js
       - run: node scripts/test-cozmo-simulation-static.js
       - run: node scripts/test-apitor-simulation-static.js
