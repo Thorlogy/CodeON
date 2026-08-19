@@ -23,6 +23,20 @@ public class CozmoFixedConfigurationTest {
     }
 
     @Test
+    public void pluginDeclaresItsHardwareConfigurationAsFixed() {
+        Assert.assertTrue(factory.hasConfiguration());
+        Assert.assertTrue(factory.hasFixedConfiguration());
+    }
+
+    @Test
+    public void configurableRobotKeepsItsSubmittedConfiguration() {
+        RobotFactory rcjFactory = Util.configureRobotPlugin("rcj", "", "", Collections.emptyList());
+
+        Assert.assertTrue(rcjFactory.hasConfiguration());
+        Assert.assertFalse(rcjFactory.hasFixedConfiguration());
+    }
+
+    @Test
     public void differentialDriveUsesBuiltInMotorsWithoutUserConfiguration() {
         String program =
             "<block_set xmlns=\"http://de.fhg.iais.roberta.blockly\" robottype=\"cozmo\" xmlversion=\"3.1\">"

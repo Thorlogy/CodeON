@@ -172,6 +172,17 @@ public class RobotFactory {
         return Boolean.parseBoolean(this.pluginProperties.getStringProperty("robot.configuration"));
     }
 
+    /**
+     * Returns whether the robot has a fixed, built-in hardware configuration.
+     *
+     * <p>The configuration may still be shown in the UI as a read-only overview.
+     * In that case program validation must use the plugin default instead of a
+     * possibly empty or stale configuration sent by the browser.</p>
+     */
+    public final boolean hasFixedConfiguration() {
+        return Boolean.parseBoolean(this.pluginProperties.getStringProperty("robot.configuration.fixed"));
+    }
+
     public final String getConfigurationType() {
         String configurationType = this.pluginProperties.getStringProperty("robot.configuration.type");
         if ( configurationType == null ) {
