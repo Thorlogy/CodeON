@@ -1,5 +1,12 @@
 # CodeON
 
+[![CodeON architecture safety graph](https://github.com/Thorlogy/CodeON/actions/workflows/codeon_architecture_graph.yml/badge.svg)](https://github.com/Thorlogy/CodeON/actions/workflows/codeon_architecture_graph.yml)
+
+> **Projektstatus: aktive Entwicklung.** CodeON wird als eigenständige
+> Robotik- und Bildungsplattform weiterentwickelt. Der Default-Branch enthält
+> den aktuellen, gemeinsam getesteten Entwicklungsstand; größere Änderungen
+> entstehen auf Feature-Branches und werden anschließend dorthin integriert.
+
 CodeON ist eine quelloffene Programmierumgebung für Robotik und Bildung. Die
 Oberfläche bietet grafische Blockprogrammierung, Simulationen, Missionen und die
 lokale Übertragung von Programmen auf unterstützte Roboter.
@@ -55,7 +62,9 @@ Die aktiven Maven-Module sind:
 
 - `OpenRobertaRobot` – gemeinsamer Robotik-/Programmierkern
 - `RobotEdison` – Edison-Plugin
-- `RobotSpike` – SPIKE-Plugin
+- `RobotSpike` – RCJ-Simulationskern und gemeinsame Basis für weitere Plugins
+- `RobotCozmo` – Cozmo-Plugin mit 2D-/3D-Simulation und lokaler Bridge
+- `RobotApitor` – Apitor Robot X mit BLE-Anbindung und 2D-/3D-Simulation
 - `RobotRCX` – RCX-/NQC-Plugin
 - `OpenRobertaServer` – Server und Webanwendung
 
@@ -96,14 +105,32 @@ npx gulp watch
 ### Tests
 
 ```bash
-mvn test
-cd OpenRobertaWeb
-npm run test:nqc-roundtrip
-npm run test:simulation-light
+npm run test:architecture-graph
+node scripts/test-system-sensor-toolboxes.js
+node scripts/test-cozmo-simulation-static.js
+node scripts/test-apitor-simulation-static.js
+node scripts/test-codeon-3d-static.js
+node scripts/test-codeon-buddy-security.js
+
+mvn -pl OpenRobertaRobot,RobotEdison,RobotSpike,RobotCozmo,RobotApitor,RobotRCX \
+  -am -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test
+mvn -pl OpenRobertaServer -am -DskipTests package
 ```
+
+Die historische, ungefilterte Server-Testsuite referenziert teilweise Plugins,
+die nicht mehr zum reduzierten CodeON-Reaktor gehören. Deshalb werden aktive
+Robotermodule und Server-Paketbau getrennt geprüft. Details und die begründete
+Testauswahl liefert der [Architecture and Impact Graph](docs/CodeON_Architecture_Graph.md).
 
 Die Integrationssuite kann mit `mvn clean install -PrunIT` ausgeführt werden,
 benötigt aber die jeweiligen Cross-Compiler und weitere Systemwerkzeuge.
+
+## Mitwirken und Sicherheit
+
+- Entwicklungs- und Branchregeln: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Sicherheitslücken vertraulich melden: [SECURITY.md](SECURITY.md)
+- Änderungen an gemeinsamem Code vorab prüfen:
+  `npm run graph:impact -- <geänderte Pfade>`
 
 ## Dokumentation
 
@@ -113,6 +140,7 @@ benötigt aber die jeweiligen Cross-Compiler und weitere Systemwerkzeuge.
 - [Missionsauswertung](docs/CodeON_RCX_Mission_Evaluator.md)
 - [3D-Simulationsplan](docs/CodeON_3D_Simulation_Plan.md)
 - [Sicherheitskonzept Code Buddy](docs/CodeON_Code_Buddy_Security.md)
+- [Architecture and Impact Graph](docs/CodeON_Architecture_Graph.md)
 - [Migrationsstatus](docs/CodeON_Migration_Status.md)
 
 ## Hilfe und Support
