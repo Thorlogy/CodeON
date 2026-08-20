@@ -52,6 +52,25 @@ Beitraege duerfen Provider-Adapter, Modelle und Uebersetzungen ergaenzen. Dabei 
 5. Tests muessen sicherstellen, dass Quell- und Laufzeitkopie identisch sind und keine verbotenen Credential-Pfade zurueckkehren.
 6. Lokale Endpunkte muessen auf Loopback-Adressen begrenzt bleiben; CodeON akzeptiert fuer Ollama keine frei eingebbare Remote-URL.
 
+## Lokaler Codegraph-Kontext
+
+Der Entwicklungsbefehl `npm run graph:code:buddy -- --query <Suchbegriff>` erzeugt einen begrenzten Kontext fuer spaetere lokale Code-Buddy-Nutzung. Er ist absichtlich noch nicht mit dem Browser-Chat oder einem Modell verbunden.
+
+Schutzgueter und Vertrauensgrenzen:
+
+- Quelltext, Kommentare, String-Literale, Zugangsdaten und Nutzerprogramme duerfen den Indexer nicht als Kontextdaten verlassen.
+- Repository-Pfade, Symbolnamen und Graphbeziehungen gelten als unvertrauenswuerdige Metadaten, auch wenn sie aus dem eigenen Checkout stammen.
+- Nur exakte Import- und Enthaltensein-Beziehungen werden automatisch ausgewaehlt. Heuristische `name-only`-Hinweise bleiben ausserhalb des Buddy-Kontexts.
+- Architektur-Pruefbefehle werden nicht in den Kontext uebernommen; nur begrenzte Check-IDs und Anzeigenamen werden ausgegeben.
+- Anfrage, Treffer, Beziehungen, Dateianzahl und Gesamtpaket haben feste Groessengrenzen. Pfadtraversierung, NUL-Bytes, unbekannte Optionen und zusaetzliche Request-Felder werden abgewiesen.
+- Der Adapter baut den Graphen frisch im Speicher auf, persistiert kein Kontextpaket und fuehrt weder Repository-Inhalte noch gespeicherte Befehle aus.
+
+Verbleibende Risiken und naechstes Freigabetor:
+
+- Symbolnamen und Pfade koennen irrefuehrende Texte enthalten; der Modell-Systemhinweis muss sie weiterhin als Daten behandeln.
+- Der syntaxbasierte Graph kann Beziehungen uebersehen. Der eingecheckte Benchmark misst bekannte Faelle, beweist aber keine Vollstaendigkeit.
+- Eine automatische Uebergabe an Ollama oder einen Cloud-Anbieter braucht eine getrennte Freigabe. Vorher muessen Empfaenger, Zustimmung, sichtbare Datenvorschau, Request-Grenzen und Fehlerprotokollierung erneut geprueft werden.
+
 ## Pruefung
 
 Die statische Sicherheitspruefung wird mit folgendem Befehl ausgefuehrt:

@@ -135,6 +135,10 @@ benötigt aber die jeweiligen Cross-Compiler und weitere Systemwerkzeuge.
 - Symbole, Imports und betroffene Dateien lokal abfragen:
   `npm run graph:code:query -- <Klasse oder Funktion>` und
   `npm run graph:code:impact -- <geänderter Pfad>`
+- Die Retrieval-Qualität mit echten CodeON-Fällen prüfen:
+  `npm run benchmark:code-graph`
+- Einen lokalen, quelltextfreien Kontext für Code Buddy erzeugen:
+  `npm run graph:code:buddy -- --query <Klasse oder Funktion>`
 
 ## Dokumentation
 

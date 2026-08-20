@@ -50,6 +50,29 @@ Run the contract suite:
 npm run test:code-graph
 ```
 
+Run the reviewed retrieval benchmark:
+
+```sh
+npm run benchmark:code-graph
+```
+
+Create a bounded metadata-only context for local Code Buddy use:
+
+```sh
+npm run graph:code:buddy -- --query BridgeSession
+npm run graph:code:buddy -- --query CozmoFixedConfigurationTest --path RobotCozmo/src/main/java/de/fhg/iais/roberta/worker/cozmo/CozmoValidatorAndCollectorWorker.java
+```
+
+Add `--json` for machine-readable output. The adapter does not contact a model or a network service. It is the local retrieval boundary that can be handed to a separately approved Code Buddy integration.
+
+## Retrieval benchmark and Buddy boundary
+
+`architecture/codeon-code-graph-benchmark.json` records expectations from representative Cozmo, Apitor, robot-bridge, simulation, and shared-core changes. The benchmark fails when reviewed files, robot impact, or required checks disappear, and it limits unexpected query paths so a result cannot pass through recall alone.
+
+The Buddy adapter builds a fresh graph in memory and selects only bounded metadata. Exact containment and import relationships may enter the packet; heuristic `name-only` references are excluded from automatic context. Architecture impact contributes robot modes and check identifiers, but stored shell commands are deliberately omitted.
+
+The adapter does not modify the browser Code Buddy, call Ollama, call a cloud provider, or persist its packet. Any future automatic UI or model connection requires a separate review of user consent, data recipients, request-size limits, and the local trust boundary.
+
 ## Data and precision model
 
 The index contains only bounded metadata:
@@ -78,7 +101,7 @@ The index contains only bounded metadata:
 
 The current indexer is syntax-aware and dependency-free. Java, JavaScript, TypeScript, and Python declarations and imports are covered, but cross-language call resolution is deliberately limited. Before adding compiler-backed AST tooling, SCIP, CodeQL, embeddings, a database, an MCP server, or any network service, require:
 
-1. a benchmark of real CodeON changes showing missed or noisy relationships;
+1. an extension of the checked-in benchmark with the real CodeON changes that justify the new capability;
 2. a documented threat model and dependency review;
 3. a local-only prototype that keeps raw source out of generated graph records;
 4. explicit approval for any new dependency or service.
