@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "description": "Reviewed retrieval expectations derived from representative CodeON changes.",
+  "cases": [
+    {
+      "id": "cozmo-fixed-configuration-test",
+      "type": "query",
+      "input": "CozmoFixedConfigurationTest",
+      "topK": 5,
+      "expectedPaths": [
+        "RobotCozmo/src/test/java/de/fhg/iais/roberta/CozmoFixedConfigurationTest.java"
+      ],
+      "maxUnexpectedPaths": 0
+    },
+    {
+      "id": "bridge-session",
+      "type": "query",
+      "input": "BridgeSession",
+      "topK": 5,
+      "expectedPaths": [
+        "RobotIntegrationKit/python/src/codeon_robot_bridge/bridge.py"
+      ],
+      "maxUnexpectedPaths": 0
+    },
+    {
+      "id": "apitor-stack-machine-visitor",
+      "type": "query",
+      "input": "ApitorStackMachineVisitor",
+      "topK": 8,
+      "expectedPaths": [
+        "RobotApitor/src/main/java/de/fhg/iais/roberta/visitor/ApitorStackMachineVisitor.java"
+      ],
+      "maxUnexpectedPaths": 0
+    },
+    {
+      "id": "cozmo-simulation-imports",
+      "type": "file",
+      "input": "OpenRobertaWeb/src/app/simulation/simulationLogic/robot.cozmo.ts",
+      "expectedExactPaths": [
+        "OpenRobertaWeb/src/app/simulation/simulationLogic/robot.ev3.ts"
+      ]
+    },
+    {
+      "id": "robot-bridge-imports",
+      "type": "file",
+      "input": "RobotIntegrationKit/python/src/codeon_robot_bridge/bridge.py",
+      "expectedExactPaths": [
+        "RobotIntegrationKit/python/src/codeon_robot_bridge/adapter.py"
+      ]
+    },
+    {
+      "id": "cozmo-worker-impact",
+      "type": "impact",
+      "input": "RobotCozmo/src/main/java/de/fhg/iais/roberta/worker/cozmo/CozmoValidatorAndCollectorWorker.java",
+      "expectedAffectedPaths": [
+        "RobotCozmo/src/test/java/de/fhg/iais/roberta/CozmoFixedConfigurationTest.java"
+      ],
+      "expectedRobots": [
+        "robot.cozmo"
+      ],
+      "expectedChecks": [
+        "test.cozmo-contract",
+        "test.cozmo-simulation"
+      ]
+    },
+    {
+      "id": "shared-robot-core-impact",
+      "type": "impact",
+      "input": "OpenRobertaRobot/src/main/java/de/fhg/iais/roberta/factory/RobotFactory.java",
+      "expectedAffectedPaths": [
+        "OpenRobertaRobot/src/test/java/de/fhg/iais/roberta/AstTest.java",
+        "OpenRobertaServer/src/main/java/de/fhg/iais/roberta/guice/RobertaGuiceModule.java"
+      ],
+      "expectedRobots": [
+        "robot.apitor",
+        "robot.cozmo",
+        "robot.edison",
+        "robot.rcj",
+        "robot.rcx"
+      ],
+      "expectedChecks": [
+        "test.graph",
+        "test.java-reactor",
+        "test.sensors"
+      ]
+    }
+  ]
+}

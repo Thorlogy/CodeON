@@ -1,7 +1,8 @@
 {
   "scripts": {
     "test:architecture-graph": "node scripts/test-codeon-architecture-graph.js",
-    "test:code-graph": "node scripts/test-codeon-code-graph.js",
+    "test:code-graph": "node scripts/test-codeon-code-graph.js && node scripts/test-codeon-code-graph-benchmark.js && node scripts/test-codeon-code-buddy-context.js && node scripts/codeon-code-graph-benchmark.js",
+    "benchmark:code-graph": "node scripts/codeon-code-graph-benchmark.js",
     "graph:validate": "node scripts/codeon-architecture-graph.js validate",
     "graph:impact": "node scripts/codeon-architecture-graph.js impact",
     "graph:robot": "node scripts/codeon-architecture-graph.js robot",
@@ -9,7 +10,8 @@
     "graph:code:build": "node scripts/codeon-code-graph.js build",
     "graph:code:query": "node scripts/codeon-code-graph.js query",
     "graph:code:file": "node scripts/codeon-code-graph.js file",
-    "graph:code:impact": "node scripts/codeon-code-graph.js impact"
+    "graph:code:impact": "node scripts/codeon-code-graph.js impact",
+    "graph:code:buddy": "node scripts/codeon-code-buddy-context.js"
   },
   "dependencies": {
     "puppeteer": "^25.3.0"

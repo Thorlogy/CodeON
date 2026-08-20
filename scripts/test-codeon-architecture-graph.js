@@ -32,6 +32,12 @@ assert.strictEqual(unknownImpact.risk, 'unknown');
 assert.strictEqual(unknownImpact.reviewRequired, true);
 assert.deepStrictEqual(unknownImpact.unknownPaths, ['docs/new-unmapped-area.md']);
 
+const buddyRetrievalImpact = impactForPaths(graph, ['scripts/codeon-code-buddy-context.js']);
+assert.strictEqual(buddyRetrievalImpact.risk, 'medium');
+assert.deepStrictEqual(buddyRetrievalImpact.unknownPaths, []);
+assert.ok(buddyRetrievalImpact.requiredChecks.some((test) => test.id === 'test.code-graph'));
+assert.ok(buddyRetrievalImpact.requiredChecks.some((test) => test.id === 'test.buddy-security'));
+
 assert.strictEqual(robotSummary(graph, 'cozmo').configurationMode, 'fixed');
 assert.strictEqual(robotSummary(graph, 'edison').configurationMode, 'built-in');
 assert.throws(() => robotSummary(graph, 'not-a-robot'), /Unknown robot/);

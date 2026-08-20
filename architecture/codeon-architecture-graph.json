@@ -74,6 +74,14 @@
       "reason": "Developer guidance or the reviewed impact model changed."
     },
     {
+      "id": "code-buddy-retrieval",
+      "paths": ["docs/CodeON_Code_Buddy_Security.md", "scripts/codeon-code-buddy-context.js", "scripts/codeon-code-graph-benchmark.js", "scripts/test-codeon-code-buddy-context.js", "scripts/test-codeon-code-graph-benchmark.js"],
+      "risk": "medium",
+      "robots": [],
+      "tests": ["test.graph", "test.code-graph", "test.buddy-security"],
+      "reason": "Local Code Buddy retrieval must remain metadata-only, bounded, offline, and benchmarked."
+    },
+    {
       "id": "parent-build",
       "paths": ["pom.xml"],
       "risk": "critical",

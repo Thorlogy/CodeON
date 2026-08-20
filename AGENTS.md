@@ -22,6 +22,7 @@
 
 - Graph or repository-guidance changes: `npm run test:architecture-graph`.
 - Local symbol/dependency graph changes: `npm run test:code-graph`.
+- Code Buddy graph-retrieval changes: `npm run test:code-graph` and `node scripts/test-codeon-buddy-security.js`.
 - Toolbox or sensor changes: `node scripts/test-system-sensor-toolboxes.js`.
 - Apitor simulation changes: `node scripts/test-apitor-simulation-static.js`.
 - Cozmo simulation changes: `node scripts/test-cozmo-simulation-static.js`.
