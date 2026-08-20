@@ -38,6 +38,11 @@ assert.deepStrictEqual(buddyRetrievalImpact.unknownPaths, []);
 assert.ok(buddyRetrievalImpact.requiredChecks.some((test) => test.id === 'test.code-graph'));
 assert.ok(buddyRetrievalImpact.requiredChecks.some((test) => test.id === 'test.buddy-security'));
 
+const changePlannerImpact = impactForPaths(graph, ['scripts/codeon-change-planner.js']);
+assert.strictEqual(changePlannerImpact.risk, 'medium');
+assert.deepStrictEqual(changePlannerImpact.unknownPaths, []);
+assert.ok(changePlannerImpact.requiredChecks.some((test) => test.id === 'test.code-graph'));
+
 assert.strictEqual(robotSummary(graph, 'cozmo').configurationMode, 'fixed');
 assert.strictEqual(robotSummary(graph, 'edison').configurationMode, 'built-in');
 assert.throws(() => robotSummary(graph, 'not-a-robot'), /Unknown robot/);

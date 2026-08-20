@@ -139,6 +139,8 @@ benötigt aber die jeweiligen Cross-Compiler und weitere Systemwerkzeuge.
   `npm run benchmark:code-graph`
 - Einen lokalen, quelltextfreien Kontext für Code Buddy erzeugen:
   `npm run graph:code:buddy -- --query <Klasse oder Funktion>`
+- Änderungen vor und nach der Implementierung planen:
+  `npm run graph:plan -- --base master --query <Aufgabe>`
 
 ## Dokumentation
 
@@ -150,6 +152,7 @@ benötigt aber die jeweiligen Cross-Compiler und weitere Systemwerkzeuge.
 - [Sicherheitskonzept Code Buddy](docs/CodeON_Code_Buddy_Security.md)
 - [Architecture and Impact Graph](docs/CodeON_Architecture_Graph.md)
 - [Lokaler Symbol- und Abhängigkeitsgraph](docs/CodeON_Local_Code_Graph.md)
+- [CodeON Change Planner](docs/CodeON_Change_Planner.md)
 - [Migrationsstatus](docs/CodeON_Migration_Status.md)
 
 ## Hilfe und Support
