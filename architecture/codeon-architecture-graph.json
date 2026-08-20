@@ -82,6 +82,14 @@
       "reason": "Local Code Buddy retrieval must remain metadata-only, bounded, offline, and benchmarked."
     },
     {
+      "id": "developer-change-planner",
+      "paths": ["docs/CodeON_Change_Planner.md", "scripts/codeon-change-planner.js", "scripts/test-codeon-change-planner.js"],
+      "risk": "medium",
+      "robots": [],
+      "tests": ["test.graph", "test.code-graph"],
+      "reason": "Developer planning must remain local, bounded, shell-free, and explicit about heuristic relationships."
+    },
+    {
       "id": "parent-build",
       "paths": ["pom.xml"],
       "risk": "critical",

@@ -73,6 +73,8 @@ The Buddy adapter builds a fresh graph in memory and selects only bounded metada
 
 The adapter does not modify the browser Code Buddy, call Ollama, call a cloud provider, or persist its packet. Any future automatic UI or model connection requires a separate review of user consent, data recipients, request-size limits, and the local trust boundary.
 
+For repository changes, the [CodeON Change Planner](CodeON_Change_Planner.md) combines literal task retrieval, exact graph context, reviewed architecture impact, and informational test recommendations.
+
 ## Data and precision model
 
 The index contains only bounded metadata:

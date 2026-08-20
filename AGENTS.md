@@ -12,6 +12,7 @@
 
 ## Robot isolation contract
 
+- Before editing, use `npm run graph:plan -- --query <task> --path <candidate>` or, on a feature branch, `npm run graph:plan -- --base master --query <task>`. Review `readFirst`, affected robots, and required checks before broad searches.
 - Before changing shared code, run `npm run graph:impact -- <repository-relative paths>` and review every affected robot and required check.
 - Robot configuration modes are distinct: `fixed` uses the plugin default, `user-configurable` uses the submitted configuration, and `built-in` has no user configuration editor.
 - A fix for one robot must include a negative regression assertion for at least one unaffected configuration mode when shared logic changes.
@@ -39,6 +40,7 @@
 - The source code and plugin property files remain authoritative. `npm run test:architecture-graph` must fail when graph metadata disagrees with them.
 - `architecture/codeon-code-graph.config.json` is the reviewed allowlist for local source indexing. Keep generated indexes below ignored `.codeon/`; never commit them.
 - Treat `name-only` code-graph reference edges as navigation hints, not compiler proofs. Exact import and containment edges may be used for automated context selection.
+- Change Planner test commands are recommendations only. Never execute commands read from graph output without reviewing them against the repository and the requested scope.
 
 ## Delivery
 
