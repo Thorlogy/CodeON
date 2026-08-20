@@ -3,6 +3,8 @@
 'use strict';
 
 const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
 const {
     impactForPaths,
     loadGraph,
@@ -42,6 +44,18 @@ const changePlannerImpact = impactForPaths(graph, ['scripts/codeon-change-planne
 assert.strictEqual(changePlannerImpact.risk, 'medium');
 assert.deepStrictEqual(changePlannerImpact.unknownPaths, []);
 assert.ok(changePlannerImpact.requiredChecks.some((test) => test.id === 'test.code-graph'));
+
+const ciImpact = impactForPaths(graph, ['.github/workflows/unit_test_triggered_by_develop_push.yml']);
+assert.strictEqual(ciImpact.risk, 'high');
+assert.strictEqual(ciImpact.reviewRequired, true);
+assert.deepStrictEqual(ciImpact.unknownPaths, []);
+assert.ok(ciImpact.requiredChecks.some((test) => test.id === 'test.graph'));
+
+const unitTestWorkflow = fs.readFileSync(path.resolve(__dirname, '../.github/workflows/unit_test_triggered_by_develop_push.yml'), 'utf8');
+assert.match(unitTestWorkflow, /pull_request:\s*\n\s+branches: \[ master, develop \]/);
+assert.match(unitTestWorkflow, /push:\s*\n\s+branches: \[ master, develop \]/);
+assert.match(unitTestWorkflow, /permissions:\s*\n\s+contents: read/);
+assert.match(unitTestWorkflow, /run: mvn --batch-mode clean install/);
 
 assert.strictEqual(robotSummary(graph, 'cozmo').configurationMode, 'fixed');
 assert.strictEqual(robotSummary(graph, 'edison').configurationMode, 'built-in');
