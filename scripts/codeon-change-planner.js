@@ -11,11 +11,9 @@ const {
 } = require('./codeon-architecture-graph');
 const {
     buildGraph,
-    fileContext,
     impactGraph,
     loadConfig,
-    normalizeRepositoryPath,
-    queryGraph
+    normalizeRepositoryPath
 } = require('./codeon-code-graph');
 
 const MAX_QUERY_TERMS = 8;
@@ -122,12 +120,36 @@ function queryTerms(query, config) {
 
 function collectQueryMatches(graph, query, config) {
     const matches = new Map();
+    const searchableNodes = graph.nodes.map((node) => ({
+        node,
+        name: node.name?.toLocaleLowerCase('en-US'),
+        qualifiedName: node.qualifiedName?.toLocaleLowerCase('en-US'),
+        fileName: node.path ? path.posix.basename(node.path, path.posix.extname(node.path)).toLocaleLowerCase('en-US') : undefined,
+        path: node.path?.toLocaleLowerCase('en-US'),
+        module: node.module?.toLocaleLowerCase('en-US')
+    }));
     queryTerms(query, config).forEach((term, termIndex) => {
-        queryGraph(graph, term, config).slice(0, 8).forEach((match, resultIndex) => {
-            const existing = matches.get(match.id);
-            if (existing) existing.matchedTerms.push(term);
-            else matches.set(match.id, { ...match, matchedTerms: [term], rank: termIndex * 100 + resultIndex });
-        });
+        const normalizedTerm = term.toLocaleLowerCase('en-US');
+        const score = (entry) => {
+            if (entry.name === normalizedTerm || entry.qualifiedName === normalizedTerm) return 0;
+            if (entry.node.type === 'file' && entry.fileName === normalizedTerm) return 1;
+            if (entry.name?.includes(normalizedTerm) || entry.qualifiedName?.includes(normalizedTerm) || (entry.node.type === 'file' && entry.fileName?.includes(normalizedTerm))) return 2;
+            if (entry.path?.includes(normalizedTerm)) return 3;
+            if (entry.module?.includes(normalizedTerm)) return 4;
+            return Number.POSITIVE_INFINITY;
+        };
+        searchableNodes.map((entry) => ({ entry, score: score(entry) }))
+            .filter((entry) => Number.isFinite(entry.score))
+            .sort((a, b) => a.score - b.score || a.entry.node.id.localeCompare(b.entry.node.id))
+            .slice(0, Math.min(8, config.limits.maxResults))
+            .map(({ entry }) => {
+                const node = entry.node;
+                return { id: node.id, type: node.type, name: node.name, qualifiedName: node.qualifiedName, kind: node.kind, path: node.path, line: node.line, module: node.module, scope: node.scope };
+            }).forEach((match, resultIndex) => {
+                const existing = matches.get(match.id);
+                if (existing) existing.matchedTerms.push(term);
+                else matches.set(match.id, { ...match, matchedTerms: [term], rank: termIndex * 100 + resultIndex });
+            });
     });
     return [...matches.values()].sort((a, b) => a.rank - b.rank || a.id.localeCompare(b.id)).slice(0, MAX_QUERY_MATCHES);
 }
@@ -159,6 +181,18 @@ function buildChangePlan(graph, input, config = loadConfig(), architectureGraph 
 
     const nodeById = new Map(graph.nodes.map((node) => [node.id, node]));
     const fileByPath = new Map(graph.nodes.filter((node) => node.type === 'file').map((node) => [node.path, node]));
+    const outgoingEdgesByNode = new Map();
+    const incomingEdgesByFile = new Map();
+    for (const edge of graph.edges) {
+        if (!outgoingEdgesByNode.has(edge.from)) outgoingEdgesByNode.set(edge.from, []);
+        outgoingEdgesByNode.get(edge.from).push(edge);
+        const target = nodeById.get(edge.to);
+        const targetFile = target?.path ? fileByPath.get(target.path) : undefined;
+        if (targetFile && (edge.to === targetFile.id || edge.from !== targetFile.id)) {
+            if (!incomingEdgesByFile.has(targetFile.path)) incomingEdgesByFile.set(targetFile.path, []);
+            incomingEdgesByFile.get(targetFile.path).push(edge);
+        }
+    }
     const matches = input.query ? collectQueryMatches(graph, input.query, config) : [];
     const indexedChanges = changes.filter((change) => fileByPath.has(change.path));
     const changedPaths = changes.map((change) => change.path);
@@ -180,15 +214,19 @@ function buildChangePlan(graph, input, config = loadConfig(), architectureGraph 
     const anchorPaths = [...new Set([...indexedChanges.map((change) => change.path), ...matches.map((match) => match.path).filter(Boolean)])].slice(0, MAX_READ_FIRST);
     const exactRelationships = [];
     for (const anchorPath of anchorPaths) {
-        const context = fileContext(graph, anchorPath, config);
-        for (const edge of context.outgoing.filter((entry) => entry.precision === 'exact')) {
-            exactRelationships.push({ from: anchorPath, direction: 'outgoing', type: edge.type, target: edge.target, path: edge.path, line: edge.line, precision: 'exact' });
-            addReadFirst(edge.path, 40, `exact-${edge.type}`);
+        const anchorFile = fileByPath.get(anchorPath);
+        const outgoing = (outgoingEdgesByNode.get(anchorFile.id) || []).slice(0, config.limits.maxResults);
+        for (const edge of outgoing.filter((entry) => entry.precision === 'exact')) {
+            const target = nodeById.get(edge.to);
+            exactRelationships.push({ from: anchorPath, direction: 'outgoing', type: edge.type, target: target.qualifiedName || target.path || target.name, path: target.path, line: target.line, precision: 'exact' });
+            addReadFirst(target.path, 40, `exact-${edge.type}`);
             if (exactRelationships.length >= MAX_RELATIONSHIPS) break;
         }
-        for (const edge of context.incoming.filter((entry) => entry.precision === 'exact')) {
-            exactRelationships.push({ from: anchorPath, direction: 'incoming', type: edge.type, origin: edge.source, precision: 'exact' });
-            addReadFirst(edge.source, 40, `exact-${edge.type}`);
+        const incoming = (incomingEdgesByFile.get(anchorPath) || []).slice(0, config.limits.maxResults);
+        for (const edge of incoming.filter((entry) => entry.precision === 'exact')) {
+            const source = nodeById.get(edge.from)?.path || nodeById.get(edge.from)?.name;
+            exactRelationships.push({ from: anchorPath, direction: 'incoming', type: edge.type, origin: source, precision: 'exact' });
+            addReadFirst(source, 40, `exact-${edge.type}`);
             if (exactRelationships.length >= MAX_RELATIONSHIPS) break;
         }
         if (exactRelationships.length >= MAX_RELATIONSHIPS) break;

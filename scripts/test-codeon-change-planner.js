@@ -3,7 +3,7 @@
 'use strict';
 
 const assert = require('assert');
-const { buildGraph, loadConfig } = require('./codeon-code-graph');
+const { buildGraph, fileContext, loadConfig, queryGraph } = require('./codeon-code-graph');
 const {
     assertMetadataOnly,
     buildChangePlan,
@@ -37,6 +37,33 @@ assert.deepStrictEqual(plan.codeGraphUnavailablePaths, []);
 assert.doesNotThrow(() => assertMetadataOnly(plan));
 assert.ok(!JSON.stringify(plan).includes('CozmoValidatorAndCollectorWorker extends'));
 assert.ok(formatChangePlan(plan).includes('nur nach Review ausführen'));
+
+const legacyMatchesById = new Map();
+queryTerms('CozmoFixedConfigurationTest optimieren', config).forEach((term, termIndex) => {
+    queryGraph(graph, term, config).slice(0, 8).forEach((match, resultIndex) => {
+        const existing = legacyMatchesById.get(match.id);
+        if (existing) existing.matchedTerms.push(term);
+        else legacyMatchesById.set(match.id, { ...match, matchedTerms: [term], rank: termIndex * 100 + resultIndex });
+    });
+});
+const legacyMatches = [...legacyMatchesById.values()].sort((a, b) => a.rank - b.rank || a.id.localeCompare(b.id)).slice(0, 20).map(({ rank, ...match }) => match);
+assert.deepStrictEqual(plan.queryMatches, legacyMatches, 'Indexed task retrieval must preserve legacy query results.');
+
+const legacyRelationships = [];
+const legacyAnchors = [...new Set([cozmoWorker, ...plan.queryMatches.map((match) => match.path).filter(Boolean)])].slice(0, 40);
+for (const anchorPath of legacyAnchors) {
+    const context = fileContext(graph, anchorPath, config);
+    for (const edge of context.outgoing.filter((entry) => entry.precision === 'exact')) {
+        legacyRelationships.push({ from: anchorPath, direction: 'outgoing', type: edge.type, target: edge.target, path: edge.path, line: edge.line, precision: 'exact' });
+        if (legacyRelationships.length >= 80) break;
+    }
+    for (const edge of context.incoming.filter((entry) => entry.precision === 'exact')) {
+        legacyRelationships.push({ from: anchorPath, direction: 'incoming', type: edge.type, origin: edge.source, precision: 'exact' });
+        if (legacyRelationships.length >= 80) break;
+    }
+    if (legacyRelationships.length >= 80) break;
+}
+assert.deepStrictEqual(plan.exactRelationships, legacyRelationships, 'Indexed relationship selection must preserve legacy planner output.');
 
 const docsPlan = buildChangePlan(graph, { changes: [{ status: 'M', path: 'docs/example.md' }] }, config);
 assert.deepStrictEqual(docsPlan.codeGraphUnavailablePaths, ['docs/example.md']);
