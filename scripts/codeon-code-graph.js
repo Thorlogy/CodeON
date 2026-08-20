@@ -201,8 +201,8 @@ function addMatches(source, expression, kindForMatch, nameForMatch, symbols) {
     }
 }
 
-function extractSymbols(source, language) {
-    const masked = maskSource(source, language, true);
+function extractSymbols(source, language, maskedSource) {
+    const masked = maskedSource ?? maskSource(source, language, true);
     const symbols = [];
     if (language === 'java') {
         addMatches(masked, /\b(class|interface|enum|record)\s+([A-Za-z_$][\w$]*)/g, (match) => match[1], (match) => match[2], symbols);
@@ -220,14 +220,14 @@ function extractSymbols(source, language) {
     return [...unique.values()].sort((a, b) => a.line - b.line || a.kind.localeCompare(b.kind) || a.name.localeCompare(b.name));
 }
 
-function extractPackage(source, language) {
-    const commentsRemoved = maskSource(source, language, false);
+function extractPackage(source, language, commentsRemovedSource) {
+    const commentsRemoved = commentsRemovedSource ?? maskSource(source, language, false);
     if (language === 'java') return commentsRemoved.match(/\bpackage\s+([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)\s*;/)?.[1] || '';
     return '';
 }
 
-function extractImports(source, language) {
-    const commentsRemoved = maskSource(source, language, false);
+function extractImports(source, language, commentsRemovedSource) {
+    const commentsRemoved = commentsRemovedSource ?? maskSource(source, language, false);
     const imports = new Set();
     const collect = (expression, group = 1) => {
         expression.lastIndex = 0;
@@ -254,8 +254,8 @@ function extractImports(source, language) {
     return [...imports].filter((value) => value && value.length <= 300).sort();
 }
 
-function extractCalls(source, language) {
-    const masked = maskSource(source, language, true);
+function extractCalls(source, language, maskedSource) {
+    const masked = maskedSource ?? maskSource(source, language, true);
     const calls = new Set();
     for (const match of masked.matchAll(/\b([A-Za-z_$][\w$]*)\s*\(/g)) {
         if (!CALL_KEYWORDS.has(match[1])) calls.add(match[1]);
@@ -311,10 +311,12 @@ function buildGraph(config = loadConfig()) {
         const absolute = resolveInsideRepository(file.path).absolute;
         const source = fs.readFileSync(absolute, 'utf8');
         const language = LANGUAGE_BY_EXTENSION.get(path.extname(file.path));
+        const maskedSource = maskSource(source, language, true);
+        const commentsRemovedSource = maskSource(source, language, false);
         const fileNode = { id: `file:${file.path}`, type: 'file', path: file.path, language, module: file.module, scope: file.scope, bytes: file.bytes };
         nodes.push(fileNode);
-        const packageName = extractPackage(source, language);
-        const symbols = extractSymbols(source, language).map((symbol) => ({
+        const packageName = extractPackage(source, language, commentsRemovedSource);
+        const symbols = extractSymbols(source, language, maskedSource).map((symbol) => ({
             id: makeSymbolId(file.path, symbol),
             type: 'symbol',
             name: symbol.name,
@@ -330,7 +332,7 @@ function buildGraph(config = loadConfig()) {
             nodes.push(symbol);
             edges.push({ from: fileNode.id, type: 'contains', to: symbol.id, precision: 'exact' });
         }
-        parsedFiles.push({ fileNode, imports: extractImports(source, language), calls: extractCalls(source, language), symbols });
+        parsedFiles.push({ fileNode, imports: extractImports(source, language, commentsRemovedSource), calls: extractCalls(source, language, maskedSource), symbols });
     }
 
     const nodeById = new Map(nodes.map((node) => [node.id, node]));
