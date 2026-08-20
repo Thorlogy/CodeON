@@ -55,7 +55,9 @@ const unitTestWorkflow = fs.readFileSync(path.resolve(__dirname, '../.github/wor
 assert.match(unitTestWorkflow, /pull_request:\s*\n\s+branches: \[ master, develop \]/);
 assert.match(unitTestWorkflow, /push:\s*\n\s+branches: \[ master, develop \]/);
 assert.match(unitTestWorkflow, /permissions:\s*\n\s+contents: read/);
-assert.match(unitTestWorkflow, /run: mvn --batch-mode clean install/);
+assert.match(unitTestWorkflow, /distribution: 'temurin'/);
+assert.ok(unitTestWorkflow.includes("run: mvn --batch-mode -pl OpenRobertaRobot,RobotEdison,RobotSpike,RobotCozmo,RobotApitor,RobotRCX -am -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test"));
+assert.match(unitTestWorkflow, /run: mvn --batch-mode -pl OpenRobertaServer -am -DskipTests package/);
 
 assert.strictEqual(robotSummary(graph, 'cozmo').configurationMode, 'fixed');
 assert.strictEqual(robotSummary(graph, 'edison').configurationMode, 'built-in');
