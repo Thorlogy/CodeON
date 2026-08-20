@@ -19,6 +19,7 @@
     { "id": "robot.apitor", "type": "robot", "label": "Apitor Robot X", "propertiesPath": "RobotApitor/src/main/resources/apitor.properties", "configurationMode": "user-configurable" },
 
     { "id": "test.graph", "type": "test", "label": "Architecture graph contract", "command": "npm run test:architecture-graph" },
+    { "id": "test.code-graph", "type": "test", "label": "Local code graph contract", "command": "npm run test:code-graph" },
     { "id": "test.sensors", "type": "test", "label": "Cross-robot sensor toolboxes", "command": "node scripts/test-system-sensor-toolboxes.js" },
     { "id": "test.cozmo-contract", "type": "test", "label": "Cozmo fixed-configuration contract", "command": "mvn -pl RobotCozmo -am -Dtest=CozmoFixedConfigurationTest -DfailIfNoTests=false -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test" },
     { "id": "test.cozmo-simulation", "type": "test", "label": "Cozmo simulation contract", "command": "node scripts/test-cozmo-simulation-static.js" },
@@ -66,10 +67,10 @@
     },
     {
       "id": "architecture-contract",
-      "paths": ["AGENTS.md", "architecture/", "docs/CodeON_Architecture_Graph.md", ".github/workflows/codeon_architecture_graph.yml", "scripts/codeon-architecture-graph.js", "scripts/test-codeon-architecture-graph.js", "package.json"],
+      "paths": ["AGENTS.md", "architecture/", "docs/CodeON_Architecture_Graph.md", "docs/CodeON_Local_Code_Graph.md", ".github/workflows/codeon_architecture_graph.yml", "scripts/codeon-architecture-graph.js", "scripts/test-codeon-architecture-graph.js", "scripts/codeon-code-graph.js", "scripts/test-codeon-code-graph.js", "package.json"],
       "risk": "medium",
       "robots": [],
-      "tests": ["test.graph"],
+      "tests": ["test.graph", "test.code-graph"],
       "reason": "Developer guidance or the reviewed impact model changed."
     },
     {
