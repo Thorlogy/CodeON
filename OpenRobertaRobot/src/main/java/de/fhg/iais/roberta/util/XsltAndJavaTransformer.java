@@ -206,7 +206,7 @@ public final class XsltAndJavaTransformer {
             String classNameForRegenerateNEPO = project.getRobotFactory().getPluginProperties().getStringProperty("robot.plugin.worker.regenerateNepo");
             try {
                 Class<?> classForRegenerateNEPO = ClassLoader.getSystemClassLoader().loadClass(classNameForRegenerateNEPO);
-                Object _ = classForRegenerateNEPO.getMethod("execute", Project.class).invoke(classForRegenerateNEPO.newInstance(), project);
+                classForRegenerateNEPO.getMethod("execute", Project.class).invoke(classForRegenerateNEPO.newInstance(), project);
                 Assert.isTrue(project.hasSucceeded());
             } catch ( Throwable e ) {
                 throw new DbcException("error with class " + classNameForRegenerateNEPO, e);
