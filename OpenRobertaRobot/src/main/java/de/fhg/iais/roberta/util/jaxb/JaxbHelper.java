@@ -1,16 +1,20 @@
 package de.fhg.iais.roberta.util.jaxb;
 
-import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.xml.XMLConstants;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParserFactory;
+import javax.xml.transform.sax.SAXSource;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
@@ -19,6 +23,8 @@ import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
 
 import de.fhg.iais.roberta.blockly.generated.Block;
 import de.fhg.iais.roberta.blockly.generated.BlockSet;
@@ -27,16 +33,24 @@ import de.fhg.iais.roberta.util.dbc.DbcException;
 
 public class JaxbHelper {
     private static final Logger LOG = LoggerFactory.getLogger(JaxbHelper.class);
+    private static final String DISALLOW_DOCTYPE_DECL = "http://apache.org/xml/features/disallow-doctype-decl";
+    private static final String EXTERNAL_GENERAL_ENTITIES = "http://xml.org/sax/features/external-general-entities";
+    private static final String EXTERNAL_PARAMETER_ENTITIES = "http://xml.org/sax/features/external-parameter-entities";
+    private static final String LOAD_EXTERNAL_DTD = "http://apache.org/xml/features/nonvalidating/load-external-dtd";
 
     private static final Schema blockSetSchema;
     private static final JAXBContext jaxbContext;
+    private static final Map<Class<?>, JAXBContext> jaxbContexts = new ConcurrentHashMap<>();
     static {
-        SchemaFactory sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-        InputStream xsdStream = JaxbHelper.class.getResourceAsStream("/blockly.xsd");
-        StreamSource xsdSource = new StreamSource(xsdStream);
         try {
+            SchemaFactory sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+            sf.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+            sf.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+            InputStream xsdStream = JaxbHelper.class.getResourceAsStream("/blockly.xsd");
+            StreamSource xsdSource = new StreamSource(xsdStream);
             blockSetSchema = sf.newSchema(xsdSource);
             jaxbContext = JAXBContext.newInstance(BlockSet.class);
+            jaxbContexts.put(BlockSet.class, jaxbContext);
         } catch ( Exception e ) {
             LOG.error("1. from blockly.xsd no schema could be generated or 2. JAXBContext could not be created", e);
             throw new RuntimeException("from blockly.xsd no schema could be generated");
@@ -56,10 +70,7 @@ public class JaxbHelper {
     public static BlockSet xml2BlockSet(String blocklyXml) throws JAXBException {
         Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
         jaxbUnmarshaller.setSchema(blockSetSchema);
-
-        InputStream stream = new ByteArrayInputStream(blocklyXml.getBytes(StandardCharsets.UTF_8));
-        InputSource src = new InputSource(stream);
-        return (BlockSet) jaxbUnmarshaller.unmarshal(src);
+        return (BlockSet) jaxbUnmarshaller.unmarshal(createSecureSaxSource(blocklyXml));
     }
 
     /**
@@ -72,10 +83,43 @@ public class JaxbHelper {
      */
     @SuppressWarnings("unchecked")
     public static <T> T xml2Element(String xml, Class<T> clazz) throws JAXBException {
-        JAXBContext jaxbContext = JAXBContext.newInstance(clazz);
-        Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
+        Unmarshaller jaxbUnmarshaller = getJaxbContext(clazz).createUnmarshaller();
         jaxbUnmarshaller.setSchema(blockSetSchema);
-        return (T) jaxbUnmarshaller.unmarshal(new InputSource(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8))));
+        return (T) jaxbUnmarshaller.unmarshal(createSecureSaxSource(xml));
+    }
+
+    static JAXBContext getJaxbContext(Class<?> clazz) throws JAXBException {
+        JAXBContext cachedContext = jaxbContexts.get(clazz);
+        if ( cachedContext != null ) {
+            return cachedContext;
+        }
+        synchronized ( jaxbContexts ) {
+            cachedContext = jaxbContexts.get(clazz);
+            if ( cachedContext == null ) {
+                cachedContext = JAXBContext.newInstance(clazz);
+                jaxbContexts.put(clazz, cachedContext);
+            }
+            return cachedContext;
+        }
+    }
+
+    private static SAXSource createSecureSaxSource(String xml) throws JAXBException {
+        try {
+            SAXParserFactory parserFactory = SAXParserFactory.newInstance();
+            parserFactory.setNamespaceAware(true);
+            parserFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+            parserFactory.setFeature(DISALLOW_DOCTYPE_DECL, true);
+            parserFactory.setFeature(EXTERNAL_GENERAL_ENTITIES, false);
+            parserFactory.setFeature(EXTERNAL_PARAMETER_ENTITIES, false);
+            parserFactory.setFeature(LOAD_EXTERNAL_DTD, false);
+
+            XMLReader xmlReader = parserFactory.newSAXParser().getXMLReader();
+            xmlReader.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+            xmlReader.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+            return new SAXSource(xmlReader, new InputSource(new StringReader(xml)));
+        } catch ( ParserConfigurationException | SAXException e ) {
+            throw new JAXBException("Could not create a secure XML parser", e);
+        }
     }
 
     /**
