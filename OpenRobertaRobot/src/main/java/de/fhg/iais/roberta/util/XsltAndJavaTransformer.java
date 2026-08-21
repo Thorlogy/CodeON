@@ -3,6 +3,7 @@ package de.fhg.iais.roberta.util;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -206,7 +207,13 @@ public final class XsltAndJavaTransformer {
             String classNameForRegenerateNEPO = project.getRobotFactory().getPluginProperties().getStringProperty("robot.plugin.worker.regenerateNepo");
             try {
                 Class<?> classForRegenerateNEPO = ClassLoader.getSystemClassLoader().loadClass(classNameForRegenerateNEPO);
-                classForRegenerateNEPO.getMethod("execute", Project.class).invoke(classForRegenerateNEPO.newInstance(), project);
+                Object regenerateNepoWorker;
+                try {
+                    regenerateNepoWorker = classForRegenerateNEPO.getDeclaredConstructor().newInstance();
+                } catch ( InvocationTargetException e ) {
+                    throw e.getCause();
+                }
+                classForRegenerateNEPO.getMethod("execute", Project.class).invoke(regenerateNepoWorker, project);
                 Assert.isTrue(project.hasSucceeded());
             } catch ( Throwable e ) {
                 throw new DbcException("error with class " + classNameForRegenerateNEPO, e);
