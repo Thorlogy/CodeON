@@ -52,12 +52,29 @@ assert.deepStrictEqual(ciImpact.unknownPaths, []);
 assert.ok(ciImpact.requiredChecks.some((test) => test.id === 'test.graph'));
 
 const unitTestWorkflow = fs.readFileSync(path.resolve(__dirname, '../.github/workflows/unit_test_triggered_by_develop_push.yml'), 'utf8');
+const architectureWorkflow = fs.readFileSync(path.resolve(__dirname, '../.github/workflows/codeon_architecture_graph.yml'), 'utf8');
+
+function assertActionsArePinned(workflow, workflowName) {
+    const actionReferences = Array.from(workflow.matchAll(/uses:\s+([^\s#]+)/g), (match) => match[1]);
+    assert.ok(actionReferences.length > 0, `${workflowName} must use at least one action.`);
+    for (const actionReference of actionReferences) {
+        assert.match(actionReference, /^[^@]+@[0-9a-f]{40}$/, `${workflowName} contains a mutable action reference: ${actionReference}`);
+    }
+}
+
 assert.match(unitTestWorkflow, /pull_request:\s*\n\s+branches: \[ master, develop \]/);
 assert.match(unitTestWorkflow, /push:\s*\n\s+branches: \[ master, develop \]/);
 assert.match(unitTestWorkflow, /permissions:\s*\n\s+contents: read/);
+assert.match(unitTestWorkflow, /persist-credentials: false/);
 assert.match(unitTestWorkflow, /distribution: 'temurin'/);
 assert.ok(unitTestWorkflow.includes("run: mvn --batch-mode -pl OpenRobertaRobot,RobotEdison,RobotSpike,RobotCozmo,RobotApitor,RobotRCX -am -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test"));
 assert.match(unitTestWorkflow, /run: mvn --batch-mode -pl OpenRobertaServer -am -DskipTests package/);
+assertActionsArePinned(unitTestWorkflow, 'Unit test workflow');
+
+assert.match(architectureWorkflow, /permissions:\s*\n\s+contents: read/);
+assert.match(architectureWorkflow, /persist-credentials: false/);
+assert.match(architectureWorkflow, /package-manager-cache: false/);
+assertActionsArePinned(architectureWorkflow, 'Architecture workflow');
 
 assert.strictEqual(robotSummary(graph, 'cozmo').configurationMode, 'fixed');
 assert.strictEqual(robotSummary(graph, 'edison').configurationMode, 'built-in');
