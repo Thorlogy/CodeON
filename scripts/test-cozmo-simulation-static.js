@@ -43,6 +43,17 @@ const germanMessages = read('OpenRobertaServer/staticResources/blockly/msg/js/de
     assert.ok(germanMessages.includes(instruction), 'Cozmo-Startanweisung fehlt: ' + instruction);
 });
 
+const liveCacheVersion = 'codeon-cozmo-live-20260822-1';
+[
+    'OpenRobertaWeb/src/main.js',
+    'OpenRobertaServer/staticResources/js/main.js',
+    'application/staticResources/js/main.js',
+    'OpenRobertaServer/staticResources/index.html',
+    'application/staticResources/index.html',
+].forEach(function (deliveredEntryPoint) {
+    assert.ok(read(deliveredEntryPoint).includes(liveCacheVersion), 'Aktueller Cozmo-Cache-Buster fehlt: ' + deliveredEntryPoint);
+});
+
 const serverRobot = read('OpenRobertaServer/staticResources/js/app/simulation/simulationLogic/robot.cozmo.js');
 const packagedRobot = read('application/staticResources/js/app/simulation/simulationLogic/robot.cozmo.js');
 assert.strictEqual(serverRobot, packagedRobot, 'Server- und Paketversion von robot.cozmo muessen identisch sein.');
