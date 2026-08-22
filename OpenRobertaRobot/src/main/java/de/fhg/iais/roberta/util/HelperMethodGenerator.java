@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.IntStream;
 
 import org.json.JSONObject;
 
@@ -34,7 +33,7 @@ public class HelperMethodGenerator {
 
     private final Collection<Class<? extends Enum<?>>> enums = new ArrayList<>();
 
-    private final Map<? super Enum, String> helperMethods = new HashMap<>();
+    private final Map<Enum<?>, String> helperMethods = new HashMap<>();
 
     /**
      * Constructs a generator from the loaded JSON of the method definition YAML file. By default, it adds {@link FunctionNames} to the list of Enums which can
@@ -58,15 +57,23 @@ public class HelperMethodGenerator {
             JSONObject jsonHelperMethod = jsonHelperMethods.getJSONObject(methodName);
             String implementation = jsonHelperMethod.optString(baseProgLanguage.toString(), null);
             if ( implementation != null ) {
-                for ( Class<? extends Enum> anEnum : this.enums ) {
-                    try {
-                        this.helperMethods.put(Enum.valueOf(anEnum, methodName), implementation);
-                    } catch ( IllegalArgumentException e ) {
-                        // not all enum values need to have an implementation
+                for ( Class<? extends Enum<?>> anEnum : this.enums ) {
+                    Enum<?> method = findEnumConstant(anEnum, methodName);
+                    if ( method != null ) {
+                        this.helperMethods.put(method, implementation);
                     }
                 }
             }
         }
+    }
+
+    private Enum<?> findEnumConstant(Class<? extends Enum<?>> anEnum, String methodName) {
+        for ( Enum<?> enumConstant : anEnum.getEnumConstants() ) {
+            if ( enumConstant.name().equals(methodName) ) {
+                return enumConstant;
+            }
+        }
+        return null;
     }
 
     /**
@@ -99,15 +106,8 @@ public class HelperMethodGenerator {
     public String getHelperMethodDeclarations(Set<? extends Enum<?>> usedMethods) {
         StringBuilder sb = new StringBuilder();
 
-        // guarantee order of methods for tests & consistency
-        List<? extends Enum<?>> usedMethodsList = new ArrayList<>(usedMethods);
-
-        // sort indices based on the string representation of the enums
-        int[] sortedIndices =
-            IntStream.range(0, usedMethodsList.size()).boxed().sorted(Comparator.comparing(i -> usedMethodsList.get(i).toString())).mapToInt(e -> e).toArray();
-
-        for ( int sortedIndex : sortedIndices ) {
-            String implementation = this.helperMethods.get(usedMethodsList.get(sortedIndex));
+        for ( Enum<?> usedMethod : getSortedMethods(usedMethods) ) {
+            String implementation = this.helperMethods.get(usedMethod);
 
             if ( implementation != null ) { // no implementation necessary for this method
                 sb.append('\n');
@@ -139,15 +139,8 @@ public class HelperMethodGenerator {
     public String getHelperMethodDefinitions(Set<? extends Enum<?>> usedMethods) {
         StringBuilder sb = new StringBuilder();
 
-        // guarantee order of methods for tests & consistency
-        List<? extends Enum<?>> usedMethodsList = new ArrayList<>(usedMethods);
-
-        // sort indices based on the string representation of the enums
-        int[] sortedIndices =
-            IntStream.range(0, usedMethodsList.size()).boxed().sorted(Comparator.comparing(i -> usedMethodsList.get(i).toString())).mapToInt(e -> e).toArray();
-
-        for ( int sortedIndex : sortedIndices ) {
-            String implementation = this.helperMethods.get(usedMethodsList.get(sortedIndex));
+        for ( Enum<?> usedMethod : getSortedMethods(usedMethods) ) {
+            String implementation = this.helperMethods.get(usedMethod);
             if ( implementation != null ) { // no implementation necessary for this method
                 sb.append('\n');
                 sb.append(implementation);
@@ -155,6 +148,12 @@ public class HelperMethodGenerator {
         }
 
         return sb.toString();
+    }
+
+    private List<Enum<?>> getSortedMethods(Set<? extends Enum<?>> usedMethods) {
+        List<Enum<?>> sortedMethods = new ArrayList<>(usedMethods);
+        sortedMethods.sort(Comparator.comparing(method -> method.toString()));
+        return sortedMethods;
     }
 
     /**
