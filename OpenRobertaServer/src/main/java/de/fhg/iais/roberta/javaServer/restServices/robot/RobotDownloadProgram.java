@@ -21,6 +21,7 @@ import de.fhg.iais.roberta.robotCommunication.RobotCommunicationData;
 import de.fhg.iais.roberta.robotCommunication.RobotCommunicator;
 import de.fhg.iais.roberta.util.AliveData;
 import de.fhg.iais.roberta.util.ServerProperties;
+import de.fhg.iais.roberta.util.Util;
 import de.fhg.iais.roberta.util.dbc.DbcException;
 
 /**
@@ -46,7 +47,7 @@ public class RobotDownloadProgram {
         AliveData.rememberRobotCall(-1);
         try {
             String token = requestEntity.getString("token");
-            LOG.info("/download - request for token " + token);
+            LOG.info("/download - request for token " + Util.redactToken(token));
             RobotCommunicationData state = this.brickCommunicator.getState(token);
             String programName = state.getProgramName();
 
@@ -121,8 +122,8 @@ public class RobotDownloadProgram {
             }
             return Response.serverError().build();
         } catch ( Exception e ) {
-            LOG.error("exception caught and rethrown", e);
-            throw new DbcException("exception caught and rethrown", e);
+            LOG.error("exception caught and rethrown (" + e.getClass().getSimpleName() + ")");
+            throw new DbcException("exception caught and rethrown");
         }
     }
 }

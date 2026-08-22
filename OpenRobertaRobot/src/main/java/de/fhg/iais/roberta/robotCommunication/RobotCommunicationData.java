@@ -3,6 +3,7 @@ package de.fhg.iais.roberta.robotCommunication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.fhg.iais.roberta.util.Util;
 import de.fhg.iais.roberta.util.basic.Clock;
 
 /**
@@ -78,7 +79,13 @@ public class RobotCommunicationData {
      * @return true, if user approved the token; false otherwise
      */
     public synchronized boolean robotTokenAgreementRequest() {
-        LOG.info("ROBOT_RCD: robot [" + this.robotIdentificator + "] sends token " + this.token + " and waits for the user to approve it");
+        LOG
+            .info(
+                "ROBOT_RCD: robot ["
+                    + this.robotIdentificator
+                    + "] sends token "
+                    + Util.redactToken(this.token)
+                    + " and waits for the user to approve it");
         this.state = State.WAIT_FOR_TOKENAPPROVAL_FROM_USER;
         this.timerStartedByLastRequest = Clock.start();
         while ( this.state == State.WAIT_FOR_TOKENAPPROVAL_FROM_USER //
@@ -95,10 +102,22 @@ public class RobotCommunicationData {
             }
         }
         if ( this.state == State.WAIT_FOR_PUSH_CMD_FROM_ROBOT ) {
-            LOG.info("ROBOT_RCD: robot [" + this.robotIdentificator + "] has sent token " + this.token + ". User agreed on that. SUCCESS");
+            LOG
+                .info(
+                    "ROBOT_RCD: robot ["
+                        + this.robotIdentificator
+                        + "] has sent token "
+                        + Util.redactToken(this.token)
+                        + ". User agreed on that. SUCCESS");
             return true;
         } else if ( this.state == State.WAIT_FOR_TOKENAPPROVAL_FROM_USER ) {
-            LOG.info("ROBOT_RCD: robot [" + this.robotIdentificator + "] has sent token " + this.token + ". Timed out!");
+            LOG
+                .info(
+                    "ROBOT_RCD: robot ["
+                        + this.robotIdentificator
+                        + "] has sent token "
+                        + Util.redactToken(this.token)
+                        + ". Timed out!");
             abort();
             return false;
         } else {
@@ -107,7 +126,7 @@ public class RobotCommunicationData {
                     "ROBOT_RCD: robot ["
                         + this.robotIdentificator
                         + "] has sent token "
-                        + this.token
+                        + Util.redactToken(this.token)
                         + " "
                         + this.timerStartedByLastRequest.elapsedMsecFormatted()
                         + " ago, but we force the robot to be disconnected, because state "

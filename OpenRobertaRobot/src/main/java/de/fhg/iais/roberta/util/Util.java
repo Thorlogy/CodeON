@@ -80,6 +80,19 @@ public class Util {
     }
 
     /**
+     * Return a safe representation of an authentication or connection token for logs and diagnostics.
+     *
+     * Tokens are intentionally redacted completely: even a prefix, suffix, or stable hash would make low-entropy robot tokens easier to identify or correlate.
+     * This method must never be used where the actual token is required for authentication, lookup, or filesystem access.
+     *
+     * @param token ignored intentionally
+     * @return a constant, non-sensitive marker
+     */
+    public static String redactToken(String token) {
+        return "<redacted>";
+    }
+
+    /**
      * Save generated program to the temp filesystem
      *
      * @param tempDirectory TODO
@@ -97,12 +110,12 @@ public class Util {
                 FileUtils.writeStringToFile(sourceFile, generatedSourceCode, StandardCharsets.UTF_8.displayName());
             } catch ( IOException e ) {
                 String msg = "could not write source code to file system";
-                LOG.error(msg, e);
-                throw new DbcException(msg, e);
+                LOG.error(msg + " (" + e.getClass().getSimpleName() + ")");
+                throw new DbcException(msg);
             }
-            LOG.info("stored under: " + sourceFile.getPath());
+            LOG.info("generated program stored successfully");
         } catch ( Exception e ) {
-            LOG.error("Storing the generated program " + programName + " into directory " + token + " failed", e);
+            LOG.error("Storing the generated program failed (" + e.getClass().getSimpleName() + ")");
         }
     }
 
@@ -623,7 +636,7 @@ public class Util {
             compiledHex = urec.encodeToString(compiledHex.getBytes());
             return compiledHex;
         } catch ( IOException e ) {
-            LOG.error("Exception when reading the compiled code from " + path, e);
+            LOG.error("Exception when reading the compiled code (" + e.getClass().getSimpleName() + ")");
             return null;
         }
     }
@@ -641,7 +654,7 @@ public class Util {
             String compiledString = urec.encodeToString(compiledBin);
             return compiledString;
         } catch ( IOException e ) {
-            LOG.error("Exception when reading the compiled code from " + path, e);
+            LOG.error("Exception when reading the compiled code (" + e.getClass().getSimpleName() + ")");
             return null;
         }
     }

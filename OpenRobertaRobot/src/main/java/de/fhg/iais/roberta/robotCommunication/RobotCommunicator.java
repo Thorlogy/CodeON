@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import de.fhg.iais.roberta.robotCommunication.RobotCommunicationData.State;
 import de.fhg.iais.roberta.util.Key;
+import de.fhg.iais.roberta.util.Util;
 import de.fhg.iais.roberta.util.dbc.Assert;
 import de.fhg.iais.roberta.util.dbc.DbcException;
 
@@ -62,7 +63,7 @@ public class RobotCommunicator {
             {
                 if ( storedState.getToken().equals(newToken) ) {
                     // TODO: keep? Experimental for Fischertechnik. A register for a token that was the same as a past registration. Keep running!
-                    LOG.info("ROBOT_RC: token approved for robot [" + newIdentificator + "]. Token  " + newToken + " unchanged");
+                    LOG.info("ROBOT_RC: token approved for robot [" + newIdentificator + "]. Token " + Util.redactToken(newToken) + " unchanged");
                     return RegistrationRequest.REPEATED_REGISTRATION_REQUEST;
                 } else {
                     this.allStates.remove(storedToken);
@@ -118,13 +119,13 @@ public class RobotCommunicator {
         RobotCommunicationData state = this.allStates.get(token);
 
         if ( state == null ) {
-            LOG.info("ROBOT_RC: token " + token + " is not waiting for. Typing error of the user?");
+            LOG.info("ROBOT_RC: token " + Util.redactToken(token) + " is not waiting for. Typing error of the user?");
             return Key.TOKEN_SET_ERROR_NO_ROBOT_WAITING;
         } else if ( !checkRobotMatchesClient(robot, state) ) {
             LOG
                 .info(
                     "ROBOT_RC: token "
-                        + token
+                        + Util.redactToken(token)
                         + " belongs to a robot of type "
                         + state.getRobot()
                         + "/"
@@ -134,7 +135,7 @@ public class RobotCommunicator {
             return Key.TOKEN_SET_ERROR_WRONG_ROBOTTYPE;
         } else {
             state.userApprovedTheRobotToken();
-            LOG.info("ROBOT_RC: token " + token + " is approved by a user.");
+            LOG.info("ROBOT_RC: token " + Util.redactToken(token) + " is approved by a user.");
             return Key.TOKEN_SET_SUCCESS;
         }
     }
@@ -145,12 +146,12 @@ public class RobotCommunicator {
         } else {
             RobotCommunicationData state = this.allStates.get(token);
             if ( state == null ) {
-                LOG.info("ROBOT_RC: token " + token + " is not waited for. Ok.");
+                LOG.info("ROBOT_RC: token " + Util.redactToken(token) + " is not waited for. Ok.");
             } else {
-                LOG.info("ROBOT_RC: Robot [" + state.getRobotIdentificator() + "] with token " + token + " start disconnect");
+                LOG.info("ROBOT_RC: Robot [" + state.getRobotIdentificator() + "] with token " + Util.redactToken(token) + " start disconnect");
                 this.allStates.remove(token);
                 state.abort(); // notifyAll() executed
-                LOG.info("ROBOT_RC: Robot [" + state.getRobotIdentificator() + "] with token " + token + " end disconnect");
+                LOG.info("ROBOT_RC: Robot [" + state.getRobotIdentificator() + "] with token " + Util.redactToken(token) + " end disconnect");
             }
         }
     }
@@ -221,7 +222,7 @@ public class RobotCommunicator {
         try {
             List<String> connectionDetails = new ArrayList<>();
             for ( RobotCommunicationData rcd : this.allStates.values() ) {
-                String token = sanitize(rcd.getToken());
+                String token = Util.redactToken(rcd.getToken());
                 long waitTime = sanitize(rcd.getElapsedMsecOfStartOfLastRequest());
                 long approvalTime = sanitize(rcd.getElapsedMsecOfStartApproval());
                 String ident = sanitize(rcd.getRobotIdentificator());
