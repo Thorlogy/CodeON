@@ -30,6 +30,19 @@ const actuators = read('OpenRobertaWeb/src/app/simulation/simulationLogic/robot.
 const controller = read('OpenRobertaServer/staticResources/js/app/roberta/controller/guiState.controller.js');
 assert.ok(controller.includes('system_preview/cozmo.svg'), 'Cozmo-Hintergrundbild der Programmierbuehne fehlt.');
 
+const runControllerSource = read('OpenRobertaWeb/src/app/roberta/controller/progRun.controller.ts');
+assert.ok(runControllerSource.includes("GUISTATE_C.getRobotGroup() === 'cozmo'"), 'Cozmo-spezifische Starthilfe fehlt.');
+assert.ok(runControllerSource.includes('Blockly.Msg.POPUP_RUN_NOTIFICATION_COZMO'), 'Cozmo-Starthilfe verwendet keinen Uebersetzungsschluessel.');
+const serverRunController = read('OpenRobertaServer/staticResources/js/app/roberta/controller/progRun.controller.js');
+const packagedRunController = read('application/staticResources/js/app/roberta/controller/progRun.controller.js');
+[serverRunController, packagedRunController].forEach(function (generatedController) {
+    assert.ok(generatedController.includes('POPUP_RUN_NOTIFICATION_COZMO'), 'Cozmo-Starthilfe fehlt in einer ausgelieferten Webanwendung.');
+});
+const germanMessages = read('OpenRobertaServer/staticResources/blockly/msg/js/de.js');
+['Schalte Cozmo ein', 'WLAN, das Cozmo auf seinem Display anzeigt', 'erneut auf Start', 'zusammen mit CodeON gestartet'].forEach(function (instruction) {
+    assert.ok(germanMessages.includes(instruction), 'Cozmo-Startanweisung fehlt: ' + instruction);
+});
+
 const serverRobot = read('OpenRobertaServer/staticResources/js/app/simulation/simulationLogic/robot.cozmo.js');
 const packagedRobot = read('application/staticResources/js/app/simulation/simulationLogic/robot.cozmo.js');
 assert.strictEqual(serverRobot, packagedRobot, 'Server- und Paketversion von robot.cozmo muessen identisch sein.');

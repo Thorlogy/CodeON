@@ -54,12 +54,12 @@ function _export {
   chmod ugo+rx admin.sh admin.bat
 }
 
-function _stopRcxBridge {
-  if [[ -n "$RCX_BRIDGE_PID" ]] && kill -0 "$RCX_BRIDGE_PID" 2>/dev/null
+function _stopRobotBridges {
+  if [[ -n "$ROBOT_BRIDGES_PID" ]] && kill -0 "$ROBOT_BRIDGES_PID" 2>/dev/null
   then
-    echo "stopping RCX bridge (pid $RCX_BRIDGE_PID)"
-    kill "$RCX_BRIDGE_PID"
-    wait "$RCX_BRIDGE_PID" 2>/dev/null
+    echo "stopping local robot bridges (pid $ROBOT_BRIDGES_PID)"
+    kill "$ROBOT_BRIDGES_PID"
+    wait "$ROBOT_BRIDGES_PID" 2>/dev/null
   fi
 }
 
@@ -85,50 +85,26 @@ function _syncRcxPlugin {
   done
 }
 
-function _startRcxBridge {
-  if curl --silent --fail --max-time 1 http://127.0.0.1:2222/status >/dev/null 2>&1
-  then
-    echo 'RCX bridge already running on http://127.0.0.1:2222'
-    return 0
-  fi
-
-  if [[ -n "$NQC_PATH" && -x "$NQC_PATH" ]]
-  then
-    NQC_BINARY="$NQC_PATH"
-  else
-    case "$(uname -s)" in
-      Darwin) NQC_BINARY="$CC_RESOURCE_DIR/RobotRCX/osx/nqc" ;;
-      Linux)  NQC_BINARY="$(command -v nqc 2>/dev/null)" ;;
-      *)      echo 'RCX bridge autostart is supported by ora.sh on macOS and Linux only'
-              return 0 ;;
-    esac
-  fi
-
-  if [[ -z "$NQC_BINARY" || ! -x "$NQC_BINARY" ]]
-  then
-    echo "WARNING: RCX bridge not started: nqc not found at '$NQC_BINARY'"
-    echo 'See RobotRCX/README.md for the one-time NQC installation.'
-    return 0
-  fi
+function _startRobotBridges {
   if ! command -v python3 >/dev/null 2>&1
   then
-    echo 'WARNING: RCX bridge not started: python3 not found'
+    echo 'WARNING: local robot bridges not started: python3 not found'
     return 0
   fi
 
   mkdir -p "$ADMIN_DIR/logs"
-  RCX_BRIDGE_LOG="$ADMIN_DIR/logs/rcx-bridge.log"
-  NQC_PATH="$NQC_BINARY" python3 -u RobotRCX/rcx-bridge.py >"$RCX_BRIDGE_LOG" 2>&1 &
-  RCX_BRIDGE_PID=$!
+  ROBOT_BRIDGES_LOG="$ADMIN_DIR/logs/robot-bridges.log"
+  python3 -u ./start-codeon-rcx.py --bridge-only >"$ROBOT_BRIDGES_LOG" 2>&1 &
+  ROBOT_BRIDGES_PID=$!
   sleep 1
-  if ! kill -0 "$RCX_BRIDGE_PID" 2>/dev/null
+  if ! kill -0 "$ROBOT_BRIDGES_PID" 2>/dev/null
   then
-    echo "WARNING: RCX bridge failed to start; see $RCX_BRIDGE_LOG"
-    RCX_BRIDGE_PID=''
+    echo "WARNING: local robot bridges stopped during startup; see $ROBOT_BRIDGES_LOG"
+    ROBOT_BRIDGES_PID=''
     return 0
   fi
-  echo "RCX bridge started on http://127.0.0.1:2222 (pid $RCX_BRIDGE_PID, log $RCX_BRIDGE_LOG)"
-  trap _stopRcxBridge EXIT
+  echo "local robot bridges started (pid $ROBOT_BRIDGES_PID, log $ROBOT_BRIDGES_LOG)"
+  trap _stopRobotBridges EXIT
 }
 
 # ---------------------------------------- begin of the script ----------------------------------------------------
@@ -147,7 +123,7 @@ CC_RESOURCE_DIR='../ora-cc-rsc'
 QUIET='no'
 XMX=''
 RDBG=''
-RCX_BRIDGE_PID=''
+ROBOT_BRIDGES_PID=''
  
 while true
 do
@@ -188,12 +164,13 @@ start-from-git) if [[ ! -d $DB_PARENTDIR ]]; then
                    java -cp ${JAVA_LIB_DIR}/\* de.fhg.iais.roberta.main.Administration create-empty-db jdbc:hsqldb:file:$DB_PARENTDIR/$DB_NAME
                 fi
                 _syncRcxPlugin
-                _startRcxBridge
+                _startRobotBridges
                 java $RDBG -cp OpenRobertaServer/src/main/resources:${JAVA_LIB_DIR}/\* de.fhg.iais.roberta.main.ServerStarter \
                      -d database.mode=embedded \
                      -d database.parentdir=$DB_PARENTDIR \
                      -d database.name=$DB_NAME \
                      -d server.staticresources.dir=OpenRobertaServer/staticResources \
+                     -d server.ip=127.0.0.1 \
                      -d robot.crosscompiler.resourcebase="$CC_RESOURCE_DIR" \
                      $* ;;
 

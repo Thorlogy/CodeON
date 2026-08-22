@@ -117,6 +117,25 @@ def tcp_reachable(host: str, port: int, timeout: float = 0.5) -> bool:
         return False
 
 
+def websocket_reachable(host: str, port: int, timeout: float = 0.5) -> bool:
+    """Probe a local WebSocket without producing an invalid-handshake traceback."""
+    request = (
+        f"GET / HTTP/1.1\r\nHost: {host}:{port}\r\nUpgrade: websocket\r\n"
+        "Connection: Upgrade\r\nSec-WebSocket-Key: MDEyMzQ1Njc4OWFiY2RlZg==\r\n"
+        "Sec-WebSocket-Version: 13\r\nOrigin: http://localhost:1999\r\n\r\n"
+    ).encode("ascii")
+    try:
+        with socket.create_connection((host, port), timeout=timeout) as connection:
+            connection.sendall(request)
+            response = connection.recv(512)
+            if not response.startswith(b"HTTP/1.1 101"):
+                return False
+            connection.sendall(b"\x88\x80\x00\x00\x00\x00")
+            return True
+    except OSError:
+        return False
+
+
 def find_cozmo_python() -> Path | None:
     candidates = [
         ROOT / ".venv" / ("Scripts/python.exe" if platform.system() == "Windows" else "bin/python"),
@@ -156,10 +175,10 @@ def find_apitor_python() -> Path | None:
     return None
 
 
-def wait_for_tcp(host: str, port: int, process: subprocess.Popen | None, timeout: float) -> bool:
+def wait_for_websocket(host: str, port: int, process: subprocess.Popen | None, timeout: float) -> bool:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
-        if tcp_reachable(host, port):
+        if websocket_reachable(host, port):
             return True
         if process and process.poll() is not None:
             return False
@@ -350,7 +369,7 @@ def stop_previous_cozmo_bridge() -> None:
         return
 
     deadline = time.monotonic() + 5
-    while time.monotonic() < deadline and tcp_reachable(COZMO_BRIDGE_HOST, COZMO_BRIDGE_PORT):
+    while time.monotonic() < deadline and websocket_reachable(COZMO_BRIDGE_HOST, COZMO_BRIDGE_PORT):
         time.sleep(0.1)
     COZMO_BRIDGE_PID_FILE.unlink(missing_ok=True)
 
@@ -372,7 +391,7 @@ def stop_previous_apitor_bridge() -> None:
     except OSError:
         return
     deadline = time.monotonic() + 5
-    while time.monotonic() < deadline and tcp_reachable(COZMO_BRIDGE_HOST, APITOR_BRIDGE_PORT):
+    while time.monotonic() < deadline and websocket_reachable(COZMO_BRIDGE_HOST, APITOR_BRIDGE_PORT):
         time.sleep(0.1)
     APITOR_BRIDGE_PID_FILE.unlink(missing_ok=True)
 
@@ -421,6 +440,12 @@ def stop_previous_codeon_server() -> None:
     CODEON_SERVER_PID_FILE.unlink(missing_ok=True)
 
 
+def restart_owned_codeon_server(bridge_only: bool) -> None:
+    """Restart the recorded local server only for a full launcher start."""
+    if not bridge_only:
+        stop_previous_codeon_server()
+
+
 def start(args: argparse.Namespace) -> int:
     checks = preflight()
     print_preflight(checks)
@@ -453,7 +478,7 @@ def start(args: argparse.Namespace) -> int:
         # A second launch is an explicit restart request. This ensures updated
         # robot plug-ins are actually reloaded instead of silently reusing an
         # older Java process.
-        stop_previous_codeon_server()
+        restart_owned_codeon_server(args.bridge_only)
         checks["server"]["ok"] = url_reachable(CODEON_URL)
 
         if not nqc:
@@ -477,7 +502,7 @@ def start(args: argparse.Namespace) -> int:
         external_cozmo_bridge = os.environ.get("CODEON_COZMO_BRIDGE_EXTERNAL") == "1"
         if not external_cozmo_bridge:
             stop_previous_cozmo_bridge()
-        if tcp_reachable(COZMO_BRIDGE_HOST, COZMO_BRIDGE_PORT):
+        if websocket_reachable(COZMO_BRIDGE_HOST, COZMO_BRIDGE_PORT):
             if external_cozmo_bridge:
                 print(f"Cozmo-Bridge läuft: ws://{COZMO_BRIDGE_HOST}:{COZMO_BRIDGE_PORT}")
             else:
@@ -514,7 +539,7 @@ def start(args: argparse.Namespace) -> int:
                     stderr=subprocess.STDOUT,
                 )
                 COZMO_BRIDGE_PID_FILE.write_text(str(cozmo_bridge_process.pid), encoding="utf-8")
-                if wait_for_tcp(COZMO_BRIDGE_HOST, COZMO_BRIDGE_PORT, cozmo_bridge_process, 8):
+                if wait_for_websocket(COZMO_BRIDGE_HOST, COZMO_BRIDGE_PORT, cozmo_bridge_process, 8):
                     print(f"Cozmo-Bridge läuft: ws://{COZMO_BRIDGE_HOST}:{COZMO_BRIDGE_PORT}")
                 else:
                     stop_process(cozmo_bridge_process)
@@ -524,7 +549,7 @@ def start(args: argparse.Namespace) -> int:
                 print("Hinweis: Cozmo-Unterstützung ist noch nicht installiert; die übrigen Roboter bleiben verfügbar.")
 
         stop_previous_apitor_bridge()
-        if tcp_reachable(COZMO_BRIDGE_HOST, APITOR_BRIDGE_PORT):
+        if websocket_reachable(COZMO_BRIDGE_HOST, APITOR_BRIDGE_PORT):
             print(f"Apitor-Bridge läuft bereits: ws://{COZMO_BRIDGE_HOST}:{APITOR_BRIDGE_PORT}")
         else:
             apitor_python = find_apitor_python()
@@ -542,7 +567,7 @@ def start(args: argparse.Namespace) -> int:
                     cwd=ROOT, env=apitor_env, stdout=apitor_bridge_log, stderr=subprocess.STDOUT,
                 )
                 APITOR_BRIDGE_PID_FILE.write_text(str(apitor_bridge_process.pid), encoding="utf-8")
-                if wait_for_tcp(COZMO_BRIDGE_HOST, APITOR_BRIDGE_PORT, apitor_bridge_process, 8):
+                if wait_for_websocket(COZMO_BRIDGE_HOST, APITOR_BRIDGE_PORT, apitor_bridge_process, 8):
                     print(f"Apitor-Bridge läuft: ws://{COZMO_BRIDGE_HOST}:{APITOR_BRIDGE_PORT}")
                 else:
                     stop_process(apitor_bridge_process)
@@ -554,7 +579,7 @@ def start(args: argparse.Namespace) -> int:
         if args.bridge_only:
             print("Bridge-Modus aktiv. Zum Beenden Strg+C drücken.")
             while any(process and process.poll() is None for process in (bridge_process, cozmo_bridge_process, apitor_bridge_process)) or (
-                external_cozmo_bridge and tcp_reachable(COZMO_BRIDGE_HOST, COZMO_BRIDGE_PORT)
+                external_cozmo_bridge and websocket_reachable(COZMO_BRIDGE_HOST, COZMO_BRIDGE_PORT)
             ):
                 time.sleep(0.5)
             return 0
@@ -566,7 +591,7 @@ def start(args: argparse.Namespace) -> int:
             if bridge_process or cozmo_bridge_process or apitor_bridge_process or external_cozmo_bridge:
                 print("Dieses Fenster offen lassen. Zum Beenden der Bridges Strg+C drücken.")
                 while any(process and process.poll() is None for process in (bridge_process, cozmo_bridge_process, apitor_bridge_process)) or (
-                    external_cozmo_bridge and tcp_reachable(COZMO_BRIDGE_HOST, COZMO_BRIDGE_PORT)
+                    external_cozmo_bridge and websocket_reachable(COZMO_BRIDGE_HOST, COZMO_BRIDGE_PORT)
                 ):
                     time.sleep(0.5)
             return 0
@@ -591,6 +616,8 @@ def start(args: argparse.Namespace) -> int:
             "database.name=openroberta-db",
             "-d",
             "server.staticresources.dir=" + str(APPLICATION / "staticResources"),
+            "-d",
+            "server.ip=127.0.0.1",
             "-d",
             "server.admin.dir=" + str(RUNTIME / "admin"),
             "-d",
