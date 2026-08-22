@@ -86,19 +86,19 @@ public class ClientAdmin {
                         String serverMenuVersion = httpSessionState.getRobotFactory().getMenuVersion();
                         addRobotUpdateInfo(setTokenResponse, robotMenuVersion, serverMenuVersion);
                         UtilForREST.addSuccessInfo(setTokenResponse, Key.TOKEN_SET_SUCCESS);
-                        LOG.info("success: token " + token + " is registered in the session");
+                        LOG.info("success: token " + Util.redactToken(token) + " is registered in the session");
                         Statistics.info("ConnectRobot", "success", true);
                         break;
                     case TOKEN_SET_ERROR_WRONG_ROBOTTYPE:
                         addRobotUpdateInfo(setTokenResponse, null, null);
                         UtilForREST.addErrorInfo(setTokenResponse, Key.TOKEN_SET_ERROR_WRONG_ROBOTTYPE);
-                        LOG.info("error: token " + token + " not registered in the session, wrong robot type");
+                        LOG.info("error: token " + Util.redactToken(token) + " not registered in the session, wrong robot type");
                         Statistics.info("ConnectRobot", "success", false);
                         break;
                     case TOKEN_SET_ERROR_NO_ROBOT_WAITING:
                         addRobotUpdateInfo(setTokenResponse, null, null);
                         UtilForREST.addErrorInfo(setTokenResponse, Key.TOKEN_SET_ERROR_NO_ROBOT_WAITING);
-                        LOG.info("error: token " + token + " not registered in the session");
+                        LOG.info("error: token " + Util.redactToken(token) + " not registered in the session");
                         Statistics.info("ConnectRobot", "success", false);
                         break;
                     default:

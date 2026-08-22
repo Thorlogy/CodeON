@@ -1,8 +1,14 @@
 package de.fhg.iais.roberta.util;
 
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.junit.Test;
+import org.slf4j.LoggerFactory;
+
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -10,6 +16,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class UtilTest {
+    private static final String SECRET_TOKEN = "87654321";
+
     @Test
     public void testJavaIdentifier() {
         assertTrue(Util.isValidJavaIdentifier("P"));
@@ -56,5 +64,25 @@ public class UtilTest {
     @Test(expected = RuntimeException.class)
     public void testCreateMapException() {
         Util.createMap("1", "2", "3");
+    }
+
+    @Test
+    public void testCompiledFileReadErrorDoesNotExposeTokenPath() {
+        Logger logger = (Logger) LoggerFactory.getLogger(Util.class);
+        ListAppender<ILoggingEvent> logAppender = new ListAppender<>();
+        logAppender.start();
+        logger.addAppender(logAppender);
+        try {
+            String tokenPath = "/definitely-missing-" + SECRET_TOKEN + "/compiled.bin";
+
+            assertNull(Util.getBase64EncodedBinary(tokenPath));
+
+            String messages = logAppender.list.stream().map(ILoggingEvent::getFormattedMessage).collect(Collectors.joining("\n"));
+            assertFalse(messages.contains(SECRET_TOKEN));
+            assertFalse(messages.contains(tokenPath));
+        } finally {
+            logger.detachAppender(logAppender);
+            logAppender.stop();
+        }
     }
 }

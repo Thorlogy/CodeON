@@ -19,6 +19,7 @@ import com.google.inject.Inject;
 import de.fhg.iais.roberta.robotCommunication.RobotCommunicationData;
 import de.fhg.iais.roberta.robotCommunication.RobotCommunicator;
 import de.fhg.iais.roberta.util.AliveData;
+import de.fhg.iais.roberta.util.Util;
 import de.fhg.iais.roberta.util.dbc.DbcException;
 
 @Path("/pushcmd")
@@ -56,7 +57,7 @@ public class RobotCommand {
             token = r.get("token");
             pluginName = r.get("pluginname", "firmwarename");
         } catch ( Exception e ) {
-            LOG.error("Robot request aborted. Robot uses a wrong JSON: " + requestEntity, e);
+            LOG.error("Robot request aborted. Robot uses invalid JSON");
             return Response.serverError().build();
         }
 
@@ -72,7 +73,7 @@ public class RobotCommand {
         JSONObject response;
         switch ( cmd ) {
             case CMD_REGISTER:
-                LOG.info("ROBOT_PROTOCOL: robot [" + macaddr + "] send token " + token + " for user approval");
+                LOG.info("ROBOT_PROTOCOL: robot [" + macaddr + "] send token " + Util.redactToken(token) + " for user approval");
                 RobotCommunicationData state =
                     new RobotCommunicationData(token, robot, macaddr, robotName, batteryvoltage, menuversion, runtimeVersion, pluginName, firmwareversion);
                 boolean result = this.brickCommunicator.robotWantsTokenToBeApproved(state);
@@ -82,23 +83,33 @@ public class RobotCommand {
                 int counter = pushRequestCounterForLogging.incrementAndGet();
                 boolean logPush = counter % EVERY_REQUEST == 0;
                 if ( logPush ) {
-                    LOG.info("/pushcmd - push request for token " + token + " [count:" + counter + "]");
+                    LOG.info("/pushcmd - push request for token " + Util.redactToken(token) + " [count:" + counter + "]");
                 }
                 String command = this.brickCommunicator.robotWaitsForAServerPush(token, batteryvoltage, nepoExitValue);
 
                 if ( command == null || this.brickCommunicator.getState(token) == null ) {
-                    LOG.error("ROBOT_PROTOCOL: robot was already disconnected, when a /pushcmd for token " + token + " terminated. We return a server error");
+                    LOG.error(
+                        "ROBOT_PROTOCOL: robot was already disconnected, when a /pushcmd for token "
+                            + Util.redactToken(token)
+                            + " terminated. We return a server error");
                     return Response.serverError().build();
                 } else {
                     if ( !command.equals(CMD_REPEAT) || logPush ) {
-                        LOG.info("ROBOT_PROTOCOL: the command " + command + " is pushed to robot with token " + token + " [count: " + counter + "]");
+                        LOG.info(
+                            "ROBOT_PROTOCOL: the command "
+                                + command
+                                + " is pushed to robot with token "
+                                + Util.redactToken(token)
+                                + " [count: "
+                                + counter
+                                + "]");
                     }
                     response = new JSONObject().put(CMD, command);
                     response.put(SUBTYPE, this.brickCommunicator.getSubtype());
                     return Response.ok(response.toString()).build();
                 }
             default:
-                LOG.error("Robot request aborted. Robot uses an invalid \"cmd\" in JSON: " + requestEntity);
+                LOG.error("Robot request aborted. Robot uses an invalid \"cmd\" in JSON");
                 return Response.serverError().build();
         }
     }
@@ -145,7 +156,7 @@ public class RobotCommand {
                     return json.getString(key);
                 }
             }
-            throw new DbcException("json does not contain required key " + json.toString());
+            throw new DbcException("json does not contain a required key");
         }
     }
 }

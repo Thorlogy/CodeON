@@ -3,6 +3,7 @@ package de.fhg.iais.roberta.robotCommunication;
 import org.junit.Assert;
 import org.junit.Test;
 
+import de.fhg.iais.roberta.util.Util;
 import de.fhg.iais.roberta.util.dbc.DbcException;
 
 public class RobotCommunicatorTest {
@@ -35,7 +36,32 @@ public class RobotCommunicatorTest {
         rc.addNewRegistration(goodRegistration1);
         expect(rc.addNewRegistration(goodRegistration2), RobotCommunicator.RegistrationRequest.TOKEN_INVALID);
     }
-    
+
+    @Test
+    public void testTokenRedactionDoesNotExposeTokenContent() {
+        String tokenWithLogControlCharacters = "12\r\n345678";
+
+        String redactedToken = Util.redactToken(tokenWithLogControlCharacters);
+
+        Assert.assertEquals("<redacted>", redactedToken);
+        Assert.assertFalse(redactedToken.contains("12"));
+        Assert.assertFalse(redactedToken.contains("\r"));
+        Assert.assertFalse(redactedToken.contains("\n"));
+        Assert.assertEquals("<redacted>", Util.redactToken(null));
+    }
+
+    @Test
+    public void testConnectionDetailsDoNotExposeToken() {
+        RobotCommunicator rc = new RobotCommunicator();
+        rc.addNewRegistration(goodRegistration1);
+
+        String details = rc.getDetailsOfRobotConnections();
+
+        Assert.assertTrue(details.contains("tk:<redacted>"));
+        Assert.assertFalse(details.contains(goodRegistration1.getToken()));
+        Assert.assertTrue(details.contains(goodRegistration1.getRobotIdentificator()));
+    }
+
     private void expect(RobotCommunicator.RegistrationRequest result, RobotCommunicator.RegistrationRequest expected) {
         Assert.assertEquals(expected, result);
     }
