@@ -1433,6 +1433,7 @@ Blockly.Msg.POPUP_ROBOT_STATE_WAIT = "Roboter wartet";
 Blockly.Msg.POPUP_ROBOT_SYSTEM = "System";
 Blockly.Msg.POPUP_ROBOT_WAIT = "Wartezeit";
 Blockly.Msg.POPUP_RUN_NOTIFICATION = "Verbinde deinen Roboter oder Mikrocontroller mit CodeON, um das Programm zu übertragen. Hinweise dazu findest du in der CodeON-Dokumentation.";
+Blockly.Msg.POPUP_RUN_NOTIFICATION_COZMO = "Cozmo vorbereiten:<br>1. Schalte Cozmo ein.<br>2. Verbinde diesen Computer mit dem WLAN, das Cozmo auf seinem Display anzeigt. Dass dabei keine Internetverbindung besteht, ist normal.<br>3. Stelle Cozmo auf eine freie Fläche.<br>4. Drücke danach erneut auf Start.<br>Die lokale Cozmo-Bridge wird zusammen mit CodeON gestartet.";
 Blockly.Msg.POPUP_SCANNED_ROBOTS = "Gefundene Roboter";
 Blockly.Msg.POPUP_STARTUP_COOKIES = "Wir verwenden Cookies, um Inhalte und Anzeigen zu personalisieren und die Zugriffe auf unsere Website zu analysieren.";
 Blockly.Msg.POPUP_STARTUP_HELP = "Brauchst du Hilfe?";

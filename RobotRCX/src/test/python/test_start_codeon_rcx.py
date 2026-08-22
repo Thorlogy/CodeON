@@ -92,10 +92,30 @@ class CodeOnRcxStarterTest(unittest.TestCase):
             self.assertTrue((root / name).is_file(), name)
 
     def test_only_supported_robot_plugins_are_enabled(self):
-        self.assertEqual(("rcx", "edisonv2", "rcj", "cozmo"), STARTER.SUPPORTED_ROBOTS)
+        self.assertEqual(("rcx", "edisonv2", "rcj", "cozmo", "apitor"), STARTER.SUPPORTED_ROBOTS)
         source = STARTER_PATH.read_text(encoding="utf-8")
         self.assertIn('"robot.whitelist=" + ",".join(SUPPORTED_ROBOTS)', source)
         self.assertIn('"robot.default=rcx"', source)
+
+    def test_bridge_only_mode_never_stops_the_codeon_server(self):
+        with patch.object(STARTER, "stop_previous_codeon_server") as stop_server:
+            STARTER.restart_owned_codeon_server(bridge_only=True)
+            stop_server.assert_not_called()
+
+    def test_full_launcher_restart_stops_only_the_owned_codeon_server(self):
+        with patch.object(STARTER, "stop_previous_codeon_server") as stop_server:
+            STARTER.restart_owned_codeon_server(bridge_only=False)
+            stop_server.assert_called_once_with()
+
+    def test_development_start_uses_the_central_robot_bridge_launcher(self):
+        source = (STARTER_PATH.parent / "ora.sh").read_text(encoding="utf-8")
+        self.assertIn("./start-codeon-rcx.py --bridge-only", source)
+        self.assertNotIn("_startRcxBridge", source)
+        self.assertIn("server.ip=127.0.0.1", source)
+
+    def test_packaged_launcher_binds_the_server_to_loopback(self):
+        source = STARTER_PATH.read_text(encoding="utf-8")
+        self.assertIn('"server.ip=127.0.0.1"', source)
 
     def test_compact_user_package_contains_runtime_but_no_proprietary_tools(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -113,7 +133,7 @@ class CodeOnRcxStarterTest(unittest.TestCase):
             for name in names
             if "/application/lib/Robot" in name and name.endswith(".jar")
         }
-        self.assertEqual({"RobotRCX.jar", "RobotEdison.jar", "RobotSpike.jar", "RobotCozmo.jar"}, robot_jars)
+        self.assertEqual({"RobotRCX.jar", "RobotEdison.jar", "RobotSpike.jar", "RobotCozmo.jar", "RobotApitor.jar"}, robot_jars)
         self.assertFalse(any("/application/db-embedded/" in name for name in names))
         self.assertIn("CodeON-RCX-test/RobotRCX/rcx-bridge.py", names)
         self.assertNotIn("CodeON-RCX-test/RobotRCX/bin/nqc", names)

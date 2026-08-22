@@ -81,8 +81,11 @@ werden erst mit einer eigenen Daten-/API-Migration umgestellt. Details stehen in
 ```
 
 Anschließend ist CodeON unter [http://localhost:1999](http://localhost:1999)
-erreichbar. `ora.sh start-from-git` startet bei installiertem NQC auch die lokale
-RCX-Bridge auf `127.0.0.1:2222`.
+erreichbar. `ora.sh start-from-git` startet die lokal installierten Roboter-Bridges
+für RCX, Cozmo und Apitor automatisch mit. Server und Bridges binden ausschließlich
+an `127.0.0.1` und werden beim Beenden gemeinsam wieder beendet. Fehlt eine optionale
+Roboter-Abhängigkeit, bleiben Server und die übrigen Systeme verfügbar; Hinweise
+stehen in `admin/logs/robot-bridges.log`.
 
 ### Frontend bearbeiten
 

@@ -49,7 +49,11 @@ define(["require", "exports", "log", "guiState.controller", "jquery", "blockly",
                 var notificationElement_1 = $('#releaseInfo');
                 var notificationElementTitle = notificationElement_1.children('#releaseInfoTitle');
                 var notificationElementDescription = notificationElement_1.children('#releaseInfoContent');
-                notificationElementDescription.html(Blockly.Msg.POPUP_RUN_NOTIFICATION);
+                var notificationMessage = GUISTATE_C.getRobotGroup() === 'cozmo'
+                    ? Blockly.Msg.POPUP_RUN_NOTIFICATION_COZMO ||
+                        'Prepare Cozmo: 1. Switch Cozmo on. 2. Connect this computer to the Wi-Fi shown on Cozmo\'s display; no internet connection is normal. 3. Put Cozmo on a clear surface. 4. Press Start again. The local Cozmo bridge starts automatically with CodeON.'
+                    : Blockly.Msg.POPUP_RUN_NOTIFICATION;
+                notificationElementDescription.html(notificationMessage);
                 notificationElementTitle.html(Blockly.Msg.POPUP_ATTENTION);
                 var a_1 = notificationElement_1.on('notificationFadeInComplete', function () {
                     clearTimeout(a_1.data('hideInteval'));

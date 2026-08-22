@@ -26,6 +26,7 @@
     { "id": "test.apitor-simulation", "type": "test", "label": "Apitor simulation contract", "command": "node scripts/test-apitor-simulation-static.js" },
     { "id": "test.simulation-3d", "type": "test", "label": "Shared 3D simulation contract", "command": "node scripts/test-codeon-3d-static.js" },
     { "id": "test.buddy-security", "type": "test", "label": "Code Buddy credential and runtime security", "command": "node scripts/test-codeon-buddy-security.js" },
+    { "id": "test.local-launcher", "type": "test", "label": "Local server and robot bridge launcher", "command": "python3 -m unittest RobotRCX/src/test/python/test_start_codeon_rcx.py" },
     { "id": "test.java-reactor", "type": "test", "label": "Active robot Maven reactor tests", "command": "mvn -pl OpenRobertaRobot,RobotEdison,RobotSpike,RobotCozmo,RobotApitor,RobotRCX -am -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test" },
     { "id": "test.server-package", "type": "test", "label": "Server reactor package build", "command": "mvn -pl OpenRobertaServer -am -DskipTests package" }
   ],
@@ -104,6 +105,14 @@
       "robots": ["robot.rcx", "robot.edison", "robot.rcj", "robot.cozmo", "robot.apitor"],
       "tests": ["test.graph", "test.java-reactor", "test.server-package"],
       "reason": "The parent reactor controls all active robot modules."
+    },
+    {
+      "id": "local-launcher",
+      "paths": ["ora.sh", "start-codeon-rcx.py", "start-codeon.sh", "CodeON-Starten.command", "CodeON-Starten.cmd", "RobotRCX/src/test/python/test_start_codeon_rcx.py"],
+      "risk": "high",
+      "robots": ["robot.rcx", "robot.edison", "robot.rcj", "robot.cozmo", "robot.apitor"],
+      "tests": ["test.graph", "test.local-launcher", "test.cozmo-simulation", "test.apitor-simulation"],
+      "reason": "The local launcher coordinates the CodeON server and optional loopback-only robot bridges."
     },
     {
       "id": "shared-robot-core",

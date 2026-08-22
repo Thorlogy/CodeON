@@ -824,6 +824,7 @@
   "POPUP_CONTINUE": "continue anyway",
   "POPUP_ROBOT_SYSTEM": "System",
   "POPUP_RUN_NOTIFICATION": "Connect your robot or microcontroller to CodeON to transfer the program. See the CodeON documentation for instructions.",
+  "POPUP_RUN_NOTIFICATION_COZMO": "Prepare Cozmo:<br>1. Switch Cozmo on.<br>2. Connect this computer to the Wi-Fi shown on Cozmo's display; no internet connection is normal.<br>3. Put Cozmo on a clear surface.<br>4. Press Start again.<br>The local Cozmo bridge starts automatically with CodeON.",
   "BUTTON_DO_SHARE": "Share",
   "BUTTON_DO_UPLOAD_GALLERY": "Upload »$« to the gallery",
   "BUTTON_EMPTY_LIST": "Empty list",
