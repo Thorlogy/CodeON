@@ -126,9 +126,14 @@ Kamerastart in der Anfänger-Toolbox. Die eingebaute Aktion heißt nun
 „Automatische Gesichtsfolge“ und ist damit von der Kategorie „Parallele Tasks“
 für eigene Task-Ketten getrennt.
 
-Diese Korrekturen sind automatisiert geprüft, aber noch nicht mit echter
-Hardware bestätigt. Ein erneuter Hardwaretest ist erforderlich, bevor sie als
-abgenommen gelten.
+Bei der erneuten Hardwareprüfung am 31.08.2026 wurden der Liftarm und die
+Gesichtserkennung erfolgreich bestätigt: Der Lift ließ sich sichtbar bewegen
+und die lokale Kameraauswertung erkannte ein Gesicht. Damit sind diese beiden
+Korrekturen zusätzlich zur Verbindung und Programmübertragung abgenommen.
+
+Der Not-Stopp ist weiterhin separat mit einer kontinuierlichen Fahrbewegung zu
+prüfen. Er gilt erst dann als hardwareseitig abgenommen, wenn Cozmo beim
+Betätigen des sichtbaren Stoppknopfs unmittelbar stehen bleibt.
 
 Cozmo besitzt keinen allgemeinen Abstandssensor für eine Entfernung in
 Zentimetern. Die Cliff-Sensorik erkennt eine Kante unter dem Roboter, misst aber

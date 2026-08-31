@@ -97,19 +97,18 @@ Verified host versions:
 
 ## Follow-up gate after the 31 August exploratory test
 
-The next hardware run must additionally verify the corrections prompted by
-the exploratory test:
+The following corrections prompted by the exploratory test were verified with
+real hardware on 31 August 2026:
 
-- raise and lower the lift with the direct velocity command and confirm that
-  the motor is released afterwards;
-- press the visible Run/Stop toggle during continuous driving and confirm an
-  immediate wheel stop;
-- start face detection, wait for camera frames and confirm a face result;
-- confirm that the expert toolbox distinguishes user-defined `Parallel task`
-  headers from the built-in `Automatic face following` action.
+- the lift arm moved visibly with the corrected direct velocity command;
+- local face detection received camera frames and recognized a face.
 
-These four points are pending real-hardware confirmation and must not be
-reported as passed based on automated tests alone.
+The emergency-stop path is still pending a dedicated hardware check. Run a
+continuous low-speed drive program, press the visible Stop control and confirm
+an immediate wheel stop. The toolbox naming distinction between user-defined
+`Parallel task` headers and the built-in `Automatic face following` action is
+covered by the delivered static regression check but should also be confirmed
+visually during final acceptance.
 
 The detailed checkpoint is recorded in
 `docs/CodeON_Cozmo_Durchbruch_2026-08-31.md`.
