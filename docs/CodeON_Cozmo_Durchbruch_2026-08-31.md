@@ -73,12 +73,64 @@ Das nicht versionierte Bridge-Protokoll bestätigte am 31.08.2026:
 
 - 13 Cozmo-/RCJ-Java-Regressionstests bestanden, einschließlich der negativen
   Absicherung, dass RCJ weiterhin einen konfigurierten Differentialantrieb verlangt
-- 74 Tests des Robot Integration Kit einschließlich des Cozmo-Adapters bestanden
+- 77 Tests des Robot Integration Kit einschließlich des Cozmo-Adapters bestanden
 - 15 Tests des gemeinsamen CodeON-Starters bestanden
 - TypeScript-Build bestanden
 - statischer Cozmo-Auslieferungstest bestanden
 - aktualisierte RobotCozmo- und RobotSpike-JARs in `application/lib`
 
+## Richtiger WLAN-Ablauf
+
+1. CodeON mit `CodeON-Starten.command` im normalen WLAN starten und das
+   Startfenster offen lassen.
+2. Erst danach in das Cozmo-WLAN wechseln. CodeON-Seite und Robot-Bridge laufen
+   vollständig lokal; eine Internetverbindung ist für das Übertragen nicht
+   erforderlich.
+3. Nach einem Wechsel aus dem Cozmo-WLAN wird der Startknopf vorübergehend
+   deaktiviert. Nach der Rückkehr ins Cozmo-WLAN verbindet sich die laufende
+   Bridge automatisch neu. `CodeON-Starten.command` darf dafür nicht erneut
+   ausgeführt werden müssen.
+
+Dieser WLAN-Ablauf wurde am 31.08.2026 erneut mit echter Hardware bestätigt:
+CodeON und die Bridge wurden einmal im normalen WLAN gestartet, anschließend
+wurde ohne Neustart ins Cozmo-WLAN gewechselt. Die Bridge erkannte Cozmo
+automatisch und der zuvor graue Dreieck-Startknopf wurde schwarz.
+
+Auf macOS muss die Cozmo-Bridge aus dem Terminal-Kontext von
+`CodeON-Starten.command` laufen. Eine aus Codex oder einem anderen
+Anwendungskontext gestartete Ersatz-Bridge konnte zwar die Cozmo-Adresse
+`172.31.1.188` binden, erhielt wegen der anwendungsbezogenen lokalen
+Netzwerkberechtigung aber keine Cozmo-Pakete. Die Startdatei ist deshalb einmal
+im normalen WLAN zu öffnen; das zugehörige Terminalfenster bleibt über alle
+WLAN-Wechsel hinweg geöffnet. Eine eventuelle macOS-Abfrage für den Zugriff auf
+das lokale Netzwerk muss für Terminal erlaubt werden.
+
 Die Laufzeitdatenbank und Bridge-Logs werden aus Sicherheits- und
 Datenschutzgründen nicht versioniert. Dieser Bericht hält nur die für die
 Reproduktion notwendigen technischen Ergebnisse fest.
+
+## Nachprüfung nach der erweiterten Hardware-Abnahme
+
+Bei der anschließenden Abnahme wurden vier Punkte gemeldet: Der Lift reagierte
+nicht sichtbar, der Run/Stop-Umschalter stoppte nicht zuverlässig, die
+Bezeichnungen für frei definierte parallele Tasks und die eingebaute
+Gesichtsfolge waren missverständlich, und die Gesichtserkennung lieferte kein
+Ergebnis.
+
+Das Bridge-Protokoll zeigte, dass die Liftbefehle ankamen. Der Lift-Endpunkt
+wird deshalb für die Nachprüfung mit dem direkten Liftmotorbefehl angesteuert.
+Der Not-Stopp gibt nun Räder, Lift und Kopf explizit frei und besitzt einen vom
+Lebenszyklus der Blockly-Oberfläche unabhängigen Klickhandler. Gesichtssensoren
+fordern die lokale Kameraauswertung bei Bedarf an; zusätzlich steht der
+Kamerastart in der Anfänger-Toolbox. Die eingebaute Aktion heißt nun
+„Automatische Gesichtsfolge“ und ist damit von der Kategorie „Parallele Tasks“
+für eigene Task-Ketten getrennt.
+
+Diese Korrekturen sind automatisiert geprüft, aber noch nicht mit echter
+Hardware bestätigt. Ein erneuter Hardwaretest ist erforderlich, bevor sie als
+abgenommen gelten.
+
+Cozmo besitzt keinen allgemeinen Abstandssensor für eine Entfernung in
+Zentimetern. Die Cliff-Sensorik erkennt eine Kante unter dem Roboter, misst aber
+keinen Abstand zu einem Hindernis vor ihm. Kamera-, Würfelpose- und
+Odometriewerte erlauben nur anwendungsbezogene Schätzungen.

@@ -10,9 +10,18 @@ from codeon_robot_bridge import CozmoAdapter
 
 class StubClient:
     def __init__(self):
+        class Receiver:
+            received_frames = 1
+
+        class Connection:
+            CONNECTED = 3
+            state = 3
+            recv_thread = Receiver()
+
         self.calls = []
         self.serial_number = 1234
         self.battery_voltage = 3.9
+        self.conn = Connection()
 
     def __getattr__(self, name):
         def call(*args):
@@ -46,6 +55,28 @@ class CozmoAdapterTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(1, sum(name == "connect" for name, _ in self.client.calls))
         self.assertEqual(1, sum(name == "wait_for_robot" for name, _ in self.client.calls))
 
+    async def test_status_disconnects_a_stale_robot_link_for_wifi_recovery(self):
+        await self.adapter.connect()
+        self.adapter._last_robot_packet_at -= 4.0
+
+        status = await self.adapter.status()
+
+        self.assertFalse(status["connected"])
+        self.assertFalse(self.adapter.connected)
+        self.assertIn(("disconnect", ()), self.client.calls)
+
+    async def test_connect_recovers_after_wifi_loss_without_restarting_bridge(self):
+        await self.adapter.connect()
+        self.adapter._last_robot_packet_at -= 4.0
+        self.assertFalse((await self.adapter.status())["connected"])
+
+        result = await self.adapter.connect()
+
+        self.assertTrue(result["connected"])
+        self.assertEqual(2, sum(name == "start" for name, _ in self.client.calls))
+        self.assertEqual(2, sum(name == "connect" for name, _ in self.client.calls))
+        self.assertEqual(2, sum(name == "wait_for_robot" for name, _ in self.client.calls))
+
     async def test_drive_values_are_clamped_to_manifest_limit(self):
         await self.adapter.connect()
         await self.adapter.execute("drive", {"left": 500, "right": -500})
@@ -70,7 +101,16 @@ class CozmoAdapterTest(unittest.IsolatedAsyncioTestCase):
         await self.adapter.execute("setHead", {"angle": 4})
         await self.adapter.execute("setLift", {"height": 5})
         self.assertIn(("set_head_angle", (0.7,)), self.client.calls)
-        self.assertIn(("set_lift_height", (32.0, 10.0, 10.0, 0.0)), self.client.calls)
+        self.assertIn(("move_lift", (-4.0,)), self.client.calls)
+        self.assertIn(("move_lift", (0.0,)), self.client.calls)
+
+    async def test_stop_all_explicitly_releases_every_motor(self):
+        await self.adapter.connect()
+        await self.adapter.stop_all()
+        self.assertEqual(
+            ["drive_wheels", "move_lift", "move_head", "stop_all_motors"],
+            [name for name, _ in self.client.calls[-4:]],
+        )
 
     async def test_backpack_color_is_encoded_as_light_state(self):
         await self.adapter.connect()

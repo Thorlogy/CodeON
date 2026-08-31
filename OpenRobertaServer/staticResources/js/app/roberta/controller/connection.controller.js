@@ -36,8 +36,9 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 define(["require", "exports", "guiState.controller"], function (require, exports, GUISTATE_C) {
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.setIsAgent = exports.getIsAgent = exports.getSocket = exports.setSocket = exports.setConnectionInstance = exports.getConnectionInstance = exports.setConnection = exports.switchConnection = exports.initConnection = void 0;
+    exports.setIsAgent = exports.getIsAgent = exports.getSocket = exports.setSocket = exports.setConnectionInstance = exports.getConnectionRobotName = exports.getConnectionInstance = exports.setConnection = exports.switchConnection = exports.initConnection = void 0;
     var connectionInstance;
+    var connectionRobotName;
     var robot = {
         socket: null,
         isAgent: false,
@@ -84,6 +85,7 @@ define(["require", "exports", "guiState.controller"], function (require, exports
                         return [4 /*yield*/, resolveClass(robotName)];
                     case 1:
                         _a.apply(void 0, [_b.sent()]);
+                        connectionRobotName = robotName;
                         assertClassResolved();
                         getConnectionInstance().init();
                         return [2 /*return*/];
@@ -128,6 +130,10 @@ define(["require", "exports", "guiState.controller"], function (require, exports
         return connectionInstance;
     }
     exports.getConnectionInstance = getConnectionInstance;
+    function getConnectionRobotName() {
+        return connectionRobotName;
+    }
+    exports.getConnectionRobotName = getConnectionRobotName;
     function setConnectionInstance(connection) {
         connectionInstance = connection;
     }

@@ -2158,7 +2158,9 @@ export class CozmoConnection extends AbstractConnection {
     }> = [];
     private taskRunTimer: number | undefined;
     private retryTimer: number | undefined;
+    private healthTimer: number | undefined;
     private connected = false;
+    private connecting = false;
     private stopped = false;
     private helpShown = false;
 
@@ -2204,7 +2206,6 @@ export class CozmoConnection extends AbstractConnection {
     }
 
     override stopProgram(): void {
-        this.stopped = true;
         this.clearTaskRunTimer();
         if (this.interpreter && !this.interpreter.isTerminated()) this.interpreter.terminate();
         this.interpreter = undefined;
@@ -2221,6 +2222,7 @@ export class CozmoConnection extends AbstractConnection {
     override terminate(): void {
         this.stopped = true;
         this.clearRetry();
+        this.clearHealthMonitor();
         this.clearTaskRunTimer();
         if (this.interpreter && !this.interpreter.isTerminated()) this.interpreter.terminate();
         this.interpreter = undefined;
@@ -2238,6 +2240,8 @@ export class CozmoConnection extends AbstractConnection {
     setState(): void {}
 
     private async connectBridge(): Promise<void> {
+        if (this.connecting || this.stopped) return;
+        this.connecting = true;
         try {
             await this.bridge.open();
             const manifest: RobotBridgeManifest = await this.bridge.capabilities();
@@ -2252,6 +2256,7 @@ export class CozmoConnection extends AbstractConnection {
             GUISTATE_C.setRunEnabled(true);
             $('#runSourceCodeEditor').removeClass('disabled');
             GUISTATE_C.setConnectionState('wait');
+            this.startHealthMonitor();
         } catch (error) {
             this.connected = false;
             if (error instanceof RobotBridgeError && error.code === 'SESSION_REPLACED') {
@@ -2271,6 +2276,40 @@ export class CozmoConnection extends AbstractConnection {
                     this.connectBridge();
                 }, 3000);
             }
+        } finally {
+            this.connecting = false;
+        }
+    }
+
+    private startHealthMonitor(): void {
+        if (this.healthTimer !== undefined) return;
+        this.healthTimer = window.setInterval(() => {
+            if (!this.connected || this.stopped || this.connecting) return;
+            this.bridge
+                .status()
+                .then((status) => {
+                    if (status.connected) return;
+                    this.connected = false;
+                    GUISTATE_C.setRunEnabled(false);
+                    $('#runSourceCodeEditor').addClass('disabled');
+                    $('#head-navi-icon-robot').removeClass('wait error').addClass('busy');
+                    this.connectBridge();
+                })
+                .catch(() => {
+                    this.connected = false;
+                    this.bridge.close();
+                    GUISTATE_C.setRunEnabled(false);
+                    $('#runSourceCodeEditor').addClass('disabled');
+                    $('#head-navi-icon-robot').removeClass('wait error').addClass('busy');
+                    this.connectBridge();
+                });
+        }, 1500);
+    }
+
+    private clearHealthMonitor(): void {
+        if (this.healthTimer !== undefined) {
+            window.clearInterval(this.healthTimer);
+            this.healthTimer = undefined;
         }
     }
 

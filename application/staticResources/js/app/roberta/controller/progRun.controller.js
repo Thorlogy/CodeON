@@ -46,11 +46,35 @@ define(["require", "exports", "log", "guiState.controller", "jquery", "blockly",
         var connection = CONNECTION_C.getConnectionInstance();
         return GUISTATE_C.getRobotGroup() === 'cozmo' && !!connection && connection.isRobotConnected();
     }
+    function reconnectCozmo() {
+        if (GUISTATE_C.getRobotGroup() !== 'cozmo') {
+            return;
+        }
+        var robot = GUISTATE_C.getRobot();
+        var connection = CONNECTION_C.getConnectionInstance();
+        if (!connection || CONNECTION_C.getConnectionRobotName() !== robot) {
+            CONNECTION_C.switchConnection(robot).catch(function (error) { return LOG.error('Cozmo connection restart failed: ' + error); });
+            return;
+        }
+        // Re-initializing an existing Cozmo connection is safe: its bridge client
+        // de-duplicates an in-flight attempt. It also clears a SESSION_REPLACED or
+        // stale-Wi-Fi stop state, so clicking the disabled triangle is a useful
+        // manual recovery action without restarting CodeON.
+        connection.init();
+    }
     // The Blockly workspace and its controls can be created after this module is
     // loaded. Capture disabled Run clicks at the document boundary so the help is
     // independent of controller initialization and Blockly's event propagation.
     document.addEventListener('mousedown', function (event) {
         var target = event.target;
+        var stopButton = target && target.closest ? target.closest('#stopBrick') : null;
+        if (stopButton && GUISTATE_C.getRobotGroup() === 'cozmo') {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            LOG.info('stopBrick from delegated Cozmo button');
+            stopProgram();
+            return;
+        }
         var runButton = target && target.closest ? target.closest('#runOnBrick') : null;
         if (!runButton) {
             return;
@@ -63,6 +87,7 @@ define(["require", "exports", "log", "guiState.controller", "jquery", "blockly",
             event.preventDefault();
             event.stopImmediatePropagation();
             if (!isConnectedCozmo() || !resolveBlocklyWorkspace()) {
+                reconnectCozmo();
                 showRunNotification();
                 return;
             }
@@ -90,6 +115,7 @@ define(["require", "exports", "log", "guiState.controller", "jquery", "blockly",
             var isCozmo = GUISTATE_C.getRobotGroup() === 'cozmo';
             var connectedCozmo = isConnectedCozmo();
             if ((isCozmo && !connectedCozmo) || ($('#runOnBrick').hasClass('disabled') && !connectedCozmo)) {
+                reconnectCozmo();
                 showRunNotification();
                 return false;
             }

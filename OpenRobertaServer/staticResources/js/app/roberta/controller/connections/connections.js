@@ -2595,6 +2595,7 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
             _this.bridge = new robotBridge_1.RobotBridgeClient();
             _this.taskRuntimes = [];
             _this.connected = false;
+            _this.connecting = false;
             _this.stopped = false;
             _this.helpShown = false;
             _this.runInterpreterStep = function () {
@@ -2685,7 +2686,6 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
         CozmoConnection.prototype.stopProgram = function () {
             var _this = this;
             var _a;
-            this.stopped = true;
             this.clearTaskRunTimer();
             if (this.interpreter && !this.interpreter.isTerminated())
                 this.interpreter.terminate();
@@ -2705,6 +2705,7 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
             var _a;
             this.stopped = true;
             this.clearRetry();
+            this.clearHealthMonitor();
             this.clearTaskRunTimer();
             if (this.interpreter && !this.interpreter.isTerminated())
                 this.interpreter.terminate();
@@ -2728,18 +2729,23 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
-                            _a.trys.push([0, 4, , 5]);
-                            return [4 /*yield*/, this.bridge.open()];
+                            if (this.connecting || this.stopped)
+                                return [2 /*return*/];
+                            this.connecting = true;
+                            _a.label = 1;
                         case 1:
+                            _a.trys.push([1, 5, 6, 7]);
+                            return [4 /*yield*/, this.bridge.open()];
+                        case 2:
                             _a.sent();
                             return [4 /*yield*/, this.bridge.capabilities()];
-                        case 2:
+                        case 3:
                             manifest = _a.sent();
                             if (manifest.robot !== 'cozmo' || !manifest.capabilities.differentialDrive) {
                                 throw new Error('Die gestartete Robot-Bridge ist nicht für Cozmo geeignet.');
                             }
                             return [4 /*yield*/, this.bridge.connectRobot()];
-                        case 3:
+                        case 4:
                             _a.sent();
                             if (this.stopped)
                                 return [2 /*return*/];
@@ -2749,8 +2755,9 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
                             GUISTATE_C.setRunEnabled(true);
                             $('#runSourceCodeEditor').removeClass('disabled');
                             GUISTATE_C.setConnectionState('wait');
-                            return [3 /*break*/, 5];
-                        case 4:
+                            this.startHealthMonitor();
+                            return [3 /*break*/, 7];
+                        case 5:
                             error_7 = _a.sent();
                             this.connected = false;
                             if (error_7 instanceof robotBridge_1.RobotBridgeError && error_7.code === 'SESSION_REPLACED') {
@@ -2770,11 +2777,48 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
                                     _this.connectBridge();
                                 }, 3000);
                             }
-                            return [3 /*break*/, 5];
-                        case 5: return [2 /*return*/];
+                            return [3 /*break*/, 7];
+                        case 6:
+                            this.connecting = false;
+                            return [7 /*endfinally*/];
+                        case 7: return [2 /*return*/];
                     }
                 });
             });
+        };
+        CozmoConnection.prototype.startHealthMonitor = function () {
+            var _this = this;
+            if (this.healthTimer !== undefined)
+                return;
+            this.healthTimer = window.setInterval(function () {
+                if (!_this.connected || _this.stopped || _this.connecting)
+                    return;
+                _this.bridge
+                    .status()
+                    .then(function (status) {
+                    if (status.connected)
+                        return;
+                    _this.connected = false;
+                    GUISTATE_C.setRunEnabled(false);
+                    $('#runSourceCodeEditor').addClass('disabled');
+                    $('#head-navi-icon-robot').removeClass('wait error').addClass('busy');
+                    _this.connectBridge();
+                })
+                    .catch(function () {
+                    _this.connected = false;
+                    _this.bridge.close();
+                    GUISTATE_C.setRunEnabled(false);
+                    $('#runSourceCodeEditor').addClass('disabled');
+                    $('#head-navi-icon-robot').removeClass('wait error').addClass('busy');
+                    _this.connectBridge();
+                });
+            }, 1500);
+        };
+        CozmoConnection.prototype.clearHealthMonitor = function () {
+            if (this.healthTimer !== undefined) {
+                window.clearInterval(this.healthTimer);
+                this.healthTimer = undefined;
+            }
         };
         CozmoConnection.prototype.clearRetry = function () {
             if (this.retryTimer !== undefined) {

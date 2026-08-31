@@ -158,6 +158,7 @@ public class CozmoFixedConfigurationTest {
 
         Assert.assertTrue(String.valueOf(project.getErrorAndWarningMessages()), project.hasSucceeded());
         Assert.assertEquals(0, project.getErrorCounter());
+
     }
 
     @Test
@@ -277,6 +278,12 @@ public class CozmoFixedConfigurationTest {
 
         Assert.assertTrue(String.valueOf(project.getErrorAndWarningMessages()), project.hasSucceeded());
         Assert.assertEquals(0, project.getErrorCounter());
+
+        new CozmoStackMachineGeneratorWorker().execute(project);
+        String generated = project.getCompiledHex();
+        Assert.assertTrue(generated, generated.contains("\"opc\": \"motorOnAction\""));
+        Assert.assertTrue(generated, generated.contains("\"port\": \"a\""));
+        Assert.assertTrue(generated, generated.contains("\"value\": \"100\""));
     }
 
     @Test

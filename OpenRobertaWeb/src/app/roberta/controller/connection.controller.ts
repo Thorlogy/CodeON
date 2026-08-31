@@ -2,6 +2,7 @@ import { ConnectionInterface } from 'connection.interface';
 import * as GUISTATE_C from 'guiState.controller';
 
 let connectionInstance: ConnectionInterface;
+let connectionRobotName: string | undefined;
 let robot = {
     socket: null,
     isAgent: false,
@@ -21,6 +22,7 @@ export async function switchConnection(robotName: string) {
 
 export async function setConnection(robotName: string) {
     setConnectionInstance(await resolveClass(robotName));
+    connectionRobotName = robotName;
 
     assertClassResolved();
     getConnectionInstance().init();
@@ -53,6 +55,10 @@ function capitalizeFirstLetter(string: string): string {
 
 export function getConnectionInstance(): ConnectionInterface {
     return connectionInstance;
+}
+
+export function getConnectionRobotName(): string | undefined {
+    return connectionRobotName;
 }
 
 export function setConnectionInstance(connection: ConnectionInterface) {

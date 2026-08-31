@@ -35,6 +35,7 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
             _this.lastError = '';
             _this.resourceOwners = {};
             _this.taskConflictReported = false;
+            _this.cameraRequested = false;
             _this.maxWheelSpeedMmPerSec = maxWheelSpeedMmPerSec;
             _this.trackWidthMm = trackWidthMm;
             _this.updateStatusPanel();
@@ -90,6 +91,7 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
             if (this.sensorTimer !== undefined)
                 window.clearInterval(this.sensorTimer);
             this.send('camera', { enabled: false });
+            this.cameraRequested = false;
             this.setCameraPrivacyIndicator(false);
             this.stopMotion();
             this.lastAction = this.isGerman() ? 'Programm beendet' : 'Program finished';
@@ -138,6 +140,7 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
                     var ownsCamera = ownsDrive && this.claimResource('CAMERA', Number.POSITIVE_INFINITY);
                     if (ownsDrive && ownsCamera) {
                         this.send('startBehavior', { preset: 'faceSearchAndFollow' });
+                        this.cameraRequested = true;
                         this.setCameraPrivacyIndicator(true);
                     }
                     else if (ownsDrive) {
@@ -146,6 +149,7 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
                 }
                 else if (this.claimResource('DRIVE', 250) && this.claimResource('CAMERA', 250)) {
                     this.send('stopBehavior', {});
+                    this.cameraRequested = false;
                     this.releaseResource('DRIVE');
                     this.releaseResource('CAMERA');
                     this.setCameraPrivacyIndicator(false);
@@ -170,6 +174,7 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
             if (normalizedMode === 'track') {
                 if (this.claimResource('CAMERA', Number.POSITIVE_INFINITY)) {
                     this.send('trackFace', {});
+                    this.cameraRequested = true;
                     this.setCameraPrivacyIndicator(true);
                 }
             }
@@ -177,10 +182,12 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
                 var enabled = normalizedMode === 'start' || normalizedMode === 'on';
                 if (enabled && this.claimResource('CAMERA', Number.POSITIVE_INFINITY)) {
                     this.send('camera', { enabled: enabled });
+                    this.cameraRequested = true;
                     this.setCameraPrivacyIndicator(true);
                 }
                 else if (!enabled && this.claimResource('CAMERA', 250)) {
                     this.send('camera', { enabled: false });
+                    this.cameraRequested = false;
                     this.releaseResource('CAMERA');
                     this.setCameraPrivacyIndicator(false);
                 }
@@ -192,6 +199,11 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
                 return;
             }
             var key = String(mode || '').toLowerCase();
+            if (key.startsWith('face') && !this.cameraRequested) {
+                this.cameraRequested = true;
+                this.send('camera', { enabled: true });
+                this.setCameraPrivacyIndicator(true);
+            }
             var face = this.sensorSnapshot.face || {};
             var values = {
                 battery: this.sensorSnapshot.battery,

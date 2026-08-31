@@ -4,7 +4,7 @@ define(['blockly'], function (Blockly) {
     Blockly.Msg.TOOLBOX_MOTOR = text('Kopf und Lift', 'Head and lift');
     Blockly.Msg.TOOLBOX_CAMERA = text('Kamera', 'Camera');
     Blockly.Msg.TOOLBOX_DISPLAY = text('Display', 'Display');
-    Blockly.Msg.TOOLBOX_BEHAVIOR = text('Verhaltenssteuerung', 'Behavior control');
+    Blockly.Msg.TOOLBOX_BEHAVIOR = text('Automatische Gesichtsfolge', 'Automatic face following');
     Blockly.Msg.TOOLBOX_TASKS = text('Parallele Tasks', 'Parallel tasks');
 
     Blockly.Blocks.cozmo_parallel_task = {
@@ -36,7 +36,7 @@ define(['blockly'], function (Blockly) {
         init: function () {
             this.setColour(Blockly.CAT_ACTION_RGB);
             this.appendDummyInput()
-                .appendField(text('Parallele Tasks', 'Parallel tasks'))
+                .appendField(text('Gesicht automatisch', 'automatic face following'))
                 .appendField(new Blockly.FieldDropdown([
                     [text('Gesicht suchen und folgen starten', 'start face search and follow'), 'START'],
                     [text('stoppen', 'stop'), 'STOP']
@@ -44,8 +44,8 @@ define(['blockly'], function (Blockly) {
             this.setPreviousStatement(true);
             this.setNextStatement(true);
             this.setTooltip(text(
-                'Startet Sicherheitsstopp, Gesichtssuche und Gesichtsfolge parallel mit festen Prioritäten. Mit einem Warte- oder Schleifenblock aktiv halten.',
-                'Runs safety stop, face search, and face follow concurrently at fixed priorities. Keep it active with a wait or loop block.'
+                'Startet Gesichtssuche und Gesichtsfolge mit Sicherheitsstopp. Mit einem Warte- oder Schleifenblock aktiv halten.',
+                'Starts face search and face following with a safety stop. Keep it active with a wait or loop block.'
             ));
         }
     };

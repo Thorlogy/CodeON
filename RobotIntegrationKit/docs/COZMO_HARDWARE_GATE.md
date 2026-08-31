@@ -13,8 +13,22 @@ with real Cozmo hardware on macOS on 22 July 2026. The verified checks are:
 - stopping the running block program with the Run/Stop toggle.
 
 The checks below remain the repeatable acceptance procedure for changes to the
-adapter, bridge or Cozmo program path. The host must already be connected to
-Cozmo's Wi-Fi network.
+adapter, bridge or Cozmo program path. Start CodeON while the computer is still
+on its normal Wi-Fi, then switch to Cozmo's Wi-Fi for the hardware test. CodeON,
+the browser and the bridge communicate locally and do not require internet
+access after startup.
+
+The Cozmo bridge must remain running across Wi-Fi changes. While Cozmo's Wi-Fi
+is unavailable, the Run button is disabled. After returning to Cozmo's Wi-Fi,
+the existing CodeON page retries locally and should enable Run automatically;
+`CodeON-Starten.command` must not be started again.
+
+This exact transition was verified with real hardware on 31 August 2026: the
+bridge was started once on normal Wi-Fi, the Mac joined Cozmo's Wi-Fi, and the
+disabled triangular Run button became enabled without restarting CodeON. On
+macOS the starter must launch the bridge from Terminal, because Local Network
+permission is associated with the launching application. Keep that Terminal
+window open and allow Terminal's Local Network permission if macOS asks.
 
 Place Cozmo on a clear floor even for the connection-only probe. PyCozmo's
 connection initialization can calibrate and move the head or lift. Do not
@@ -56,6 +70,13 @@ document:
 Windows and Linux hardware support remains unverified until the same gate
 passes on those platforms.
 
+Cozmo has no ultrasonic, infrared ranging or time-of-flight sensor that can
+return an obstacle distance in centimeters. Its downward cliff sensing can
+report an edge, but not the distance to an object in front of the robot.
+Wheel odometry, face size and the pose of a recognized cube can only provide
+task-specific estimates and must not be presented as a general distance
+measurement.
+
 ## Confirmed motor-configuration regression — 31 August 2026
 
 The complete browser-to-robot path was verified again with real Cozmo hardware
@@ -73,6 +94,22 @@ Verified host versions:
 - Python 3.12.8
 - PyCozmo 0.8.0
 - websockets 16.1.1
+
+## Follow-up gate after the 31 August exploratory test
+
+The next hardware run must additionally verify the corrections prompted by
+the exploratory test:
+
+- raise and lower the lift with the direct velocity command and confirm that
+  the motor is released afterwards;
+- press the visible Run/Stop toggle during continuous driving and confirm an
+  immediate wheel stop;
+- start face detection, wait for camera frames and confirm a face result;
+- confirm that the expert toolbox distinguishes user-defined `Parallel task`
+  headers from the built-in `Automatic face following` action.
+
+These four points are pending real-hardware confirmation and must not be
+reported as passed based on automated tests alone.
 
 The detailed checkpoint is recorded in
 `docs/CodeON_Cozmo_Durchbruch_2026-08-31.md`.

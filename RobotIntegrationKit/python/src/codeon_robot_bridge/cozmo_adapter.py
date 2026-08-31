@@ -84,6 +84,8 @@ class CozmoAdapter(RobotAdapter):
         self._audio_tasks: set[asyncio.Task] = set()
         self._last_audio_error: str | None = None
         self._behavior_runtime: BehaviorRuntime | None = None
+        self._last_received_frames = 0
+        self._last_robot_packet_at = 0.0
 
     @property
     def manifest(self) -> CapabilityManifest:
@@ -96,7 +98,9 @@ class CozmoAdapter(RobotAdapter):
     async def connect(self) -> dict[str, Any]:
         async with self._connect_lock:
             if self.connected:
-                return self._connection_result()
+                if self._robot_link_alive():
+                    return self._connection_result()
+                await self.disconnect()
             self._local_address = None
             client = self._client_factory()
             try:
@@ -115,7 +119,14 @@ class CozmoAdapter(RobotAdapter):
             # and lift immediately so an idle CodeON connection does not
             # resist safe manual movement before a program is started.
             await asyncio.to_thread(client.stop_all_motors)
+            self._last_received_frames = self._received_frames(client)
+            self._last_robot_packet_at = time.monotonic()
             return self._connection_result()
+
+    async def status(self) -> dict[str, Any]:
+        if self.connected and not self._robot_link_alive():
+            await self.disconnect()
+        return {"connected": self.connected, "robot": self.manifest.robot}
 
     async def disconnect(self) -> None:
         client = self._client
@@ -138,6 +149,8 @@ class CozmoAdapter(RobotAdapter):
                 self._audio_tasks.clear()
                 self._client = None
                 self._connected = False
+                self._last_received_frames = 0
+                self._last_robot_packet_at = 0.0
 
     async def execute(self, command: str, params: dict[str, Any]) -> Any:
         client = self._require_client()
@@ -157,9 +170,15 @@ class CozmoAdapter(RobotAdapter):
             await asyncio.to_thread(client.set_head_angle, angle)
         elif command == "setLift":
             height = self._clamp_number(params, "height", 32.0, 92.0)
-            # A duration of zero keeps PyCozmo's position controller active.
-            # This lets Cozmo hold an object until an explicit lower/stop.
-            await asyncio.to_thread(client.set_lift_height, height, 10.0, 10.0, 0.0)
+            # PyCozmo acknowledges SetLiftHeight before the firmware has
+            # actually moved the arm. Endpoint blocks are more reliable with
+            # the same direct motor command used by Anki's remote control.
+            speed = 4.0 if height >= 62.0 else -4.0
+            await asyncio.to_thread(client.move_lift, speed)
+            try:
+                await asyncio.sleep(0.8)
+            finally:
+                await asyncio.to_thread(client.move_lift, 0.0)
         elif command == "setBackpackLight":
             color = self._parse_color(params.get("color", "#ffffff"))
             await asyncio.to_thread(client.set_all_backpack_lights, color)
@@ -217,6 +236,13 @@ class CozmoAdapter(RobotAdapter):
         await self._stop_face_tracking()
         await self._stop_camera()
         if self._client is not None:
+            # Stop direct velocity commands explicitly as well as sending the
+            # firmware-wide stop. This is intentionally redundant: PyCozmo's
+            # StopAllMotors acknowledgement alone does not prove that a prior
+            # direct wheel/lift/head velocity has been released.
+            await asyncio.to_thread(self._client.drive_wheels, 0.0, 0.0)
+            await asyncio.to_thread(self._client.move_lift, 0.0)
+            await asyncio.to_thread(self._client.move_head, 0.0)
             await asyncio.to_thread(self._client.stop_all_motors)
 
     def _snapshot(self, client) -> dict[str, Any]:
@@ -559,6 +585,30 @@ class CozmoAdapter(RobotAdapter):
     def _connection_result(self) -> dict[str, Any]:
         serial = getattr(self._client, "serial_number", None)
         return {"connected": self.connected, "serial": str(serial) if serial is not None else None}
+
+    def _robot_link_alive(self) -> bool:
+        client = self._client
+        if client is None:
+            return False
+        connection = getattr(client, "conn", None)
+        connected_state = getattr(connection, "CONNECTED", 3)
+        if getattr(connection, "state", connected_state) != connected_state:
+            return False
+        received_frames = self._received_frames(client)
+        now = time.monotonic()
+        if received_frames > self._last_received_frames:
+            self._last_received_frames = received_frames
+            self._last_robot_packet_at = now
+        return now - self._last_robot_packet_at <= 3.0
+
+    @staticmethod
+    def _received_frames(client) -> int:
+        connection = getattr(client, "conn", None)
+        receiver = getattr(connection, "recv_thread", None)
+        try:
+            return int(getattr(receiver, "received_frames", 0) or 0)
+        except (TypeError, ValueError):
+            return 0
 
     @staticmethod
     def _clamp_number(params: dict[str, Any], key: str, minimum: float, maximum: float) -> float:

@@ -386,7 +386,13 @@ define(["require", "exports", "util.roberta", "log", "message", "guiState.contro
                 // Even though no server-side robot switch is needed, its local
                 // connection (for example the Cozmo WebSocket bridge) still has to
                 // be initialized.
-                CONNECTION_C.switchConnection(robot);
+                // Do not tear down an in-flight local connection when the start
+                // view selects the robot that GUISTATE already contains. The
+                // existing Cozmo connection owns its retry loop across Wi-Fi
+                // changes; only create it here when none exists yet.
+                if (!CONNECTION_C.getConnectionInstance() || CONNECTION_C.getConnectionRobotName() !== robot) {
+                    CONNECTION_C.switchConnection(robot);
+                }
                 typeof opt_callback === 'function' && opt_callback();
                 return;
             }

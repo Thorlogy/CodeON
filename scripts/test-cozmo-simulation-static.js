@@ -35,6 +35,8 @@ assert.ok(runControllerSource.includes("GUISTATE_C.getRobotGroup() === 'cozmo'")
 assert.ok(runControllerSource.includes('Blockly.Msg.POPUP_RUN_NOTIFICATION_COZMO'), 'Cozmo-Starthilfe verwendet keinen Uebersetzungsschluessel.');
 assert.ok(runControllerSource.includes("document.addEventListener(\n    'mousedown'"), 'Cozmo-Starthilfe ueberlebt einen Austausch der Blockly-Steuerelemente nicht.');
 assert.ok(runControllerSource.includes("target.closest('#runOnBrick')"), 'Cozmo-Starthilfe erkennt den aktuellen Blockly-Play-Button nicht.');
+assert.ok(runControllerSource.includes("target.closest('#stopBrick')"), 'Der aktuelle Cozmo-Stop-Button wird nicht delegiert.');
+assert.ok(runControllerSource.includes('stopBrick from delegated Cozmo button'), 'Der delegierte Cozmo-Not-Stopp fehlt.');
 assert.ok(
     runControllerSource.includes('runOnBrick from delegated Cozmo button'),
     'Der aktive Cozmo-Play-Button wird nach einem Austausch der Blockly-Steuerelemente nicht delegiert.'
@@ -51,7 +53,17 @@ const packagedRunController = read('application/staticResources/js/app/roberta/c
         generatedController.includes('runOnBrick from delegated Cozmo button'),
         'Die delegierte Cozmo-Programmausfuehrung fehlt in einer ausgelieferten Webanwendung.'
     );
+    assert.ok(generatedController.includes('stopBrick from delegated Cozmo button'), 'Der delegierte Cozmo-Not-Stopp fehlt in einer ausgelieferten Webanwendung.');
+    assert.ok(
+        generatedController.includes('reconnectCozmo') && generatedController.includes('getConnectionRobotName'),
+        'Der graue Cozmo-Startknopf kann die lokale Verbindung nicht erneut anstoßen.'
+    );
 });
+
+const beginnerToolbox = read('RobotCozmo/src/main/resources/cozmo/program.toolbox.xml');
+assert.ok(beginnerToolbox.includes('<block type="cozmoActions_camera"><field name="MODE">START</field></block>'), 'Die Anfaenger-Toolbox bietet keinen Kamerastart fuer die Gesichtserkennung.');
+const cozmoBlocks = read('OpenRobertaWeb/src/app/roberta/cozmo.blocks.js');
+assert.ok(cozmoBlocks.includes("text('Automatische Gesichtsfolge', 'Automatic face following')"), 'Die eingebaute Gesichtsfolge ist nicht eindeutig von frei definierten parallelen Tasks getrennt.');
 const germanMessages = read('OpenRobertaServer/staticResources/blockly/msg/js/de.js');
 ['eingeschaltete Ladestation', 'Lift einmal hoch', 'Beende gegebenenfalls die Cozmo-App', 'Lasse Cozmo zunächst auf der Ladestation', 'zusammen mit CodeON gestartet'].forEach(function (instruction) {
     assert.ok(germanMessages.includes(instruction), 'Cozmo-Startanweisung fehlt: ' + instruction);
@@ -59,10 +71,10 @@ const germanMessages = read('OpenRobertaServer/staticResources/blockly/msg/js/de
 
 const robotControllerSource = read('OpenRobertaWeb/src/app/roberta/controller/robot.controller.ts');
 assert.ok(
-    /if \(robot === GUISTATE_C\.getRobot\(\) && sameRobotGroupAndExtensions\) \{[\s\S]*?CONNECTION_C\.switchConnection\(robot\);[\s\S]*?return;/.test(
+    /if \(robot === GUISTATE_C\.getRobot\(\) && sameRobotGroupAndExtensions\) \{[\s\S]*?getConnectionRobotName\(\) !== robot[\s\S]*?CONNECTION_C\.switchConnection\(robot\);[\s\S]*?return;/.test(
         robotControllerSource
     ),
-    'Die lokale Roboterverbindung wird bei erneuter Auswahl desselben Roboters nicht initialisiert.'
+    'Die lokale Roboterverbindung wird initialisiert, wenn die bestehende Instanz zu einem anderen Robotertyp gehört.'
 );
 [
     'OpenRobertaServer/staticResources/js/app/roberta/controller/robot.controller.js',
@@ -72,7 +84,7 @@ assert.ok(
     assert.ok(switchCalls.length >= 2, 'Die Verbindungskorrektur fehlt in der ausgelieferten Webanwendung: ' + deliveredRobotController);
 });
 
-const liveCacheVersion = 'codeon-cozmo-live-20260823-6';
+const liveCacheVersion = 'codeon-cozmo-live-20260831-9';
 [
     'OpenRobertaWeb/src/main.js',
     'OpenRobertaServer/staticResources/js/main.js',

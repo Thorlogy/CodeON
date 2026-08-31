@@ -33,6 +33,9 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
             _this.sensorSnapshot = {};
             _this.lastAction = '';
             _this.lastError = '';
+            _this.resourceOwners = {};
+            _this.taskConflictReported = false;
+            _this.cameraRequested = false;
             _this.maxWheelSpeedMmPerSec = maxWheelSpeedMmPerSec;
             _this.trackWidthMm = trackWidthMm;
             _this.updateStatusPanel();
@@ -40,9 +43,10 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
             return _this;
         }
         RobotBridgeBehaviour.prototype.driveAction = function (_name, direction, speed, distance, time) {
+            var _a;
             var signedSpeed = this.directionSign(direction) * this.toWheelSpeed(speed);
             if (distance === 0) {
-                this.stopMotion();
+                this.stopMotion((_a = this.taskContext) === null || _a === void 0 ? void 0 : _a.id);
                 return 0;
             }
             var duration = time !== undefined ? Math.max(0, time) : distance === undefined ? 0 : this.travelTimeMs(distance * 10, signedSpeed);
@@ -50,11 +54,12 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
             return duration;
         };
         RobotBridgeBehaviour.prototype.curveAction = function (_name, direction, speedL, speedR, distance, time) {
+            var _a;
             var sign = this.directionSign(direction);
             var left = sign * this.toWheelSpeed(speedL);
             var right = sign * this.toWheelSpeed(speedR);
             if (distance === 0) {
-                this.stopMotion();
+                this.stopMotion((_a = this.taskContext) === null || _a === void 0 ? void 0 : _a.id);
                 return 0;
             }
             var duration = time !== undefined ? Math.max(0, time) : distance === undefined ? 0 : this.travelTimeMs(distance * 10, (Math.abs(left) + Math.abs(right)) / 2);
@@ -62,11 +67,12 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
             return duration;
         };
         RobotBridgeBehaviour.prototype.turnAction = function (_name, direction, speed, angle, time) {
+            var _a;
             var wheelSpeed = this.toWheelSpeed(speed);
             var left = direction === C.LEFT ? -wheelSpeed : wheelSpeed;
             var right = -left;
             if (angle === 0) {
-                this.stopMotion();
+                this.stopMotion((_a = this.taskContext) === null || _a === void 0 ? void 0 : _a.id);
                 return 0;
             }
             var duration = time !== undefined
@@ -78,12 +84,14 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
             return duration;
         };
         RobotBridgeBehaviour.prototype.driveStop = function (_name) {
-            this.stopMotion();
+            var _a;
+            this.stopMotion((_a = this.taskContext) === null || _a === void 0 ? void 0 : _a.id);
         };
         RobotBridgeBehaviour.prototype.close = function () {
             if (this.sensorTimer !== undefined)
                 window.clearInterval(this.sensorTimer);
             this.send('camera', { enabled: false });
+            this.cameraRequested = false;
             this.setCameraPrivacyIndicator(false);
             this.stopMotion();
             this.lastAction = this.isGerman() ? 'Programm beendet' : 'Program finished';
@@ -93,49 +101,69 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
             var normalizedPort = String(port || '').toLowerCase();
             var percent = Math.max(0, Math.min(100, Number(speed) || 0));
             if (normalizedPort === 'h') {
-                this.send('setHead', { angle: -0.4 + percent * 0.011 });
+                if (this.claimResource('HEAD', 650))
+                    this.send('setHead', { angle: -0.4 + percent * 0.011 });
                 // Position blocks are complete actions: allow Cozmo enough time
                 // to reach the requested position before executing the next block.
                 return 650;
             }
             if (normalizedPort === 'a') {
-                this.send('setLift', { height: 32 + percent * 0.6 });
+                if (this.claimResource('LIFT', 2200))
+                    this.send('setLift', { height: 32 + percent * 0.6 });
                 return 2200;
             }
             return _super.prototype.motorOnAction.call(this, name, port, durationType, duration, speed, time);
         };
         RobotBridgeBehaviour.prototype.toneAction = function (_name, frequency, duration) {
-            this.send('tone', { frequency: frequency, duration: duration });
+            if (this.claimResource('AUDIO', Math.max(0, Number(duration) || 0)))
+                this.send('tone', { frequency: frequency, duration: duration });
             return Math.max(0, Number(duration) || 0);
         };
         RobotBridgeBehaviour.prototype.sayTextAction = function (text, speed, _pitch) {
-            this.send('speak', { text: String(text), speed: speed });
-            return Math.max(500, String(text).length * 75);
+            var duration = Math.max(500, String(text).length * 75);
+            if (this.claimResource('AUDIO', duration))
+                this.send('speak', { text: String(text), speed: speed });
+            return duration;
         };
         RobotBridgeBehaviour.prototype.ledOnAction = function (_name, _port, color) {
-            this.send('setBackpackLight', { color: color });
+            if (this.claimResource('BACKPACK_LIGHT', 250))
+                this.send('setBackpackLight', { color: color });
         };
         RobotBridgeBehaviour.prototype.ledOffAction = function (_name, _port) {
-            this.send('setBackpackLight', { color: '#000000' });
+            if (this.claimResource('BACKPACK_LIGHT', 250))
+                this.send('setBackpackLight', { color: '#000000' });
         };
         RobotBridgeBehaviour.prototype.lightAction = function (mode, _color, port) {
             if (String(port).toLowerCase() === 'behavior') {
                 if (String(mode).toLowerCase() === 'start') {
-                    this.send('startBehavior', { preset: 'faceSearchAndFollow' });
-                    this.setCameraPrivacyIndicator(true);
+                    var ownsDrive = this.claimResource('DRIVE', Number.POSITIVE_INFINITY);
+                    var ownsCamera = ownsDrive && this.claimResource('CAMERA', Number.POSITIVE_INFINITY);
+                    if (ownsDrive && ownsCamera) {
+                        this.send('startBehavior', { preset: 'faceSearchAndFollow' });
+                        this.cameraRequested = true;
+                        this.setCameraPrivacyIndicator(true);
+                    }
+                    else if (ownsDrive) {
+                        this.releaseResource('DRIVE');
+                    }
                 }
-                else {
+                else if (this.claimResource('DRIVE', 250) && this.claimResource('CAMERA', 250)) {
                     this.send('stopBehavior', {});
+                    this.cameraRequested = false;
+                    this.releaseResource('DRIVE');
+                    this.releaseResource('CAMERA');
                     this.setCameraPrivacyIndicator(false);
                 }
                 return;
             }
             if (String(port).toLowerCase() === 'display') {
-                this.send('displayFace', { face: String(mode).toUpperCase() });
+                if (this.claimResource('DISPLAY', 1000))
+                    this.send('displayFace', { face: String(mode).toUpperCase() });
                 return;
             }
             if (String(port).toLowerCase() === 'headlight') {
-                this.send('setHeadLight', { enabled: String(mode).toLowerCase() === 'on' });
+                if (this.claimResource('HEAD_LIGHT', 250))
+                    this.send('setHeadLight', { enabled: String(mode).toLowerCase() === 'on' });
                 return;
             }
             if (String(port).toLowerCase() !== 'camera') {
@@ -144,13 +172,25 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
             }
             var normalizedMode = String(mode).toLowerCase();
             if (normalizedMode === 'track') {
-                this.send('trackFace', {});
-                this.setCameraPrivacyIndicator(true);
+                if (this.claimResource('CAMERA', Number.POSITIVE_INFINITY)) {
+                    this.send('trackFace', {});
+                    this.cameraRequested = true;
+                    this.setCameraPrivacyIndicator(true);
+                }
             }
             else {
                 var enabled = normalizedMode === 'start' || normalizedMode === 'on';
-                this.send('camera', { enabled: enabled });
-                this.setCameraPrivacyIndicator(enabled);
+                if (enabled && this.claimResource('CAMERA', Number.POSITIVE_INFINITY)) {
+                    this.send('camera', { enabled: enabled });
+                    this.cameraRequested = true;
+                    this.setCameraPrivacyIndicator(true);
+                }
+                else if (!enabled && this.claimResource('CAMERA', 250)) {
+                    this.send('camera', { enabled: false });
+                    this.cameraRequested = false;
+                    this.releaseResource('CAMERA');
+                    this.setCameraPrivacyIndicator(false);
+                }
             }
         };
         RobotBridgeBehaviour.prototype.getSample = function (state, name, sensor, port, mode, slot) {
@@ -159,6 +199,11 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
                 return;
             }
             var key = String(mode || '').toLowerCase();
+            if (key.startsWith('face') && !this.cameraRequested) {
+                this.cameraRequested = true;
+                this.send('camera', { enabled: true });
+                this.setCameraPrivacyIndicator(true);
+            }
             var face = this.sensorSnapshot.face || {};
             var values = {
                 battery: this.sensorSnapshot.battery,
@@ -205,21 +250,84 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
             update();
             this.sensorTimer = window.setInterval(update, 150);
         };
+        RobotBridgeBehaviour.prototype.setTaskContext = function (id, name, priority) {
+            if (this.taskContext && this.taskContext.id === id && this.taskContext.name === name && this.taskContext.priority === priority)
+                return;
+            this.taskContext = { id: id, name: name, priority: priority };
+            this.updateStatusPanel();
+        };
+        RobotBridgeBehaviour.prototype.releaseTask = function (taskId) {
+            var _this = this;
+            var _a, _b;
+            if (((_a = this.resourceOwners.DRIVE) === null || _a === void 0 ? void 0 : _a.taskId) === taskId)
+                this.stopMotion(taskId);
+            if (((_b = this.resourceOwners.CAMERA) === null || _b === void 0 ? void 0 : _b.taskId) === taskId) {
+                this.send('stopBehavior', {});
+                this.send('camera', { enabled: false });
+                this.setCameraPrivacyIndicator(false);
+            }
+            Object.keys(this.resourceOwners).forEach(function (resource) {
+                if (_this.resourceOwners[resource].taskId === taskId)
+                    delete _this.resourceOwners[resource];
+            });
+        };
         RobotBridgeBehaviour.prototype.startMotion = function (left, right, durationMs) {
             var _this = this;
+            var _a;
+            if (!this.claimResource('DRIVE', durationMs))
+                return;
+            var ownerTaskId = (_a = this.taskContext) === null || _a === void 0 ? void 0 : _a.id;
             var generation = ++this.motionGeneration;
             this.send('drive', { left: left, right: right });
             if (durationMs > 0) {
                 window.setTimeout(function () {
                     if (generation === _this.motionGeneration)
-                        _this.stopMotion();
+                        _this.stopMotion(ownerTaskId);
                 }, durationMs);
             }
         };
-        RobotBridgeBehaviour.prototype.stopMotion = function () {
+        RobotBridgeBehaviour.prototype.stopMotion = function (ownerTaskId) {
             var _this = this;
+            if (ownerTaskId && this.resourceOwners.DRIVE && this.resourceOwners.DRIVE.taskId !== ownerTaskId)
+                return;
             ++this.motionGeneration;
-            this.bridge.stopAll().catch(function (error) { return _this.report(error); });
+            delete this.resourceOwners.DRIVE;
+            this.bridge.command('stopDrive', {}).catch(function (error) { return _this.report(error); });
+        };
+        RobotBridgeBehaviour.prototype.claimResource = function (resource, durationMs) {
+            if (!this.taskContext)
+                return true;
+            var now = Date.now();
+            var existing = this.resourceOwners[resource];
+            if (existing && existing.validUntil <= now)
+                delete this.resourceOwners[resource];
+            var owner = this.resourceOwners[resource];
+            if (owner && owner.taskId !== this.taskContext.id) {
+                if (owner.priority > this.taskContext.priority) {
+                    this.lastAction = "".concat(this.taskContext.name, " \u00B7 ").concat(this.isGerman() ? 'wartet auf' : 'waiting for', " ").concat(resource);
+                    this.updateStatusPanel();
+                    return false;
+                }
+                if (owner.priority === this.taskContext.priority) {
+                    if (!this.taskConflictReported) {
+                        this.taskConflictReported = true;
+                        this.report(new Error("".concat(this.isGerman() ? 'Task-Konflikt' : 'Task conflict', ": ").concat(owner.taskName, " / ").concat(this.taskContext.name, " \u00B7 ").concat(resource, " \u00B7 ").concat(this.taskContext.priority)));
+                    }
+                    return false;
+                }
+            }
+            this.resourceOwners[resource] = {
+                taskId: this.taskContext.id,
+                taskName: this.taskContext.name,
+                priority: this.taskContext.priority,
+                validUntil: Number.isFinite(durationMs) ? now + Math.max(50, durationMs) : Number.POSITIVE_INFINITY,
+            };
+            return true;
+        };
+        RobotBridgeBehaviour.prototype.releaseResource = function (resource) {
+            var owner = this.resourceOwners[resource];
+            if (!owner || !this.taskContext || owner.taskId === this.taskContext.id)
+                delete this.resourceOwners[resource];
         };
         RobotBridgeBehaviour.prototype.send = function (command, params) {
             var _this = this;
@@ -349,6 +457,9 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
                 : german
                     ? 'aus'
                     : 'off';
+            var visualTask = this.taskContext
+                ? "".concat(this.taskContext.name, " \u00B7 ").concat(this.isGerman() ? 'Priorität' : 'priority', " ").concat(this.taskContext.priority)
+                : behaviorStatus;
             panel.textContent =
                 "\uD83E\uDD16 Cozmo ".concat(german ? 'Status' : 'status', "\n").concat(german ? 'Aktion' : 'Action', ": ").concat(this.lastAction || (german ? 'Bereit' : 'Ready'), "\n") +
                     "".concat(german ? 'Kamera' : 'Camera', ": ").concat(camera).concat(cameraDetail, "\n").concat(german ? 'Gesicht' : 'Face', ": ").concat(face.detected
@@ -363,7 +474,7 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
                                 ? 'noch nicht erkannt'
                                 : 'not detected yet', "\n") +
                     "".concat(german ? 'Audio' : 'Audio', ": ").concat(audio, "\n").concat(position) +
-                    "\n".concat(german ? 'Tasks' : 'Tasks', ": ").concat(behaviorStatus) +
+                    "\n".concat(german ? 'Task' : 'Task', ": ").concat(visualTask) +
                     (error || cameraError ? "\n\u26A0 ".concat(error || cameraError) : '');
         };
         RobotBridgeBehaviour.prototype.isGerman = function () {

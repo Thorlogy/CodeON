@@ -14,6 +14,7 @@
             <value name="VALUE"><block type="math_number"><field name="NUM">50</field></block></value>
         </block>
         <block type="cozmoActions_lift"><field name="MODE">UP</field></block>
+        <block type="cozmoActions_camera"><field name="MODE">START</field></block>
         <block type="robActions_sayText">
             <value name="OUT"><block type="text"><field name="TEXT">Hallo!</field></block></value>
         </block>

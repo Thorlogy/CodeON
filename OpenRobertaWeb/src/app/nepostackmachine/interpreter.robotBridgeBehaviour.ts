@@ -21,6 +21,7 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
         [resource: string]: { taskId: string; taskName: string; priority: number; validUntil: number };
     } = {};
     private taskConflictReported = false;
+    private cameraRequested = false;
 
     constructor(private readonly bridge: RobotBridgeClient, maxWheelSpeedMmPerSec = 150, trackWidthMm = 70, private readonly onError?: (error: Error) => void) {
         super();
@@ -80,6 +81,7 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
     override close(): void {
         if (this.sensorTimer !== undefined) window.clearInterval(this.sensorTimer);
         this.send('camera', { enabled: false });
+        this.cameraRequested = false;
         this.setCameraPrivacyIndicator(false);
         this.stopMotion();
         this.lastAction = this.isGerman() ? 'Programm beendet' : 'Program finished';
@@ -128,12 +130,14 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
                 const ownsCamera = ownsDrive && this.claimResource('CAMERA', Number.POSITIVE_INFINITY);
                 if (ownsDrive && ownsCamera) {
                     this.send('startBehavior', { preset: 'faceSearchAndFollow' });
+                    this.cameraRequested = true;
                     this.setCameraPrivacyIndicator(true);
                 } else if (ownsDrive) {
                     this.releaseResource('DRIVE');
                 }
             } else if (this.claimResource('DRIVE', 250) && this.claimResource('CAMERA', 250)) {
                 this.send('stopBehavior', {});
+                this.cameraRequested = false;
                 this.releaseResource('DRIVE');
                 this.releaseResource('CAMERA');
                 this.setCameraPrivacyIndicator(false);
@@ -156,6 +160,7 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
         if (normalizedMode === 'track') {
             if (this.claimResource('CAMERA', Number.POSITIVE_INFINITY)) {
                 this.send('trackFace', {});
+                this.cameraRequested = true;
                 this.setCameraPrivacyIndicator(true);
             }
         }
@@ -163,9 +168,11 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
             const enabled = normalizedMode === 'start' || normalizedMode === 'on';
             if (enabled && this.claimResource('CAMERA', Number.POSITIVE_INFINITY)) {
                 this.send('camera', { enabled });
+                this.cameraRequested = true;
                 this.setCameraPrivacyIndicator(true);
             } else if (!enabled && this.claimResource('CAMERA', 250)) {
                 this.send('camera', { enabled: false });
+                this.cameraRequested = false;
                 this.releaseResource('CAMERA');
                 this.setCameraPrivacyIndicator(false);
             }
@@ -178,6 +185,11 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
             return;
         }
         const key = String(mode || '').toLowerCase();
+        if (key.startsWith('face') && !this.cameraRequested) {
+            this.cameraRequested = true;
+            this.send('camera', { enabled: true });
+            this.setCameraPrivacyIndicator(true);
+        }
         const face = this.sensorSnapshot.face || {};
         const values: { [key: string]: any } = {
             battery: this.sensorSnapshot.battery,
