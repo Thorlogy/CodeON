@@ -23,7 +23,11 @@ fi
 echo "CodeON verbindet sich mit Cozmo. Dieses Fenster bitte geöffnet lassen."
 echo "Beenden: Strg+C"
 echo
-PYTHONPATH=RobotIntegrationKit/python/src "$COZMO_PYTHON" -m codeon_robot_bridge.server --adapter cozmo
+export CODEON_COZMO_TERMINAL_LAUNCH=1
+mkdir -p .codeon-runtime/logs
+PYTHONPATH=RobotIntegrationKit/python/src "$COZMO_PYTHON" -m codeon_robot_bridge.server \
+  --adapter cozmo --pid-file .codeon-runtime/cozmo-bridge.pid \
+  --log-file .codeon-runtime/logs/cozmo-bridge.log
 status=$?
 if [[ $status -ne 0 ]]
 then

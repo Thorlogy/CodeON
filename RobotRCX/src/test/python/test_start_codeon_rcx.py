@@ -91,6 +91,17 @@ class CodeOnRcxStarterTest(unittest.TestCase):
         for name in ("CodeON-Starten.command", "CodeON-Starten.cmd", "start-codeon.sh"):
             self.assertTrue((root / name).is_file(), name)
 
+    def test_macos_cozmo_launcher_marks_context_and_uses_rotating_log(self):
+        launcher = (STARTER_PATH.parent / "CodeON-Starten.command").read_text(encoding="utf-8")
+        self.assertIn("CODEON_COZMO_TERMINAL_LAUNCH=1", launcher)
+        self.assertIn("--log-file .codeon-runtime/logs/cozmo-bridge.log", launcher)
+        self.assertNotIn(">>.codeon-runtime/logs/cozmo-bridge.log", launcher)
+
+    def test_python_starter_does_not_spawn_cozmo_on_macos(self):
+        source = STARTER_PATH.read_text(encoding="utf-8")
+        self.assertIn('elif platform.system() == "Darwin":', source)
+        self.assertIn("Bitte CodeON über CodeON-Starten.command öffnen", source)
+
     def test_only_supported_robot_plugins_are_enabled(self):
         self.assertEqual(("rcx", "edisonv2", "rcj", "cozmo", "apitor"), STARTER.SUPPORTED_ROBOTS)
         source = STARTER_PATH.read_text(encoding="utf-8")

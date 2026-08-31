@@ -4,19 +4,24 @@ Die Cozmo-Integration nutzt das allgemeine **CodeON Robot Integration Kit**. Sie
 
 ## Status
 
-Die Integration wurde zuletzt am 31. August 2026 mit echter Cozmo-Hardware unter macOS erfolgreich geprüft. Bestätigt sind die automatische Bridge, die Verbindung, Fahrbewegungen sowie Start und sofortiger Stopp direkt aus CodeON. Cozmos Fahrmotoren sind fest eingebaut und benötigen weder Motorblöcke noch einen Differentialantrieb in der Roboterkonfiguration. Programme ohne Portangabe und ältere Programme mit dem internen Port `_D` werden unterstützt.
+Die Integration wurde zuletzt am 31. August 2026 mit echter Cozmo-Hardware unter macOS erfolgreich geprüft. Bestätigt sind die automatische Bridge, die Verbindung, Programmübertragung, Fahrbewegungen, Liftarm und Gesichtserkennung. Der abschließende Hardwaretest des sichtbaren Not-Stopp-Schalters steht noch aus. Cozmos Fahrmotoren sind fest eingebaut und benötigen weder Motorblöcke noch einen Differentialantrieb in der Roboterkonfiguration. Programme ohne Portangabe und ältere Programme mit dem internen Port `_D` werden unterstützt.
 
 Der bestätigte Durchbruch, die technische Ursache und das reproduzierbare Prüfprotokoll sind in `docs/CodeON_Cozmo_Durchbruch_2026-08-31.md` dokumentiert.
 
 ## Start auf macOS
 
-1. CodeON wie gewohnt starten und `http://localhost:1999` öffnen. Die Cozmo-Bridge startet dabei automatisch im Hintergrund.
-2. Cozmo einschalten und den Mac mit seinem WLAN verbinden.
+1. Den Mac im normalen WLAN lassen, `CodeON-Starten.command` doppelt anklicken und das Terminalfenster geöffnet lassen. Die Cozmo-Bridge startet in dem von macOS benötigten Terminal-Kontext.
+2. `http://localhost:1999` öffnen, Cozmo einschalten und erst dann den Mac mit Cozmos WLAN verbinden.
 3. In CodeON unter **Roboter** den Eintrag **Cozmo** wählen.
 4. Ein Programm aus Fahr-, Lenk-, Warte-, Schleifen-, Logik- und Mathematikblöcken erstellen.
 5. Cozmo auf eine freie Bodenfläche stellen und **Start** drücken.
 
 `CodeON-Cozmo-Bridge-starten.command` bleibt nur als Diagnose- und Entwicklungswerkzeug erhalten; im normalen Betrieb wird es nicht benötigt.
+
+Nach einem Wechsel zurück ins normale WLAN bleibt die Bridge aktiv und verbindet
+sich beim nächsten Wechsel ins Cozmo-WLAN automatisch neu. Die Bridge-Logs unter
+`.codeon-runtime/logs` rotieren bei 10 MiB und werden mit drei Sicherungen
+begrenzt; sie gehören nicht ins Git-Repository.
 
 Der Start-Knopf wird während der Ausführung zum Stopp-Knopf und sendet sofort `stopAll`. Bleibt der Heartbeat aus, stoppt die Bridge die Motoren automatisch nach einer Sekunde.
 
@@ -26,10 +31,13 @@ Der Start-Knopf wird während der Ausführung zum Stopp-Knopf und sendet sofort 
 - links und rechts drehen
 - Kurven fahren
 - zeit- und streckenbegrenzte Bewegung
-- sofortiger Stopp und Watchdog-Not-Stopp
+- Kopf- und Liftbewegungen
+- Kamerastart und lokale Gesichtserkennung
+- Stoppbefehl und Watchdog-Not-Stopp (sichtbarer Not-Stopp noch hardwareseitig abzunehmen)
 - Kontroll-, Schleifen-, Logik-, Mathematik-, Text- und Variablenblöcke
 
-Kopf, Lift und zusätzliche Sensorblöcke folgen als getrennte Erweiterung. Die Bridge unterstützt Kopf, Lift und Batteriespannung bereits; sie werden erst nach einem eigenen UI- und Programmgenerator-Test freigeschaltet.
+Cozmo besitzt keinen allgemeinen Abstandssensor. Die nach unten gerichteten
+Cliff-Sensoren erkennen Kanten, liefern aber keinen Hindernisabstand in Zentimetern.
 
 ## Blaupause für weitere Roboter
 

@@ -109,6 +109,23 @@ Die Laufzeitdatenbank und Bridge-Logs werden aus Sicherheits- und
 Datenschutzgründen nicht versioniert. Dieser Bericht hält nur die für die
 Reproduktion notwendigen technischen Ergebnisse fest.
 
+## Dauerhafte Betriebsabsicherung
+
+Nach der erfolgreichen Hardwareprüfung wurde der bestätigte Startpfad zusätzlich
+technisch abgesichert:
+
+- Auf macOS startet `start-codeon-rcx.py` die Cozmo-Bridge nicht mehr unbemerkt
+  aus einem ungeeigneten Anwendungskontext. Die beiden `.command`-Starter markieren
+  den notwendigen Terminal-Kontext; ein direkter Cozmo-Bridge-Start ohne diese
+  Markierung endet mit einer verständlichen Anleitung.
+- Die Bridge verwaltet ihr Protokoll selbst. `cozmo-bridge.log` und die drei
+  nummerierten Sicherungen sind jeweils auf 10 MiB begrenzt. Damit belegt die
+  Cozmo-Protokollierung dauerhaft höchstens ungefähr 40 MiB.
+- Erfolgreiche Status- und Sensorabfragen werden nicht mehr einzeln protokolliert.
+  Befehle und alle Fehler bleiben für die Diagnose sichtbar.
+- Bridge-Logs unter `.codeon-runtime/logs` bleiben lokale, nicht versionierte
+  Laufzeitdaten.
+
 ## Nachprüfung nach der erweiterten Hardware-Abnahme
 
 Bei der anschließenden Abnahme wurden vier Punkte gemeldet: Der Lift reagierte

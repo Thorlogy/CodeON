@@ -31,9 +31,11 @@ python3 start-codeon-rcx.py --stop-running-server
 if [[ -x .venv/bin/python ]] && .venv/bin/python -c 'import pycozmo, websockets' >/dev/null 2>&1
 then
   mkdir -p .codeon-runtime/logs
+  export CODEON_COZMO_TERMINAL_LAUNCH=1
   PYTHONPATH=RobotIntegrationKit/python/src .venv/bin/python -u -m codeon_robot_bridge.server \
     --adapter cozmo --pid-file .codeon-runtime/cozmo-bridge.pid \
-    >>.codeon-runtime/logs/cozmo-bridge.log 2>&1 &
+    --log-file .codeon-runtime/logs/cozmo-bridge.log \
+    >/dev/null 2>&1 &
   COZMO_BRIDGE_PID=$!
   export CODEON_COZMO_BRIDGE_EXTERNAL=1
 fi

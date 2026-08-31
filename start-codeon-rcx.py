@@ -525,13 +525,18 @@ def start(args: argparse.Namespace) -> int:
                 "Cozmo-Bridge konnte im Terminal-Kontext nicht gestartet werden. "
                 f"Protokoll: {cozmo_bridge_log_path}"
             )
+        elif platform.system() == "Darwin":
+            print(
+                "Cozmo-Bridge wurde auf macOS nicht im Hintergrund gestartet. "
+                "Bitte CodeON über CodeON-Starten.command öffnen, damit macOS den Zugriff "
+                "auf Cozmos lokales WLAN dem richtigen Terminal-Kontext erlaubt."
+            )
         else:
             cozmo_python = find_cozmo_python()
             if cozmo_python:
                 cozmo_env = env.copy()
                 source_path = str(ROOT / "RobotIntegrationKit" / "python" / "src")
                 cozmo_env["PYTHONPATH"] = source_path + os.pathsep + cozmo_env.get("PYTHONPATH", "")
-                cozmo_bridge_log = cozmo_bridge_log_path.open("a", encoding="utf-8")
                 cozmo_bridge_process = subprocess.Popen(
                     [
                         str(cozmo_python),
@@ -542,10 +547,12 @@ def start(args: argparse.Namespace) -> int:
                         "cozmo",
                         "--pid-file",
                         str(COZMO_BRIDGE_PID_FILE),
+                        "--log-file",
+                        str(cozmo_bridge_log_path),
                     ],
                     cwd=ROOT,
                     env=cozmo_env,
-                    stdout=cozmo_bridge_log,
+                    stdout=subprocess.DEVNULL,
                     stderr=subprocess.STDOUT,
                 )
                 COZMO_BRIDGE_PID_FILE.write_text(str(cozmo_bridge_process.pid), encoding="utf-8")
@@ -567,14 +574,14 @@ def start(args: argparse.Namespace) -> int:
                 apitor_env = env.copy()
                 source_path = str(ROOT / "RobotIntegrationKit" / "python" / "src")
                 apitor_env["PYTHONPATH"] = source_path + os.pathsep + apitor_env.get("PYTHONPATH", "")
-                apitor_bridge_log = apitor_bridge_log_path.open("a", encoding="utf-8")
                 apitor_bridge_process = subprocess.Popen(
                     [
                         str(apitor_python), "-u", "-m", "codeon_robot_bridge.server",
                         "--adapter", "apitor", "--port", str(APITOR_BRIDGE_PORT),
                         "--pid-file", str(APITOR_BRIDGE_PID_FILE),
+                        "--log-file", str(apitor_bridge_log_path),
                     ],
-                    cwd=ROOT, env=apitor_env, stdout=apitor_bridge_log, stderr=subprocess.STDOUT,
+                    cwd=ROOT, env=apitor_env, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT,
                 )
                 APITOR_BRIDGE_PID_FILE.write_text(str(apitor_bridge_process.pid), encoding="utf-8")
                 if wait_for_websocket(COZMO_BRIDGE_HOST, APITOR_BRIDGE_PORT, apitor_bridge_process, 8):

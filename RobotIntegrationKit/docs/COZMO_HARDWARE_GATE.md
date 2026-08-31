@@ -29,6 +29,10 @@ disabled triangular Run button became enabled without restarting CodeON. On
 macOS the starter must launch the bridge from Terminal, because Local Network
 permission is associated with the launching application. Keep that Terminal
 window open and allow Terminal's Local Network permission if macOS asks.
+The bridge rejects an unmarked direct Cozmo start on macOS so that an unusable
+process cannot silently occupy the local WebSocket port. Its runtime log rotates
+at 10 MiB with three backups; successful high-frequency status and sensor reads
+are omitted while commands and errors remain available.
 
 Place Cozmo on a clear floor even for the connection-only probe. PyCozmo's
 connection initialization can calibrate and move the head or lift. Do not
