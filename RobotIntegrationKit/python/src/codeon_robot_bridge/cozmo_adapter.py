@@ -47,6 +47,7 @@ class CozmoAdapter(RobotAdapter):
             "display": ["facePresets"],
             "audio": ["tone", "localTextToSpeech"],
             "camera": {"localFaceDetection": True, "imagesLeaveBridge": False},
+            "lightCubes": {"count": 3, "discovery": True, "lights": True, "motion": True, "tap": True, "localMarkerDetection": True},
             "behaviors": ["faceSearchAndFollow"],
             "sensors": ["battery", "accelerometer", "gyroscope", "wheelSpeed", "pose", "snapshot", "face"],
         },
@@ -77,6 +78,8 @@ class CozmoAdapter(RobotAdapter):
         self._camera_error: str | None = None
         self._last_face_time = 0.0
         self._face = self._empty_face()
+        self._cube_marker = self._empty_cube_marker()
+        self._last_cube_marker_time = 0.0
         self._cv2 = None
         self._numpy = None
         self._face_detector = None
@@ -86,6 +89,9 @@ class CozmoAdapter(RobotAdapter):
         self._behavior_runtime: BehaviorRuntime | None = None
         self._last_received_frames = 0
         self._last_robot_packet_at = 0.0
+        self._cube_lock = threading.Lock()
+        self._cube_command_lock = threading.Lock()
+        self._cubes = {number: self._empty_cube(number) for number in range(1, 4)}
 
     @property
     def manifest(self) -> CapabilityManifest:
@@ -119,6 +125,7 @@ class CozmoAdapter(RobotAdapter):
             # and lift immediately so an idle CodeON connection does not
             # resist safe manual movement before a program is started.
             await asyncio.to_thread(client.stop_all_motors)
+            await asyncio.to_thread(self._start_cube_support, client)
             self._last_received_frames = self._received_frames(client)
             self._last_robot_packet_at = time.monotonic()
             return self._connection_result()
@@ -151,6 +158,8 @@ class CozmoAdapter(RobotAdapter):
                 self._connected = False
                 self._last_received_frames = 0
                 self._last_robot_packet_at = 0.0
+                with self._cube_lock:
+                    self._cubes = {number: self._empty_cube(number) for number in range(1, 4)}
 
     async def execute(self, command: str, params: dict[str, Any]) -> Any:
         client = self._require_client()
@@ -184,6 +193,10 @@ class CozmoAdapter(RobotAdapter):
             await asyncio.to_thread(client.set_all_backpack_lights, color)
         elif command == "setHeadLight":
             await asyncio.to_thread(client.set_head_light, bool(params.get("enabled", True)))
+        elif command == "setCubeLight":
+            cube = self._cube_number(params.get("cube"))
+            color = self._parse_color(params.get("color", "#ffffff"))
+            await asyncio.to_thread(self._set_cube_light, client, cube, color)
         elif command == "tone":
             frequency = self._clamp_number(params, "frequency", 40.0, 4000.0)
             duration = self._clamp_number(params, "duration", 10.0, 10000.0)
@@ -248,6 +261,8 @@ class CozmoAdapter(RobotAdapter):
     def _snapshot(self, client) -> dict[str, Any]:
         with self._face_lock:
             face = dict(self._face)
+            cube_marker = dict(self._cube_marker)
+        cubes = self._cube_snapshot()
         pose = getattr(client, "pose", None)
         accel = getattr(client, "accelerometer", getattr(client, "accel", None))
         gyro = getattr(client, "gyro", None)
@@ -282,6 +297,8 @@ class CozmoAdapter(RobotAdapter):
             "audioError": self._last_audio_error,
             "behaviorControl": self._behavior_runtime.status() if self._behavior_runtime is not None else {"running": False},
             "face": face,
+            "cubes": cubes,
+            "cubeMarker": cube_marker,
         }
 
     async def _start_behavior_control(self, client) -> None:
@@ -377,6 +394,7 @@ class CozmoAdapter(RobotAdapter):
         self._camera_enabled = False
         with self._face_lock:
             self._face = self._empty_face()
+            self._cube_marker = self._empty_cube_marker()
 
     def _start_face_tracking(self, client) -> None:
         if self._face_tracking_task is None or self._face_tracking_task.done():
@@ -419,6 +437,7 @@ class CozmoAdapter(RobotAdapter):
             gray = self._cv2.cvtColor(frame, self._cv2.COLOR_RGB2GRAY) if frame.ndim == 3 else frame
             gray = self._cv2.equalizeHist(gray)
             faces = self._face_detector.detectMultiScale(gray, scaleFactor=1.05, minNeighbors=3, minSize=(20, 20))
+            cube_marker = self._detect_cube_marker(gray)
             height, width = gray.shape[:2]
             self._camera_frames += 1
             self._camera_error = None
@@ -443,6 +462,15 @@ class CozmoAdapter(RobotAdapter):
                 result["ageMs"] = round((now - self._last_face_time) * 1000)
             with self._face_lock:
                 self._face = result
+                if cube_marker["detected"]:
+                    self._cube_marker = cube_marker
+                    self._last_cube_marker_time = now
+                elif now - self._last_cube_marker_time < 0.8:
+                    retained_marker = dict(self._cube_marker)
+                    retained_marker["ageMs"] = round((now - self._last_cube_marker_time) * 1000)
+                    self._cube_marker = retained_marker
+                else:
+                    self._cube_marker = self._empty_cube_marker()
         except Exception as error:
             # A malformed camera frame must never stop the robot program.
             self._camera_error = f"{type(error).__name__}: {error}"
@@ -545,6 +573,209 @@ class CozmoAdapter(RobotAdapter):
         encoded = color.to_int16()
         return protocol_encoder.LightState(on_color=encoded, off_color=encoded)
 
+    def _start_cube_support(self, client) -> None:
+        """Discover all three Light Cubes and subscribe to their local events."""
+        try:
+            import pycozmo
+        except ImportError as error:
+            raise AdapterError("PyCozmo is not installed") from error
+        encoder = pycozmo.protocol_encoder
+        for event, handler in (
+            (encoder.ObjectAvailable, self._on_cube_available),
+            (encoder.ObjectConnectionState, self._on_cube_connection),
+            (encoder.ObjectMoved, self._on_cube_moved),
+            (encoder.ObjectStoppedMoving, self._on_cube_stopped),
+            (encoder.ObjectTapped, self._on_cube_tapped),
+            (encoder.ObjectPowerLevel, self._on_cube_power),
+            (encoder.ObjectAccel, self._on_cube_accel),
+        ):
+            client.add_handler(event, handler)
+        client.conn.send(encoder.SetAccessoryDiscovery(enable=True))
+        for factory_id, obj in dict(getattr(client, "available_objects", {})).items():
+            self._register_available_cube(client, factory_id, getattr(obj, "object_type", 0), 0)
+
+    def _on_cube_available(self, *args) -> None:
+        packet = args[-1]
+        client = self._client or (args[0] if len(args) > 1 else None)
+        if client is not None:
+            self._register_available_cube(
+                client,
+                getattr(packet, "factory_id", 0),
+                getattr(packet, "object_type", 0),
+                getattr(packet, "rssi", 0),
+            )
+
+    def _register_available_cube(self, client, factory_id: Any, object_type: Any, rssi: Any) -> None:
+        cube = self._cube_type_number(object_type)
+        if cube is None:
+            return
+        should_connect = False
+        with self._cube_lock:
+            state = self._cubes[cube]
+            state.update({"available": True, "factoryId": int(factory_id), "rssi": int(rssi or 0)})
+            if not state["connected"] and not state["connecting"]:
+                state["connecting"] = True
+                should_connect = True
+        if should_connect:
+            import pycozmo
+            client.conn.send(pycozmo.protocol_encoder.ObjectConnect(factory_id=int(factory_id), connect=True))
+
+    def _on_cube_connection(self, *args) -> None:
+        packet = args[-1]
+        cube = self._cube_type_number(getattr(packet, "object_type", 0))
+        if cube is None:
+            return
+        connected = bool(getattr(packet, "connected", False))
+        object_id = int(getattr(packet, "object_id", 0) or 0)
+        with self._cube_lock:
+            self._cubes[cube].update(
+                {
+                    "available": True,
+                    "connected": connected,
+                    "connecting": False,
+                    "factoryId": int(getattr(packet, "factory_id", 0) or self._cubes[cube]["factoryId"]),
+                    "objectId": object_id if connected else 0,
+                    "moving": False if not connected else self._cubes[cube]["moving"],
+                }
+            )
+        if connected:
+            client = self._client or (args[0] if len(args) > 1 else None)
+            if client is not None:
+                import pycozmo
+                client.conn.send(pycozmo.protocol_encoder.StreamObjectAccel(object_id=object_id, enable=True))
+
+    def _on_cube_moved(self, *args) -> None:
+        packet = args[-1]
+        self._update_cube_by_object_id(getattr(packet, "object_id", 0), moving=True)
+
+    def _on_cube_stopped(self, *args) -> None:
+        packet = args[-1]
+        self._update_cube_by_object_id(getattr(packet, "object_id", 0), moving=False)
+
+    def _on_cube_tapped(self, *args) -> None:
+        packet = args[-1]
+        cube = self._cube_for_object_id(getattr(packet, "object_id", 0))
+        if cube is None:
+            return
+        with self._cube_lock:
+            self._cubes[cube]["lastTapAt"] = time.monotonic()
+            self._cubes[cube]["tapCount"] += max(1, int(getattr(packet, "num_taps", 1) or 1))
+
+    def _on_cube_power(self, *args) -> None:
+        packet = args[-1]
+        self._update_cube_by_object_id(getattr(packet, "object_id", 0), battery=int(getattr(packet, "battery_level", 0) or 0))
+
+    def _on_cube_accel(self, *args) -> None:
+        packet = args[-1]
+        self._update_cube_by_object_id(
+            getattr(packet, "object_id", 0),
+            accelX=self._number(getattr(packet, "accel_x", 0.0)),
+            accelY=self._number(getattr(packet, "accel_y", 0.0)),
+            accelZ=self._number(getattr(packet, "accel_z", 0.0)),
+        )
+
+    def _update_cube_by_object_id(self, object_id: Any, **values: Any) -> None:
+        cube = self._cube_for_object_id(object_id)
+        if cube is not None:
+            with self._cube_lock:
+                self._cubes[cube].update(values)
+
+    def _cube_for_object_id(self, object_id: Any) -> int | None:
+        with self._cube_lock:
+            for cube, state in self._cubes.items():
+                if state["objectId"] and state["objectId"] == int(object_id or 0):
+                    return cube
+        return None
+
+    def _cube_snapshot(self) -> dict[str, dict[str, Any]]:
+        now = time.monotonic()
+        with self._cube_lock:
+            return {
+                str(cube): {
+                    key: value
+                    for key, value in state.items()
+                    if key not in {"connecting", "lastTapAt"}
+                }
+                | {"tapped": bool(state["lastTapAt"] and now - state["lastTapAt"] <= 1.0)}
+                for cube, state in self._cubes.items()
+            }
+
+    def _set_cube_light(self, client, cube: int, light_state: Any) -> None:
+        with self._cube_lock:
+            object_id = int(self._cubes[cube]["objectId"] or 0)
+        if not object_id:
+            raise AdapterError(f"Light Cube {cube} is not connected")
+        import pycozmo
+        with self._cube_command_lock:
+            client.conn.send(pycozmo.protocol_encoder.CubeId(object_id=object_id))
+            client.conn.send(pycozmo.protocol_encoder.CubeLights(states=(light_state,) * 4))
+
+    def _detect_cube_marker(self, gray) -> dict[str, Any]:
+        """Locate the strongest square Cozmo-style fiducial without exporting images."""
+        cv2 = self._cv2
+        height, width = gray.shape[:2]
+        if height < 20 or width < 20:
+            return self._empty_cube_marker()
+        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+        binary = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 21, 7)
+        contours, hierarchy = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        if hierarchy is None:
+            return self._empty_cube_marker()
+        frame_area = float(width * height)
+        best = None
+        best_score = 0.0
+        for index, contour in enumerate(contours):
+            area = float(cv2.contourArea(contour))
+            if area < frame_area * 0.004 or area > frame_area * 0.45:
+                continue
+            perimeter = cv2.arcLength(contour, True)
+            polygon = cv2.approxPolyDP(contour, 0.045 * perimeter, True)
+            if len(polygon) != 4 or not cv2.isContourConvex(polygon):
+                continue
+            x, y, box_width, box_height = cv2.boundingRect(polygon)
+            aspect = box_width / max(1.0, float(box_height))
+            if not 0.65 <= aspect <= 1.35:
+                continue
+            child = int(hierarchy[0][index][2])
+            nested = 0
+            while child >= 0 and nested < 4:
+                nested += 1
+                child = int(hierarchy[0][child][2])
+            if nested < 2:
+                continue
+            score = area * (1.0 - abs(1.0 - aspect)) * (1.0 + 0.15 * nested)
+            if score > best_score:
+                best_score = score
+                best = (x, y, box_width, box_height, area)
+        if best is None:
+            return self._empty_cube_marker()
+        x, y, box_width, box_height, area = best
+        return {
+            "detected": True,
+            "x": round((x + box_width / 2) / width, 3),
+            "y": round((y + box_height / 2) / height, 3),
+            "size": round(area / frame_area, 4),
+            "ageMs": 0,
+        }
+
+    @staticmethod
+    def _cube_type_number(value: Any) -> int | None:
+        try:
+            number = int(getattr(value, "value", value))
+        except (TypeError, ValueError):
+            return None
+        return number if number in (1, 2, 3) else None
+
+    @staticmethod
+    def _cube_number(value: Any) -> int:
+        try:
+            cube = int(value)
+        except (TypeError, ValueError) as error:
+            raise AdapterError("cube must be 1, 2 or 3") from error
+        if cube not in (1, 2, 3):
+            raise AdapterError("cube must be 1, 2 or 3")
+        return cube
+
     @staticmethod
     def _component(value: Any, *names: str) -> float:
         for name in names:
@@ -576,6 +807,29 @@ class CozmoAdapter(RobotAdapter):
     @staticmethod
     def _empty_face() -> dict[str, Any]:
         return {"detected": False, "count": 0, "x": 0.5, "y": 0.5, "size": 0.0, "position": "NONE", "ageMs": 0}
+
+    @staticmethod
+    def _empty_cube_marker() -> dict[str, Any]:
+        return {"detected": False, "x": 0.5, "y": 0.5, "size": 0.0, "ageMs": 0}
+
+    @staticmethod
+    def _empty_cube(number: int) -> dict[str, Any]:
+        return {
+            "number": number,
+            "available": False,
+            "connected": False,
+            "connecting": False,
+            "factoryId": 0,
+            "objectId": 0,
+            "rssi": 0,
+            "moving": False,
+            "lastTapAt": 0.0,
+            "tapCount": 0,
+            "battery": 0,
+            "accelX": 0.0,
+            "accelY": 0.0,
+            "accelZ": 0.0,
+        }
 
     def _require_client(self):
         if not self.connected or self._client is None:

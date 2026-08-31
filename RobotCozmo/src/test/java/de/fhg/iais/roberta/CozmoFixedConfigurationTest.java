@@ -333,6 +333,38 @@ public class CozmoFixedConfigurationTest {
     }
 
     @Test
+    public void lightCubeBlocksUseBuiltInCubeNumbersWithoutConfiguration() {
+        String program =
+            "<block_set xmlns=\"http://de.fhg.iais.roberta.blockly\" robottype=\"cozmo\" xmlversion=\"3.1\">"
+                + "<instance x=\"50\" y=\"50\"><block type=\"robControls_start\" id=\"start\" intask=\"true\" deletable=\"false\">"
+                + "<mutation declare=\"false\"/></block><block type=\"cozmoActions_cubeLight\" id=\"light\" intask=\"true\">"
+                + "<field name=\"CUBE\">2</field><field name=\"COLOR\">#00ff00</field></block>"
+                + "<block type=\"robControls_wait_for\" id=\"wait\" intask=\"true\"><value name=\"WAIT0\">"
+                + "<block type=\"cozmoSensors_cubeBoolean\" id=\"tap\" intask=\"true\">"
+                + "<field name=\"CUBE\">2</field><field name=\"MODE\">tapped</field></block>"
+                + "</value></block></instance></block_set>";
+
+        Project project =
+            new Project.Builder()
+                .setRobot("cozmo")
+                .setProgramName("CozmoCubeTest")
+                .setFactory(factory)
+                .setProgramXml(program)
+                .setConfigurationXml(factory.getConfigurationDefault())
+                .build();
+
+        new CozmoValidatorAndCollectorWorker().execute(project);
+        Assert.assertTrue(String.valueOf(project.getErrorAndWarningMessages()), project.hasSucceeded());
+        Assert.assertEquals(0, project.getErrorCounter());
+
+        new CozmoStackMachineGeneratorWorker().execute(project);
+        String generated = project.getCompiledHex();
+        Assert.assertTrue(generated, generated.contains("\"port\": \"cube2\""));
+        Assert.assertTrue(generated, generated.contains("\"color\": \"#00ff00\""));
+        Assert.assertTrue(generated, generated.contains("\"mode\": \"cube2tapped\""));
+    }
+
+    @Test
     public void parallelTaskMetadataSurvivesValidationAndCodeGeneration() {
         String program =
             "<block_set xmlns=\"http://de.fhg.iais.roberta.blockly\" robottype=\"cozmo\" xmlversion=\"3.1\">"

@@ -11,6 +11,7 @@ Die Cozmo-Hardware ist fest eingebaut. Der Tab **Roboterkonfiguration** dient de
 | Fahrmotoren | Fahren, Drehen, Stoppen sowie Radgeschwindigkeit und Positionswerte |
 | Kopf- und Liftmotor | Kopfposition sowie Lift anheben/ablegen |
 | Kamera | lokal starten/stoppen, Gesichter erkennen und verfolgen |
+| Light Cubes 1–3 | Funkerkennung, Verbindung, Antippen, Bewegung, Beschleunigung, LEDs sowie lokale Markerposition |
 | Display | vorgegebene Gesichtsausdrücke anzeigen |
 | Audio | Sprache und Töne |
 | Backpack-LEDs | Farbe setzen |

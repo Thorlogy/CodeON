@@ -152,6 +152,13 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
             if (this.claimResource('HEAD_LIGHT', 250)) this.send('setHeadLight', { enabled: String(mode).toLowerCase() === 'on' });
             return;
         }
+        const cubeMatch = String(port).toLowerCase().match(/^cube([123])$/);
+        if (cubeMatch) {
+            if (this.claimResource(`CUBE_${cubeMatch[1]}_LIGHT`, 250)) {
+                this.send('setCubeLight', { cube: Number(cubeMatch[1]), color: String(mode).toLowerCase() === 'off' ? '#000000' : _color });
+            }
+            return;
+        }
         if (String(port).toLowerCase() !== 'camera') {
             super.lightAction(mode, _color, port);
             return;
@@ -185,12 +192,32 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
             return;
         }
         const key = String(mode || '').toLowerCase();
-        if (key.startsWith('face') && !this.cameraRequested) {
+        if ((key.startsWith('face') || key.startsWith('cubemarker')) && !this.cameraRequested) {
             this.cameraRequested = true;
             this.send('camera', { enabled: true });
             this.setCameraPrivacyIndicator(true);
         }
         const face = this.sensorSnapshot.face || {};
+        const cubeMarker = this.sensorSnapshot.cubeMarker || {};
+        const cubeMatch = key.match(/^cube([123])(available|connected|moving|tapped|factoryid|battery|tapcount|accelx|accely|accelz)$/);
+        if (cubeMatch) {
+            const cube = (this.sensorSnapshot.cubes || {})[cubeMatch[1]] || {};
+            const cubeKeys: { [key: string]: string } = {
+                available: 'available',
+                connected: 'connected',
+                moving: 'moving',
+                tapped: 'tapped',
+                factoryid: 'factoryId',
+                battery: 'battery',
+                tapcount: 'tapCount',
+                accelx: 'accelX',
+                accely: 'accelY',
+                accelz: 'accelZ',
+            };
+            const value = cube[cubeKeys[cubeMatch[2]]];
+            state.push(value !== undefined ? value : false);
+            return;
+        }
         const values: { [key: string]: any } = {
             battery: this.sensorSnapshot.battery,
             headangle: this.sensorSnapshot.headAngle,
@@ -215,6 +242,10 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
             facey: Number(face.y) || 0,
             facesize: Number(face.size) || 0,
             faceposition: face.position || 'NONE',
+            cubemarkervisible: !!cubeMarker.detected,
+            cubemarkerx: Number(cubeMarker.x) || 0,
+            cubemarkery: Number(cubeMarker.y) || 0,
+            cubemarkersize: Number(cubeMarker.size) || 0,
             angle: this.sensorSnapshot.gyroZ,
             rate: this.sensorSnapshot.gyroZ,
         };
@@ -321,6 +352,7 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
             speak: german ? 'Text sprechen' : 'Speaking text',
             setBackpackLight: german ? 'Statusleuchte setzen' : 'Setting status light',
             setHeadLight: german ? 'IR-Scheinwerfer schalten' : 'Switching IR head light',
+            setCubeLight: german ? `Würfel ${params.cube} beleuchten` : `Lighting Cube ${params.cube}`,
             camera: params.enabled ? (german ? 'Kamera starten' : 'Starting camera') : german ? 'Kamera stoppen' : 'Stopping camera',
             trackFace: german ? 'Gesicht fortlaufend verfolgen' : 'Tracking face continuously',
             displayFace: german ? 'Gesicht anzeigen' : 'Showing face',
@@ -436,6 +468,11 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
         const cameraDetail = ` · ${cameraFrames} ${german ? 'Bilder' : 'frames'}`;
         const cameraError = this.sensorSnapshot.cameraError;
         const behavior = this.sensorSnapshot.behaviorControl || {};
+        const cubes = this.sensorSnapshot.cubes || {};
+        const cubeSummary = ['1', '2', '3']
+            .map((cube) => `${cube}:${cubes[cube]?.connected ? '●' : cubes[cube]?.available ? '◐' : '○'}`)
+            .join(' ');
+        const cubeMarker = this.sensorSnapshot.cubeMarker || {};
         const driveDecision = behavior.decisions && behavior.decisions.DRIVE;
         const behaviorStatus = behavior.running
             ? `${driveDecision && driveDecision.owner ? driveDecision.owner : german ? 'läuft' : 'running'} · Tick ${Number(behavior.tickId) || 0}`
@@ -461,6 +498,7 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
                         : 'not detected yet'
             }\n` +
             `${german ? 'Audio' : 'Audio'}: ${audio}\n${position}` +
+            `\n${german ? 'Würfel' : 'Cubes'}: ${cubeSummary} · ${german ? 'Marker' : 'marker'} ${cubeMarker.detected ? '●' : '○'}` +
             `\n${german ? 'Task' : 'Task'}: ${visualTask}` +
             (error || cameraError ? `\n⚠ ${error || cameraError}` : '');
     }

@@ -33,11 +33,19 @@ Der Start-Knopf wird während der Ausführung zum Stopp-Knopf und sendet sofort 
 - zeit- und streckenbegrenzte Bewegung
 - Kopf- und Liftbewegungen
 - Kamerastart und lokale Gesichtserkennung
+- automatische Funkerkennung der drei Light Cubes
+- Würfelzustände, Antippen, Bewegung, Beschleunigung und LED-Steuerung
+- lokale Erkennung eines sichtbaren Würfelmarkers mit normierter X-/Y-Position und Größe
 - sichtbarer Not-Stopp, Stoppbefehl und Watchdog-Not-Stopp
 - Kontroll-, Schleifen-, Logik-, Mathematik-, Text- und Variablenblöcke
 
 Cozmo besitzt keinen allgemeinen Abstandssensor. Die nach unten gerichteten
 Cliff-Sensoren erkennen Kanten, liefern aber keinen Hindernisabstand in Zentimetern.
+
+Die Würfelblöcke stellen bewusst keine fertige Fahr- oder Aufnahmeautomatik dar.
+Anfahren und Aufheben lassen sich mit Fahr-, Lenk-, Lift- und „Warte bis“-Blöcken
+selbst programmieren. Die Funk- und Markerfunktionen müssen nach diesem Ausbau
+noch gemeinsam mit den drei echten Light Cubes hardwareseitig abgenommen werden.
 
 ## Blaupause für weitere Roboter
 

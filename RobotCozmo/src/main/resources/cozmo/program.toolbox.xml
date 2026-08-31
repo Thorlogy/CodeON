@@ -15,12 +15,15 @@
         </block>
         <block type="cozmoActions_lift"><field name="MODE">UP</field></block>
         <block type="cozmoActions_camera"><field name="MODE">START</field></block>
+        <block type="cozmoActions_cubeLight"><field name="CUBE">1</field><field name="COLOR">#00ff00</field></block>
         <block type="robActions_sayText">
             <value name="OUT"><block type="text"><field name="TEXT">Hallo!</field></block></value>
         </block>
     </category>
     <category name="TOOLBOX_SENSOR" svg="true">
         <block type="cozmoSensors_boolean"><field name="MODE">faceDetected</field></block>
+        <block type="cozmoSensors_cubeBoolean"><field name="CUBE">1</field><field name="MODE">tapped</field></block>
+        <block type="cozmoSensors_cubeMarkerBoolean"><field name="MODE">cubeMarkerVisible</field></block>
         <block type="cozmoSensors_number"><field name="MODE">battery</field></block>
     </category>
     <category name="TOOLBOX_CONTROL" svg="true">
@@ -33,6 +36,7 @@
         <block type="robControls_wait_time">
             <value name="WAIT"><block type="math_number"><field name="NUM">500</field></block></value>
         </block>
+        <block type="robControls_wait"/>
     </category>
     <category name="TOOLBOX_LOGIC" svg="true">
         <block type="logic_compare"/>

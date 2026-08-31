@@ -166,6 +166,13 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
                     this.send('setHeadLight', { enabled: String(mode).toLowerCase() === 'on' });
                 return;
             }
+            var cubeMatch = String(port).toLowerCase().match(/^cube([123])$/);
+            if (cubeMatch) {
+                if (this.claimResource("CUBE_".concat(cubeMatch[1], "_LIGHT"), 250)) {
+                    this.send('setCubeLight', { cube: Number(cubeMatch[1]), color: String(mode).toLowerCase() === 'off' ? '#000000' : _color });
+                }
+                return;
+            }
             if (String(port).toLowerCase() !== 'camera') {
                 _super.prototype.lightAction.call(this, mode, _color, port);
                 return;
@@ -199,12 +206,32 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
                 return;
             }
             var key = String(mode || '').toLowerCase();
-            if (key.startsWith('face') && !this.cameraRequested) {
+            if ((key.startsWith('face') || key.startsWith('cubemarker')) && !this.cameraRequested) {
                 this.cameraRequested = true;
                 this.send('camera', { enabled: true });
                 this.setCameraPrivacyIndicator(true);
             }
             var face = this.sensorSnapshot.face || {};
+            var cubeMarker = this.sensorSnapshot.cubeMarker || {};
+            var cubeMatch = key.match(/^cube([123])(available|connected|moving|tapped|factoryid|battery|tapcount|accelx|accely|accelz)$/);
+            if (cubeMatch) {
+                var cube = (this.sensorSnapshot.cubes || {})[cubeMatch[1]] || {};
+                var cubeKeys = {
+                    available: 'available',
+                    connected: 'connected',
+                    moving: 'moving',
+                    tapped: 'tapped',
+                    factoryid: 'factoryId',
+                    battery: 'battery',
+                    tapcount: 'tapCount',
+                    accelx: 'accelX',
+                    accely: 'accelY',
+                    accelz: 'accelZ',
+                };
+                var value = cube[cubeKeys[cubeMatch[2]]];
+                state.push(value !== undefined ? value : false);
+                return;
+            }
             var values = {
                 battery: this.sensorSnapshot.battery,
                 headangle: this.sensorSnapshot.headAngle,
@@ -229,6 +256,10 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
                 facey: Number(face.y) || 0,
                 facesize: Number(face.size) || 0,
                 faceposition: face.position || 'NONE',
+                cubemarkervisible: !!cubeMarker.detected,
+                cubemarkerx: Number(cubeMarker.x) || 0,
+                cubemarkery: Number(cubeMarker.y) || 0,
+                cubemarkersize: Number(cubeMarker.size) || 0,
                 angle: this.sensorSnapshot.gyroZ,
                 rate: this.sensorSnapshot.gyroZ,
             };
@@ -340,6 +371,7 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
                 speak: german ? 'Text sprechen' : 'Speaking text',
                 setBackpackLight: german ? 'Statusleuchte setzen' : 'Setting status light',
                 setHeadLight: german ? 'IR-Scheinwerfer schalten' : 'Switching IR head light',
+                setCubeLight: german ? "W\u00FCrfel ".concat(params.cube, " beleuchten") : "Lighting Cube ".concat(params.cube),
                 camera: params.enabled ? (german ? 'Kamera starten' : 'Starting camera') : german ? 'Kamera stoppen' : 'Stopping camera',
                 trackFace: german ? 'Gesicht fortlaufend verfolgen' : 'Tracking face continuously',
                 displayFace: german ? 'Gesicht anzeigen' : 'Showing face',
@@ -451,6 +483,11 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
             var cameraDetail = " \u00B7 ".concat(cameraFrames, " ").concat(german ? 'Bilder' : 'frames');
             var cameraError = this.sensorSnapshot.cameraError;
             var behavior = this.sensorSnapshot.behaviorControl || {};
+            var cubes = this.sensorSnapshot.cubes || {};
+            var cubeSummary = ['1', '2', '3']
+                .map(function (cube) { var _a, _b; return "".concat(cube, ":").concat(((_a = cubes[cube]) === null || _a === void 0 ? void 0 : _a.connected) ? '●' : ((_b = cubes[cube]) === null || _b === void 0 ? void 0 : _b.available) ? '◐' : '○'); })
+                .join(' ');
+            var cubeMarker = this.sensorSnapshot.cubeMarker || {};
             var driveDecision = behavior.decisions && behavior.decisions.DRIVE;
             var behaviorStatus = behavior.running
                 ? "".concat(driveDecision && driveDecision.owner ? driveDecision.owner : german ? 'läuft' : 'running', " \u00B7 Tick ").concat(Number(behavior.tickId) || 0)
@@ -474,6 +511,7 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
                                 ? 'noch nicht erkannt'
                                 : 'not detected yet', "\n") +
                     "".concat(german ? 'Audio' : 'Audio', ": ").concat(audio, "\n").concat(position) +
+                    "\n".concat(german ? 'Würfel' : 'Cubes', ": ").concat(cubeSummary, " \u00B7 ").concat(german ? 'Marker' : 'marker', " ").concat(cubeMarker.detected ? '●' : '○') +
                     "\n".concat(german ? 'Task' : 'Task', ": ").concat(visualTask) +
                     (error || cameraError ? "\n\u26A0 ".concat(error || cameraError) : '');
         };

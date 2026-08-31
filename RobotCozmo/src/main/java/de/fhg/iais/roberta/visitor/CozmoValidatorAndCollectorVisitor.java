@@ -4,6 +4,7 @@ import com.google.common.collect.ClassToInstanceMap;
 import de.fhg.iais.roberta.bean.IProjectBean;
 import de.fhg.iais.roberta.components.ConfigurationAst;
 import de.fhg.iais.roberta.syntax.action.cozmo.CozmoCameraAction;
+import de.fhg.iais.roberta.syntax.action.cozmo.CozmoCubeLightAction;
 import de.fhg.iais.roberta.syntax.action.cozmo.CozmoBehaviorAction;
 import de.fhg.iais.roberta.syntax.action.cozmo.CozmoDisplayFaceAction;
 import de.fhg.iais.roberta.syntax.action.cozmo.CozmoHeadLightAction;
@@ -19,6 +20,8 @@ import de.fhg.iais.roberta.syntax.action.spike.MotorDiffTurnAction;
 import de.fhg.iais.roberta.syntax.action.spike.MotorDiffTurnForAction;
 import de.fhg.iais.roberta.syntax.action.spike.PlayToneAction;
 import de.fhg.iais.roberta.syntax.sensor.cozmo.CozmoBooleanSensor;
+import de.fhg.iais.roberta.syntax.sensor.cozmo.CozmoCubeBooleanSensor;
+import de.fhg.iais.roberta.syntax.sensor.cozmo.CozmoCubeNumberSensor;
 import de.fhg.iais.roberta.syntax.sensor.cozmo.CozmoFacePositionSensor;
 import de.fhg.iais.roberta.syntax.sensor.cozmo.CozmoNumberSensor;
 import de.fhg.iais.roberta.syntax.sensor.generic.AccelerometerSensor;
@@ -37,10 +40,13 @@ public final class CozmoValidatorAndCollectorVisitor extends RCJValidatorAndColl
     public Void visitCozmoBehaviorAction(CozmoBehaviorAction action) { return null; }
     public Void visitCozmoDisplayFaceAction(CozmoDisplayFaceAction action) { return null; }
     public Void visitCozmoHeadLightAction(CozmoHeadLightAction action) { return null; }
+    public Void visitCozmoCubeLightAction(CozmoCubeLightAction action) { return null; }
     public Void visitCozmoLiftAction(CozmoLiftAction action) { return null; }
     public Void visitCozmoSetActuatorAction(CozmoSetActuatorAction action) { requiredComponentVisited(action, action.value); return null; }
     public Void visitCozmoBooleanSensor(CozmoBooleanSensor sensor) { return null; }
     public Void visitCozmoNumberSensor(CozmoNumberSensor sensor) { return null; }
+    public Void visitCozmoCubeBooleanSensor(CozmoCubeBooleanSensor sensor) { return null; }
+    public Void visitCozmoCubeNumberSensor(CozmoCubeNumberSensor sensor) { return null; }
     public Void visitCozmoFacePositionSensor(CozmoFacePositionSensor sensor) { return null; }
 
     @Override

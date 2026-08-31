@@ -116,3 +116,23 @@ visually during final acceptance.
 
 The detailed checkpoint is recorded in
 `docs/CodeON_Cozmo_Durchbruch_2026-08-31.md`.
+
+## Light Cube gate
+
+Light Cube support is intentionally limited to reusable primitives rather than
+a built-in pickup behavior. CodeON discovers and connects cubes 1–3, exposes
+availability, connection, motion, tap count, raw battery value and acceleration,
+controls all four cube LEDs, and locally reports the strongest square cube marker
+as normalized X/Y/size values. Camera images remain inside the bridge.
+
+Before marking this feature hardware-verified, check every physical cube:
+
+1. `available` and `connected` become true for the matching cube number;
+2. its LED block changes only that cube;
+3. moving and tapping it changes the corresponding sensor blocks;
+4. a `wait until tapped` program continues exactly once after a tap;
+5. presenting a cube marker to the camera sets marker-visible and produces stable
+   X/Y values that move in the expected direction.
+
+Automatic driving, docking and pickup remain user programs composed from these
+sensor primitives and the existing drive and lift blocks.

@@ -6,6 +6,7 @@ define(['blockly'], function (Blockly) {
     Blockly.Msg.TOOLBOX_DISPLAY = text('Display', 'Display');
     Blockly.Msg.TOOLBOX_BEHAVIOR = text('Automatische Gesichtsfolge', 'Automatic face following');
     Blockly.Msg.TOOLBOX_TASKS = text('Parallele Tasks', 'Parallel tasks');
+    Blockly.Msg.TOOLBOX_CUBE = text('Würfel', 'Light Cubes');
     Blockly.Blocks.cozmo_parallel_task = {
         init: function () {
             this.setColour(285);
@@ -112,6 +113,27 @@ define(['blockly'], function (Blockly) {
             this.setTooltip(text('Schaltet Cozmos Infrarot-Scheinwerfer an der Kamera ein oder aus.', 'Turns Cozmo’s infrared camera light on or off.'));
         }
     };
+    var cubeChoices = [['1', '1'], ['2', '2'], ['3', '3']];
+    Blockly.Blocks.cozmoActions_cubeLight = {
+        init: function () {
+            this.setColour(Blockly.CAT_ACTION_RGB);
+            this.appendDummyInput()
+                .appendField(text('Würfel', 'Light Cube'))
+                .appendField(new Blockly.FieldDropdown(cubeChoices), 'CUBE')
+                .appendField(text('Licht', 'light'))
+                .appendField(new Blockly.FieldDropdown([
+                [text('rot', 'red'), '#ff0000'],
+                [text('grün', 'green'), '#00ff00'],
+                [text('blau', 'blue'), '#0000ff'],
+                [text('gelb', 'yellow'), '#ffff00'],
+                [text('weiß', 'white'), '#ffffff'],
+                [text('aus', 'off'), '#000000']
+            ]), 'COLOR');
+            this.setPreviousStatement(true);
+            this.setNextStatement(true);
+            this.setTooltip(text('Verbindet den gewählten Würfel automatisch und schaltet alle vier LEDs.', 'Automatically connects the selected Light Cube and controls all four LEDs.'));
+        }
+    };
     Blockly.Blocks.cozmoSensors_boolean = {
         init: function () {
             this.setColour(Blockly.CAT_SENSOR_RGB);
@@ -156,6 +178,64 @@ define(['blockly'], function (Blockly) {
             this.appendDummyInput().appendField(text('Gesichtsposition', 'face position'));
             this.setOutput(true, 'String');
             this.setTooltip(text('liefert LINKS, MITTE, RECHTS oder KEINS', 'returns LEFT, CENTER, RIGHT or NONE'));
+        }
+    };
+    Blockly.Blocks.cozmoSensors_cubeBoolean = {
+        init: function () {
+            this.setColour(Blockly.CAT_SENSOR_RGB);
+            this.appendDummyInput()
+                .appendField(text('Würfel', 'Light Cube'))
+                .appendField(new Blockly.FieldDropdown(cubeChoices), 'CUBE')
+                .appendField(new Blockly.FieldDropdown([
+                [text('verfügbar', 'available'), 'available'],
+                [text('verbunden', 'connected'), 'connected'],
+                [text('bewegt', 'moving'), 'moving'],
+                [text('angetippt', 'tapped'), 'tapped']
+            ]), 'MODE');
+            this.setOutput(true, 'Boolean');
+            this.setTooltip(text('„Angetippt“ bleibt eine Sekunde wahr und eignet sich für „Warte bis“.', '“Tapped” stays true for one second and can be used with “wait until”.'));
+        }
+    };
+    Blockly.Blocks.cozmoSensors_cubeNumber = {
+        init: function () {
+            this.setColour(Blockly.CAT_SENSOR_RGB);
+            this.appendDummyInput()
+                .appendField(text('Würfel', 'Light Cube'))
+                .appendField(new Blockly.FieldDropdown(cubeChoices), 'CUBE')
+                .appendField(new Blockly.FieldDropdown([
+                [text('Serien-ID', 'factory ID'), 'factoryId'],
+                [text('Batteriewert', 'battery value'), 'battery'],
+                [text('Anzahl Tipps', 'tap count'), 'tapCount'],
+                [text('Beschleunigung X', 'acceleration X'), 'accelX'],
+                [text('Beschleunigung Y', 'acceleration Y'), 'accelY'],
+                [text('Beschleunigung Z', 'acceleration Z'), 'accelZ']
+            ]), 'MODE');
+            this.setOutput(true, 'Number');
+            this.setTooltip(text('Liefert Funk- und Bewegungssensordaten des gewählten Würfels.', 'Returns radio and motion data for the selected Light Cube.'));
+        }
+    };
+    Blockly.Blocks.cozmoSensors_cubeMarkerBoolean = {
+        init: function () {
+            this.setColour(Blockly.CAT_SENSOR_RGB);
+            this.appendDummyInput()
+                .appendField(text('Würfelmarker sichtbar', 'Light Cube marker visible'))
+                .appendField(new Blockly.FieldDropdown([[text('sichtbar', 'visible'), 'cubeMarkerVisible']]), 'MODE');
+            this.setOutput(true, 'Boolean');
+            this.setTooltip(text('Erkennt lokal den stärksten quadratischen Würfelmarker im Kamerabild.', 'Locally detects the strongest square Light Cube marker in the camera image.'));
+        }
+    };
+    Blockly.Blocks.cozmoSensors_cubeMarkerNumber = {
+        init: function () {
+            this.setColour(Blockly.CAT_SENSOR_RGB);
+            this.appendDummyInput()
+                .appendField(text('Würfelmarker', 'Light Cube marker'))
+                .appendField(new Blockly.FieldDropdown([
+                ['X', 'cubeMarkerX'],
+                ['Y', 'cubeMarkerY'],
+                [text('Größe', 'size'), 'cubeMarkerSize']
+            ]), 'MODE');
+            this.setOutput(true, 'Number');
+            this.setTooltip(text('X, Y und Größe sind auf 0 bis 1 normiert; Bilder verlassen die lokale Bridge nicht.', 'X, Y and size are normalized from 0 to 1; images never leave the local bridge.'));
         }
     };
     return Blockly;

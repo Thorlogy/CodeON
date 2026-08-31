@@ -3,6 +3,7 @@ import socket
 import threading
 import unittest
 import wave
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from codeon_robot_bridge import CozmoAdapter
@@ -18,10 +19,21 @@ class StubClient:
             state = 3
             recv_thread = Receiver()
 
+            def __init__(self):
+                self.sent = []
+
+            def send(self, packet):
+                self.sent.append(packet)
+
         self.calls = []
         self.serial_number = 1234
         self.battery_voltage = 3.9
         self.conn = Connection()
+        self.available_objects = {}
+        self.handlers = {}
+
+    def add_handler(self, event, handler):
+        self.handlers[event] = handler
 
     def __getattr__(self, name):
         def call(*args):
@@ -47,6 +59,58 @@ class CozmoAdapterTest(unittest.IsolatedAsyncioTestCase):
             ],
             self.client.calls,
         )
+        self.assertIn("SetAccessoryDiscovery", [type(packet).__name__ for packet in self.client.conn.sent])
+
+    async def test_light_cubes_are_discovered_connected_and_exposed_in_snapshot(self):
+        import pycozmo
+
+        await self.adapter.connect()
+        self.adapter._on_cube_available(
+            self.client,
+            SimpleNamespace(factory_id=123, object_type=pycozmo.protocol_encoder.ObjectType.Block_LIGHTCUBE2, rssi=-42),
+        )
+        self.assertEqual("ObjectConnect", type(self.client.conn.sent[-1]).__name__)
+
+        self.adapter._on_cube_connection(
+            self.client,
+            SimpleNamespace(connected=True, factory_id=123, object_id=77, object_type=2),
+        )
+        self.adapter._on_cube_moved(self.client, SimpleNamespace(object_id=77))
+        self.adapter._on_cube_tapped(self.client, SimpleNamespace(object_id=77, num_taps=2))
+        snapshot = await self.adapter.read_sensor("snapshot", {})
+
+        self.assertTrue(snapshot["cubes"]["2"]["available"])
+        self.assertTrue(snapshot["cubes"]["2"]["connected"])
+        self.assertTrue(snapshot["cubes"]["2"]["moving"])
+        self.assertTrue(snapshot["cubes"]["2"]["tapped"])
+        self.assertEqual(2, snapshot["cubes"]["2"]["tapCount"])
+        self.assertEqual("StreamObjectAccel", type(self.client.conn.sent[-1]).__name__)
+
+    async def test_cube_light_targets_selected_connected_cube(self):
+        await self.adapter.connect()
+        with self.adapter._cube_lock:
+            self.adapter._cubes[3].update({"available": True, "connected": True, "objectId": 99})
+
+        await self.adapter.execute("setCubeLight", {"cube": 3, "color": "#00ff00"})
+
+        self.assertEqual(["CubeId", "CubeLights"], [type(packet).__name__ for packet in self.client.conn.sent[-2:]])
+        self.assertEqual(99, self.client.conn.sent[-2].object_id)
+
+    async def test_square_fiducial_is_reported_as_local_cube_marker(self):
+        import cv2
+        import numpy
+
+        image = numpy.full((120, 160), 255, dtype=numpy.uint8)
+        cv2.rectangle(image, (50, 25), (110, 85), 0, 5)
+        cv2.circle(image, (80, 55), 13, 0, 4)
+        cv2.circle(image, (80, 55), 5, 0, -1)
+        self.adapter._cv2 = cv2
+
+        marker = self.adapter._detect_cube_marker(image)
+
+        self.assertTrue(marker["detected"])
+        self.assertAlmostEqual(0.5, marker["x"], delta=0.08)
+        self.assertAlmostEqual(0.46, marker["y"], delta=0.08)
 
     async def test_parallel_connect_requests_initialize_hardware_only_once(self):
         results = await asyncio.gather(self.adapter.connect(), self.adapter.connect())

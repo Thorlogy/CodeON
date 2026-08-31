@@ -31,6 +31,9 @@
             <block type="cozmoActions_camera"><field name="MODE">TRACK</field></block>
             <block type="cozmoActions_camera"><field name="MODE">STOP</field></block>
         </category>
+        <category name="TOOLBOX_CUBE" svg="true">
+            <block type="cozmoActions_cubeLight"><field name="CUBE">1</field><field name="COLOR">#00ff00</field></block>
+        </category>
         <category name="TOOLBOX_DISPLAY" svg="true">
             <block type="cozmoActions_displayFace"><field name="FACE">HAPPY</field></block>
         </category>
@@ -69,11 +72,26 @@
             <block type="cozmoSensors_boolean"><field name="MODE">moving</field></block>
             <block type="cozmoSensors_boolean"><field name="MODE">onCharger</field></block>
         </category>
+        <category name="TOOLBOX_CUBE" svg="true">
+            <block type="cozmoSensors_cubeBoolean"><field name="CUBE">1</field><field name="MODE">available</field></block>
+            <block type="cozmoSensors_cubeBoolean"><field name="CUBE">1</field><field name="MODE">connected</field></block>
+            <block type="cozmoSensors_cubeBoolean"><field name="CUBE">1</field><field name="MODE">moving</field></block>
+            <block type="cozmoSensors_cubeBoolean"><field name="CUBE">1</field><field name="MODE">tapped</field></block>
+            <block type="cozmoSensors_cubeNumber"><field name="CUBE">1</field><field name="MODE">factoryId</field></block>
+            <block type="cozmoSensors_cubeNumber"><field name="CUBE">1</field><field name="MODE">battery</field></block>
+            <block type="cozmoSensors_cubeNumber"><field name="CUBE">1</field><field name="MODE">tapCount</field></block>
+            <block type="cozmoSensors_cubeNumber"><field name="CUBE">1</field><field name="MODE">accelX</field></block>
+            <block type="cozmoSensors_cubeNumber"><field name="CUBE">1</field><field name="MODE">accelY</field></block>
+            <block type="cozmoSensors_cubeNumber"><field name="CUBE">1</field><field name="MODE">accelZ</field></block>
+            <block type="cozmoSensors_cubeMarkerBoolean"><field name="MODE">cubeMarkerVisible</field></block>
+            <block type="cozmoSensors_cubeMarkerNumber"><field name="MODE">cubeMarkerX</field></block>
+        </category>
     </category>
     <category name="TOOLBOX_CONTROL" svg="true">
         <block type="robControls_if"/><block type="robControls_ifElse"/><block type="robControls_loopForever"/>
         <block type="controls_repeat_ext"><value name="TIMES"><block type="math_number"><field name="NUM">4</field></block></value></block>
         <block type="robControls_wait_time"><value name="WAIT"><block type="math_number"><field name="NUM">500</field></block></value></block>
+        <block type="robControls_wait"/>
     </category>
     <category name="TOOLBOX_LOGIC" svg="true"><block type="logic_compare"/><block type="logic_operation"/><block type="logic_boolean"/></category>
     <category name="TOOLBOX_MATH" svg="true"><block type="math_number"/><block type="math_arithmetic"/><block type="math_single"/></category>

@@ -62,8 +62,13 @@ const packagedRunController = read('application/staticResources/js/app/roberta/c
 
 const beginnerToolbox = read('RobotCozmo/src/main/resources/cozmo/program.toolbox.xml');
 assert.ok(beginnerToolbox.includes('<block type="cozmoActions_camera"><field name="MODE">START</field></block>'), 'Die Anfaenger-Toolbox bietet keinen Kamerastart fuer die Gesichtserkennung.');
+assert.ok(beginnerToolbox.includes('cozmoSensors_cubeBoolean'), 'Die Anfaenger-Toolbox bietet keinen Light-Cube-Sensor fuer Warte-bis-Programme.');
+assert.ok(beginnerToolbox.includes('<block type="robControls_wait"/>'), 'Die Anfaenger-Toolbox bietet keinen Warte-bis-Block.');
 const cozmoBlocks = read('OpenRobertaWeb/src/app/roberta/cozmo.blocks.js');
 assert.ok(cozmoBlocks.includes("text('Automatische Gesichtsfolge', 'Automatic face following')"), 'Die eingebaute Gesichtsfolge ist nicht eindeutig von frei definierten parallelen Tasks getrennt.');
+['cozmoActions_cubeLight', 'cozmoSensors_cubeBoolean', 'cozmoSensors_cubeNumber', 'cozmoSensors_cubeMarkerBoolean', 'cozmoSensors_cubeMarkerNumber'].forEach(function (block) {
+    assert.ok(cozmoBlocks.includes(`Blockly.Blocks.${block}`), 'Cozmo-Light-Cube-Block fehlt: ' + block);
+});
 const germanMessages = read('OpenRobertaServer/staticResources/blockly/msg/js/de.js');
 ['eingeschaltete Ladestation', 'Lift einmal hoch', 'Beende gegebenenfalls die Cozmo-App', 'Lasse Cozmo zunächst auf der Ladestation', 'zusammen mit CodeON gestartet'].forEach(function (instruction) {
     assert.ok(germanMessages.includes(instruction), 'Cozmo-Startanweisung fehlt: ' + instruction);
@@ -84,7 +89,7 @@ assert.ok(
     assert.ok(switchCalls.length >= 2, 'Die Verbindungskorrektur fehlt in der ausgelieferten Webanwendung: ' + deliveredRobotController);
 });
 
-const liveCacheVersion = 'codeon-cozmo-live-20260831-9';
+const liveCacheVersion = 'codeon-cozmo-live-20260831-10';
 [
     'OpenRobertaWeb/src/main.js',
     'OpenRobertaServer/staticResources/js/main.js',
@@ -102,6 +107,17 @@ assert.strictEqual(serverRobot, packagedRobot, 'Server- und Paketversion von rob
 const serverActuators = read('OpenRobertaServer/staticResources/js/app/simulation/simulationLogic/robot.actuators.js');
 const packagedActuators = read('application/staticResources/js/app/simulation/simulationLogic/robot.actuators.js');
 assert.strictEqual(serverActuators, packagedActuators, 'Server- und Paketversion der Aktoren muessen identisch sein.');
+
+const serverBridgeBehaviour = read('OpenRobertaServer/staticResources/js/app/nepostackmachine/interpreter.robotBridgeBehaviour.js');
+const packagedBridgeBehaviour = read('application/staticResources/js/app/nepostackmachine/interpreter.robotBridgeBehaviour.js');
+assert.strictEqual(serverBridgeBehaviour, packagedBridgeBehaviour, 'Server- und Paketversion der Roboter-Bridge muessen identisch sein.');
+['setCubeLight', 'cubeMarker', 'tapCount'].forEach(function (feature) {
+    assert.ok(serverBridgeBehaviour.includes(feature), 'Light-Cube-Bridge-Merkmal fehlt: ' + feature);
+});
+
+const serverCozmoBlocks = read('OpenRobertaServer/staticResources/js/app/roberta/cozmo.blocks.js');
+const packagedCozmoBlocks = read('application/staticResources/js/app/roberta/cozmo.blocks.js');
+assert.strictEqual(serverCozmoBlocks, packagedCozmoBlocks, 'Server- und Paketversion der Cozmo-Bloecke muessen identisch sein.');
 
 const server3d = read('OpenRobertaServer/staticResources/js/app/simulation/simulationLogic/simulation3d.adapter.js');
 const packaged3d = read('application/staticResources/js/app/simulation/simulationLogic/simulation3d.adapter.js');
