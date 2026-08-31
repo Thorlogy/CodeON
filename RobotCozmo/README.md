@@ -4,7 +4,7 @@ Die Cozmo-Integration nutzt das allgemeine **CodeON Robot Integration Kit**. Sie
 
 ## Status
 
-Die Integration wurde zuletzt am 31. August 2026 mit echter Cozmo-Hardware unter macOS erfolgreich geprüft. Bestätigt sind die automatische Bridge, die Verbindung, Programmübertragung, Fahrbewegungen, Liftarm und Gesichtserkennung. Der abschließende Hardwaretest des sichtbaren Not-Stopp-Schalters steht noch aus. Cozmos Fahrmotoren sind fest eingebaut und benötigen weder Motorblöcke noch einen Differentialantrieb in der Roboterkonfiguration. Programme ohne Portangabe und ältere Programme mit dem internen Port `_D` werden unterstützt.
+Die Integration wurde zuletzt am 31. August 2026 mit echter Cozmo-Hardware unter macOS erfolgreich geprüft. Bestätigt sind die automatische Bridge, die Verbindung, Programmübertragung, Fahrbewegungen, Liftarm, Gesichtserkennung und der sichtbare Not-Stopp-Schalter. Cozmos Fahrmotoren sind fest eingebaut und benötigen weder Motorblöcke noch einen Differentialantrieb in der Roboterkonfiguration. Programme ohne Portangabe und ältere Programme mit dem internen Port `_D` werden unterstützt.
 
 Der bestätigte Durchbruch, die technische Ursache und das reproduzierbare Prüfprotokoll sind in `docs/CodeON_Cozmo_Durchbruch_2026-08-31.md` dokumentiert.
 
@@ -33,7 +33,7 @@ Der Start-Knopf wird während der Ausführung zum Stopp-Knopf und sendet sofort 
 - zeit- und streckenbegrenzte Bewegung
 - Kopf- und Liftbewegungen
 - Kamerastart und lokale Gesichtserkennung
-- Stoppbefehl und Watchdog-Not-Stopp (sichtbarer Not-Stopp noch hardwareseitig abzunehmen)
+- sichtbarer Not-Stopp, Stoppbefehl und Watchdog-Not-Stopp
 - Kontroll-, Schleifen-, Logik-, Mathematik-, Text- und Variablenblöcke
 
 Cozmo besitzt keinen allgemeinen Abstandssensor. Die nach unten gerichteten

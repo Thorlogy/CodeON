@@ -107,9 +107,9 @@ real hardware on 31 August 2026:
 - the lift arm moved visibly with the corrected direct velocity command;
 - local face detection received camera frames and recognized a face.
 
-The emergency-stop path is still pending a dedicated hardware check. Run a
-continuous low-speed drive program, press the visible Stop control and confirm
-an immediate wheel stop. The toolbox naming distinction between user-defined
+The visible emergency-stop path was subsequently verified with real hardware:
+during continuous motion, pressing the visible Stop control stopped Cozmo
+immediately. The toolbox naming distinction between user-defined
 `Parallel task` headers and the built-in `Automatic face following` action is
 covered by the delivered static regression check but should also be confirmed
 visually during final acceptance.

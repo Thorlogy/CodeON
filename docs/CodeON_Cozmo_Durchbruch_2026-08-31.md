@@ -148,9 +148,11 @@ Gesichtserkennung erfolgreich bestätigt: Der Lift ließ sich sichtbar bewegen
 und die lokale Kameraauswertung erkannte ein Gesicht. Damit sind diese beiden
 Korrekturen zusätzlich zur Verbindung und Programmübertragung abgenommen.
 
-Der Not-Stopp ist weiterhin separat mit einer kontinuierlichen Fahrbewegung zu
-prüfen. Er gilt erst dann als hardwareseitig abgenommen, wenn Cozmo beim
-Betätigen des sichtbaren Stoppknopfs unmittelbar stehen bleibt.
+Der sichtbare Not-Stopp wurde anschließend ebenfalls mit echter Hardware
+bestätigt: Während einer Fahrbewegung blieb Cozmo beim Betätigen des
+Stoppknopfs unmittelbar stehen. Damit sind Verbindung, Programmübertragung,
+Fahren, Lift, Gesichtserkennung und der sichtbare Not-Stopp hardwareseitig
+abgenommen.
 
 Cozmo besitzt keinen allgemeinen Abstandssensor für eine Entfernung in
 Zentimetern. Die Cliff-Sensorik erkennt eine Kante unter dem Roboter, misst aber
