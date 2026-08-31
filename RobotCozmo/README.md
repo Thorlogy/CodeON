@@ -4,7 +4,9 @@ Die Cozmo-Integration nutzt das allgemeine **CodeON Robot Integration Kit**. Sie
 
 ## Status
 
-Die Integration wurde am 22. Juli 2026 mit echter Cozmo-Hardware unter macOS erfolgreich geprüft. Bestätigt sind die automatische Bridge, die Verbindung, Fahr- und Drehbewegungen sowie Start und sofortiger Stopp direkt aus CodeON. Cozmo verwendet eine feste interne Hardwarekonfiguration; deshalb wird keine bearbeitbare Roboterkonfiguration angezeigt.
+Die Integration wurde zuletzt am 31. August 2026 mit echter Cozmo-Hardware unter macOS erfolgreich geprüft. Bestätigt sind die automatische Bridge, die Verbindung, Fahrbewegungen sowie Start und sofortiger Stopp direkt aus CodeON. Cozmos Fahrmotoren sind fest eingebaut und benötigen weder Motorblöcke noch einen Differentialantrieb in der Roboterkonfiguration. Programme ohne Portangabe und ältere Programme mit dem internen Port `_D` werden unterstützt.
+
+Der bestätigte Durchbruch, die technische Ursache und das reproduzierbare Prüfprotokoll sind in `docs/CodeON_Cozmo_Durchbruch_2026-08-31.md` dokumentiert.
 
 ## Start auf macOS
 

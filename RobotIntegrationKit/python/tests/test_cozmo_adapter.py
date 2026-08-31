@@ -29,7 +29,13 @@ class CozmoAdapterTest(unittest.IsolatedAsyncioTestCase):
         result = await self.adapter.connect()
         self.assertTrue(result["connected"])
         self.assertEqual(
-            [("start", ()), ("connect", ()), ("wait_for_robot", (8.0,)), ("set_volume", (65535,))],
+            [
+                ("start", ()),
+                ("connect", ()),
+                ("wait_for_robot", (8.0,)),
+                ("set_volume", (65535,)),
+                ("stop_all_motors", ()),
+            ],
             self.client.calls,
         )
 
@@ -221,6 +227,36 @@ class CozmoAdapterTest(unittest.IsolatedAsyncioTestCase):
         await CozmoAdapter._close_failed_client(client)
         self.assertGreaterEqual(file_descriptor, 0)
         self.assertEqual(-1, client.conn.sock.fileno())
+
+    def test_macos_cozmo_transport_is_pinned_to_wifi(self):
+        class StubSocket:
+            def __init__(self):
+                self.options = []
+
+            def setsockopt(self, *args):
+                self.options.append(args)
+
+        robot_socket = StubSocket()
+        with patch("codeon_robot_bridge.cozmo_adapter.platform.system", return_value="Darwin"), patch(
+            "codeon_robot_bridge.cozmo_adapter.socket.if_nametoindex", return_value=7
+        ):
+            CozmoAdapter._pin_socket_to_macos_wifi(robot_socket)
+
+        self.assertEqual([(socket.IPPROTO_IP, 25, 7)], robot_socket.options)
+
+    def test_non_macos_cozmo_transport_is_not_interface_pinned(self):
+        class StubSocket:
+            def __init__(self):
+                self.options = []
+
+            def setsockopt(self, *args):
+                self.options.append(args)
+
+        robot_socket = StubSocket()
+        with patch("codeon_robot_bridge.cozmo_adapter.platform.system", return_value="Linux"):
+            CozmoAdapter._pin_socket_to_macos_wifi(robot_socket)
+
+        self.assertEqual([], robot_socket.options)
 
 
 if __name__ == "__main__":

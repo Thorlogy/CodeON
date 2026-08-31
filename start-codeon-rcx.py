@@ -109,6 +109,16 @@ def url_reachable(url: str, timeout: float = 1.0) -> bool:
         return False
 
 
+def codeon_browser_url() -> str:
+    """Open the current frontend entry point without reusing stale index HTML."""
+    index = APPLICATION / "staticResources" / "index.html"
+    try:
+        version = index.stat().st_mtime_ns
+    except OSError:
+        version = time.time_ns()
+    return f"{CODEON_URL}/?v={version}"
+
+
 def tcp_reachable(host: str, port: int, timeout: float = 0.5) -> bool:
     try:
         with socket.create_connection((host, port), timeout=timeout):
@@ -587,7 +597,7 @@ def start(args: argparse.Namespace) -> int:
         if checks["server"]["ok"]:
             print(f"CodeON läuft bereits: {CODEON_URL}")
             if not args.no_browser:
-                webbrowser.open(CODEON_URL)
+                webbrowser.open(codeon_browser_url())
             if bridge_process or cozmo_bridge_process or apitor_bridge_process or external_cozmo_bridge:
                 print("Dieses Fenster offen lassen. Zum Beenden der Bridges Strg+C drücken.")
                 while any(process and process.poll() is None for process in (bridge_process, cozmo_bridge_process, apitor_bridge_process)) or (
@@ -644,7 +654,7 @@ def start(args: argparse.Namespace) -> int:
         if not firmware:
             print("Hinweis: Eine Firmwaredatei wird nur benötigt, falls auf dem RCX keine Firmware installiert ist.")
         if not args.no_browser:
-            webbrowser.open(CODEON_URL)
+            webbrowser.open(codeon_browser_url())
         return server_process.wait()
     except KeyboardInterrupt:
         print("\nCodeON und die Roboter-Bridges werden beendet …")

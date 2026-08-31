@@ -28,7 +28,7 @@
 })();
 require.config({
     baseUrl: '.',
-    urlArgs: 'v=codeon-cozmo-live-20260822-1',
+    urlArgs: 'v=codeon-cozmo-live-20260823-6',
     paths: {
         ace: 'libs/ace/ace',
         ace_lang: 'libs/ace/ext-language_tools',

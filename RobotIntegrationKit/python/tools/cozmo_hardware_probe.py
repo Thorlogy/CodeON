@@ -35,7 +35,7 @@ def error_chain(error):
     return chain
 
 
-async def probe(enable_motion: bool, enable_watchdog_test: bool) -> int:
+async def probe(enable_motion: bool, enable_watchdog_test: bool, enable_signal_test: bool = False) -> int:
     adapter = CozmoAdapter()
     route = network_route()
     report = {
@@ -52,6 +52,11 @@ async def probe(enable_motion: bool, enable_watchdog_test: bool) -> int:
         report["checks"].append({"name": "connect", "ok": True, "result": connection})
         battery = await adapter.read_sensor("battery", {})
         report["checks"].append({"name": "battery", "ok": True, "value": battery})
+        if enable_signal_test:
+            await adapter.execute("setBackpackLight", {"color": "#00ff00"})
+            await asyncio.sleep(1.0)
+            await adapter.execute("setBackpackLight", {"color": "#000000"})
+            report["checks"].append({"name": "greenBackpackSignal", "ok": True})
         if enable_motion:
             await adapter.execute("drive", {"left": 25, "right": 25})
             await asyncio.sleep(0.25)
@@ -100,6 +105,11 @@ async def probe(enable_motion: bool, enable_watchdog_test: bool) -> int:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the CodeON Cozmo hardware acceptance probe")
     parser.add_argument(
+        "--enable-signal-test",
+        action="store_true",
+        help="briefly illuminate Cozmo's backpack green without driving",
+    )
+    parser.add_argument(
         "--enable-motion",
         action="store_true",
         help="briefly move Cozmo at low speed; place it on a clear floor first",
@@ -110,7 +120,7 @@ def main() -> None:
         help="drive slowly without heartbeat and verify automatic stop after about one second",
     )
     args = parser.parse_args()
-    raise SystemExit(asyncio.run(probe(args.enable_motion, args.enable_watchdog_test)))
+    raise SystemExit(asyncio.run(probe(args.enable_motion, args.enable_watchdog_test, args.enable_signal_test)))
 
 
 if __name__ == "__main__":

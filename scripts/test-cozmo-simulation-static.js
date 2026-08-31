@@ -33,17 +33,46 @@ assert.ok(controller.includes('system_preview/cozmo.svg'), 'Cozmo-Hintergrundbil
 const runControllerSource = read('OpenRobertaWeb/src/app/roberta/controller/progRun.controller.ts');
 assert.ok(runControllerSource.includes("GUISTATE_C.getRobotGroup() === 'cozmo'"), 'Cozmo-spezifische Starthilfe fehlt.');
 assert.ok(runControllerSource.includes('Blockly.Msg.POPUP_RUN_NOTIFICATION_COZMO'), 'Cozmo-Starthilfe verwendet keinen Uebersetzungsschluessel.');
+assert.ok(runControllerSource.includes("document.addEventListener(\n    'mousedown'"), 'Cozmo-Starthilfe ueberlebt einen Austausch der Blockly-Steuerelemente nicht.');
+assert.ok(runControllerSource.includes("target.closest('#runOnBrick')"), 'Cozmo-Starthilfe erkennt den aktuellen Blockly-Play-Button nicht.');
+assert.ok(
+    runControllerSource.includes('runOnBrick from delegated Cozmo button'),
+    'Der aktive Cozmo-Play-Button wird nach einem Austausch der Blockly-Steuerelemente nicht delegiert.'
+);
 const serverRunController = read('OpenRobertaServer/staticResources/js/app/roberta/controller/progRun.controller.js');
 const packagedRunController = read('application/staticResources/js/app/roberta/controller/progRun.controller.js');
 [serverRunController, packagedRunController].forEach(function (generatedController) {
     assert.ok(generatedController.includes('POPUP_RUN_NOTIFICATION_COZMO'), 'Cozmo-Starthilfe fehlt in einer ausgelieferten Webanwendung.');
+    assert.ok(
+        generatedController.includes('isConnectedCozmo'),
+        'Die ausgelieferte Cozmo-Ausfuehrung beruecksichtigt den echten Bridge-Verbindungsstatus nicht.'
+    );
+    assert.ok(
+        generatedController.includes('runOnBrick from delegated Cozmo button'),
+        'Die delegierte Cozmo-Programmausfuehrung fehlt in einer ausgelieferten Webanwendung.'
+    );
 });
 const germanMessages = read('OpenRobertaServer/staticResources/blockly/msg/js/de.js');
-['Schalte Cozmo ein', 'WLAN, das Cozmo auf seinem Display anzeigt', 'erneut auf Start', 'zusammen mit CodeON gestartet'].forEach(function (instruction) {
+['eingeschaltete Ladestation', 'Lift einmal hoch', 'Beende gegebenenfalls die Cozmo-App', 'Lasse Cozmo zunächst auf der Ladestation', 'zusammen mit CodeON gestartet'].forEach(function (instruction) {
     assert.ok(germanMessages.includes(instruction), 'Cozmo-Startanweisung fehlt: ' + instruction);
 });
 
-const liveCacheVersion = 'codeon-cozmo-live-20260822-1';
+const robotControllerSource = read('OpenRobertaWeb/src/app/roberta/controller/robot.controller.ts');
+assert.ok(
+    /if \(robot === GUISTATE_C\.getRobot\(\) && sameRobotGroupAndExtensions\) \{[\s\S]*?CONNECTION_C\.switchConnection\(robot\);[\s\S]*?return;/.test(
+        robotControllerSource
+    ),
+    'Die lokale Roboterverbindung wird bei erneuter Auswahl desselben Roboters nicht initialisiert.'
+);
+[
+    'OpenRobertaServer/staticResources/js/app/roberta/controller/robot.controller.js',
+    'application/staticResources/js/app/roberta/controller/robot.controller.js',
+].forEach(function (deliveredRobotController) {
+    const switchCalls = read(deliveredRobotController).match(/\.switchConnection\(/g) || [];
+    assert.ok(switchCalls.length >= 2, 'Die Verbindungskorrektur fehlt in der ausgelieferten Webanwendung: ' + deliveredRobotController);
+});
+
+const liveCacheVersion = 'codeon-cozmo-live-20260823-6';
 [
     'OpenRobertaWeb/src/main.js',
     'OpenRobertaServer/staticResources/js/main.js',

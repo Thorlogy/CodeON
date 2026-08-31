@@ -55,3 +55,24 @@ document:
 
 Windows and Linux hardware support remains unverified until the same gate
 passes on those platforms.
+
+## Confirmed motor-configuration regression — 31 August 2026
+
+The complete browser-to-robot path was verified again with real Cozmo hardware
+on macOS 26.5.1. A CodeON block program drove the robot successfully and the
+Run/Stop control stopped it safely. The bridge log confirmed `connect`, `drive`
+and repeated `stopAll` requests without adapter errors.
+
+This test specifically verifies that Cozmo does not need configurable motor or
+differential-drive components. The plugin default contains only the robot board;
+the validator recognizes Cozmo's built-in drive and accepts both programs with
+no actor port and legacy programs carrying `_D`.
+
+Verified host versions:
+
+- Python 3.12.8
+- PyCozmo 0.8.0
+- websockets 16.1.1
+
+The detailed checkpoint is recorded in
+`docs/CodeON_Cozmo_Durchbruch_2026-08-31.md`.

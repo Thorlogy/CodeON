@@ -120,7 +120,11 @@ public class SpikePybricksValidatorAndCollectorVisitor extends AbstractSpikeVali
 
     @Override
     final public void checkDiffDrive(Phrase phrase) {
-        super.checkDiffDrive(phrase);
+        if ( hasBuiltInDifferentialDrive() ) {
+            usedHardwareBuilder.addUsedActor(new UsedActor("DIFFERENTIALDRIVE", SC.DIFFERENTIALDRIVE));
+        } else {
+            super.checkDiffDrive(phrase);
+        }
         usedHardwareBuilder.addUsedImport(new UsedImport(SC.PORT));
         ConfigurationComponent diffDrive = this.robotConfiguration.optConfigurationComponentByType("DIFFERENTIALDRIVE");
         if ( diffDrive != null ) {
@@ -129,6 +133,10 @@ public class SpikePybricksValidatorAndCollectorVisitor extends AbstractSpikeVali
             usedHardwareBuilder.addLockedComponent("MOTOR_L", leftUserPort);
             usedHardwareBuilder.addLockedComponent("MOTOR_R", rightUserPort);
         }
+    }
+
+    protected boolean hasBuiltInDifferentialDrive() {
+        return false;
     }
 
     @Override

@@ -111,6 +111,10 @@ class CozmoAdapter(RobotAdapter):
             self._client = client
             self._connected = True
             await asyncio.to_thread(client.set_volume, 65535)
+            # Connecting initializes Cozmo's motor controllers. Release head
+            # and lift immediately so an idle CodeON connection does not
+            # resist safe manual movement before a program is started.
+            await asyncio.to_thread(client.stop_all_motors)
             return self._connection_result()
 
     async def disconnect(self) -> None:
@@ -617,8 +621,25 @@ class CozmoAdapter(RobotAdapter):
             raise AdapterError(
                 f"Mac is not routed through Cozmo Wi-Fi (local address: {local_address})"
             )
+        self._pin_socket_to_macos_wifi(robot_socket)
         robot_socket.bind((local_address, 0))
         self._local_address = local_address
+
+    @staticmethod
+    def _pin_socket_to_macos_wifi(robot_socket) -> None:
+        """Keep Cozmo UDP traffic on Wi-Fi when another interface has internet.
+
+        macOS uses ``IP_BOUND_IF`` (25) to bind IPv4 traffic to an interface.
+        Cozmo's WLAN is reached through the Mac's standard Wi-Fi interface
+        while USB tethering may remain the default internet route.
+        """
+        if platform.system() != "Darwin":
+            return
+        try:
+            wifi_index = socket.if_nametoindex("en0")
+            robot_socket.setsockopt(socket.IPPROTO_IP, 25, wifi_index)
+        except OSError as error:
+            raise AdapterError(f"failed to bind Cozmo transport to Wi-Fi interface en0: {error}") from error
 
     @staticmethod
     def _route_to_robot() -> str:

@@ -10,12 +10,20 @@ import de.fhg.iais.roberta.syntax.action.cozmo.CozmoHeadLightAction;
 import de.fhg.iais.roberta.syntax.action.cozmo.CozmoLiftAction;
 import de.fhg.iais.roberta.syntax.action.cozmo.CozmoSetActuatorAction;
 import de.fhg.iais.roberta.syntax.action.speech.SayTextAction;
+import de.fhg.iais.roberta.syntax.action.spike.MotorDiffCurveAction;
+import de.fhg.iais.roberta.syntax.action.spike.MotorDiffCurveForAction;
+import de.fhg.iais.roberta.syntax.action.spike.MotorDiffOnAction;
+import de.fhg.iais.roberta.syntax.action.spike.MotorDiffOnForAction;
+import de.fhg.iais.roberta.syntax.action.spike.MotorDiffStopAction;
+import de.fhg.iais.roberta.syntax.action.spike.MotorDiffTurnAction;
+import de.fhg.iais.roberta.syntax.action.spike.MotorDiffTurnForAction;
 import de.fhg.iais.roberta.syntax.action.spike.PlayToneAction;
 import de.fhg.iais.roberta.syntax.sensor.cozmo.CozmoBooleanSensor;
 import de.fhg.iais.roberta.syntax.sensor.cozmo.CozmoFacePositionSensor;
 import de.fhg.iais.roberta.syntax.sensor.cozmo.CozmoNumberSensor;
 import de.fhg.iais.roberta.syntax.sensor.generic.AccelerometerSensor;
 import de.fhg.iais.roberta.syntax.sensor.generic.VoltageSensor;
+import de.fhg.iais.roberta.util.syntax.WithUserDefinedPort;
 
 public final class CozmoValidatorAndCollectorVisitor extends RCJValidatorAndCollectorVisitor {
     public CozmoValidatorAndCollectorVisitor(ConfigurationAst configuration, ClassToInstanceMap<IProjectBean.IBuilder> beanBuilders) {
@@ -34,4 +42,27 @@ public final class CozmoValidatorAndCollectorVisitor extends RCJValidatorAndColl
     public Void visitCozmoBooleanSensor(CozmoBooleanSensor sensor) { return null; }
     public Void visitCozmoNumberSensor(CozmoNumberSensor sensor) { return null; }
     public Void visitCozmoFacePositionSensor(CozmoFacePositionSensor sensor) { return null; }
+
+    @Override
+    protected boolean checkActorPort(WithUserDefinedPort action) {
+        if ( isDifferentialDriveAction(action) ) {
+            return true;
+        }
+        return super.checkActorPort(action);
+    }
+
+    @Override
+    protected boolean hasBuiltInDifferentialDrive() {
+        return true;
+    }
+
+    private static boolean isDifferentialDriveAction(WithUserDefinedPort action) {
+        return action instanceof MotorDiffOnAction
+            || action instanceof MotorDiffOnForAction
+            || action instanceof MotorDiffStopAction
+            || action instanceof MotorDiffTurnAction
+            || action instanceof MotorDiffTurnForAction
+            || action instanceof MotorDiffCurveAction
+            || action instanceof MotorDiffCurveForAction;
+    }
 }

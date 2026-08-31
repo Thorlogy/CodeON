@@ -8,35 +8,70 @@ import * as GUISTATE from 'guiState.model';
 
 let blocklyWorkspace;
 
+function resolveBlocklyWorkspace() {
+    blocklyWorkspace = blocklyWorkspace || GUISTATE_C.getBlocklyWorkspace();
+    return blocklyWorkspace;
+}
+
+function isConnectedCozmo(): boolean {
+    const connection = CONNECTION_C.getConnectionInstance();
+    return GUISTATE_C.getRobotGroup() === 'cozmo' && !!connection && connection.isRobotConnected();
+}
+
+// The Blockly workspace and its controls can be created after this module is
+// loaded. Capture disabled Run clicks at the document boundary so the help is
+// independent of controller initialization and Blockly's event propagation.
+document.addEventListener(
+    'mousedown',
+    function (event) {
+        const target = event.target as Element | null;
+        const runButton = target && target.closest ? target.closest('#runOnBrick') : null;
+        if (!runButton) {
+            return;
+        }
+        // Blockly recreates its controls when the workspace is refreshed. The
+        // direct listener registered below can therefore point at an obsolete
+        // Run button. Delegate Cozmo's Run click from the document so the
+        // current control always starts the bridge program.
+        if (GUISTATE_C.getRobotGroup() === 'cozmo') {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            if (!isConnectedCozmo() || !resolveBlocklyWorkspace()) {
+                showRunNotification();
+                return;
+            }
+            LOG.info('runOnBrick from delegated Cozmo button');
+            runOnBrick();
+            return;
+        }
+        if (runButton.classList.contains('disabled')) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            showRunNotification();
+            return;
+        }
+    },
+    true
+);
+
 function init(workspace) {
-    blocklyWorkspace = GUISTATE_C.getBlocklyWorkspace();
+    blocklyWorkspace = workspace || GUISTATE_C.getBlocklyWorkspace();
+    if (!blocklyWorkspace) {
+        return;
+    }
     initEvents();
 }
 
 function initEvents() {
     Blockly.bindEvent_(blocklyWorkspace.robControls.runOnBrick, 'mousedown', null, function (e) {
-        if ($('#runOnBrick').hasClass('disabled')) {
-            let notificationElement = $('#releaseInfo');
-            let notificationElementTitle = notificationElement.children('#releaseInfoTitle');
-            let notificationElementDescription = notificationElement.children('#releaseInfoContent');
-            const notificationMessage =
-                GUISTATE_C.getRobotGroup() === 'cozmo'
-                    ? Blockly.Msg.POPUP_RUN_NOTIFICATION_COZMO ||
-                      'Prepare Cozmo: 1. Switch Cozmo on. 2. Connect this computer to the Wi-Fi shown on Cozmo\'s display; no internet connection is normal. 3. Put Cozmo on a clear surface. 4. Press Start again. The local Cozmo bridge starts automatically with CodeON.'
-                    : Blockly.Msg.POPUP_RUN_NOTIFICATION;
-            notificationElementDescription.html(notificationMessage);
-            notificationElementTitle.html(Blockly.Msg.POPUP_ATTENTION);
-            let a = notificationElement.on('notificationFadeInComplete', function () {
-                clearTimeout(a.data('hideInteval'));
-                let id = setTimeout(function () {
-                    notificationElement.fadeOut(500);
-                }, 10000);
-                a.data('hideInteval', id);
-            });
-            notificationElement.fadeIn(500, function () {
-                $(this).trigger('notificationFadeInComplete');
-            });
-
+        const isCozmo = GUISTATE_C.getRobotGroup() === 'cozmo';
+        const connectedCozmo = isConnectedCozmo();
+        if ((isCozmo && !connectedCozmo) || ($('#runOnBrick').hasClass('disabled') && !connectedCozmo)) {
+            showRunNotification();
+            return false;
+        }
+        if (!resolveBlocklyWorkspace()) {
+            showRunNotification();
             return false;
         }
         LOG.info('runOnBrick from blockly button');
@@ -52,6 +87,29 @@ function initEvents() {
         LOG.info('stopProgram from blockly button');
         stopProgram();
         return false;
+    });
+}
+
+function showRunNotification() {
+    const notificationElement = $('#releaseInfo');
+    const notificationElementTitle = notificationElement.children('#releaseInfoTitle');
+    const notificationElementDescription = notificationElement.children('#releaseInfoContent');
+    const notificationMessage =
+        GUISTATE_C.getRobotGroup() === 'cozmo'
+            ? Blockly.Msg.POPUP_RUN_NOTIFICATION_COZMO ||
+              'Prepare Cozmo: 1. Switch Cozmo on. 2. Connect this computer to the Wi-Fi shown on Cozmo\'s display; no internet connection is normal. 3. Put Cozmo on a clear surface. 4. Press Start again. The local Cozmo bridge starts automatically with CodeON.'
+            : Blockly.Msg.POPUP_RUN_NOTIFICATION;
+    notificationElementDescription.html(notificationMessage);
+    notificationElementTitle.html(Blockly.Msg.POPUP_ATTENTION);
+    const notification = notificationElement.off('notificationFadeInComplete.codeonRunHelp').on('notificationFadeInComplete.codeonRunHelp', function () {
+        clearTimeout(notification.data('hideInterval'));
+        const id = setTimeout(function () {
+            notificationElement.fadeOut(500);
+        }, 10000);
+        notification.data('hideInterval', id);
+    });
+    notificationElement.fadeIn(500, function () {
+        $(this).trigger('notificationFadeInComplete');
     });
 }
 

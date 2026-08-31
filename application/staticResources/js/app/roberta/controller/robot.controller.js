@@ -382,6 +382,11 @@ define(["require", "exports", "util.roberta", "log", "message", "guiState.contro
         }
         if (further || (GUISTATE_C.isProgramSaved() && GUISTATE_C.isConfigurationSaved())) {
             if (robot === GUISTATE_C.getRobot() && sameRobotGroupAndExtensions) {
+                // The start view can select the robot that GUISTATE already contains.
+                // Even though no server-side robot switch is needed, its local
+                // connection (for example the Cozmo WebSocket bridge) still has to
+                // be initialized.
+                CONNECTION_C.switchConnection(robot);
                 typeof opt_callback === 'function' && opt_callback();
                 return;
             }

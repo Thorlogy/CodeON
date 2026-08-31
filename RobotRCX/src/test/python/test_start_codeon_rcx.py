@@ -117,6 +117,18 @@ class CodeOnRcxStarterTest(unittest.TestCase):
         source = STARTER_PATH.read_text(encoding="utf-8")
         self.assertIn('"server.ip=127.0.0.1"', source)
 
+    def test_browser_url_versions_the_frontend_entry_point(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            application = Path(tmp) / "application"
+            index = application / "staticResources" / "index.html"
+            index.parent.mkdir(parents=True)
+            index.write_text("CodeON", encoding="utf-8")
+            expected_url = f"{STARTER.CODEON_URL}/?v={index.stat().st_mtime_ns}"
+            with patch.object(STARTER, "APPLICATION", application):
+                url = STARTER.codeon_browser_url()
+
+        self.assertEqual(expected_url, url)
+
     def test_compact_user_package_contains_runtime_but_no_proprietary_tools(self):
         with tempfile.TemporaryDirectory() as tmp:
             archive_path = PACKAGER.build_package("test", Path(tmp))
