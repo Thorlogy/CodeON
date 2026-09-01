@@ -91,7 +91,7 @@ assert.ok(
     assert.ok(switchCalls.length >= 2, 'Die Verbindungskorrektur fehlt in der ausgelieferten Webanwendung: ' + deliveredRobotController);
 });
 
-const liveCacheVersion = 'codeon-cozmo-live-20260831-10';
+const liveCacheVersion = 'codeon-live-20260901-11';
 [
     'OpenRobertaWeb/src/main.js',
     'OpenRobertaServer/staticResources/js/main.js',

@@ -1,6 +1,7 @@
 {
   "scripts": {
     "test:architecture-graph": "node scripts/test-codeon-architecture-graph.js",
+    "test:rcx-simulation": "node scripts/test-rcx-program-end-semantics.js",
     "test:code-graph": "node scripts/test-codeon-code-graph.js && node scripts/test-codeon-code-graph-benchmark.js && node scripts/test-codeon-code-buddy-context.js && node scripts/test-codeon-change-planner.js && node scripts/codeon-code-graph-benchmark.js",
     "benchmark:code-graph": "node scripts/codeon-code-graph-benchmark.js",
     "graph:validate": "node scripts/codeon-architecture-graph.js validate",

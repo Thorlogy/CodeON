@@ -23,6 +23,8 @@ define(["require", "exports", "robot.ev3", "robot.actuators", "robot.sensors"], 
             _this.imgList = ['simpleBackground', 'drawBackground', 'robertaBackground', 'rescueBackground', 'maze', 'blank', 'mathBackground'];
             return _this;
         }
+        /** The physical RCX keeps its motor outputs active when task main ends. */
+        RobotRcx.prototype.resetOnProgramEnd = function () { };
         RobotRcx.prototype.configure = function (configuration) {
             this.chassis = new robot_actuators_1.RCXChassis(this.id, configuration, 2, this.pose);
             var sensors = configuration['SENSORS'];

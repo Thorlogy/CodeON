@@ -32,7 +32,7 @@
 
 require.config({
     baseUrl: '.',
-    urlArgs: 'v=codeon-cozmo-live-20260831-10',
+    urlArgs: 'v=codeon-live-20260901-11',
     paths: {
         ace: 'libs/ace/ace',
         ace_lang: 'libs/ace/ext-language_tools',

@@ -1,6 +1,7 @@
 package de.fhg.iais.roberta.visitor.codegen;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Collections;
@@ -33,7 +34,7 @@ public class RcxNqcVisitorTest {
     }
 
     @Test
-    public void generatedProgramStopsAllMotorsWhenMainTaskEnds() {
+    public void generatedProgramDoesNotHideAStopAtMainTaskEnd() {
         String program =
             "<block_set xmlns=\"http://de.fhg.iais.roberta.blockly\" robottype=\"rcx\" xmlversion=\"3.1\">"
                 + "<instance x=\"50\" y=\"50\"><block type=\"robControls_start\" id=\"start\" intask=\"true\" deletable=\"false\">"
@@ -44,7 +45,7 @@ public class RcxNqcVisitorTest {
         Project project =
             new Project.Builder()
                 .setRobot("rcx")
-                .setProgramName("RcxProgramEndMotorStopTest")
+                .setProgramName("RcxExplicitStopTeachingTest")
                 .setFactory(factory)
                 .setProgramXml(program)
                 .setConfigurationXml(factory.getConfigurationDefault())
@@ -55,14 +56,8 @@ public class RcxNqcVisitorTest {
 
         new RcxNqcGeneratorWorker().execute(project);
         String generated = project.getSourceCodeBuilder().toString();
-        int motorOn = generated.indexOf("OnFwd(OUT_A);");
-        int finalStop = generated.indexOf("Off(OUT_A+OUT_B+OUT_C);");
-        assertTrue(generated, motorOn >= 0);
-        assertTrue(generated, finalStop > motorOn);
-        assertEquals(1, count(generated, "Off(OUT_A+OUT_B+OUT_C);"));
+        assertTrue(generated, generated.contains("OnFwd(OUT_A);"));
+        assertFalse(generated, generated.contains("Off(OUT_A+OUT_B+OUT_C);"));
     }
 
-    private static int count(String text, String token) {
-        return (text.length() - text.replace(token, "").length()) / token.length();
-    }
 }

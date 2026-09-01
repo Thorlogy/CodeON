@@ -1264,6 +1264,13 @@ export class RCXChassis extends LegoChassis {
         $('#simRobotWindow button').removeClass('btn-close-white');
         $('#brick' + this.id).hide();
     }
+
+    override updateAction(myRobot: RobotBaseMobile, dt: number, interpreterRunning: boolean): void {
+        // Unlike newer controllers, the RCX firmware keeps driving after task
+        // main returns. Preserve that behavior only after natural termination;
+        // pausing the simulation must still pause the chassis.
+        super.updateAction(myRobot, dt, interpreterRunning || myRobot.interpreter.isTerminated());
+    }
 }
 
 /**

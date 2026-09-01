@@ -246,7 +246,7 @@ define(["require", "exports", "interpreter.constants", "util.roberta", "interpre
             }
             // only reset mobile robots, because currently all non mobile real "robots" do not reset their actuators when the program is executed
             this.scene.robots.forEach(function (robot) {
-                robot.interpreter.isTerminated() && robot.mobile && robot.reset();
+                robot.interpreter.isTerminated() && robot.mobile && robot.resetOnProgramEnd();
                 robot.interpreter.updateNNView && NN_CTRL.saveNN2Blockly(robot.interpreter.neuralNetwork);
             });
         };

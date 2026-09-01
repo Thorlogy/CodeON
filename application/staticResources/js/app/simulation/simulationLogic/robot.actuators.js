@@ -1192,6 +1192,12 @@ define(["require", "exports", "interpreter.constants", "simulation.math", "guiSt
             $('#brick' + _this.id).hide();
             return _this;
         }
+        RCXChassis.prototype.updateAction = function (myRobot, dt, interpreterRunning) {
+            // Unlike newer controllers, the RCX firmware keeps driving after task
+            // main returns. Preserve that behavior only after natural termination;
+            // pausing the simulation must still pause the chassis.
+            _super.prototype.updateAction.call(this, myRobot, dt, interpreterRunning || myRobot.interpreter.isTerminated());
+        };
         return RCXChassis;
     }(LegoChassis));
     exports.RCXChassis = RCXChassis;

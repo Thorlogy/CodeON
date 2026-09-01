@@ -413,7 +413,7 @@ Manueller Regressionstest:
 4. Zur Roboterkonfiguration und zurück zum Programm wechseln.
 5. Prüfen, dass Farben, Beschriftungen und Toolbox-Aufbau unverändert bleiben.
 
-## 16. Automatischer Motorstopp am Programmende
+## 16. Motorzustand am Programmende
 
 Der Hardwaretest am 1. September 2026 bestätigte die zuverlässige
 Programmübertragung und Tonausgabe des realen RCX. Dabei zeigte sich zugleich,
@@ -421,9 +421,25 @@ dass die RCX-Firmware den letzten Motorzustand nach dem Ende von `task main()`
 beibehält. Ohne expliziten Stopp-Block liefen Motoren deshalb weiter, obwohl
 die Simulation am Programmende bereits stoppte.
 
-Der NQC-Generator fügt nun unmittelbar vor dem regulären Ende der Hauptaufgabe
-`Off(OUT_A+OUT_B+OUT_C);` ein. Damit werden die drei physischen Ausgänge A, B
-und C immer gebremst. Der Stopp verändert keine Endlosschleifen und ersetzt
-keine expliziten Stopp-Blöcke während des Programmlaufs. Ein Generatortest
-prüft, dass der Abschlussstopp nach einem Motorstart genau einmal im erzeugten
-NQC-Programm steht.
+Ein zunächst ergänzter automatischer `Off(OUT_A+OUT_B+OUT_C);`-Befehl wurde
+nach dem didaktischen Praxistest wieder entfernt. CodeON soll keinen
+unsichtbaren Stopp ausführen: Lernende setzen den Stopp-Block bewusst, wenn ein
+Motor anhalten soll. Stattdessen wurde die RCX-Simulation an die Hardware
+angeglichen. Nach einem regulären Programmende behält nur der simulierte RCX
+seinen letzten Motorzustand; Pausieren und explizite Stopp-Blöcke stoppen ihn
+weiterhin. Andere simulierte mobile Roboter behalten ihr bisheriges
+Abschlussverhalten.
+
+Der manuelle Abnahmetest am 1. September 2026 bestätigte die beabsichtigte
+Übereinstimmung: Ein RCX-Programm ohne Stopp-Block endet, während der Motor in
+der Simulation wie beim realen RCX weiterläuft. Der erzeugte NQC-Quellcode
+enthält dabei keinen versteckten `Off`-Befehl. Ein Cache-Buster stellt sicher,
+dass Browser nach der Aktualisierung nicht versehentlich die vorherige
+Simulationslogik weiterverwenden.
+
+Automatische Regressionstests sichern folgende Verträge:
+
+- Der RCX-NQC-Generator fügt keinen Abschlussstopp ein.
+- Nur der RCX behält in der Simulation nach Programmende seinen Motorzustand.
+- Das sichere Standardverhalten der anderen mobilen Roboter bleibt erhalten.
+- Quell- und ausgelieferte Simulationsdateien enthalten dieselbe RCX-Semantik.
