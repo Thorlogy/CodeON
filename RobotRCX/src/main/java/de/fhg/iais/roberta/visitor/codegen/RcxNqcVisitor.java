@@ -167,6 +167,13 @@ public final class RcxNqcVisitor extends AbstractCppVisitor implements IRcxVisit
 
     @Override
     protected void generateProgramSuffix(boolean withWrapping) {
+        if ( withWrapping ) {
+            nlIndent();
+            // The RCX firmware keeps the last output state after task main
+            // returns. Match the simulator's safe program-end semantics by
+            // explicitly braking every physical motor output.
+            this.src.add("Off(OUT_A+OUT_B+OUT_C);");
+        }
         decrIndentation();
         if ( withWrapping ) {
             nlIndent();
