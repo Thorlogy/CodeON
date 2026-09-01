@@ -173,15 +173,6 @@ body.blocklyMinimalBody * {
     background: url(../css/svg/logo-word.svg) no-repeat;
 }
 
-.fraunhoferLogo {
-    background: url(../css/img/iais_logo.gif) no-repeat;
-}
-
-.googleLogo {
-    background: url(../css/svg/Google_logo.svg) no-repeat;
-    background-size: contain;
-}
-
 .NRWMinLogo {
     background: url(../css/img/AK_Schule.png) no-repeat;
     background-size: contain;
@@ -980,17 +971,6 @@ button#simCustomObstacle.typcn:before {
 
 #tokenValue {
     text-transform: uppercase
-}
-
-#roberta {
-    background-image: url(/css/img/Roberta_ears_up.png);
-    width: 160px;
-    height: 180px;
-    background-repeat: no-repeat;
-    position: absolute;
-    bottom: -12px;
-    right: -20px;
-    background-size: contain;
 }
 
 #version-info {
@@ -3051,13 +3031,6 @@ input[type=range]:focus::-ms-fill-upper {
         padding-bottom: 8px;
     }
 
-    #roberta {
-        width: 80px;
-        height: 90px;
-        bottom: -6px;
-        right: -10px;
-    }
-
     .navbar-nav .open .dropdown-menu > li > a,
     .navbar-nav .open .dropdown-menu .dropdown-header {
         padding: 5px 15px 5px 36px;
@@ -3213,17 +3186,6 @@ img.img-responsive {
 
 li.L0, li.L1, li.L2, li.L3, li.L5, li.L6, li.L7, li.L8 {
     list-style-type: inherit !important;
-}
-
-#tutorialRoberta {
-    width: 200px;
-    height: 200px;
-    position: absolute;
-    bottom: -15%;
-    right: -5%;
-    background-image: url(../css/svg/Roberta_zwinkernd.svg);
-    background-repeat: no-repeat;
-    background-size: 200px;
 }
 
 .tutorialLevelStars {
