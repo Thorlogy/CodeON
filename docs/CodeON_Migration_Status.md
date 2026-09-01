@@ -17,6 +17,8 @@ authoritative legal and attribution documents.
   application and legacy backup copies
 - migration of visible Open Roberta wording and links in German/English help
 - CodeON-focused root and frontend documentation and build metadata
+- verified inventory of delivered browser, Python bridge and Java dependencies,
+  including a reproducible build description for the checked-in JAR directory
 
 ## Intentionally retained for compatibility
 
@@ -41,8 +43,8 @@ database upgrades, robot plugins, native app bridges and third-party APIs.
 - configure an operator-owned SMTP relay and sender address; the repository
   defaults to `localhost` and no sender to prevent accidental use of upstream
   infrastructure
-- obtain legal review of trademark use, NOTICE attribution and third-party
-  license inventory
+- obtain legal review of trademark use, NOTICE attribution and the completed
+  third-party license inventory
 - test both languages on start page, editor, simulator, account flows and help
 - decide whether the historical term NEPO may remain in purely technical APIs;
   the user interface no longer depends on it as a product label

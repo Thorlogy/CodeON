@@ -1,132 +1,149 @@
-antlr:antlr:2.7.7	BSD License
-aopalliance:aopalliance:1.0	Public Domain
-bootstrap:v3.3.1	The MIT License
-bootstrap-table:v1.10.1	The MIT License
-bootstrap-tagsinput:0.8.0	The MIT License
-bootstrap-wysiwyg:v2.0.1	The MIT License
-ch.qos.logback:logback-classic:1.2.3	Eclipse Public License - v 1.0 GNU Lesser General Public License
-ch.qos.logback:logback-core:1.2.3	Eclipse Public License - v 1.0 GNU Lesser General Public License
-Ace (Ajax.org Cloud9 Editor) BSD license
-com.google.code.findbugs:annotations:3.0.1	GNU Lesser Public License
-com.google.code.findbugs:jsr305:3.0.2	The Apache Software License, Version 2.0
-com.google.code.gson:gson:2.8.2	Apache 2.0
-com.google.errorprone:error_prone_annotations:2.3.2	Apache 2.0
-com.google.guava:failureaccess:1.0.1	The Apache Software License, Version 2.0
-com.google.guava:guava:28.0-jre	Apache License, Version 2.0
-com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava	The Apache Software License, Version 2.0
-com.google.inject.extensions:guice-servlet:4.2.0	The Apache Software License, Version 2.0
-com.google.inject:guice:4.2.0	The Apache Software License, Version 2.0
-com.google.j2objc:j2objc-annotations:1.3	The Apache Software License, Version 2.0
-com.googlecode.owasp-java-html-sanitizer:owasp-java-html-sanitizer:20180219.1	Apache License, Version 2.0
-com.ibm.icu:icu4j:61.1	Unicode/ICU License
-com.jcraft:jsch:0.1.54	Revised BSD
-com.mchange:c3p0:0.9.2.1	Eclipse Public License, Version 1.0 GNU Lesser General Public License, Version 2.1
-com.mchange:mchange-commons-java:0.2.3.4	Eclipse Public License, Version 1.0 GNU Lesser General Public License, Version 2.1
-com.squareup.okhttp3:okhttp:3.9.1	Apache 2.0
-com.squareup.okio:okio:1.13.0	Apache 2.0
-com.sun.jersey.contribs:jersey-guice:1.19.4	CDDL 1.1 GPL2 w/ CPE
-com.sun.jersey:jersey-core:1.19.4	CDDL 1.1 GPL2 w/ CPE
-com.sun.jersey:jersey-json:1.19.4	CDDL 1.1 GPL2 w/ CPE
-com.sun.jersey:jersey-server:1.19.4	CDDL 1.1 GPL2 w/ CPE
-com.sun.jersey:jersey-servlet:1.19.4	CDDL 1.1 GPL2 w/ CPE
-com.sun.mail:javax.mail:1.6.0	CDDL/GPLv2+CE
-com.sun.xml.bind:jaxb-impl:2.2.3-1	CDDL 1.1 GPL2 w/ CPE
-com.vaadin.external.google:android-json:0.0.20131108.vaadin1	Apache License 2.0
-commons-codec:commons-codec:1.11	Apache License, Version 2.0
-commons-io:commons-io:2.6	Apache License, Version 2.0
-commons-logging:commons-logging:1.2	The Apache Software License, Version 2.0
-de.fhg.iais.openroberta:OpenRobertaRobot:4.0.8-SNAPSHOT	Licensed under the Apache License, Version 2.0 (the "License")
-de.fhg.iais.openroberta:RobotArdu:4.0.8-SNAPSHOT	Licensed under the Apache License, Version 2.0 (the "License")
-de.fhg.iais.openroberta:RobotEdison:4.0.8-SNAPSHOT	Licensed under the Apache License, Version 2.0 (the "License")
-de.fhg.iais.openroberta:RobotEV3:4.0.8-SNAPSHOT	Licensed under the Apache License, Version 2.0 (the "License")
-de.fhg.iais.openroberta:RobotMbed:4.0.8-SNAPSHOT	Licensed under the Apache License, Version 2.0 (the "License")
-de.fhg.iais.openroberta:RobotNAO:4.0.8-SNAPSHOT	Licensed under the Apache License, Version 2.0 (the "License")
-de.fhg.iais.openroberta:RobotNXT:4.0.8-SNAPSHOT	Licensed under the Apache License, Version 2.0 (the "License")
-de.fhg.iais.openroberta:RobotVorwerk:4.0.8-SNAPSHOT	Licensed under the Apache License, Version 2.0 (the "License")
-de.fhg.iais.openroberta:RobotWeDo:4.0.8-SNAPSHOT	Licensed under the Apache License, Version 2.0 (the "License")
-dom4j:dom4j:1.6.1	BSD License
-enjoyhint:3.1.0 	The MIT License
-eu.bitwalker:UserAgentUtils:1.21	New BSD License
-font:Caveat	SIL Open Font License 1.1
-font:font-awesome	"	The MIT License"
-font:Roboto	"	Apache License, version 2.0"
-javax.activation:activation:1.1	Common Development and Distribution License (CDDL) v1.0
-javax.inject:javax.inject:1	The Apache Software License, Version 2.0
-javax.mail:javax.mail-api:1.6.0	CDDL/GPLv2+CE
-javax.servlet:javax.servlet-api:3.1.0	CDDL + GPLv2 with classpath exception
-javax.ws.rs:jsr311-api:1.1.1	CDDL License
-javax.xml.bind:jaxb-api:2.2.2	CDDL 1.1 GPL2 w/ CPE
-javax.xml.stream:stax-api:1.0-2	COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0 GNU General Public Library
-jquery.hotkeys:0.2.0	The MIT License/gpl-2.0
-jquery.scrollTo:2.1.2	The MIT License 
-jquery.validate:1.17.0	The MIT License 
-jquery:3.3.1	The MIT License
-junit:junit:4.13.1	Eclipse Public License 1.0
-net.bytebuddy:byte-buddy:1.7.9	The Apache Software License, Version 2.0
-net.jcip:jcip-annotations:1.0	Apache License, Version 2.0
-net.sf.jopt-simple:jopt-simple:5.0.4	The MIT License
-org.abego.treelayout:org.abego.treelayout.core:1.0.3	BSD 3-Clause "New" or "Revised" License (BSD-3-Clause)
-org.antlr:antlr4:4.7.2	The BSD License
-org.antlr:antlr4-runtime:4.7.2	The BSD License
-org.antlr:antlr-runtime:3.5.2	BSD licence
-org.antlr:ST4:4.1	BSD licence
-org.apache.commons:commons-exec:1.3	Apache License, Version 2.0
-org.apache.commons:commons-lang3:3.7	Apache License, Version 2.0
-org.apache.commons:commons-text:1.4	Apache License, Version 2.0
-org.apache.httpcomponents:httpclient:4.5.5	Apache License, Version 2.0
-org.apache.httpcomponents:httpcore:4.4.6	Apache License, Version 2.0
-org.assertj:assertj-core:3.17.2	Apache License, Version 2.0
-org.checkerframework:checker-qual:2.8.1	The MIT License
-org.codehaus.jackson:jackson-core-asl:1.9.2	The Apache Software License, Version 2.0
-org.codehaus.jackson:jackson-jaxrs:1.9.2	GNU Lesser General Public License (LGPL), Version 2.1 The Apache Software License, Version 2.0
-org.codehaus.jackson:jackson-mapper-asl:1.9.2	The Apache Software License, Version 2.0
-org.codehaus.jackson:jackson-xc:1.9.2	GNU Lesser General Public License (LGPL), Version 2.1 The Apache Software License, Version 2.0
-org.codehaus.jettison:jettison:1.1	Apache License, Version 2.0
-org.codehaus.mojo:animal-sniffer-annotations:1.17	MIT license
-org.eclipse.jetty.websocket:websocket-api:9.4.15.v20190215	Apache Software License - Version 2.0 Eclipse Public License - Version 1.0
-org.eclipse.jetty.websocket:websocket-client:9.4.15.v20190215	Apache Software License - Version 2.0 Eclipse Public License - Version 1.0
-org.eclipse.jetty.websocket:websocket-common:9.4.15.v20190215	Apache Software License - Version 2.0 Eclipse Public License - Version 1.0
-org.eclipse.jetty.websocket:websocket-server:9.4.15.v20190215	Apache Software License - Version 2.0 Eclipse Public License - Version 1.0
-org.eclipse.jetty.websocket:websocket-servlet:9.4.15.v20190215	Apache Software License - Version 2.0 Eclipse Public License - Version 1.0
-org.eclipse.jetty:jetty-client:9.4.15.v20190215	Apache Software License - Version 2.0 Eclipse Public License - Version 1.0
-org.eclipse.jetty:jetty-http:9.4.15.v20190215	Apache Software License - Version 2.0 Eclipse Public License - Version 1.0
-org.eclipse.jetty:jetty-io:9.4.15.v20190215	Apache Software License - Version 2.0 Eclipse Public License - Version 1.0
-org.eclipse.jetty:jetty-security:9.4.15.v20190215	Apache Software License - Version 2.0 Eclipse Public License - Version 1.0
-org.eclipse.jetty:jetty-server:9.4.15.v20190215	Apache Software License - Version 2.0 Eclipse Public License - Version 1.0
-org.eclipse.jetty:jetty-servlet:9.4.15.v20190215	Apache Software License - Version 2.0 Eclipse Public License - Version 1.0
-org.eclipse.jetty:jetty-util:9.4.15.v20190215	Apache Software License - Version 2.0 Eclipse Public License - Version 1.0
-org.eclipse.jetty:jetty-xml:9.4.15.v20190215	Apache Software License - Version 2.0 Eclipse Public License - Version 1.0
-org.glassfish:javax.json:1.0.4	Dual license consisting of the CDDL v1.1 and GPL v2
-org.hamcrest:hamcrest-core:1.3	New BSD License
-org.hibernate.common:hibernate-commons-annotations:4.0.5.Final	GNU Lesser General Public License
-org.hibernate.javax.persistence:hibernate-jpa-2.1-api:1.0.0.Final	Eclipse Distribution License (EDL), Version 1.0 Eclipse Public License (EPL), Version 1.0
-org.hibernate:hibernate-c3p0:4.3.11.Final	GNU Lesser General Public License
-org.hibernate:hibernate-core:4.3.11.Final	GNU Lesser General Public License
-org.hsqldb:hsqldb:2.7.1	HSQLDB License, a BSD open source license
-org.javassist:javassist:3.18.1-GA	Apache License 2.0 LGPL 2.1 MPL 1.1
-org.jboss.logging:jboss-logging:3.1.3.GA	Apache License, version 2.0
-org.jboss.logging:jboss-logging-annotations:1.2.0.Beta1	Public Domain
-org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec:1.0.0.Final	Common Development and Distribution License GNU General Public License, Version 2 with the Classpath Exception
-org.jboss:jandex:1.1.0.Final	AL 2.0
-org.json:json:20180130	The JSON License
-org.mockito:mockito-all:1.10.19	The MIT License
-org.seleniumhq.selenium:selenium-api:3.11.0	The Apache Software License, Version 2.0
-org.seleniumhq.selenium:selenium-chrome-driver:3.11.0	The Apache Software License, Version 2.0
-org.seleniumhq.selenium:selenium-edge-driver:3.11.0	The Apache Software License, Version 2.0
-org.seleniumhq.selenium:selenium-firefox-driver:3.11.0	The Apache Software License, Version 2.0
-org.seleniumhq.selenium:selenium-ie-driver:3.11.0	The Apache Software License, Version 2.0
-org.seleniumhq.selenium:selenium-java:3.11.0	The Apache Software License, Version 2.0
-org.seleniumhq.selenium:selenium-java:3.11.0	The Apache Software License, Version 2.0
-org.seleniumhq.selenium:selenium-opera-driver:3.11.0	The Apache Software License, Version 2.0
-org.seleniumhq.selenium:selenium-remote-driver:3.11.0	The Apache Software License, Version 2.0
-org.seleniumhq.selenium:selenium-safari-driver:3.11.0	The Apache Software License, Version 2.0
-org.seleniumhq.selenium:selenium-support:3.11.0	The Apache Software License, Version 2.0
-org.skyscreamer:jsonassert:1.5.0	The Apache Software License, Version 2.0
-org.slf4j:slf4j-api:1.7.25	MIT License
-org.yaml:snakeyaml:1.23	Apache License, Version 2.0
-requirejs	BSD License / The MIT License
-socketio:socket.io	The MIT License
-tensorflow:playground	Apache License, version 2.0
-volume-meter.js	The MIT License
-xml-apis:xml-apis:1.0.b2	The Apache Software License, Version 2.0
-xmlunit:xmlunit:1.6	BSD License
+# CodeON third-party products and licenses
+
+Verified: 2026-09-01
+
+This inventory describes dependencies delivered with CodeON or used to build
+and test it. Version ranges are copied from the repository configuration;
+"bundled build" means that the checked-in file does not contain reliable
+version metadata. This inventory is informational and does not replace the
+license files distributed by the respective projects or a legal review.
+
+## Browser libraries delivered in staticResources
+
+Name | Version | License | Project URL
+---- | ------- | ------- | -----------
+Ace Editor | bundled build | BSD-3-Clause | https://github.com/ajaxorg/ace
+Bootstrap | 5.3.2 | MIT | https://github.com/twbs/bootstrap
+Bootstrap Table | 1.22.1 | MIT | https://github.com/wenzhixin/bootstrap-table
+Bootstrap Tags Input | 0.8.0 | MIT | https://github.com/bootstrap-tagsinput/bootstrap-tagsinput
+Bootstrap WYSIWYG | 2.0.1 | MIT | https://github.com/mindmup/bootstrap-wysiwyg
+cannon-es | bundled build | MIT | https://github.com/pmndrs/cannon-es
+DAPjs | bundled build | MIT | https://github.com/ARMmbed/dapjs
+D3 | bundled 3.x build | BSD-3-Clause | https://github.com/d3/d3
+EnjoyHint | 3.1.0 | MIT | https://github.com/xbsoftware/enjoyhint
+FlatBuffers JavaScript runtime | bundled build | Apache-2.0 | https://github.com/google/flatbuffers
+flexbuffers JavaScript runtime | bundled build | Apache-2.0 | https://github.com/google/flatbuffers
+glm-js | bundled build | MIT | https://github.com/humbletim/glm-js
+Huebee | 1.0.1 | GPL-3.0-or-later or commercial license | https://github.com/metafizzy/huebee
+jQuery | 3.7.1 | MIT | https://github.com/jquery/jquery
+jQuery Hotkeys | 0.2.0 | MIT OR GPL-2.0 | https://github.com/jeresig/jquery.hotkeys
+jQuery scrollTo | 2.1.2 | MIT | https://github.com/flesler/jquery.scrollTo
+jQuery Validation | 1.17.0 | MIT | https://github.com/jquery-validation/jquery-validation
+Lodash isEqual | bundled build | MIT | https://github.com/lodash/lodash
+Material Design Lite | 1.3.0 | Apache-2.0 | https://github.com/google/material-design-lite
+Socket.IO client | bundled build | MIT | https://github.com/socketio/socket.io-client
+three.js | r128 | MIT; Copyright 2010-2021 Three.js Authors | https://github.com/mrdoob/three.js
+Thymio JavaScript client components | bundled build | MIT | https://github.com/aseba-community/thymio-suite
+volume-meter.js | bundled 2014 source | MIT; Copyright 2014 Chris Wilson | https://github.com/cwilso/volume-meter
+Webots browser runtime | R2021c | Apache-2.0 | https://github.com/cyberbotics/webots
+
+The same browser library set is checked into both
+`OpenRobertaServer/staticResources/libs` and `application/staticResources/libs`.
+
+## Other delivered browser assets and derived code
+
+Name | Version | License | Project URL
+---- | ------- | ------- | -----------
+Google Blockly | bundled CodeON fork, upstream version not embedded | Apache-2.0 | https://github.com/google/blockly
+RequireJS | 2.1.22 | MIT OR BSD-3-Clause | https://github.com/requirejs/requirejs
+TensorFlow Playground-derived neural-network UI | bundled derivative | Apache-2.0 | https://github.com/tensorflow/playground
+Caveat font | bundled build | SIL-OFL-1.1 | https://github.com/googlefonts/caveat
+Font Awesome | 4.7.0 | SIL-OFL-1.1 for font; MIT for CSS | https://github.com/FortAwesome/Font-Awesome
+Roboto font | 1.100 (2013) | Apache-2.0 | https://github.com/googlefonts/roboto
+
+## Python robot bridge dependencies
+
+Name | Version in pyproject.toml | License | Project URL
+---- | ------------------------- | ------- | -----------
+bleak | >=0.22,<2 | MIT | https://github.com/hbldh/bleak
+pycozmo | 0.8.0 | MIT | https://github.com/zayfod/pycozmo
+opencv-python-headless | >=4.8,<5 | MIT wrapper; bundled OpenCV is Apache-2.0; wheel third-party notices also apply | https://github.com/opencv/opencv-python
+NumPy | >=1.24,<3 | BSD-3-Clause core; binary-wheel notices also apply | https://github.com/numpy/numpy
+websockets | >=13.1,<17 | BSD-3-Clause | https://github.com/python-websockets/websockets
+
+`pyserial` is not a CodeON dependency. RCX transfer is delegated to the external
+NQC executable and the repository contains neither a pyserial requirement nor a
+pyserial import.
+
+## Java runtime JARs delivered in application/lib
+
+The following versions were read from the checked-in JAR metadata. Multiple
+artifacts from one project are grouped, but every delivered JAR is named.
+
+Name / artifact(s) | Version | License | Project URL
+------------------ | ------- | ------- | -----------
+FastInfoset | 1.2.15 | Apache-2.0 | https://github.com/eclipse-ee4j/metro-fi
+StringTemplate ST4 | 4.1 | BSD-3-Clause | https://www.stringtemplate.org/
+UserAgentUtils | 1.21 | BSD-3-Clause | https://github.com/HaraldWalker/user-agent-utils
+JavaBeans Activation Framework: activation | 1.1 | CDDL-1.0 | https://javaee.github.io/javamail/
+FindBugs annotations | 3.0.1 | LGPL-3.0 | https://github.com/findbugsproject/findbugs
+ANTLR: antlr | 2.7.7 | BSD-3-Clause | https://www.antlr2.org/
+ANTLR 3 runtime: antlr-runtime | 3.5.2 | BSD-3-Clause | https://www.antlr3.org/
+ANTLR 4: antlr4, antlr4-runtime | 4.7.2 | BSD-3-Clause | https://www.antlr.org/
+AOP Alliance: aopalliance | 1.0 | Public Domain | https://github.com/aopalliance/aopalliance
+Byte Buddy (`byte-buddy`) | 1.10.17 | Apache-2.0 | https://bytebuddy.net/
+c3p0 | 0.9.5.5 | EPL-1.0 OR LGPL-2.1-or-later | https://www.mchange.com/projects/c3p0/
+Checker Framework checker-qual | 3.33.0 | MIT | https://checkerframework.org/
+ClassMate | 1.5.1 | Apache-2.0 | https://github.com/FasterXML/java-classmate
+Apache Commons Codec | 1.11 | Apache-2.0 | https://commons.apache.org/proper/commons-codec/
+Apache Commons IO | 2.14.0 | Apache-2.0 | https://commons.apache.org/proper/commons-io/
+Apache Commons Lang (`commons-lang3`) | 3.7 | Apache-2.0 | https://commons.apache.org/proper/commons-lang/
+Apache Commons Text | 1.4 | Apache-2.0 | https://commons.apache.org/proper/commons-text/
+dom4j | 1.6.1 | BSD-3-Clause | https://dom4j.github.io/
+Error Prone annotations (`error_prone_annotations`) | 2.18.0 | Apache-2.0 | https://errorprone.info/
+Guava: guava, failureaccess, listenablefuture | 32.0.0-jre / 1.0.1 / 9999.0-empty-to-avoid-conflict-with-guava | Apache-2.0 | https://github.com/google/guava
+Guice: guice, guice-servlet | 5.1.0 | Apache-2.0 | https://github.com/google/guice
+Hibernate ORM: hibernate-core, hibernate-c3p0 | 5.4.24.Final | LGPL-2.1-or-later | https://github.com/hibernate/hibernate-orm
+Hibernate Commons Annotations | 5.1.2.Final | LGPL-2.1-or-later | https://github.com/hibernate/hibernate-commons-annotations
+HSQLDB | 2.4.0 | HSQLDB License (BSD-style) | https://hsqldb.org/
+ICU4J (`icu4j`) | 61.1 | Unicode-DFS-2016 | https://icu.unicode.org/
+istack-commons-runtime | 3.0.7 | CDDL-1.1 OR GPL-2.0-with-classpath-exception | https://github.com/eclipse-ee4j/jaxb-istack-commons
+J2ObjC annotations (`j2objc-annotations`) | 2.8 | Apache-2.0 | https://github.com/google/j2objc
+Jackson 1: jackson-core-asl, jackson-mapper-asl | 1.9.2 | Apache-2.0 | https://github.com/FasterXML/jackson-1
+Jackson 1: jackson-jaxrs, jackson-xc | 1.9.2 | Apache-2.0 OR LGPL-2.1 | https://github.com/FasterXML/jackson-1
+Jandex | 2.1.3.Final | Apache-2.0 | https://github.com/wildfly/jandex
+Javassist | 3.27.0-GA | Apache-2.0 OR LGPL-2.1-or-later OR MPL-1.1 | https://www.javassist.org/
+Jakarta Activation API: javax.activation-api | 1.2.0 | CDDL-1.1 OR GPL-2.0-with-classpath-exception | https://github.com/jakartaee/jaf-api
+javax.inject | 1 | Apache-2.0 | https://github.com/javax-inject/javax-inject
+Java API for JSON Processing: javax.json | 1.0.4 | CDDL-1.1 OR GPL-2.0-with-classpath-exception | https://github.com/javaee/jsonp
+JavaMail: javax.mail, javax.mail-api | 1.6.0 | CDDL-1.1 OR GPL-2.0-with-classpath-exception | https://javaee.github.io/javamail/
+Java Persistence API: javax.persistence-api | 2.2 | EPL-2.0 OR BSD-3-Clause | https://github.com/jakartaee/persistence
+Java Servlet API: javax.servlet-api | 3.1.0 | CDDL-1.1 OR GPL-2.0-with-classpath-exception | https://github.com/javaee/servlet-spec
+JAXB API: jaxb-api | 2.3.1 | CDDL-1.1 OR GPL-2.0-with-classpath-exception | https://github.com/jakartaee/jaxb-api
+JAXB Reference Implementation: jaxb-impl | 2.2.3 | CDDL-1.1 OR GPL-2.0-with-classpath-exception | https://javaee.github.io/jaxb-v2/
+JAXB Runtime: jaxb-runtime, txw2 | 2.3.1 | CDDL-1.1 OR GPL-2.0-with-classpath-exception | https://github.com/eclipse-ee4j/jaxb-ri
+JBoss Logging | 3.4.1.Final | Apache-2.0 | https://github.com/jboss-logging/jboss-logging
+JBoss Transactions API: jboss-transaction-api_1.2_spec | 1.1.1.Final | CDDL-1.1 OR GPL-2.0-with-classpath-exception | https://github.com/jboss/jboss-transaction-api_spec
+JCIP annotations (`jcip-annotations`) | 1.0 | Apache-2.0 | https://jcip.net/annotations/doc/
+Jersey 1: jersey-core, jersey-guice, jersey-json, jersey-server, jersey-servlet | 1.19.4 | CDDL-1.1 OR GPL-2.0-with-classpath-exception | https://github.com/javaee/jersey-1.x
+Jettison | 1.1 | Apache-2.0 | https://github.com/jettison-json/jettison
+Eclipse Jetty: jetty-client, jetty-http, jetty-io, jetty-security, jetty-server, jetty-servlet, jetty-util, jetty-xml, websocket-api, websocket-client, websocket-common, websocket-server, websocket-servlet | 9.4.15.v20190215 | Apache-2.0 OR EPL-1.0 | https://github.com/jetty/jetty.project
+jopt-simple | 5.0.4 | MIT | https://github.com/jopt-simple/jopt-simple
+JSch | 0.1.54 | BSD-3-Clause | https://github.com/is/jsch
+JSON-java | 20231013 | JSON License | https://github.com/stleary/JSON-java
+JSR-305 annotations (`jsr305`) | 3.0.2 | Apache-2.0 | https://github.com/findbugsproject/findbugs
+JSR-311 API (`jsr311-api`) | 1.1.1 | CDDL-1.1 | https://github.com/javaee/jsr311
+Logback: logback-classic, logback-core | 1.3.12 | EPL-1.0 OR LGPL-2.1 | https://logback.qos.ch/
+mchange-commons-java | 0.2.19 | EPL-1.0 OR LGPL-2.1 | https://github.com/swaldman/mchange-commons-java
+abego TreeLayout (`org.abego.treelayout.core`) | 1.0.3 | BSD-3-Clause | https://github.com/abego/treelayout
+OWASP Java HTML Sanitizer (`owasp-java-html-sanitizer`) | 20211018.1 | Apache-2.0 | https://github.com/OWASP/java-html-sanitizer
+SLF4J API (`slf4j-api`) | 2.0.13 | MIT | https://www.slf4j.org/
+SnakeYAML | 2.0 | Apache-2.0 | https://bitbucket.org/snakeyaml/snakeyaml/
+stax-ex | 1.8 | CDDL-1.1 OR GPL-2.0-with-classpath-exception | https://github.com/eclipse-ee4j/jaxb-stax-ex
+
+The seven CodeON/Open-Roberta-derived JARs (`OpenRobertaRobot`,
+`OpenRobertaServer`, `RobotApitor`, `RobotCozmo`, `RobotEdison`, `RobotRCX`, and
+`RobotSpike`) have version `5.3.0-SNAPSHOT` and are project artifacts licensed
+under Apache-2.0; they are not third-party products. Their reproducible build
+path is documented in `application/lib/README.md`.
+
+## Development and test dependency
+
+Name | Version | License | Project URL
+---- | ------- | ------- | -----------
+Puppeteer | 25.3.0 (package-lock.json; package.json allows ^25.3.0) | Apache-2.0 | https://github.com/puppeteer/puppeteer
+
+Additional frontend build-only packages are locked in
+`OpenRobertaWeb/package-lock.json`; they are not copied into the distributed
+`staticResources/libs` directory. Their package metadata remains the
+authoritative machine-readable inventory for that development dependency graph.
