@@ -40,3 +40,16 @@ This product includes software developed by the leJOS group (http://www.lejos.or
 This product includes software provided  by Oracle (http://www.oracle.com), Java for LEGO® Mindstorms® EV3, Oracle Java SE Embedded version, licensed under OTN license terms.
 This product includes software developed by the Blockly team (https://code.google.com/p/blockly/), licensed under Apache License 2.0.
 This product includes software developed by Bootstrap (http://getbootstrap.com), released under the MIT license, copyright 2015 by Twitter.
+
+------------------------------------------------------------------------
+
+CodeON
+
+CodeON is a modified version of the Open Roberta Lab.
+Modifications by Thorsten Leimbach, since 2026.
+CodeON is an independent private project. It is not published, endorsed or
+supported by Fraunhofer IAIS or Roberta Education gGmbH.
+
+The trademark notice above applies unchanged: the CodeON project does not use
+the names "Roberta", "Open Roberta", "Open Roberta Lab" or the corresponding
+logos and seals as a product name or branding.
