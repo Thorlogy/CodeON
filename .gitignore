@@ -15,6 +15,7 @@ OpenRobertaServer/db-*
 *.iml
 **/*.log
 **/*.log.zip
+**/*.bak
 **/admin
 .codeon-runtime/
 dist/

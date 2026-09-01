@@ -17,6 +17,10 @@ authoritative legal and attribution documents.
   application and legacy backup copies
 - migration of visible Open Roberta wording and links in German/English help
 - CodeON-focused root and frontend documentation and build metadata
+- removal of obsolete upstream support contacts, publishing workflows and
+  unreferenced brand assets from the delivered application
+- removal of tracked diagnostic artifacts and legacy backup copies, with
+  repository ignore rules preventing their accidental return
 - verified inventory of delivered browser, Python bridge and Java dependencies,
   including a reproducible build description for the checked-in JAR directory
 
@@ -54,3 +58,18 @@ database upgrades, robot plugins, native app bridges and third-party APIs.
 CodeON supports `de` and `en`. Translation metadata (`qqq.json`) and synonym
 metadata (`synonyms.json`) are retained because they are build resources rather
 than selectable languages.
+
+## Cleanup verification
+
+The Part A repository cleanup was completed and re-verified on 2026-09-01.
+Automated checks confirmed that the repository contains no former support
+address, no references to the removed upstream brand assets and no upstream
+publishing targets in the remaining GitHub workflows. The architecture graph,
+code graph, robot sensor toolboxes, Cozmo and Apitor simulation checks, 3D
+simulation check, Code Buddy security check and RCX program-end semantics check
+all passed.
+
+The running local application was also checked on the start page, in the Cozmo
+editor, in the Cozmo simulator and in the About dialog. CodeON branding and
+assets loaded in all four views, and the browser console reported no warnings
+or errors.
