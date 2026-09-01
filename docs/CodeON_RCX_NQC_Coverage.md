@@ -15,7 +15,7 @@ Block mit der NQC-Ausgabe, der Vorschlagsliste und dem Rückweg in Blockly.
 | Motor stoppen/auslaufen | `Off`/`Float` | direkt |
 | Fahren vor/zurück | `OnFwd`/`OnRev`-Vorlagen für beide Motoren | direkt |
 | Fahren stoppen | `Off` für beide Motoren | direkt |
-| Reguläres Programmende | `Off(OUT_A+OUT_B+OUT_C)` | automatischer Sicherheitsstopp aller Motorausgänge |
+| Reguläres Programmende | kein impliziter Befehl | letzter Motorzustand bleibt wie beim echten RCX erhalten; Stopp-Block erforderlich |
 | Links/rechts drehen | `turn left`/`turn right` | direkt, Konfiguration wird berücksichtigt |
 | Zahl anzeigen | `SetUserDisplay` | direkt |
 | Anzeige löschen | `SelectDisplay` | direkt |

@@ -207,6 +207,10 @@ define(["require", "exports", "jquery", "util.roberta", "blockly", "simulation.t
                 }
             }
         };
+        /** Reset actuators after a program terminates. Robots may override this when their hardware keeps its last actuator state. */
+        RobotBase.prototype.resetOnProgramEnd = function () {
+            this.reset();
+        };
         RobotBase.prototype.updateActions = function (myRobot, dt, interpreterRunning) {
             if (interpreterRunning) {
                 this.time += dt;

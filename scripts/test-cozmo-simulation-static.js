@@ -43,7 +43,7 @@ const germanMessages = read('OpenRobertaServer/staticResources/blockly/msg/js/de
     assert.ok(germanMessages.includes(instruction), 'Cozmo-Startanweisung fehlt: ' + instruction);
 });
 
-const liveCacheVersion = 'codeon-cozmo-live-20260822-1';
+const liveCacheVersion = 'codeon-live-20260901-11';
 [
     'OpenRobertaWeb/src/main.js',
     'OpenRobertaServer/staticResources/js/main.js',

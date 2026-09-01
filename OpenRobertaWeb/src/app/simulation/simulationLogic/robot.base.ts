@@ -245,6 +245,11 @@ export abstract class RobotBase implements IRobot, ISelectable {
         }
     }
 
+    /** Reset actuators after a program terminates. Robots may override this when their hardware keeps its last actuator state. */
+    resetOnProgramEnd(): void {
+        this.reset();
+    }
+
     updateActions(myRobot: RobotBase, dt: number, interpreterRunning: boolean): void {
         if (interpreterRunning) {
             this.time += dt;
