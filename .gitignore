@@ -22,6 +22,7 @@ RobotRCX/bin/nqc
 RobotRCX/bin/nqc.exe
 **/*.pyc
 **/*.py~
+**/__pycache__/
 **/*.csv
 **/*.map
 dbIptoCountry/
@@ -30,6 +31,20 @@ dbIptoCountry/
 
 .venv/
 .codeon-cozmo-venv/
+
+# One-off diagnostics and screenshots belong under scripts/, tests/ or a
+# temporary directory, not in the repository root.
+/test_*.js
+/test_*.py
+/test-*.js
+/test-*.py
+/page_dump.html
+/fix_proxy.js
+/take_screenshot.js
+/screenshot*.png
+/rcx_*.png
+/step*.png
+/test_*.png
 
 # Local credentials must never enter the repository.
 .env
