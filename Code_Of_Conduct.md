@@ -43,7 +43,7 @@ This Code of Conduct applies to project administrators, mentors and all contribu
 
 ## Enforcement
 
-Instances of harassment, abuse or any unacceptable behavior may be reported to project administrators responsible for enforcement by emailing (support-o-r@iais.fraunhofer.de). All complaints will be reviewed and investigated promptly and fairly. 
+Instances of harassment, abuse or any unacceptable behavior may be reported by contacting the repository owner privately through the GitHub profile. Reports will be reviewed when possible.
 
 Project administrators are obligated to respect the privacy of the reporter of any incident. 
 
@@ -71,4 +71,4 @@ Project administrators will follow these Community Impact Guidelines in determin
 
 ## Attribution
 
-This Code of Conduct was adapted from the [Contributor Covenant](https://www.contributor-covenant.org), and the Community Impact Guidelines were inspired by [Mozilla's code of conduct enforcement ladder](https://github.com/mozilla/diversity).               
+This Code of Conduct was adapted from the [Contributor Covenant](https://www.contributor-covenant.org), and the Community Impact Guidelines were inspired by [Mozilla's code of conduct enforcement ladder](https://github.com/mozilla/diversity).
