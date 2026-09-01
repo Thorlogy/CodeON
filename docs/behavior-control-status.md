@@ -9,7 +9,8 @@
 - Erledigt: kooperativer Scheduler mit Konflikt-, Fehler- und Leerzustands-Latch
 - Erledigt: Cozmo-Regeln für Gesichtssuche, Verfolgung, Annäherung und Sicherheitsstopp gegen Fake-Daten
 - Erledigt: Scheduler über `startBehavior` und `stopBehavior` mit der lokalen Cozmo-Bridge verbunden
-- Erledigt: Expertenblock „Parallele Tasks starten/stoppen“ ergänzt
+- Intern vorhanden: Expertenblock „Parallele Tasks starten/stoppen“; nach dem
+  Hardwaretest wegen sequenzieller statt paralleler Ausführung aus der Cozmo-Toolbox ausgeblendet
 - Erledigt: Statusanzeige zeigt den aktuellen Besitzer der Fahrressource und den Scheduler-Takt
 - Erledigt: Direkte Fahr- und Drehbefehle beenden den Verhaltensmodus vor der eigenen Motorsteuerung
 - Erledigt: Laufzeitdateien und `RobotCozmo.jar` für den normalen CodeON-Start aktualisiert

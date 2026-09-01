@@ -109,10 +109,10 @@ real hardware on 31 August 2026:
 
 The visible emergency-stop path was subsequently verified with real hardware:
 during continuous motion, pressing the visible Stop control stopped Cozmo
-immediately. The toolbox naming distinction between user-defined
-`Parallel task` headers and the built-in `Automatic face following` action is
-covered by the delivered static regression check but should also be confirmed
-visually during final acceptance.
+immediately. A later hardware test showed that programs headed by the
+`Parallel task` block ran sequentially rather than concurrently. The category
+is therefore hidden from both delivered Cozmo toolboxes until its execution
+semantics are corrected. Existing saved programs remain loadable.
 
 The detailed checkpoint is recorded in
 `docs/CodeON_Cozmo_Durchbruch_2026-08-31.md`.

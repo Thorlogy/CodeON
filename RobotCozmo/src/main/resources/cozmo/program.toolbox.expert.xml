@@ -1,11 +1,4 @@
 <toolbox_set id="toolboxExpert" style="display: none">
-    <category name="TOOLBOX_TASKS" svg="true">
-        <block type="cozmo_parallel_task">
-            <field name="TASK_NAME">Task 1</field>
-            <field name="TASK_TRIGGER">START</field>
-            <field name="TASK_PRIORITY">50</field>
-        </block>
-    </category>
     <category name="TOOLBOX_ACTION" svg="true">
         <category name="TOOLBOX_MOVE" svg="true">
             <block type="actions_motorDiff_on_for"><value name="POWER"><block type="math_number"><field name="NUM">30</field></block></value><value name="DISTANCE"><block type="math_number"><field name="NUM">10</field></block></value></block>

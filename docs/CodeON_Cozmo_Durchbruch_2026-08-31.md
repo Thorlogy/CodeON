@@ -140,8 +140,10 @@ Der Not-Stopp gibt nun Räder, Lift und Kopf explizit frei und besitzt einen vom
 Lebenszyklus der Blockly-Oberfläche unabhängigen Klickhandler. Gesichtssensoren
 fordern die lokale Kameraauswertung bei Bedarf an; zusätzlich steht der
 Kamerastart in der Anfänger-Toolbox. Die eingebaute Aktion heißt nun
-„Automatische Gesichtsfolge“ und ist damit von der Kategorie „Parallele Tasks“
-für eigene Task-Ketten getrennt.
+„Automatische Gesichtsfolge“. Die Kategorie „Parallele Tasks“ wurde nach einem
+späteren Hardwaretest wieder aus der Cozmo-Toolbox entfernt, weil die darin
+erstellten Abläufe tatsächlich sequenziell liefen. Der Block bleibt intern
+lesbar, damit bereits gespeicherte Programme nicht beschädigt werden.
 
 Bei der erneuten Hardwareprüfung am 31.08.2026 wurden der Liftarm und die
 Gesichtserkennung erfolgreich bestätigt: Der Lift ließ sich sichtbar bewegen

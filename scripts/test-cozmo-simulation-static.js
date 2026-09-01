@@ -64,6 +64,8 @@ const beginnerToolbox = read('RobotCozmo/src/main/resources/cozmo/program.toolbo
 assert.ok(beginnerToolbox.includes('<block type="cozmoActions_camera"><field name="MODE">START</field></block>'), 'Die Anfaenger-Toolbox bietet keinen Kamerastart fuer die Gesichtserkennung.');
 assert.ok(beginnerToolbox.includes('cozmoSensors_cubeBoolean'), 'Die Anfaenger-Toolbox bietet keinen Light-Cube-Sensor fuer Warte-bis-Programme.');
 assert.ok(beginnerToolbox.includes('<block type="robControls_wait"/>'), 'Die Anfaenger-Toolbox bietet keinen Warte-bis-Block.');
+const expertToolbox = read('RobotCozmo/src/main/resources/cozmo/program.toolbox.expert.xml');
+assert.ok(!expertToolbox.includes('TOOLBOX_TASKS'), 'Die nicht parallel ausgefuehrte Task-Kategorie darf nicht in der Cozmo-Toolbox erscheinen.');
 const cozmoBlocks = read('OpenRobertaWeb/src/app/roberta/cozmo.blocks.js');
 assert.ok(cozmoBlocks.includes("text('Automatische Gesichtsfolge', 'Automatic face following')"), 'Die eingebaute Gesichtsfolge ist nicht eindeutig von frei definierten parallelen Tasks getrennt.');
 ['cozmoActions_cubeLight', 'cozmoSensors_cubeBoolean', 'cozmoSensors_cubeNumber', 'cozmoSensors_cubeMarkerBoolean', 'cozmoSensors_cubeMarkerNumber'].forEach(function (block) {
