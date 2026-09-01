@@ -3,6 +3,10 @@
 Danke für dein Interesse an CodeON. Änderungen sollen nachvollziehbar bleiben
 und dürfen die Unterstützung anderer Roboter nicht unbeabsichtigt verändern.
 
+CodeON wird privat entwickelt. Pull Requests sind willkommen, es gibt jedoch
+keine zugesicherte Reaktionszeit und keine Garantie, dass vorgeschlagene
+Änderungen geprüft, übernommen oder veröffentlicht werden.
+
 ## Branch- und Veröffentlichungsmodell
 
 - `master` ist der öffentlich sichtbare, aktuelle Integrationsstand.

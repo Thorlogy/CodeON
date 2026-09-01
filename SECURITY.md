@@ -4,7 +4,9 @@
 
 Sicherheitskorrekturen werden für den aktuellen Default-Branch und für die
 jeweils jüngste veröffentlichte Version bewertet. Ältere Entwicklungsstände und
-lokale Zwischenstände werden nur nach Möglichkeit unterstützt.
+lokale Zwischenstände werden nur nach Möglichkeit unterstützt. Meldungen werden
+nach Möglichkeit bearbeitet; eine Reaktion, Bewertung oder Korrektur innerhalb
+einer bestimmten Frist wird nicht zugesichert.
 
 ## Sicherheitslücken vertraulich melden
 
