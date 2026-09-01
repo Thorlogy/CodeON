@@ -412,3 +412,18 @@ Manueller Regressionstest:
 3. „Aktion“ öffnen und die dunkelgrauen Unterkategorien kontrollieren.
 4. Zur Roboterkonfiguration und zurück zum Programm wechseln.
 5. Prüfen, dass Farben, Beschriftungen und Toolbox-Aufbau unverändert bleiben.
+
+## 16. Automatischer Motorstopp am Programmende
+
+Der Hardwaretest am 1. September 2026 bestätigte die zuverlässige
+Programmübertragung und Tonausgabe des realen RCX. Dabei zeigte sich zugleich,
+dass die RCX-Firmware den letzten Motorzustand nach dem Ende von `task main()`
+beibehält. Ohne expliziten Stopp-Block liefen Motoren deshalb weiter, obwohl
+die Simulation am Programmende bereits stoppte.
+
+Der NQC-Generator fügt nun unmittelbar vor dem regulären Ende der Hauptaufgabe
+`Off(OUT_A+OUT_B+OUT_C);` ein. Damit werden die drei physischen Ausgänge A, B
+und C immer gebremst. Der Stopp verändert keine Endlosschleifen und ersetzt
+keine expliziten Stopp-Blöcke während des Programmlaufs. Ein Generatortest
+prüft, dass der Abschlussstopp nach einem Motorstart genau einmal im erzeugten
+NQC-Programm steht.

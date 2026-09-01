@@ -264,6 +264,13 @@ OnFwd(OUT_A); OnRev(OUT_C);
 OnFwd(OUT_A); OnRev(OUT_C);
 ```
 
+Beim regulären Ende von `task main()` erzeugt CodeON zusätzlich immer
+`Off(OUT_A+OUT_B+OUT_C);`. Damit stoppen alle drei realen RCX-Motorausgänge
+genau wie in der Simulation, auch wenn das Blockprogramm keinen eigenen
+Stopp-Block enthält. Innerhalb eines laufenden Programms bleibt ein
+Motorzustand weiterhin bestehen. Endlosschleifen enden definitionsgemäß nicht
+und erreichen den automatischen Abschlussstopp daher nicht.
+
 Diese Folge erzeugt zwei grafische Fahrblöcke mit Tempo 30. Unvollständige
 Richtungsgruppen – beispielsweise nur ein Befehl für Motor A, obwohl A und C
 gemeinsam mit Leistung versorgt wurden – werden weiterhin abgewiesen.
