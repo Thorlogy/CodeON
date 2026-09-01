@@ -2,10 +2,13 @@
 
 [![CodeON architecture safety graph](https://github.com/Thorlogy/CodeON/actions/workflows/codeon_architecture_graph.yml/badge.svg)](https://github.com/Thorlogy/CodeON/actions/workflows/codeon_architecture_graph.yml)
 
-> **Projektstatus: aktive Entwicklung.** CodeON wird als eigenständige
-> Robotik- und Bildungsplattform weiterentwickelt. Der Default-Branch enthält
-> den aktuellen, gemeinsam getesteten Entwicklungsstand; größere Änderungen
-> entstehen auf Feature-Branches und werden anschließend dorthin integriert.
+> **Privates Projekt.** CodeON ist ein privates Hobbyprojekt und läuft lokal auf
+> dem eigenen Rechner. Es gibt keinen von mir betriebenen Server, keinen Support,
+> keine Zusagen zu Reaktionszeiten und keine Garantie für Weiterentwicklung.
+> Die Software wird "as is" bereitgestellt, siehe LICENSE.
+>
+> Wer eine gepflegte, gehostete Umgebung für Schule, Kurs oder Verein sucht,
+> ist beim Open Roberta Lab richtig: https://lab.open-roberta.org
 
 CodeON ist eine quelloffene Programmierumgebung für Robotik und Bildung. Die
 Oberfläche bietet grafische Blockprogrammierung, Simulationen, Missionen und die
@@ -29,6 +32,29 @@ Der Startassistent startet CodeON sowie die RCX- und Cozmo-Bridge automatisch im
 Hintergrund. Danach genügt `http://localhost:1999`; beim Auswählen von Cozmo ist
 kein zusätzlicher Bridge-Start nötig. NQC wird nur für den RCX benötigt. Die
 plattformspezifischen Installationswerkzeuge liegen im Wurzelverzeichnis.
+
+## Datenverarbeitung
+
+CodeON selbst läuft vollständig lokal. Server und Roboter-Bridges binden an
+`127.0.0.1` und senden keine Daten nach außen.
+
+Optional lässt sich der Code Buddy als Programmier-Assistent verwenden. Hier
+gibt es zwei Fälle:
+
+- **Ollama (lokal):** Anfragen gehen an `http://127.0.0.1:11434`. Nachricht,
+  Blockzusammenfassung und Antwort bleiben auf dem Rechner; ein API-Schlüssel
+  ist nicht erforderlich.
+- **Cloud-Anbieter (Google Gemini, OpenAI, Anthropic, Mistral oder
+  OpenRouter):** Der Browser sendet die Nachricht und eine Zusammenfassung der
+  sichtbaren Programmblöcke direkt an den gewählten Anbieter. Der API-Schlüssel
+  wird selbst eingetragen und nur im `sessionStorage` des aktuellen Browser-Tabs
+  gehalten, also nicht dauerhaft gespeichert. Anbieter, Modell und die je
+  Anbieter erteilte Einwilligung werden als Einstellungen im `localStorage`
+  gespeichert. Es gelten die Bedingungen des jeweiligen Anbieters.
+
+Eine Cloud-Verbindung wird erst verwendet, nachdem die Datenübertragung für den
+gewählten Anbieter ausdrücklich bestätigt wurde. Für die Nutzung mit Kindern
+empfehle ich den Ollama-Pfad oder den Verzicht auf den Assistenten.
 
 ## Unterstützte Oberflächensprachen
 
