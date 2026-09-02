@@ -11,4 +11,17 @@ export default class RobotCozmo extends RobotEv3 {
         this.chassis = new CozmoChassis(this.id, configuration, 2, this.pose);
         this.buttons = new EV3Keys([], this.id);
     }
+
+    /** A new program keeps the physical lift state instead of lowering it for one frame. */
+    override reset(): void {
+        const chassis = this.chassis as CozmoChassis;
+        const liftPosition = chassis.liftPosition;
+        super.reset();
+        chassis.holdLiftPosition(liftPosition);
+    }
+
+    /** Program end stops the tracks but is not an implicit lift-down command. */
+    override resetOnProgramEnd(): void {
+        this.reset();
+    }
 }

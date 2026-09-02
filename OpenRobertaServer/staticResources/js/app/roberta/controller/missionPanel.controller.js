@@ -1,6 +1,6 @@
 define(["require", "exports", "jquery", "guiState.controller", "simulation.roberta"], function (require, exports, $, GUISTATE_C, simulation_roberta_1) {
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.init = void 0;
+    exports.updateVisibility = exports.init = void 0;
     var INITIAL_WIDTH = 0.34;
     var MISSION_SIM_WIDTH = 0.52;
     var STORAGE_KEY = 'codeon.rcx.missions.completed.v1';
@@ -21,8 +21,18 @@ define(["require", "exports", "jquery", "guiState.controller", "simulation.rober
             togglePanel($(this));
             return false;
         });
+        updateVisibility();
     }
     exports.init = init;
+    function updateVisibility() {
+        var button = $('#missionButton');
+        var rcxSelected = GUISTATE_C.getRobotGroup() === 'rcx';
+        button.toggle(rcxSelected);
+        if (!rcxSelected && button.hasClass('rightActive')) {
+            $('#blocklyDiv').closeRightView();
+        }
+    }
+    exports.updateVisibility = updateVisibility;
     function togglePanel(button) {
         if (button.hasClass('rightActive')) {
             $('#blocklyDiv').closeRightView();

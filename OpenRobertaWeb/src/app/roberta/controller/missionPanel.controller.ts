@@ -64,6 +64,16 @@ export function init(): void {
         togglePanel($(this));
         return false;
     });
+    updateVisibility();
+}
+
+export function updateVisibility(): void {
+    const button = $('#missionButton');
+    const rcxSelected = GUISTATE_C.getRobotGroup() === 'rcx';
+    button.toggle(rcxSelected);
+    if (!rcxSelected && button.hasClass('rightActive')) {
+        $('#blocklyDiv').closeRightView();
+    }
 }
 
 function togglePanel(button: JQuery): void {

@@ -9,6 +9,8 @@ CodeON stellt Cozmo in der Programmieransicht und in den lokalen 2D-/3D-Simulati
 - Das 3D-Modell besitzt Ketten, Displaykopf, einen beweglichen Frontlift und einen Würfel.
 - Fahr- und Drehbefehle nutzen die vorhandene Differentialantriebsphysik. Die Darstellung bleibt dabei kettenbasiert.
 - `Lift anheben` und `Lift absenken` animieren den Frontlift. Befindet sich der Würfel in Reichweite, wird er beim Anheben mitgeführt und beim Absenken abgelegt.
+- Beim Aufnehmen wird der Würfel als Kindobjekt an den Lift gekoppelt. Dadurch folgt er während des Transports jeder Fahrt und Drehung; beim Absenken wird er mit erhaltener Weltposition wieder auf der Fläche abgelegt.
+- Ein Programmende stoppt die Fahrbewegung, verändert aber nicht die zuletzt programmierte Liftposition. Auch ein erneuter Programmstart erhält Lift und getragenen Würfel ohne ein kurzzeitiges Absetzen. Absenken geschieht ausschließlich durch einen entsprechenden Liftblock oder durch das Zurücksetzen der gesamten Simulation.
 
 ## Technische Einbindung
 
@@ -24,7 +26,7 @@ Der SIM-Schalter verwendet einen dauerhaft registrierten Ereignis-Listener. Dadu
 
 ## Bewusste Grenzen
 
-Die Simulation ist eine didaktische Näherung und kein vollständiges Physikmodell. Der Würfel wird nur bei ausreichender Nähe aufgenommen; Greifdruck, Schlupf, Kollisionen des ausgefahrenen Lifts und mehrere gleichzeitig transportierte Objekte werden nicht physikalisch berechnet. Kamera-, Gesichts-, Sprach- und Displayfunktionen werden in dieser Ausbaustufe nicht visuell simuliert.
+Die Simulation ist eine didaktische Näherung und kein vollständiges Physikmodell. Der Würfel wird nur bei ausreichender Nähe aufgenommen; Greifdruck, Schlupf, Kollisionen des ausgefahrenen Lifts und mehrere gleichzeitig transportierte Objekte werden nicht physikalisch berechnet. Kamera-, Gesichts-, Sprach- und Displayfunktionen werden in dieser Ausbaustufe nicht visuell simuliert. Die Kantenerkennung ist ein Hardware-Sensorblock; eine frei modellierbare Tischkante gehört derzeit nicht zur 3D-Szene.
 
 ## Prüfung
 

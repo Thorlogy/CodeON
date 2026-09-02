@@ -410,6 +410,12 @@ function resetConfVisIfAvailable() {
 }
 
 function configurationToBricklyWorkspace(xml) {
+    if (GUISTATE_C.getRobotGroup() === 'cozmo' && (typeof xml !== 'string' || xml.trim() === '')) {
+        // Cozmo has a fixed built-in configuration and therefore legitimately
+        // has no configurable Blockly XML. The shared configuration view still
+        // needs a valid empty document during its one-time initialization.
+        xml = '<xml xmlns="https://developers.google.com/blockly/xml"></xml>';
+    }
     // removing changelistener in blockly doesn't work, so no other way
     listenToBricklyEvents = false;
     bricklyWorkspace.clear();

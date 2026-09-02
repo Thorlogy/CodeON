@@ -1141,13 +1141,19 @@
             var forkPosition = new THREE.Vector3(0, 0, -1.78).applyMatrix4(lift.matrixWorld);
             if (!cozmoCubeHeld && height > 0.28 && cozmoCube.position.distanceTo(forkPosition) < 0.85) {
                 cozmoCubeHeld = true;
+                // Attach the cube to the moving lift instead of merely copying
+                // one world position. It then inherits every drive and turn of
+                // the robot until the lift puts it down again.
+                lift.attach(cozmoCube);
+                cozmoCube.position.set(0, 0.18 / Math.max(robotMesh.scale.y, 0.001), -1.78);
             } else if (cozmoCubeHeld && height < 0.12) {
+                scene.attach(cozmoCube);
                 cozmoCube.position.y = Math.max(0.31, cozmoCube.position.y);
                 cozmoCubeHeld = false;
             }
             if (cozmoCubeHeld) {
-                cozmoCube.position.copy(forkPosition);
-                cozmoCube.position.y += 0.18;
+                cozmoCube.position.x = 0;
+                cozmoCube.position.z = -1.78;
             }
         }
         return height;

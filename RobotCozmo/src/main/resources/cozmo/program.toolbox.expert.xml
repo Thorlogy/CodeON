@@ -64,6 +64,7 @@
             <block type="cozmoSensors_boolean"><field name="MODE">pickedUp</field></block>
             <block type="cozmoSensors_boolean"><field name="MODE">moving</field></block>
             <block type="cozmoSensors_boolean"><field name="MODE">onCharger</field></block>
+            <block type="cozmoSensors_boolean"><field name="MODE">cliffDetected</field></block>
         </category>
         <category name="TOOLBOX_CUBE" svg="true">
             <block type="cozmoSensors_cubeBoolean"><field name="CUBE">1</field><field name="MODE">available</field></block>

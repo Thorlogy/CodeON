@@ -250,6 +250,7 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
                 pickedup: !!this.sensorSnapshot.pickedUp,
                 moving: !!this.sensorSnapshot.moving,
                 oncharger: !!this.sensorSnapshot.onCharger,
+                cliffdetected: !!this.sensorSnapshot.cliffDetected,
                 facedetected: !!face.detected,
                 facecount: Number(face.count) || 0,
                 facex: Number(face.x) || 0,

@@ -1390,6 +1390,12 @@ export class CozmoChassis extends LegoChassis {
         this.liftTarget = 0;
     }
 
+    /** Restore the positional lift after the normal robot-wide program reset. */
+    holdLiftPosition(position: number): void {
+        this.liftPosition = position;
+        this.liftTarget = position;
+    }
+
     override updateAction(myRobot: RobotBaseMobile, dt: number, interpreterRunning: boolean): void {
         // Peek before the base chassis consumes the one-shot motor command.
         const motors = myRobot.interpreter.getRobotBehaviour().getActionState('motors', false);
