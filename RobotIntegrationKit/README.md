@@ -121,3 +121,22 @@ present these ports as position-controlled motors.
 The official app renders speech and sounds on the Android host. No Robot X hub
 speaker command was recovered, so future Apitor audio support must be labelled
 as Mac/tablet output.
+
+## eXperiBot/T2BOT protocol research
+
+The research prototype targets only the current app's `T2BOT` / `eXperiBot`
+generation. It must not be assumed to support the older Tinkerbots Powerbrain:
+that controller generation has not yielded any compatible protocol evidence.
+The probe can scan BLE advertisements and inventory GATT services without
+reading values or writing commands. Motor support is intentionally not
+registered until the real command framing and an idempotent global stop have
+been verified on matching hardware.
+
+See `docs/TINKERBOT_INTEGRATION_GATE.md` for the probe commands, required
+evidence and hardware acceptance order.
+
+The research adapter is absent from the bridge server, CodeON robot choices and
+the package's public API. It stays that way until its connection, print-only
+upload and repeated stop gates pass on a current-generation physical
+eXperiBot/T2BOT. The unavailable legacy Powerbrain is recorded as a blocked
+hardware investigation, not as evidence for or against the current protocol.
