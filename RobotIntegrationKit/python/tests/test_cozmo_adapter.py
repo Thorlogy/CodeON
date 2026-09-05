@@ -55,11 +55,28 @@ class CozmoAdapterTest(unittest.IsolatedAsyncioTestCase):
                 ("connect", ()),
                 ("wait_for_robot", (8.0,)),
                 ("set_volume", (65535,)),
-                ("stop_all_motors", ()),
             ],
             self.client.calls,
         )
-        self.assertIn("SetAccessoryDiscovery", [type(packet).__name__ for packet in self.client.conn.sent])
+        packet_names = [type(packet).__name__ for packet in self.client.conn.sent]
+        self.assertIn("EnableStopOnCliff", packet_names)
+        self.assertIn("SetAccessoryDiscovery", packet_names)
+
+    async def test_cliff_event_is_exposed_in_snapshot(self):
+        await self.adapter.connect()
+        self.adapter._on_cliff_detected(self.client, True)
+
+        snapshot = await self.adapter.read_sensor("snapshot", {})
+
+        self.assertTrue(snapshot["cliffDetected"])
+
+    async def test_cliff_status_bit_is_exposed_before_an_event_change(self):
+        self.client.robot_status = 16384
+        await self.adapter.connect()
+
+        snapshot = await self.adapter.read_sensor("snapshot", {})
+
+        self.assertTrue(snapshot["cliffDetected"])
 
     async def test_light_cubes_are_discovered_connected_and_exposed_in_snapshot(self):
         import pycozmo
@@ -161,19 +178,71 @@ class CozmoAdapterTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(3.9, await self.adapter.read_sensor("battery", {}))
 
     async def test_head_and_lift_commands_keep_hardware_limits(self):
+        self.client.lift_position = SimpleNamespace(height=SimpleNamespace(mm=88.0))
         await self.adapter.connect()
         await self.adapter.execute("setHead", {"angle": 4})
-        await self.adapter.execute("setLift", {"height": 5})
+
+        async def report_lowered_height(_delay):
+            self.client.lift_position.height.mm = 34.0
+
+        with patch("codeon_robot_bridge.cozmo_adapter.asyncio.sleep", side_effect=report_lowered_height):
+            await self.adapter.execute("setLift", {"height": 5})
         self.assertIn(("set_head_angle", (0.7,)), self.client.calls)
-        self.assertIn(("move_lift", (-4.0,)), self.client.calls)
-        self.assertIn(("move_lift", (0.0,)), self.client.calls)
+        self.assertIn(("set_lift_height", (34.0, 8.0, 6.0, 0.0)), self.client.calls)
+
+    async def test_lowering_lift_stops_as_soon_as_lower_endpoint_is_reported(self):
+        self.client.lift_position = SimpleNamespace(height=SimpleNamespace(mm=33.5))
+        await self.adapter.connect()
+
+        await self.adapter.execute("setLift", {"height": 32})
+
+        self.assertNotIn("set_lift_height", [name for name, _ in self.client.calls])
+
+    async def test_raising_lift_uses_load_bearing_speed_with_endpoint_margin(self):
+        self.client.lift_position = SimpleNamespace(height=SimpleNamespace(mm=88.0))
+        await self.adapter.connect()
+        self.client.lift_position.height.mm = 40.0
+
+        async def report_reached_height(_delay):
+            self.client.lift_position.height.mm = 86.0
+
+        with patch("codeon_robot_bridge.cozmo_adapter.asyncio.sleep", side_effect=report_reached_height):
+            await self.adapter.execute("setLift", {"height": 92})
+
+        self.assertEqual(
+            [("move_lift", (10.0,)), ("move_lift", (0.0,))],
+            [call for call in self.client.calls if call[0] == "move_lift"][-2:],
+        )
+
+    async def test_loaded_raise_stops_quickly_when_encoder_reports_a_stall(self):
+        self.client.lift_position = SimpleNamespace(height=SimpleNamespace(mm=40.0))
+        await self.adapter.connect()
+
+        with patch.object(self.adapter, "_monotonic", side_effect=[0.0, 0.5]), patch(
+            "codeon_robot_bridge.cozmo_adapter.asyncio.sleep"
+        ):
+            await self.adapter.execute("setLift", {"height": 92})
+
+        self.assertEqual(
+            [("move_lift", (10.0,)), ("move_lift", (0.0,))],
+            [call for call in self.client.calls if call[0] == "move_lift"][-2:],
+        )
+
+    async def test_unreachable_lift_target_is_released_instead_of_jittering(self):
+        self.client.lift_position = SimpleNamespace(height=SimpleNamespace(mm=40.0))
+        await self.adapter.connect()
+
+        with patch.object(self.adapter, "_LIFT_RAISE_TIMEOUT", 0.0):
+            await self.adapter.execute("setLift", {"height": 92})
+
+        self.assertEqual(("move_lift", (0.0,)), self.client.calls[-1])
 
     async def test_stop_all_explicitly_releases_every_motor(self):
         await self.adapter.connect()
         await self.adapter.stop_all()
         self.assertEqual(
-            ["drive_wheels", "move_lift", "move_head", "stop_all_motors"],
-            [name for name, _ in self.client.calls[-4:]],
+            ["drive_wheels", "stop_all_motors"],
+            [name for name, _ in self.client.calls[-2:]],
         )
 
     async def test_backpack_color_is_encoded_as_light_state(self):
@@ -219,7 +288,10 @@ class CozmoAdapterTest(unittest.IsolatedAsyncioTestCase):
 
         with patch.object(self.adapter, "_start_camera", side_effect=start_camera):
             await self.adapter.execute("startBehavior", {"preset": "faceSearchAndFollow"})
-            await asyncio.sleep(0)
+            for _ in range(5):
+                if any(name == "drive_wheels" for name, _ in self.client.calls):
+                    break
+                await asyncio.sleep(0)
             self.assertTrue(self.adapter._behavior_runtime.running)
             self.assertIn("drive_wheels", [name for name, _ in self.client.calls])
 

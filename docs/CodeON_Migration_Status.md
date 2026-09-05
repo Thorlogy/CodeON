@@ -73,3 +73,28 @@ The running local application was also checked on the start page, in the Cozmo
 editor, in the Cozmo simulator and in the About dialog. CodeON branding and
 assets loaded in all four views, and the browser console reported no warnings
 or errors.
+
+## Cozmo UI follow-up
+
+The following issues were reported on 2026-09-01 and addressed on 2026-09-02.
+
+| ID | Resolution | Regression criterion |
+| --- | --- | --- |
+| `COZMO-UI-01` | The RCX-only mission control is hidden whenever a non-RCX robot is selected. | No RCX-specific label is visible in a Cozmo workspace; the RCX keeps its mission control. |
+| `COZMO-UI-02` | The `Quellcodes` control uses a delegated click handler and therefore survives replacement of the program controls. | A single click reliably opens the source-code view after initialisation and robot changes. |
+| `COZMO-UI-03` | The fixed Cozmo system supplies no editable configuration XML, so the shared initializer now uses a valid empty Cozmo document. The start view also opens the selected robot once its navigation is ready, independently of later optional controllers. | One click on Cozmo's `loslegen` control selects Cozmo and opens its workspace. Other robots continue to load their supplied configuration XML. |
+
+Browser acceptance was repeated on 2026-09-02 with cache version
+`codeon-live-20260902-22`: one Cozmo selection click opened the program view,
+the RCX mission control remained hidden, and one source-code click opened the
+generated code view without console errors. A separate RCX selection opened
+the program view and retained the visible `RCX-Missionen` control.
+
+## Deferred Cozmo hardware issue
+
+Physical lifting of a Light Cube remains deliberately deferred. The unloaded
+lift raises and lowers reliably, but under cube load the arm only starts to
+rise and then stalls. Further power or closed-loop tuning is frozen until a
+separate hardware investigation can distinguish load, gearing, battery and
+position-feedback causes. The current lift implementation must not be tuned as
+part of unrelated UI work.

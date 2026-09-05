@@ -89,6 +89,21 @@ define(["require", "exports", "guiState.controller", "startView.model", "table",
     function initRobotList() {
         var myLang = GUISTATE_C.getLanguage();
         var startRobots = robots.slice(0, numPopularRobots);
+        function openSelectedRobotProgram(robot, attempt) {
+            var programTab = document.getElementById('tabProgram');
+            var navigationReady = $('.notStart.disabled').length === 0;
+            if (GUISTATE_C.getRobot() === robot && navigationReady) {
+                programTab.click();
+                if (programTab.classList.contains('active')) {
+                    return;
+                }
+            }
+            if (attempt < 50) {
+                window.setTimeout(function () {
+                    openSelectedRobotProgram(robot, attempt + 1);
+                }, 100);
+            }
+        }
         function clickRobot(e, value, row, optBookmark) {
             e.stopPropagation();
             $('.accordion-collapse.show').collapse('hide');
@@ -107,6 +122,9 @@ define(["require", "exports", "guiState.controller", "startView.model", "table",
                 robot = 'calliope2017';
             }
             mainCallback(robot, extensions); // TODO call mainCallback(row.name, extensions)
+            window.setTimeout(function () {
+                openSelectedRobotProgram(robot, 0);
+            }, 0);
             UTIL.cleanUri();
             if (optBookmark) {
                 var uri;

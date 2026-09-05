@@ -13,6 +13,7 @@ import { CodeToBlocksConverter, ensureNqcSensorSetup } from 'codeToBlocks';
 const INITIAL_WIDTH = 0.5;
 var blocklyWorkspace;
 var nqcSensorSetupTimer;
+var delegatedCodeButtonBound = false;
 
 function init() {
     blocklyWorkspace = GUISTATE_C.getBlocklyWorkspace();
@@ -24,10 +25,10 @@ export { init };
 
 function initEvents() {
     $('#codeButton').off('click touchend');
-    $('#codeButton').onWrap('click touchend', function (event) {
-        toggleCode($(this));
-        return false;
-    });
+    if (!delegatedCodeButtonBound) {
+        document.addEventListener('click', handleDelegatedCodeButton);
+        delegatedCodeButtonBound = true;
+    }
     $('#codeDownload').onWrap(
         'click',
         function (event) {
@@ -150,6 +151,20 @@ function initEvents() {
         },
         'import to blocks clicked'
     );
+}
+
+function handleDelegatedCodeButton(event) {
+    var target = event.target;
+    if (!(target instanceof Element)) {
+        return;
+    }
+    var button = target.closest('#codeButton');
+    if (!button) {
+        return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    toggleCode($(button));
 }
 
 function isNqcSource() {

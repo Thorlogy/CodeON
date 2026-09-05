@@ -157,7 +157,8 @@ define(['blockly'], function (Blockly) {
                 [text('Gesicht erkannt', 'face detected'), 'faceDetected'],
                 [text('angehoben', 'picked up'), 'pickedUp'],
                 [text('bewegt sich', 'is moving'), 'moving'],
-                [text('auf Ladestation', 'on charger'), 'onCharger']
+                [text('auf Ladestation', 'on charger'), 'onCharger'],
+                [text('Kante erkannt', 'edge detected'), 'cliffDetected']
             ]), 'MODE');
             this.setOutput(true, 'Boolean');
         }

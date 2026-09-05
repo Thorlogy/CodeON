@@ -32,7 +32,7 @@
 
 require.config({
     baseUrl: '.',
-    urlArgs: 'v=codeon-live-20260901-11',
+    urlArgs: 'v=codeon-live-20260902-22',
     paths: {
         ace: 'libs/ace/ace',
         ace_lang: 'libs/ace/ext-language_tools',
@@ -391,6 +391,16 @@ function init() {
 }
 
 var mainCallbackCalled = false;
+function showProgramTab(callback, params) {
+    missionPanelController.updateVisibility();
+    $('#tabProgram').oneWrap('shown.bs.tab', function () {
+        // The final program view (including #simButton) now exists.
+        progSimController.createProgSimInstance();
+        callback && typeof callback === 'function' && callback(...params);
+    });
+    $('#tabProgram').tabWrapShow();
+}
+
 function initProgramming(robot, extensions, opt_callback, opt_params) {
     let callback = opt_callback;
     let params = opt_params;
@@ -401,10 +411,14 @@ function initProgramming(robot, extensions, opt_callback, opt_params) {
             $('.notStart').removeClass('disabled');
             $('#header').addClass('shadow');
             programController.init();
+            // Bind the program-side controls before optional robot-specific
+            // views are initialized, so one failing secondary controller
+            // cannot disable source code or robot-specific navigation.
+            progCodeController.init();
+            missionPanelController.updateVisibility();
             configurationController.init();
             progHelpController.init();
             progInfoController.init();
-            progCodeController.init();
             progSimController.createProgSimInstance();
             progSimController.createProgSimDebugInstance();
             progSimController.createProgSimMultiInstance();
@@ -417,12 +431,7 @@ function initProgramming(robot, extensions, opt_callback, opt_params) {
             progShareController.init();
             guiStateController.setInitialState();
             connectionController.initConnection(robot);
-            $('#tabProgram').oneWrap('shown.bs.tab', function () {
-                // The final program view (including #simButton) now exists.
-                progSimController.createProgSimInstance();
-                callback && typeof callback === 'function' && callback(...params);
-            });
-            $('#tabProgram').tabWrapShow();
+            showProgramTab(callback, params);
         });
     } else {
         robotController.switchRobot(robot, extensions, null, function () {
@@ -432,13 +441,7 @@ function initProgramming(robot, extensions, opt_callback, opt_params) {
             // Switching robots can replace/unbind controls in the programming
             // view. Ensure the SIM button always targets the active robot.
             progSimController.createProgSimInstance();
-            $('#tabProgram').oneWrap('shown.bs.tab', function () {
-                // Robot switches rebuild the program controls. Bind SIM only
-                // after Bootstrap has activated the rebuilt program tab.
-                progSimController.createProgSimInstance();
-                callback && typeof callback === 'function' && callback(...params);
-            });
-            $('#tabProgram').tabWrapShow();
+            showProgramTab(callback, params);
         });
     }
 }

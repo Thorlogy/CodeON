@@ -112,6 +112,21 @@ function initRobotToolbar() {
 function initRobotList() {
     const myLang = GUISTATE_C.getLanguage();
     const startRobots = robots.slice(0, numPopularRobots);
+    function openSelectedRobotProgram(robot: string, attempt: number): void {
+        const programTab = document.getElementById('tabProgram');
+        const navigationReady = $('.notStart.disabled').length === 0;
+        if (GUISTATE_C.getRobot() === robot && navigationReady) {
+            programTab.click();
+            if (programTab.classList.contains('active')) {
+                return;
+            }
+        }
+        if (attempt < 50) {
+            window.setTimeout(function () {
+                openSelectedRobotProgram(robot, attempt + 1);
+            }, 100);
+        }
+    }
     function clickRobot(e, value, row, optBookmark?) {
         e.stopPropagation();
         $('.accordion-collapse.show').collapse('hide');
@@ -130,6 +145,9 @@ function initRobotList() {
             robot = 'calliope2017';
         }
         mainCallback(robot, extensions); // TODO call mainCallback(row.name, extensions)
+        window.setTimeout(function () {
+            openSelectedRobotProgram(robot, 0);
+        }, 0);
         UTIL.cleanUri();
         if (optBookmark) {
             var uri;

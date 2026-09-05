@@ -28,6 +28,17 @@ define(["require", "exports", "robot.ev3", "robot.actuators", "robot.sensors"], 
             this.chassis = new robot_actuators_1.CozmoChassis(this.id, configuration, 2, this.pose);
             this.buttons = new robot_sensors_1.EV3Keys([], this.id);
         };
+        /** A new program keeps the physical lift state instead of lowering it for one frame. */
+        RobotCozmo.prototype.reset = function () {
+            var chassis = this.chassis;
+            var liftPosition = chassis.liftPosition;
+            _super.prototype.reset.call(this);
+            chassis.holdLiftPosition(liftPosition);
+        };
+        /** Program end stops the tracks but is not an implicit lift-down command. */
+        RobotCozmo.prototype.resetOnProgramEnd = function () {
+            this.reset();
+        };
         return RobotCozmo;
     }(robot_ev3_1.default));
     exports.default = RobotCozmo;

@@ -4,6 +4,7 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
     var INITIAL_WIDTH = 0.5;
     var blocklyWorkspace;
     var nqcSensorSetupTimer;
+    var delegatedCodeButtonBound = false;
     function init() {
         blocklyWorkspace = GUISTATE_C.getBlocklyWorkspace();
         initEvents();
@@ -12,10 +13,10 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
     exports.init = init;
     function initEvents() {
         $('#codeButton').off('click touchend');
-        $('#codeButton').onWrap('click touchend', function (event) {
-            toggleCode($(this));
-            return false;
-        });
+        if (!delegatedCodeButtonBound) {
+            document.addEventListener('click', handleDelegatedCodeButton);
+            delegatedCodeButtonBound = true;
+        }
         $('#codeDownload').onWrap('click', function (event) {
             var filename = GUISTATE_C.getProgramName() + '.' + GUISTATE_C.getSourceCodeFileExtension();
             UTIL.download(filename, prepareNqcCode());
@@ -89,6 +90,19 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
             event.stopPropagation();
             importCodeToBlocks();
         }, 'import to blocks clicked');
+    }
+    function handleDelegatedCodeButton(event) {
+        var target = event.target;
+        if (!(target instanceof Element)) {
+            return;
+        }
+        var button = target.closest('#codeButton');
+        if (!button) {
+            return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        toggleCode($(button));
     }
     function isNqcSource() {
         return GUISTATE_C.getSourceCodeFileExtension() === 'nqc';

@@ -36,6 +36,12 @@ def _default_client_factory():
 class CozmoAdapter(RobotAdapter):
     """Minimal PyCozmo adapter. Physical limits require hardware verification."""
 
+    _LIFT_RAISE_TIMEOUT = 2.5
+    _LIFT_LOWER_TIMEOUT = 2.0
+    _LIFT_RAISE_SPEED = 10.0
+    _LIFT_STALL_TIMEOUT = 0.45
+    _LIFT_PROGRESS_MM = 1.0
+
     _manifest = CapabilityManifest(
         robot="cozmo",
         adapter_version="0.2.0",
@@ -49,7 +55,7 @@ class CozmoAdapter(RobotAdapter):
             "camera": {"localFaceDetection": True, "imagesLeaveBridge": False},
             "lightCubes": {"count": 3, "discovery": True, "lights": True, "motion": True, "tap": True, "localMarkerDetection": True},
             "behaviors": ["faceSearchAndFollow"],
-            "sensors": ["battery", "accelerometer", "gyroscope", "wheelSpeed", "pose", "snapshot", "face"],
+            "sensors": ["battery", "accelerometer", "gyroscope", "wheelSpeed", "pose", "snapshot", "face", "cliff"],
         },
         limits={
             "wheelSpeedMmPerSec": 150,
@@ -89,6 +95,7 @@ class CozmoAdapter(RobotAdapter):
         self._behavior_runtime: BehaviorRuntime | None = None
         self._last_received_frames = 0
         self._last_robot_packet_at = 0.0
+        self._cliff_detected = False
         self._cube_lock = threading.Lock()
         self._cube_command_lock = threading.Lock()
         self._cubes = {number: self._empty_cube(number) for number in range(1, 4)}
@@ -121,10 +128,11 @@ class CozmoAdapter(RobotAdapter):
             self._client = client
             self._connected = True
             await asyncio.to_thread(client.set_volume, 65535)
-            # Connecting initializes Cozmo's motor controllers. Release head
-            # and lift immediately so an idle CodeON connection does not
-            # resist safe manual movement before a program is started.
-            await asyncio.to_thread(client.stop_all_motors)
+            # Do not issue any head/lift command merely for connecting. Even a
+            # zero-velocity request can engage the firmware controller and make
+            # the idle lift feel electrically held. The full safety stop remains
+            # in stop_all() and disconnect().
+            await asyncio.to_thread(self._start_cliff_support, client)
             await asyncio.to_thread(self._start_cube_support, client)
             self._last_received_frames = self._received_frames(client)
             self._last_robot_packet_at = time.monotonic()
@@ -158,6 +166,7 @@ class CozmoAdapter(RobotAdapter):
                 self._connected = False
                 self._last_received_frames = 0
                 self._last_robot_packet_at = 0.0
+                self._cliff_detected = False
                 with self._cube_lock:
                     self._cubes = {number: self._empty_cube(number) for number in range(1, 4)}
 
@@ -179,15 +188,9 @@ class CozmoAdapter(RobotAdapter):
             await asyncio.to_thread(client.set_head_angle, angle)
         elif command == "setLift":
             height = self._clamp_number(params, "height", 32.0, 92.0)
-            # PyCozmo acknowledges SetLiftHeight before the firmware has
-            # actually moved the arm. Endpoint blocks are more reliable with
-            # the same direct motor command used by Anki's remote control.
-            speed = 4.0 if height >= 62.0 else -4.0
-            await asyncio.to_thread(client.move_lift, speed)
-            try:
-                await asyncio.sleep(0.8)
-            finally:
-                await asyncio.to_thread(client.move_lift, 0.0)
+            # Observe the reported height because PyCozmo's lift commands are
+            # acknowledged before the arm has actually completed its movement.
+            await self._move_lift_to(client, height)
         elif command == "setBackpackLight":
             color = self._parse_color(params.get("color", "#ffffff"))
             await asyncio.to_thread(client.set_all_backpack_lights, color)
@@ -249,14 +252,82 @@ class CozmoAdapter(RobotAdapter):
         await self._stop_face_tracking()
         await self._stop_camera()
         if self._client is not None:
-            # Stop direct velocity commands explicitly as well as sending the
-            # firmware-wide stop. This is intentionally redundant: PyCozmo's
-            # StopAllMotors acknowledgement alone does not prove that a prior
-            # direct wheel/lift/head velocity has been released.
+            # Stop the wheels explicitly, then use the firmware-wide emergency
+            # stop for every motor. Do not add zero-speed head/lift commands:
+            # those can engage their position controllers instead of releasing
+            # an idle actuator.
             await asyncio.to_thread(self._client.drive_wheels, 0.0, 0.0)
-            await asyncio.to_thread(self._client.move_lift, 0.0)
-            await asyncio.to_thread(self._client.move_head, 0.0)
             await asyncio.to_thread(self._client.stop_all_motors)
+
+    async def _move_lift_to(self, client, height: float) -> None:
+        raising = height >= 62.0
+        # Do not drive into the mechanical end stops. The small margin is high
+        # enough to carry a Light Cube but avoids the characteristic jitter
+        # when an endpoint cannot quite be reached under load.
+        target = 88.0 if raising else 34.0
+        tolerance = 3.0
+        current = self._lift_height(client)
+        if current is not None and abs(current - target) <= tolerance:
+            return
+
+        # Use the official SDK's maximum/default lift speed for the loaded
+        # upward movement. PyCozmo exposes no voltage, current or torque command,
+        # so encoder progress is the only safe way to distinguish motion from a
+        # stalled motor. Keep the position controller for lowering, which is
+        # already reliable on the tested robot.
+        if raising:
+            await asyncio.to_thread(client.move_lift, self._LIFT_RAISE_SPEED)
+        else:
+            await asyncio.to_thread(client.set_lift_height, target, 8.0, 6.0, 0.0)
+        started_at = self._monotonic()
+        deadline = started_at + (self._LIFT_RAISE_TIMEOUT if raising else self._LIFT_LOWER_TIMEOUT)
+        last_progress_at = started_at
+        last_progress_height = current
+        reached = False
+        try:
+            while True:
+                await asyncio.sleep(0.05)
+                now = self._monotonic()
+                if now >= deadline:
+                    break
+                current = self._lift_height(client)
+                if current is None:
+                    continue
+                reached = current >= target - tolerance if raising else current <= target + tolerance
+                if reached:
+                    break
+                if raising:
+                    if last_progress_height is None or current >= last_progress_height + self._LIFT_PROGRESS_MM:
+                        last_progress_height = current
+                        last_progress_at = now
+                    elif now - last_progress_at >= self._LIFT_STALL_TIMEOUT:
+                        # The motor is commanded upward but the encoder has not
+                        # advanced. Stop early instead of heating a blocked motor.
+                        break
+        finally:
+            if raising:
+                # A direct high-power command must be stopped even if the
+                # browser cancels the program while this coroutine is waiting.
+                await asyncio.to_thread(client.move_lift, 0.0)
+
+        if not raising and not reached:
+            # Cancel a lowering request which is still fighting an obstruction.
+            await asyncio.to_thread(client.move_lift, 0.0)
+
+    @staticmethod
+    def _lift_height(client) -> float | None:
+        position = getattr(client, "lift_position", None)
+        value = getattr(getattr(position, "height", None), "mm", position)
+        if value is None or callable(value):
+            return None
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+
+    @staticmethod
+    def _monotonic() -> float:
+        return time.monotonic()
 
     def _snapshot(self, client) -> dict[str, Any]:
         with self._face_lock:
@@ -288,6 +359,7 @@ class CozmoAdapter(RobotAdapter):
             "pickedUp": self._status(status, "is_picked_up", "picked_up"),
             "moving": self._status(status, "is_moving", "moving"),
             "onCharger": self._status(status, "is_on_charger", "on_charger"),
+            "cliffDetected": self._cliff_detected or self._status_flag(status, 16384, "is_cliff_detected", "cliff_detected"),
             "cameraEnabled": self._camera_enabled,
             "cameraFrames": self._camera_frames,
             "faceDetections": self._face_detections,
@@ -594,6 +666,18 @@ class CozmoAdapter(RobotAdapter):
         for factory_id, obj in dict(getattr(client, "available_objects", {})).items():
             self._register_available_cube(client, factory_id, getattr(obj, "object_type", 0), 0)
 
+    def _start_cliff_support(self, client) -> None:
+        """Expose cliff events and let Cozmo stop its wheels at an edge."""
+        try:
+            import pycozmo
+        except ImportError as error:
+            raise AdapterError("PyCozmo is not installed") from error
+        client.add_handler(pycozmo.event.EvtCliffDetectedChange, self._on_cliff_detected)
+        client.conn.send(pycozmo.protocol_encoder.EnableStopOnCliff(enable=True))
+
+    def _on_cliff_detected(self, *args) -> None:
+        self._cliff_detected = bool(args[-1])
+
     def _on_cube_available(self, *args) -> None:
         packet = args[-1]
         client = self._client or (args[0] if len(args) > 1 else None)
@@ -803,6 +887,16 @@ class CozmoAdapter(RobotAdapter):
             if component is not None:
                 return bool(component() if callable(component) else component)
         return False
+
+    @classmethod
+    def _status_flag(cls, value: Any, mask: int, *names: str) -> bool:
+        """Read both PyCozmo's integer status word and SDK-like wrappers."""
+        try:
+            if int(value) & mask:
+                return True
+        except (TypeError, ValueError):
+            pass
+        return cls._status(value, *names)
 
     @staticmethod
     def _empty_face() -> dict[str, Any]:

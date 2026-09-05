@@ -1299,6 +1299,11 @@ define(["require", "exports", "interpreter.constants", "simulation.math", "guiSt
             this.liftPosition = 0;
             this.liftTarget = 0;
         };
+        /** Restore the positional lift after the normal robot-wide program reset. */
+        CozmoChassis.prototype.holdLiftPosition = function (position) {
+            this.liftPosition = position;
+            this.liftTarget = position;
+        };
         CozmoChassis.prototype.updateAction = function (myRobot, dt, interpreterRunning) {
             // Peek before the base chassis consumes the one-shot motor command.
             var motors = myRobot.interpreter.getRobotBehaviour().getActionState('motors', false);

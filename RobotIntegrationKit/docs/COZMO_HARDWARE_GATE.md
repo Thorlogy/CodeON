@@ -136,3 +136,44 @@ Before marking this feature hardware-verified, check every physical cube:
 
 Automatic driving, docking and pickup remain user programs composed from these
 sensor primitives and the existing drive and lift blocks.
+
+## Lift release and cliff gate — 1 September 2026
+
+The bridge no longer sends any motor command merely as part of connecting. On
+the tested firmware, both a firmware-wide `StopAllMotors` and an additional
+zero-velocity lift request can leave the lift controller feeling engaged.
+Emergency stop, disconnect and watchdog paths still send the firmware-wide
+safety stop, but no longer append redundant zero-speed lift/head commands.
+PyCozmo 0.8.0 exposes no separate documented coast or motor-power-off command.
+
+CodeON exposes the Boolean sensor `cliffDetected` as **Cozmo – Kante erkannt**.
+The bridge reads PyCozmo's `EvtCliffDetectedChange` and the `CLIFF_DETECTED`
+status bit, and enables `EnableStopOnCliff` so that the firmware also stops the
+wheels locally at an edge. Hardware acceptance still requires:
+
+1. connect without running a program and confirm that the lift is not held;
+2. run lift up, lift down and lift up again;
+3. hold Cozmo securely over a table edge, confirm the sensor changes to true;
+4. at very low speed and with a hand ready to catch Cozmo, confirm the automatic
+   wheel stop before the tracks leave the table.
+
+After the first follow-up test, lowering still showed short alternating
+movements near an endpoint, and the fixed 0.9 second direct movement was too
+short to lift a Light Cube reliably under load. Lowering uses Cozmo's firmware
+position controller. Raising uses the official SDK's documented default/maximum
+`10 rad/s` lift speed because the gentler position request and an `8 rad/s`
+direct request worked empty but stalled with the physical cube. Both directions target 34 mm (down) or
+88 mm (up), leaving a small mechanical endpoint margin, and allow 2.0/2.5
+seconds for movement. A command is skipped when the reported lift is already
+within 3 mm of its target. During a direct raise, CodeON additionally requires
+at least 1 mm of encoder progress within every 0.45 second window. It stops the
+motor immediately when this stall condition occurs rather than applying full
+power for the complete timeout. PyCozmo exposes no voltage, current or torque
+control, so a custom gravity-feedforward/PID loop cannot be implemented safely
+at that layer. The cube-lift behavior remains hardware-pending until the
+following checks pass with a correctly aligned cube:
+
+1. lift an empty fork up and down three times without endpoint chatter;
+2. position the forks fully beneath a genuine Light Cube and lift it three times;
+3. verify that the raised cube remains mechanically supported after the program;
+4. obstruct the lift gently and verify that movement stops within 2.5 seconds.
