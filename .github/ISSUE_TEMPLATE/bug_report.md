@@ -1,29 +1,28 @@
 ---
-name: Bug report
-about: Create a report to help us improve
+name: Fehlerbericht
+about: Einen reproduzierbaren Fehler melden
 
 ---
 
-**Describe the bug**
- - A clear and concise description of what the bug is.
+**Fehlerbeschreibung**
+Eine kurze, klare Beschreibung des Fehlers.
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+**Schritte zum Nachstellen**
+1. ...
+2. ...
+3. ...
 
-**Expected behavior**
- - A clear and concise description of what you expected to happen.
+**Erwartetes Verhalten**
+Was sollte stattdessen passieren?
 
-**Screenshots**
- - If applicable, add screenshots to help explain your problem.
+**Robotersystem und Hardware**
+Roboter, Anschlussart und gegebenenfalls verwendete Sensoren/Aktoren.
 
-**Device information**
- - Type [Desktop/tablet/smartphone]
- - OS: [e.g. windows], including version
- - Browser [e.g. chrome, firefox], including version
+**Umgebung**
+- CodeON-Version oder Commit:
+- Betriebssystem und Version:
+- Browser und Version:
 
-**Additional context**
- - Add any other context about the problem here.
+**Zusätzliche Informationen**
+Screenshots und kurze Logauszüge bitte ohne Zugangsdaten oder personenbezogene
+Daten einfügen. Es gibt keinen zugesicherten Support oder eine Reaktionszeit.

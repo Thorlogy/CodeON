@@ -1,13 +1,38 @@
-# Zu CodeON beitragen
+# Feedback zu CodeON
 
-Danke für dein Interesse an CodeON. Änderungen sollen nachvollziehbar bleiben
-und dürfen die Unterstützung anderer Roboter nicht unbeabsichtigt verändern.
+Danke für dein Interesse an CodeON. Das Repository ist öffentlich, damit der
+Stand nachvollziehbar bleibt und CodeON ausprobiert werden kann.
 
-CodeON wird privat entwickelt. Pull Requests sind willkommen, es gibt jedoch
-keine zugesicherte Reaktionszeit und keine Garantie, dass vorgeschlagene
-Änderungen geprüft, übernommen oder veröffentlicht werden.
+CodeON ist ein persönliches Hobbyprojekt. **Pull Requests und sonstige
+Codebeiträge werden derzeit nicht angenommen.** Unaufgefordert eröffnete Pull
+Requests können deshalb ohne inhaltliche Prüfung geschlossen werden. Die
+Apache-2.0-Lizenz erlaubt selbstverständlich weiterhin die dort beschriebenen
+Nutzungen und eigene Forks; daraus entsteht aber kein Anspruch auf Aufnahme in
+dieses Repository.
 
-## Branch- und Veröffentlichungsmodell
+## Willkommen: Issues
+
+GitHub Issues sind für Folgendes willkommen:
+
+- reproduzierbare Fehlerberichte;
+- Rückmeldungen zu realen Robotertests;
+- Fragen zur dokumentierten lokalen Installation;
+- Ideen und Verbesserungsvorschläge.
+
+Bitte Robotersystem, Betriebssystem, CodeON-Version beziehungsweise Commit,
+genaue Schritte und das beobachtete Ergebnis angeben. Bei Hardwareproblemen
+helfen außerdem Anschlussart, Bridge-Status und ein kurzer Logauszug ohne
+personenbezogene Daten oder Zugangsdaten.
+
+Es gibt keinen zugesicherten Support, keine Reaktionszeit und keine Garantie,
+dass ein Issue bearbeitet oder ein Vorschlag umgesetzt wird.
+
+## Interne Arbeitsweise des Projektinhabers
+
+Die folgenden Hinweise dokumentieren die Arbeitsweise innerhalb des Projekts;
+sie sind keine Aufforderung, einen Pull Request einzureichen.
+
+### Branch- und Veröffentlichungsmodell
 
 - `master` ist der öffentlich sichtbare, aktuelle Integrationsstand.
 - Neue Funktionen und riskante Änderungen entstehen auf kurzen,
@@ -18,7 +43,7 @@ keine zugesicherte Reaktionszeit und keine Garantie, dass vorgeschlagene
   signiertes oder annotiertes Backup-Tag erhalten.
 - Releases erhalten ein verständliches Changelog und ein versioniertes Tag.
 
-## Vor einer Änderung
+### Vor einer Änderung
 
 1. Aktuellen Stand holen und einen Feature-Branch erstellen.
 2. `AGENTS.md` und die betroffenen Modulhinweise lesen.
@@ -31,7 +56,7 @@ keine zugesicherte Reaktionszeit und keine Garantie, dass vorgeschlagene
 4. Roboterspezifisches Verhalten opt-in halten und mindestens einen
    Gegenbeweis für einen nicht betroffenen Konfigurationsmodus ergänzen.
 
-## Prüfungen
+### Prüfungen
 
 Mindestens die vom Impact-Werkzeug genannten Prüfungen ausführen. Der zentrale
 Graphvertrag läuft mit:
@@ -46,23 +71,13 @@ Upstream-Tests noch nicht auf den reduzierten CodeON-Pluginumfang angepasst sind
 Nicht ausgeführte Hardware- oder Browserprüfungen müssen im Pull Request klar
 genannt werden.
 
-## Generierte und ausgelieferte Dateien
+### Generierte und ausgelieferte Dateien
 
 - Frontendquellen liegen in `OpenRobertaWeb/src`; generierte Browserdateien
   werden nicht isoliert von ihren Quellen geändert.
 - Änderungen an ausgelieferten JARs müssen zu den gebauten Quellmodulen passen.
 - Laufzeitdatenbanken, Logs, lokale Indizes, `.env`-Dateien, Schlüssel und
   Zugangsdaten dürfen nicht committed werden.
-
-## Pull Requests
-
-Ein Pull Request sollte enthalten:
-
-- Problem und gewünschtes Verhalten;
-- betroffene Roboter und gemeinsame Komponenten;
-- ausgeführte Tests und bewusst ausgelassene Prüfungen;
-- Screenshots bei sichtbaren Änderungen;
-- Sicherheits- und Datenschutzfolgen, sofern vorhanden.
 
 Sicherheitslücken bitte nicht als öffentliches Issue melden. Dafür gilt
 `SECURITY.md`.
