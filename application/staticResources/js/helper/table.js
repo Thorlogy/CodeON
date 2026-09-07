@@ -1,1 +1,92 @@
-define(["require","exports","guiState.controller","blockly","util.roberta"],(function(t,e,i,n,o){Object.defineProperty(e,"__esModule",{value:!0}),e.CardView=e.CommonTable=void 0,function(t){t.options={buttonsAlign:"right",formatLoadingMessage:function(){return'<div class="pace"></div>'},height:o.calcDataTableHeight,icons:{paginationSwitchDown:"typcn-document-text",paginationSwitchUp:"typcn-book",refresh:"typcn-refresh"},iconsPrefix:"typcn",showRefresh:"true",resizable:"true"}}(e.CommonTable||(e.CommonTable={})),function(t){function e(t){return'<div class="cardViewDescription">'+t+"</div>"}function o(t){return t||(t="&nbsp;"),'<input class="infoTags" type="text" value="'+t+'" data-role="tagsinput"/>'}function r(t,e){var i=n.Xml.textToDom(t,n.getMainWorkspace()).getAttribute(e);return i||"&nbsp;"}t.options={cardView:"true",pageList:[12,24,48,96],pageSize:12,pagination:!0,search:!0,rowStyle:{classes:"col-xxl-2 col-lg-3 col-md-4 col-sm-6"}},t.robot=function(t){return'<div class="typcn typcn-'+i.findGroup(t)+'"></div>'},t.robotImage=function(t,e){return'<div class="text-center robotImage"><img src="/css/img/system_preview/'+t+("cozmo"===t||"apitor"===t?".svg":".jpg")+'" class="w-50" alt="'+e+'"/></div>'},t.name=function(t){return'<div class="cardViewName">'+t+"</div>"},t.description=e,t.programDescription=function(t){return e(r(t,"description"))},t.programTags=function(t){return o(r(t,"tags"))},t.tags=o,t.titleTypcn=function(t,e){return'<div><div class="cardViewLabel tutorialIcon typcn typcn-'+e+'"></div><span>'+t+"</span></div>"},t.titleLabel=function(t,e,i){return'<div class="'+i+'"><b><div class="cardViewLabel" lkey="Blockly.Msg.'+e+'">'+(n.Msg[e]||e)+":&nbsp;</div></b><span>"+t+"</span></div>"}}(e.CardView||(e.CardView={}))}));
+define(["require", "exports", "guiState.controller", "blockly", "util.roberta"], function (require, exports, GUISTATE_C, Blockly, UTIL) {
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.CardView = exports.CommonTable = void 0;
+    var CommonTable;
+    (function (CommonTable) {
+        CommonTable.options = {
+            buttonsAlign: 'right',
+            formatLoadingMessage: function () {
+                return '<div class="pace"></div>';
+            },
+            // @ts-ignore
+            height: UTIL.calcDataTableHeight,
+            icons: {
+                paginationSwitchDown: 'typcn-document-text',
+                paginationSwitchUp: 'typcn-book',
+                refresh: 'typcn-refresh',
+            },
+            iconsPrefix: 'typcn',
+            showRefresh: 'true',
+            resizable: 'true',
+        };
+    })(CommonTable = exports.CommonTable || (exports.CommonTable = {}));
+    var CardView;
+    (function (CardView) {
+        CardView.options = {
+            cardView: 'true',
+            pageList: [12, 24, 48, 96],
+            pageSize: 12,
+            pagination: true,
+            search: true,
+            rowStyle: {
+                classes: 'col-xxl-2 col-lg-3 col-md-4 col-sm-6',
+            },
+        };
+        function robot(robot) {
+            return '<div class="typcn typcn-' + GUISTATE_C.findGroup(robot) + '"></div>';
+        }
+        CardView.robot = robot;
+        function robotImage(robot, row) {
+            var extension = ['cozmo', 'apitor', 'rcx', 'edisonv2', 'rcj'].includes(robot) ? '.png' : '.jpg';
+            return '<div class="text-center robotImage"><img src="/css/img/system_preview/' + robot + extension + '" class="w-50" alt="' + row + '"/></div>';
+        }
+        CardView.robotImage = robotImage;
+        function name(value) {
+            return '<div class="cardViewName">' + value + '</div>';
+        }
+        CardView.name = name;
+        function description(description) {
+            return '<div class="cardViewDescription">' + description + '</div>';
+        }
+        CardView.description = description;
+        function programDescription(xml) {
+            var myDescription = getAttributeFromXml(xml, 'description');
+            return description(myDescription);
+        }
+        CardView.programDescription = programDescription;
+        function programTags(xml) {
+            var myTags = getAttributeFromXml(xml, 'tags');
+            return tags(myTags);
+        }
+        CardView.programTags = programTags;
+        function tags(tags) {
+            if (!tags) {
+                tags = '&nbsp;';
+            }
+            return '<input class="infoTags" type="text" value="' + tags + '" data-role="tagsinput"/>';
+        }
+        CardView.tags = tags;
+        function getAttributeFromXml(xml, attribute) {
+            var xmlDoc = Blockly.Xml.textToDom(xml, Blockly.getMainWorkspace());
+            var text = xmlDoc.getAttribute(attribute);
+            return text ? text : '&nbsp;';
+        }
+        function titleTypcn(value, typicon) {
+            return '<div><div class="cardViewLabel tutorialIcon typcn typcn-' + typicon + '"></div><span>' + value + '</span></div>';
+        }
+        CardView.titleTypcn = titleTypcn;
+        function titleLabel(text, label, type) {
+            var myLabel = Blockly.Msg[label] || label;
+            return ('<div class="' +
+                type +
+                '"><b><div class="cardViewLabel" lkey="Blockly.Msg.' +
+                label +
+                '">' +
+                myLabel +
+                ':&nbsp;</div></b><span>' +
+                text +
+                '</span></div>');
+        }
+        CardView.titleLabel = titleLabel;
+    })(CardView = exports.CardView || (exports.CardView = {}));
+});

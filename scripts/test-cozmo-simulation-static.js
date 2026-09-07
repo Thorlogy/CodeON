@@ -29,9 +29,20 @@ const actuators = read('OpenRobertaWeb/src/app/simulation/simulationLogic/robot.
 ['export class CozmoChassis', "MOTOR_L: 'L'", "MOTOR_R: 'R'", "PORT: 'a'", 'liftPosition', 'holdLiftPosition'].forEach(function (feature) {
     assert.ok(actuators.includes(feature), 'Cozmo-Chassis-Merkmal fehlt: ' + feature);
 });
+assert.ok(actuators.includes('system_preview/cozmo.svg'), 'Die technische Cozmo-Draufsicht der 2D-Simulation fehlt.');
 
 const controller = read('OpenRobertaServer/staticResources/js/app/roberta/controller/guiState.controller.js');
-assert.ok(controller.includes('system_preview/cozmo.svg'), 'Cozmo-Hintergrundbild der Programmierbuehne fehlt.');
+assert.ok(controller.includes('system_preview/cozmo.png'), 'Cozmo-Hintergrundbild der Programmierbuehne fehlt.');
+const startView = read('OpenRobertaWeb/src/app/roberta/controller/startView.controller.ts');
+const robotTable = read('OpenRobertaWeb/src/helper/table.ts');
+['cozmo', 'apitor', 'rcx', 'edisonv2', 'rcj'].forEach(function (robot) {
+    assert.ok(startView.includes(`'${robot}'`), 'Die Roboterwahl kennt die neue Illustration nicht: ' + robot);
+    assert.ok(robotTable.includes(`'${robot}'`), 'Die Robotertabelle kennt die neue Illustration nicht: ' + robot);
+});
+['cozmo.png', 'apitor.png', 'rcx.png', 'edisonv2.png', 'rcj.png'].forEach(function (image) {
+    assert.ok(fs.statSync(path.join(root, 'OpenRobertaServer/staticResources/css/img/system_preview', image)).size > 1000, 'Illustration fehlt: ' + image);
+    assert.ok(fs.statSync(path.join(root, 'application/staticResources/css/img/system_preview', image)).size > 1000, 'Paketillustration fehlt: ' + image);
+});
 
 const runControllerSource = read('OpenRobertaWeb/src/app/roberta/controller/progRun.controller.ts');
 assert.ok(runControllerSource.includes("GUISTATE_C.getRobotGroup() === 'cozmo'"), 'Cozmo-spezifische Starthilfe fehlt.');

@@ -87,7 +87,9 @@ export function init(callback: Function) {
         });
 
     const preloadAll = (images) => Promise.all(images.map(preload));
-    let images = robots.map((robot) => '/css/img/system_preview/' + robot.name + (robot.name === 'cozmo' || robot.name === 'apitor' ? '.svg' : '.jpg'));
+    let images = robots.map(
+        (robot) => '/css/img/system_preview/' + robot.name + (['cozmo', 'apitor', 'rcx', 'edisonv2', 'rcj'].includes(robot.name) ? '.png' : '.jpg')
+    );
     $.when(preloadAll(images)).then((images) => {
         initRobotList();
         initRobotToolbar();

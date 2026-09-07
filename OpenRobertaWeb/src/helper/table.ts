@@ -38,7 +38,7 @@ export namespace CardView {
     }
 
     export function robotImage(robot: string, row): string {
-        const extension = robot === 'cozmo' || robot === 'apitor' ? '.svg' : '.jpg';
+        const extension = ['cozmo', 'apitor', 'rcx', 'edisonv2', 'rcj'].includes(robot) ? '.png' : '.jpg';
         return '<div class="text-center robotImage"><img src="/css/img/system_preview/' + robot + extension + '" class="w-50" alt="' + row + '"/></div>';
     }
 

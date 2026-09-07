@@ -26,6 +26,7 @@ const actuators = read('OpenRobertaWeb/src/app/simulation/simulationLogic/robot.
 ['export class ApitorChassis', "MOTOR_L: 'M2'", "MOTOR_R: 'M3'", "color: '#f58220'"].forEach(function (feature) {
     assert.ok(actuators.includes(feature), 'Apitor-Chassis-Merkmal fehlt: ' + feature);
 });
+assert.ok(actuators.includes('system_preview/apitor.svg'), 'Die technische Apitor-Draufsicht der 2D-Simulation fehlt.');
 
 const behaviour = read('OpenRobertaWeb/src/app/nepostackmachine/interpreter.robotSimBehaviour.ts');
 assert.ok(behaviour.includes("String(name).toLowerCase() === 'apitor'"), 'Apitor-Geschwindigkeitsskalierung fehlt.');

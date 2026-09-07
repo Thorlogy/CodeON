@@ -270,7 +270,7 @@ function setRobot(robot, result, opt_init) {
         var overviewLanguage = (document.documentElement.lang || 'de').toLowerCase().indexOf('de') === 0 ? 'de' : 'en';
         $('#blocklyDiv').css(
             'background',
-            'linear-gradient(rgba(255,255,255,.91), rgba(255,255,255,.91)), url(../../../../css/img/system_preview/cozmo.svg) center / auto 72% no-repeat'
+            'linear-gradient(rgba(255,255,255,.91), rgba(255,255,255,.91)), url(../../../../css/img/system_preview/cozmo.png) center / auto 72% no-repeat'
         );
         $('#bricklyDiv').css(
             'background',
