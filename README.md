@@ -2,9 +2,10 @@
 
 [![CodeON architecture safety graph](https://github.com/Thorlogy/CodeON/actions/workflows/codeon_architecture_graph.yml/badge.svg)](https://github.com/Thorlogy/CodeON/actions/workflows/codeon_architecture_graph.yml)
 
-> **Privates Projekt.** CodeON ist ein privates Hobbyprojekt und läuft lokal auf
-> dem eigenen Rechner. Es gibt keinen von mir betriebenen Server, keinen Support,
-> keine Zusagen zu Reaktionszeiten und keine Garantie für Weiterentwicklung.
+> **Unabhängiges Hobbyprojekt.** CodeON ist ein privat initiiertes, öffentlich
+> einsehbares Open-Source-Hobbyprojekt und läuft lokal auf dem eigenen Rechner.
+> Es gibt keinen von mir betriebenen Server, keinen Support, keine Zusagen zu
+> Reaktionszeiten und keine Garantie für Weiterentwicklung.
 > Die Software wird "as is" bereitgestellt, siehe LICENSE.
 >
 > Wer eine gepflegte, gehostete Umgebung für Schule, Kurs oder Verein sucht,
@@ -18,6 +19,51 @@ CodeON basiert auf dem Apache-2.0-lizenzierten Projekt Open Roberta und wird als
 eigenständiges Projekt weiterentwickelt. Lizenz-, Herkunfts-, Marken- und
 Drittanbieterhinweise stehen in [LICENSE](LICENSE) und [NOTICE](NOTICE). Diese
 Hinweise gelten unabhängig vom eigenständigen CodeON-Produktnamen.
+
+![CodeON mit Cozmo im grafischen Programmeditor](docs/assets/codeon-cozmo-editor.png)
+
+## Was CodeON auszeichnet
+
+- **lokal zuerst:** Anwendung und Roboter-Bridges laufen auf dem eigenen Rechner;
+- **ein gemeinsamer Einstieg:** die Starter öffnen CodeON und starten die lokalen
+  Bridges für RCX, Cozmo und Apitor automatisch;
+- **alte und neue Lernrobotik:** vom LEGO RCX bis zu Cozmo und Apitor Robot X;
+- **grafisches Programmieren plus Simulation:** Blockprogramme, 2D-/3D-Ansichten
+  und reale Hardware verwenden möglichst dieselben didaktischen Abläufe;
+- **optionaler Code Buddy:** lokal mit Ollama oder nach ausdrücklicher Zustimmung
+  mit einem selbst gewählten Cloud-Anbieter;
+- **nachvollziehbare Weiterentwicklung:** Architektur-, Code- und Änderungsgraphen
+  helfen dabei, Auswirkungen über mehrere Robotersysteme hinweg zu prüfen.
+
+## Projektstatus
+
+CodeON ist eine **Preview** für neugierige Einzelanwender und Experimente mit
+vorhandener Hardware. Es ist keine betreute Unterrichtsplattform und noch kein
+Produktivangebot.
+
+| System | Reale Hardware | Simulation | Aktueller Hinweis |
+| --- | --- | --- | --- |
+| LEGO RCX | auf macOS geprüft | geprüft | Übertragung und Ton bestätigt; NQC und ein kompatibler IR-Tower werden benötigt |
+| Cozmo | auf macOS geprüft | 2D/3D geprüft | Fahren, Lift ohne Last, Gesichtserkennung und Not-Stopp bestätigt; das Aufheben eines Light Cubes ist noch offen |
+| Apitor Robot X | auf macOS geprüft | 2D/3D geprüft | Motoren, Stopp und Farbsensor bestätigt; Infrarot- und LED-Hardwaretests sind noch offen |
+
+Die Windows- und Linux-Starter werden automatisiert geprüft, wurden aber noch
+nicht mit allen aufgeführten Robotern physisch abgenommen. Weitere bekannte
+Grenzen und der genaue Prüfumfang stehen in den
+[Preview-Hinweisen](docs/CodeON_Public_Preview.md).
+
+## Verhältnis zu Open Roberta
+
+CodeON ist kein Ersatz für das Open Roberta Lab, sondern setzt einen anderen
+Schwerpunkt: eine kleine, lokal betriebene Hobby-Distribution mit kuratierten
+Roboterintegrationen und automatisch gestarteten Hardware-Bridges. Open Roberta
+bietet eine wesentlich breitere, mehrsprachige und institutionell gepflegte
+Plattform mit vielen Robotersystemen und einem gehosteten Lab; es kann außerdem
+selbst betrieben werden.
+
+CodeON ist ein unabhängiges Projekt und weder mit Open Roberta oder dem
+Fraunhofer IAIS verbunden noch von ihnen unterstützt oder empfohlen. Herkunft,
+Lizenz und Markenhinweise sind in [NOTICE](NOTICE) dokumentiert.
 
 ## Schnellstart mit LEGO RCX
 
@@ -155,9 +201,10 @@ Testauswahl liefert der [Architecture and Impact Graph](docs/CodeON_Architecture
 Die Integrationssuite kann mit `mvn clean install -PrunIT` ausgeführt werden,
 benötigt aber die jeweiligen Cross-Compiler und weitere Systemwerkzeuge.
 
-## Mitwirken und Sicherheit
+## Feedback und Sicherheit
 
-- Entwicklungs- und Branchregeln: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Fehler, Fragen und Ideen: [GitHub Issues](https://github.com/Thorlogy/CodeON/issues)
+- Feedback- und Beitragsregeln: [CONTRIBUTING.md](CONTRIBUTING.md)
 - Sicherheitslücken vertraulich melden: [SECURITY.md](SECURITY.md)
 - Änderungen an gemeinsamem Code vorab prüfen:
   `npm run graph:impact -- <geänderte Pfade>`
@@ -187,7 +234,8 @@ benötigt aber die jeweiligen Cross-Compiler und weitere Systemwerkzeuge.
 ## Hilfe und Support
 
 Fehler, Fragen und Verbesserungsvorschläge bitte als
-[GitHub-Issue](https://github.com/Thorlogy/CodeON/issues) melden. Vor einer
+[GitHub-Issue](https://github.com/Thorlogy/CodeON/issues) melden. Das Projekt
+nimmt derzeit keine Pull Requests oder sonstigen Codebeiträge an. Vor einer
 öffentlichen Produktivbereitstellung müssen betreibereigene Datenschutz-,
 Impressums-, Nutzungs- und SMTP-Konfigurationen hinterlegt werden.
 

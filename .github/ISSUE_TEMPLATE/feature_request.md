@@ -1,17 +1,18 @@
 ---
-name: Feature request
-about: Suggest an idea for this project
+name: Idee
+about: Eine unverbindliche Idee für CodeON vorschlagen
 
 ---
 
-**Is your feature request related to a problem? Please describe.**
- - A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+**Ausgangslage**
+Welches Problem oder welches Lernziel betrifft die Idee?
 
-**Describe the solution you'd like**
- - A clear and concise description of what you want to happen.
+**Vorschlag**
+Wie könnte sich CodeON aus deiner Sicht verhalten?
 
-**Describe alternatives you've considered**
- - A clear and concise description of any alternative solutions or features you've considered.
+**Alternativen**
+Welche anderen Wege hast du bereits betrachtet?
 
-**Additional context**
- - Add any other context or screenshots or a mockup about the feature request here.
+**Zusätzlicher Kontext**
+Vorschläge sind willkommen, begründen aber keinen Anspruch auf Umsetzung. Bitte
+keinen Pull Request oder fertigen Code einreichen.
