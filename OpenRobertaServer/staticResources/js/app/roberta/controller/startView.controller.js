@@ -1,4 +1,4 @@
-define(["require", "exports", "guiState.controller", "startView.model", "table", "jquery", "blockly", "tour.controller", "program.controller", "import.controller", "util.roberta", "message", "bootstrap-table"], function (require, exports, GUISTATE_C, STARTVIEW, table_1, $, Blockly, TOUR_C, PROGRAM_C, IMPORT_C, UTIL, MSG) {
+define(["require", "exports", "guiState.controller", "startView.model", "table", "jquery", "blockly", "util.roberta", "message", "bootstrap-table"], function (require, exports, GUISTATE_C, STARTVIEW, table_1, $, Blockly, UTIL, MSG) {
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.init = void 0;
     var robots = [];
@@ -401,17 +401,6 @@ define(["require", "exports", "guiState.controller", "startView.model", "table",
             });
             $('#robotTable').bootstrapTable('filterBy', myFilter, myFilterAlgorithm);
         });
-        $('#startImportProg').onWrap('click', function (e) {
-            e.stopPropagation();
-            IMPORT_C.importXmlFromStart(mainCallback);
-        }, 'import clicked');
-        $('#takeATour').onWrap('click', function (e) {
-            e.stopPropagation();
-            mainCallback('ev3lejosv1', {}, function () {
-                PROGRAM_C.newProgram(true);
-                TOUR_C.start('welcome');
-            });
-        }, 'take a tour clicked');
     }
     function translate($element) {
         $element.find('[lkey]').each(function (index) {

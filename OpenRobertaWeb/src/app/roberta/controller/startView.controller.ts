@@ -13,9 +13,6 @@ import * as $ from 'jquery';
 import 'bootstrap-table';
 // @ts-ignore
 import * as Blockly from 'blockly';
-import * as TOUR_C from 'tour.controller';
-import * as PROGRAM_C from 'program.controller';
-import * as IMPORT_C from 'import.controller';
 import * as UTIL from 'util.roberta';
 import * as MSG from 'message';
 
@@ -427,25 +424,6 @@ function initRobotListEvents() {
         });
         $('#robotTable').bootstrapTable('filterBy', myFilter, myFilterAlgorithm);
     });
-    $('#startImportProg').onWrap(
-        'click',
-        function (e) {
-            e.stopPropagation();
-            IMPORT_C.importXmlFromStart(mainCallback);
-        },
-        'import clicked'
-    );
-    $('#takeATour').onWrap(
-        'click',
-        function (e) {
-            e.stopPropagation();
-            mainCallback('ev3lejosv1', {}, function () {
-                PROGRAM_C.newProgram(true);
-                TOUR_C.start('welcome');
-            });
-        },
-        'take a tour clicked'
-    );
 }
 
 function translate($element: JQuery<HTMLElement>): void {
