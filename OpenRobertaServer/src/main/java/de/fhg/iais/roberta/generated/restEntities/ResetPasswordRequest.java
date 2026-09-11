@@ -189,7 +189,7 @@ public class ResetPasswordRequest extends BaseRequest {
 
     @Override
     public String toString() {
-        return "ResetPasswordRequest [immutable=" + this.immutable + ", cmd=" + this.cmd + ", resetPasswordLink=" + this.resetPasswordLink + ", newPassword=" + this.newPassword + " ]";
+        return "ResetPasswordRequest [immutable=" + this.immutable + ", cmd=" + this.cmd + ", resetPasswordLink=<redacted>, newPassword=<redacted> ]";
     }
 
     @Override

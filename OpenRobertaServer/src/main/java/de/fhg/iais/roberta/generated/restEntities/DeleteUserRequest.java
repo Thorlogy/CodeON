@@ -181,7 +181,7 @@ public class DeleteUserRequest extends BaseRequest {
 
     @Override
     public String toString() {
-        return "DeleteUserRequest [immutable=" + this.immutable + ", cmd=" + this.cmd + ", accountName=" + this.accountName + ", password=" + this.password + " ]";
+        return "DeleteUserRequest [immutable=" + this.immutable + ", cmd=" + this.cmd + ", accountName=" + this.accountName + ", password=<redacted> ]";
     }
 
     @Override
