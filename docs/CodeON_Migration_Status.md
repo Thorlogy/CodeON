@@ -103,6 +103,11 @@ connection. RCX and Apitor also opened their program views with a single first
 selection. The Cozmo hardware commands, transport protocol and bridge adapter
 were not changed by this correction.
 
+The physical acceptance test was completed successfully on 2026-09-14. After
+switching the Mac to Cozmo's Wi-Fi, one Cozmo selection established the local
+connection and a block program was transferred to the real robot. This closes
+the first-selection regression for the current release candidate.
+
 ## Deferred Cozmo hardware issue
 
 Physical lifting of a Light Cube remains deliberately deferred. The unloaded

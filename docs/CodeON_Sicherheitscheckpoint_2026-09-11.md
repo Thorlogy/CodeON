@@ -81,3 +81,8 @@ Die Korrektur verändert weder das Bridge-Protokoll noch Motor-, Lift- oder
 Sensorbefehle. Frische Browserprüfungen bestätigten den Ein-Klick-Start für
 Cozmo, RCX und Apitor; die automatisierten Cozmo-, Apitor-, RCX-, Sensor-, 3D-,
 Architekturgraph-, Codegraph- und Code-Buddy-Sicherheitsprüfungen waren grün.
+
+Der anschließende Hardwaretest am 14.09.2026 war ebenfalls erfolgreich: Nach
+dem Wechsel in das Cozmo-WLAN ließ sich Cozmo beim ersten Auswählen verbinden
+und programmieren. Damit ist der getrennte Ein-Klick-Fix auch praktisch
+abgenommen.
