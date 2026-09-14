@@ -65,6 +65,17 @@ CodeON ist ein unabhängiges Projekt und weder mit Open Roberta oder dem
 Fraunhofer IAIS verbunden noch von ihnen unterstützt oder empfohlen. Herkunft,
 Lizenz und Markenhinweise sind in [NOTICE](NOTICE) dokumentiert.
 
+## Einen neuen Roboter lokal integrieren
+
+Das [CodeON Robot Integration Kit](RobotIntegrationKit/README.md) trennt
+herstellerspezifische Hardwareadapter vom gemeinsamen Bridge-Protokoll. Der
+aktuelle [Integrationsvertrag](RobotIntegrationKit/docs/INTEGRATION_CONTRACT.md)
+beschreibt zwei sichere Wege: einen Bridge-Prototyp für Hardwareexperimente und
+ein vollständiges, lokal auswählbares CodeON-Robotersystem. Ein geführter
+Generator ist geplant; bis dahin dokumentiert die
+[Checkliste](RobotIntegrationKit/docs/NEW_ROBOT_CHECKLIST.md) alle verbindlichen
+Prüfschritte und manuellen Registrierungen.
+
 ## Schnellstart mit LEGO RCX
 
 Für die normale RCX-Nutzung sind kein eigener Maven- oder npm-Build erforderlich.

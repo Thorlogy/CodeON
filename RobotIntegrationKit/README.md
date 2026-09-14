@@ -17,6 +17,10 @@ adapter contract and must pass the shared conformance tests.
 See `docs/PROTOCOL_V1.md` for the wire contract and `python/tests` for the
 executable adapter contract.
 
+Before starting a new integration, choose between a bridge prototype and a
+complete CodeON robot system in `docs/INTEGRATION_CONTRACT.md`. The shorter
+execution list is available in `docs/NEW_ROBOT_CHECKLIST.md`.
+
 ## Local development
 
 The core and fake adapter have no runtime dependencies:
@@ -70,28 +74,12 @@ Suggested first hardware program:
 4. track the face once and stop camera analysis;
 5. stop the program and verify that all motors and the camera stop immediately.
 
-## Cozmo parallel tasks
+## Cozmo behavior-control compatibility
 
-The Cozmo expert toolbox contains a `Parallel task` category. Each task header
-starts a separate, visually independent block stack. Place the task stacks
-next to each other in the Blockly workspace to make simultaneous behaviours
-visible.
-
-- All task headers currently use the `program start` trigger.
-- Priorities range from 0 to 100; the higher number wins.
-- Tasks may run simultaneously while they use different resources, for
-  example driving and speech.
-- If two tasks request the same resource, the higher-priority task takes it
-  over. Equal priorities produce a visible conflict and stop the program
-  safely.
-- Driving, head, lift, audio, camera/face tracking, display and lights are
-  arbitrated independently.
-- Finishing or stopping a task releases its resources. The global stop button
-  terminates every task and sends the hardware emergency stop.
-
-Programs without a parallel-task header retain the original single-stack
-execution path. The parallel-task format is currently Cozmo-specific so other
-robots are unaffected.
+User-defined parallel-task blocks are currently not exposed in the Cozmo
+toolboxes because their behavior was not clear enough for learners. Some
+internal scheduling support remains for compatibility and built-in behaviors,
+but it is not part of the supported integration template for new robots.
 
 ## Apitor Robot X
 
