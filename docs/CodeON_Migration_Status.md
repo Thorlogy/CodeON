@@ -82,13 +82,26 @@ The following issues were reported on 2026-09-01 and addressed on 2026-09-02.
 | --- | --- | --- |
 | `COZMO-UI-01` | The RCX-only mission control is hidden whenever a non-RCX robot is selected. | No RCX-specific label is visible in a Cozmo workspace; the RCX keeps its mission control. |
 | `COZMO-UI-02` | The `Quellcodes` control uses a delegated click handler and therefore survives replacement of the program controls. | A single click reliably opens the source-code view after initialisation and robot changes. |
-| `COZMO-UI-03` | The fixed Cozmo system supplies no editable configuration XML, so the shared initializer now uses a valid empty Cozmo document. The start view also opens the selected robot once its navigation is ready, independently of later optional controllers. | One click on Cozmo's `loslegen` control selects Cozmo and opens its workspace. Other robots continue to load their supplied configuration XML. |
+| `COZMO-UI-03` | The fixed Cozmo system supplies no editable configuration XML. Its read-only configuration workspace is initialized without a toolbox and with a valid empty CodeON `block_set`. Program-tab activation and bridge initialization now run in one ordered lifecycle after all controllers are ready; the former competing start-view polling loop was removed. | One click on Cozmo's `loslegen` control selects Cozmo, opens its workspace and starts the bridge connection. Other robots continue to load their supplied configuration XML. |
 
 Browser acceptance was repeated on 2026-09-02 with cache version
 `codeon-live-20260902-22`: one Cozmo selection click opened the program view,
 the RCX mission control remained hidden, and one source-code click opened the
 generated code view without console errors. A separate RCX selection opened
 the program view and retained the visible `RCX-Missionen` control.
+
+The first-selection path was rechecked and corrected on 2026-09-14 with cache
+version `codeon-live-20260914-35`. The root cause was a combination of a
+competing tab-opening loop and Cozmo's fixed configuration resource beginning
+with an XML comment. The legacy CodeON Blockly parser accepts only a single
+`block_set` or `toolbox_set` root and therefore aborted the first controller
+initialization before the program tab and bridge were activated.
+
+Acceptance was repeated in fresh browser sessions. A single first selection of
+Cozmo opened the program view and immediately attempted the local bridge
+connection. RCX and Apitor also opened their program views with a single first
+selection. The Cozmo hardware commands, transport protocol and bridge adapter
+were not changed by this correction.
 
 ## Deferred Cozmo hardware issue
 

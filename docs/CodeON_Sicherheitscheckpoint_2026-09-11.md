@@ -67,3 +67,17 @@ sie gehört nicht zu den hier festgehaltenen Sicherheitshärtungen.
 Riskantere Eingriffe wie ein Jetty-Upgrade, eine Änderung der XML-Verarbeitung,
 eine Passwort-Hash-Migration oder Änderungen an Bridge-Bindings und
 Browser-Origin-Regeln wurden bewusst zurückgestellt.
+
+## Nachtrag vom 14.09.2026
+
+Der oben beschriebene Anschlussfehler ist in einem getrennten Änderungssatz
+behoben. Der erste Cozmo-Klick öffnet nun den Programmbereich und startet den
+Bridge-Verbindungsversuch. Ursache war kein Fehler der Bridge und keine Folge
+der Sicherheitshärtungen, sondern ein Abbruch beim Aufbau der festen,
+nicht editierbaren Cozmo-Konfigurationsansicht sowie ein konkurrierender
+Tab-Öffnungsmechanismus.
+
+Die Korrektur verändert weder das Bridge-Protokoll noch Motor-, Lift- oder
+Sensorbefehle. Frische Browserprüfungen bestätigten den Ein-Klick-Start für
+Cozmo, RCX und Apitor; die automatisierten Cozmo-, Apitor-, RCX-, Sensor-, 3D-,
+Architekturgraph-, Codegraph- und Code-Buddy-Sicherheitsprüfungen waren grün.
