@@ -255,7 +255,7 @@ public class FullRestRequest {
 
     @Override
     public String toString() {
-        return "FullRestRequest [immutable=" + this.immutable + ", initToken=" + this.initToken + ", log=" + this.log + ", data=" + this.data + " ]";
+        return "FullRestRequest [immutable=" + this.immutable + ", initToken=<redacted>, log=<redacted>, data=<redacted> ]";
     }
 
     @Override

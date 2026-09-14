@@ -80,6 +80,7 @@ public class ClientUser {
      * -
      */
     private static final long TIMEOUT_CREATE_USER_REQUESTS = TimeUnit.MINUTES.toMillis(10);
+    private static final long PASSWORD_RESET_LINK_VALIDITY = TimeUnit.HOURS.toMillis(24);
     private static final ConcurrentHashMap<String, Long> mapOfOpenCreateUserRequests = new ConcurrentHashMap<>();
 
     private final RobotCommunicator brickCommunicator;
@@ -97,6 +98,10 @@ public class ClientUser {
     // TODO: static variables (they are changed!) in a REST resource are very dangerous. Refactor, i.e. remove!
     private static final String[] statusText = new String[2];
     private static long statusTextTimestamp;
+
+    static boolean isPasswordResetLinkValid(LostPassword lostPassword) {
+        return lostPassword != null && new Date().getTime() - lostPassword.getCreated().getTime() <= PASSWORD_RESET_LINK_VALIDITY;
+    }
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -557,14 +562,7 @@ public class ClientUser {
 
             String resetPasswordLink = request.getResetPasswordLink();
             LostPassword lostPassword = lostPasswordProcessor.loadLostPassword(resetPasswordLink);
-            boolean recoverySuccessful;
-            if ( lostPassword != null ) {
-                // check for expiration of the lost-password-link
-                Date currentTime = new Date();
-                recoverySuccessful = (currentTime.getTime() - lostPassword.getCreated().getTime()) / 3600000.0 <= 24;
-            } else {
-                recoverySuccessful = false;
-            }
+            boolean recoverySuccessful = isPasswordResetLinkValid(lostPassword);
             Key statusKey = recoverySuccessful ? Key.SERVER_SUCCESS : Key.USER_PASSWORD_RECOVERY_EXPIRED_URL;
             up.setStatus(ProcessorStatus.SUCCEEDED, statusKey, responseParameters);
             response.setResetPasswordLinkExpired(recoverySuccessful);
@@ -606,10 +604,12 @@ public class ClientUser {
             String resetPasswordLink = request.getResetPasswordLink();
             String newPassword = request.getNewPassword();
             LostPassword lostPassword = lostPasswordProcessor.loadLostPassword(resetPasswordLink);
-            if ( lostPassword != null ) {
-                up.resetPassword(lostPassword.getUserID(), newPassword);
-            } else {
+            if ( lostPassword == null ) {
                 up.setStatus(ProcessorStatus.FAILED, lostPasswordProcessor.getMessage(), new HashMap<>());
+            } else if ( !isPasswordResetLinkValid(lostPassword) ) {
+                up.setStatus(ProcessorStatus.FAILED, Key.USER_PASSWORD_RECOVERY_EXPIRED_URL, new HashMap<>());
+            } else {
+                up.resetPassword(lostPassword.getUserID(), newPassword);
             }
             if ( up.getMessage() == Key.USER_UPDATE_SUCCESS ) {
                 lostPasswordProcessor.deleteLostPassword(resetPasswordLink);

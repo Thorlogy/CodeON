@@ -344,7 +344,7 @@ public class UserRequest extends BaseRequest {
 
     @Override
     public String toString() {
-        return "UserRequest [immutable=" + this.immutable + ", cmd=" + this.cmd + ", accountName=" + this.accountName + ", password=" + this.password + ", userEmail=" + this.userEmail + ", userName=" + this.userName + ", role=" + this.role + ", language=" + this.language + ", isYoungerThen14=" + this.isYoungerThen14 + " ]";
+        return "UserRequest [immutable=" + this.immutable + ", cmd=" + this.cmd + ", accountName=" + this.accountName + ", password=<redacted>, userEmail=" + this.userEmail + ", userName=" + this.userName + ", role=" + this.role + ", language=" + this.language + ", isYoungerThen14=" + this.isYoungerThen14 + " ]";
     }
 
     @Override

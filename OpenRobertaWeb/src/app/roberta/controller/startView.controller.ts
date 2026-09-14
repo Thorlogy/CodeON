@@ -13,9 +13,6 @@ import * as $ from 'jquery';
 import 'bootstrap-table';
 // @ts-ignore
 import * as Blockly from 'blockly';
-import * as TOUR_C from 'tour.controller';
-import * as PROGRAM_C from 'program.controller';
-import * as IMPORT_C from 'import.controller';
 import * as UTIL from 'util.roberta';
 import * as MSG from 'message';
 
@@ -87,7 +84,9 @@ export function init(callback: Function) {
         });
 
     const preloadAll = (images) => Promise.all(images.map(preload));
-    let images = robots.map((robot) => '/css/img/system_preview/' + robot.name + (robot.name === 'cozmo' || robot.name === 'apitor' ? '.svg' : '.jpg'));
+    let images = robots.map(
+        (robot) => '/css/img/system_preview/' + robot.name + (['cozmo', 'apitor', 'rcx', 'edisonv2', 'rcj'].includes(robot.name) ? '.png' : '.jpg')
+    );
     $.when(preloadAll(images)).then((images) => {
         initRobotList();
         initRobotToolbar();
@@ -112,21 +111,6 @@ function initRobotToolbar() {
 function initRobotList() {
     const myLang = GUISTATE_C.getLanguage();
     const startRobots = robots.slice(0, numPopularRobots);
-    function openSelectedRobotProgram(robot: string, attempt: number): void {
-        const programTab = document.getElementById('tabProgram');
-        const navigationReady = $('.notStart.disabled').length === 0;
-        if (GUISTATE_C.getRobot() === robot && navigationReady) {
-            programTab.click();
-            if (programTab.classList.contains('active')) {
-                return;
-            }
-        }
-        if (attempt < 50) {
-            window.setTimeout(function () {
-                openSelectedRobotProgram(robot, attempt + 1);
-            }, 100);
-        }
-    }
     function clickRobot(e, value, row, optBookmark?) {
         e.stopPropagation();
         $('.accordion-collapse.show').collapse('hide');
@@ -145,9 +129,6 @@ function initRobotList() {
             robot = 'calliope2017';
         }
         mainCallback(robot, extensions); // TODO call mainCallback(row.name, extensions)
-        window.setTimeout(function () {
-            openSelectedRobotProgram(robot, 0);
-        }, 0);
         UTIL.cleanUri();
         if (optBookmark) {
             var uri;
@@ -425,25 +406,6 @@ function initRobotListEvents() {
         });
         $('#robotTable').bootstrapTable('filterBy', myFilter, myFilterAlgorithm);
     });
-    $('#startImportProg').onWrap(
-        'click',
-        function (e) {
-            e.stopPropagation();
-            IMPORT_C.importXmlFromStart(mainCallback);
-        },
-        'import clicked'
-    );
-    $('#takeATour').onWrap(
-        'click',
-        function (e) {
-            e.stopPropagation();
-            mainCallback('ev3lejosv1', {}, function () {
-                PROGRAM_C.newProgram(true);
-                TOUR_C.start('welcome');
-            });
-        },
-        'take a tour clicked'
-    );
 }
 
 function translate($element: JQuery<HTMLElement>): void {

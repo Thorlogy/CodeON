@@ -29,7 +29,11 @@ function init() {
  *            toolbox
  */
 function initView() {
-    var toolbox = GUISTATE_C.getConfigurationToolbox();
+    // Cozmo's hardware is fixed. Passing its deliberately empty toolbox to
+    // Blockly aborts the first robot initialization in some Blockly builds.
+    // A workspace without a toolbox still supports the read-only overview and
+    // the fixed configuration XML used by validators.
+    var toolbox = GUISTATE_C.getRobotGroup() === 'cozmo' ? null : GUISTATE_C.getConfigurationToolbox();
     bricklyWorkspace = Blockly.inject(document.getElementById('bricklyDiv'), {
         path: '/blockly/',
         toolbox: toolbox,
@@ -53,10 +57,15 @@ function initView() {
         group: GUISTATE_C.getRobotGroup(),
         robot: GUISTATE_C.getRobot(),
     });
-    // Configurations can't be executed
-    bricklyWorkspace.robControls.runOnBrick.setAttribute('style', 'display : none');
+    // Configurations can't be executed. A fixed configuration without a
+    // toolbox may not create Blockly's optional robot-control buttons.
+    if (bricklyWorkspace.robControls && bricklyWorkspace.robControls.runOnBrick) {
+        bricklyWorkspace.robControls.runOnBrick.setAttribute('style', 'display : none');
+    }
     GUISTATE_C.setBricklyWorkspace(bricklyWorkspace);
-    bricklyWorkspace.robControls.disable('saveProgram');
+    if (bricklyWorkspace.robControls) {
+        bricklyWorkspace.robControls.disable('saveProgram');
+    }
 }
 
 function initEvents() {
@@ -91,10 +100,12 @@ function initEvents() {
         bricklyWorkspace.setVisible(false);
     });
 
-    Blockly.bindEvent_(bricklyWorkspace.robControls.saveProgram, 'mousedown', null, function (e) {
-        LOG.info('saveConfiguration from brickly button');
-        saveToServer();
-    });
+    if (bricklyWorkspace.robControls && bricklyWorkspace.robControls.saveProgram) {
+        Blockly.bindEvent_(bricklyWorkspace.robControls.saveProgram, 'mousedown', null, function (e) {
+            LOG.info('saveConfiguration from brickly button');
+            saveToServer();
+        });
+    }
 
     bricklyWorkspace.addChangeListener(function (event) {
         if (listenToBricklyEvents && event.type != Blockly.Events.UI && GUISTATE_C.isConfigurationSaved()) {
@@ -410,11 +421,12 @@ function resetConfVisIfAvailable() {
 }
 
 function configurationToBricklyWorkspace(xml) {
-    if (GUISTATE_C.getRobotGroup() === 'cozmo' && (typeof xml !== 'string' || xml.trim() === '')) {
+    if (GUISTATE_C.getRobotGroup() === 'cozmo') {
         // Cozmo has a fixed built-in configuration and therefore legitimately
-        // has no configurable Blockly XML. The shared configuration view still
-        // needs a valid empty document during its one-time initialization.
-        xml = '<xml xmlns="https://developers.google.com/blockly/xml"></xml>';
+        // has no configurable Blockly XML. Its server-side block_set describes
+        // that fixed hardware but is not a Blockly workspace document. The
+        // read-only overview therefore uses a valid empty CodeON block set.
+        xml = '<block_set xmlns="http://de.fhg.iais.roberta.blockly" robottype="cozmo" xmlversion="3.1"></block_set>';
     }
     // removing changelistener in blockly doesn't work, so no other way
     listenToBricklyEvents = false;

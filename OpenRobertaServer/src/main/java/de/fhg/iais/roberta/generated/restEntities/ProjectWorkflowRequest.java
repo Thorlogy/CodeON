@@ -412,7 +412,7 @@ public class ProjectWorkflowRequest extends BaseRequest {
 
     @Override
     public String toString() {
-        return "ProjectWorkflowRequest [immutable=" + this.immutable + ", cmd=" + this.cmd + ", programName=" + this.programName + ", configurationName=" + this.configurationName + ", progXML=" + this.progXML + ", confXML=" + this.confXML + ", SSID=" + this.SSID + ", password=" + this.password + ", language=" + this.language + ", robot=" + this.robot + " ]";
+        return "ProjectWorkflowRequest [immutable=" + this.immutable + ", cmd=" + this.cmd + ", programName=" + this.programName + ", configurationName=" + this.configurationName + ", progXML=" + this.progXML + ", confXML=" + this.confXML + ", SSID=" + this.SSID + ", password=<redacted>, language=" + this.language + ", robot=" + this.robot + " ]";
     }
 
     @Override

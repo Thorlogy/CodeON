@@ -45,6 +45,13 @@ assert.strictEqual(changePlannerImpact.risk, 'medium');
 assert.deepStrictEqual(changePlannerImpact.unknownPaths, []);
 assert.ok(changePlannerImpact.requiredChecks.some((test) => test.id === 'test.code-graph'));
 
+const constantsImpact = impactForPaths(graph, ['scripts/generate-codeon-constants.js']);
+assert.strictEqual(constantsImpact.risk, 'critical');
+assert.deepStrictEqual(constantsImpact.unknownPaths, []);
+assert.deepStrictEqual(constantsImpact.affectedRobots.map((robot) => robot.id), ['robot.apitor', 'robot.cozmo', 'robot.edison', 'robot.rcj', 'robot.rcx']);
+assert.ok(constantsImpact.requiredChecks.some((test) => test.id === 'test.constants'));
+assert.ok(constantsImpact.requiredChecks.some((test) => test.id === 'test.java-reactor'));
+
 const ciImpact = impactForPaths(graph, ['.github/workflows/unit_test_triggered_by_develop_push.yml']);
 assert.strictEqual(ciImpact.risk, 'high');
 assert.strictEqual(ciImpact.reviewRequired, true);
@@ -67,6 +74,7 @@ assert.match(unitTestWorkflow, /push:\s*\n\s+branches: \[ master, develop \]/);
 assert.match(unitTestWorkflow, /permissions:\s*\n\s+contents: read/);
 assert.match(unitTestWorkflow, /persist-credentials: false/);
 assert.match(unitTestWorkflow, /distribution: 'temurin'/);
+assert.match(unitTestWorkflow, /run: npm run test:constants/);
 assert.ok(unitTestWorkflow.includes("run: mvn --batch-mode -pl OpenRobertaRobot,RobotEdison,RobotSpike,RobotCozmo,RobotApitor,RobotRCX -am -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test"));
 assert.match(unitTestWorkflow, /run: mvn --batch-mode -pl OpenRobertaServer -am -DskipTests package/);
 assertActionsArePinned(unitTestWorkflow, 'Unit test workflow');

@@ -29,9 +29,20 @@ const actuators = read('OpenRobertaWeb/src/app/simulation/simulationLogic/robot.
 ['export class CozmoChassis', "MOTOR_L: 'L'", "MOTOR_R: 'R'", "PORT: 'a'", 'liftPosition', 'holdLiftPosition'].forEach(function (feature) {
     assert.ok(actuators.includes(feature), 'Cozmo-Chassis-Merkmal fehlt: ' + feature);
 });
+assert.ok(actuators.includes('system_preview/cozmo.svg'), 'Die technische Cozmo-Draufsicht der 2D-Simulation fehlt.');
 
 const controller = read('OpenRobertaServer/staticResources/js/app/roberta/controller/guiState.controller.js');
-assert.ok(controller.includes('system_preview/cozmo.svg'), 'Cozmo-Hintergrundbild der Programmierbuehne fehlt.');
+assert.ok(controller.includes('system_preview/cozmo.png'), 'Cozmo-Hintergrundbild der Programmierbuehne fehlt.');
+const startView = read('OpenRobertaWeb/src/app/roberta/controller/startView.controller.ts');
+const robotTable = read('OpenRobertaWeb/src/helper/table.ts');
+['cozmo', 'apitor', 'rcx', 'edisonv2', 'rcj'].forEach(function (robot) {
+    assert.ok(startView.includes(`'${robot}'`), 'Die Roboterwahl kennt die neue Illustration nicht: ' + robot);
+    assert.ok(robotTable.includes(`'${robot}'`), 'Die Robotertabelle kennt die neue Illustration nicht: ' + robot);
+});
+['cozmo.png', 'apitor.png', 'rcx.png', 'edisonv2.png', 'rcj.png'].forEach(function (image) {
+    assert.ok(fs.statSync(path.join(root, 'OpenRobertaServer/staticResources/css/img/system_preview', image)).size > 1000, 'Illustration fehlt: ' + image);
+    assert.ok(fs.statSync(path.join(root, 'application/staticResources/css/img/system_preview', image)).size > 1000, 'Paketillustration fehlt: ' + image);
+});
 
 const runControllerSource = read('OpenRobertaWeb/src/app/roberta/controller/progRun.controller.ts');
 assert.ok(runControllerSource.includes("GUISTATE_C.getRobotGroup() === 'cozmo'"), 'Cozmo-spezifische Starthilfe fehlt.');
@@ -97,19 +108,28 @@ assert.ok(
 });
 
 const mainSource = read('OpenRobertaWeb/src/main.js');
-assert.ok(mainSource.includes('function showProgramTab(callback, params)'), 'Der gemeinsame Ein-Klick-Wechsel in die Programmansicht fehlt.');
+assert.ok(
+    mainSource.includes('function showProgramTab(callback, params, opt_onProgramTabReady)'),
+    'Der gemeinsame Ein-Klick-Wechsel in die Programmansicht fehlt.'
+);
 assert.ok(mainSource.includes('missionPanelController.updateVisibility();'), 'Die Sichtbarkeit der RCX-Missionen wird beim Roboterwechsel nicht aktualisiert.');
-assert.strictEqual((mainSource.match(/showProgramTab\(callback, params\);/g) || []).length, 2, 'Der Ein-Klick-Wechsel muss sowohl die Erstinitialisierung als auch spätere Roboterwechsel abdecken.');
+const initProgrammingSource = mainSource.slice(mainSource.indexOf('function initProgramming'), mainSource.indexOf('var ALLOWED_PING_NUM'));
+assert.strictEqual(
+    (initProgrammingSource.match(/showProgramTab\(callback, params(?:, function \(\) \{)?/g) || []).length,
+    2,
+    'Der Ein-Klick-Wechsel muss sowohl die Erstinitialisierung als auch spätere Roboterwechsel abdecken.'
+);
 assert.ok(mainSource.indexOf('progCodeController.init();') < mainSource.indexOf('configurationController.init();'), 'Der Quellcode-Knopf wird nicht vor optionalen Roboteransichten initialisiert.');
 
-const startViewSource = read('OpenRobertaWeb/src/app/roberta/controller/startView.controller.ts');
-assert.ok(startViewSource.includes('function openSelectedRobotProgram(robot: string, attempt: number)'), 'Der Startbildschirm besitzt keine zustandsbasierte Ein-Klick-Absicherung.');
-assert.ok(startViewSource.includes("GUISTATE_C.getRobot() === robot && navigationReady"), 'Die Ein-Klick-Absicherung wartet nicht auf den tatsächlich gewählten Roboter.');
-assert.ok(startViewSource.includes('openSelectedRobotProgram(robot, 0);'), 'Die Absicherung wird nach der Roboterwahl nicht gestartet.');
 
 const configurationControllerSource = read('OpenRobertaWeb/src/app/roberta/controller/configuration.controller.js');
 assert.ok(configurationControllerSource.includes("GUISTATE_C.getRobotGroup() === 'cozmo'"), 'Die fehlende feste Cozmo-Konfiguration wird nicht roboterspezifisch behandelt.');
-assert.ok(configurationControllerSource.includes("xml = '<xml xmlns=\"https://developers.google.com/blockly/xml\"></xml>';"), 'Für Cozmo fehlt ein gültiges leeres Konfigurationsdokument.');
+assert.ok(
+    configurationControllerSource.includes(
+        "xml = '<block_set xmlns=\"http://de.fhg.iais.roberta.blockly\" robottype=\"cozmo\" xmlversion=\"3.1\"></block_set>';"
+    ),
+    'Für Cozmo fehlt ein gültiges leeres Konfigurationsdokument.'
+);
 
 const missionPanelSource = read('OpenRobertaWeb/src/app/roberta/controller/missionPanel.controller.ts');
 assert.ok(missionPanelSource.includes("GUISTATE_C.getRobotGroup() === 'rcx'"), 'RCX-Missionen sind nicht auf den RCX begrenzt.');
@@ -145,7 +165,7 @@ assert.ok(codeControllerSource.includes("target.closest('#codeButton')"), 'Die d
     assert.strictEqual(read(pair[0]), read(pair[1]), 'Server- und Paketversion müssen identisch sein: ' + pair[0]);
 });
 
-const liveCacheVersion = 'codeon-live-20260902-22';
+const liveCacheVersion = 'codeon-live-20260914-35';
 [
     'OpenRobertaWeb/src/main.js',
     'OpenRobertaServer/staticResources/js/main.js',

@@ -255,7 +255,7 @@ public class LoginRequest extends BaseRequest {
 
     @Override
     public String toString() {
-        return "LoginRequest [immutable=" + this.immutable + ", cmd=" + this.cmd + ", accountName=" + this.accountName + ", password=" + this.password + ", userGroupOwner=" + this.userGroupOwner + ", userGroupName=" + this.userGroupName + " ]";
+        return "LoginRequest [immutable=" + this.immutable + ", cmd=" + this.cmd + ", accountName=" + this.accountName + ", password=<redacted>, userGroupOwner=" + this.userGroupOwner + ", userGroupName=" + this.userGroupName + " ]";
     }
 
     @Override

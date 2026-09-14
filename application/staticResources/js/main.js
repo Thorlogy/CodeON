@@ -28,7 +28,7 @@
 })();
 require.config({
     baseUrl: '.',
-    urlArgs: 'v=codeon-live-20260902-22',
+    urlArgs: 'v=codeon-live-20260914-35',
     paths: {
         ace: 'libs/ace/ace',
         ace_lang: 'libs/ace/ext-language_tools',
@@ -376,14 +376,32 @@ function init() {
     });
 }
 var mainCallbackCalled = false;
-function showProgramTab(callback, params) {
-    missionPanelController.updateVisibility();
-    $('#tabProgram').oneWrap('shown.bs.tab', function () {
-        // The final program view (including #simButton) now exists.
+function showProgramTab(callback, params, opt_onProgramTabReady) {
+    var programTabReadyHandled = false;
+    var programTabReady = function () {
+        if (programTabReadyHandled) {
+            return;
+        }
+        programTabReadyHandled = true;
         progSimController.createProgSimInstance();
+        opt_onProgramTabReady && opt_onProgramTabReady();
         callback && typeof callback === 'function' && callback.apply(void 0, params);
-    });
+    };
+    missionPanelController.updateVisibility();
+    $('#tabProgram').oneWrap('shown.bs.tab', programTabReady);
     $('#tabProgram').tabWrapShow();
+    // Some Bootstrap 5 builds no longer expose the legacy jQuery .tab()
+    // plugin used by tabWrapShow. Use the tab's native click as a narrowly
+    // scoped fallback after all program controllers have been initialized.
+    if (!$('#tabProgram').hasClass('active')) {
+        var programTab = document.getElementById('tabProgram');
+        programTab && programTab.click();
+    }
+    // Bootstrap can emit the event synchronously. Complete initialization
+    // exactly once if the tab is active after either activation path.
+    if ($('#tabProgram').hasClass('active')) {
+        programTabReady();
+    }
 }
 function initProgramming(robot, extensions, opt_callback, opt_params) {
     var callback = opt_callback;
@@ -414,8 +432,15 @@ function initProgramming(robot, extensions, opt_callback, opt_params) {
             confDeleteController.init();
             progShareController.init();
             guiStateController.setInitialState();
-            connectionController.initConnection(robot);
-            showProgramTab(callback, params);
+            // The Blockly workspace and final program controls must exist
+            // before a local robot connection is initialized. Otherwise the
+            // first Cozmo selection can lose this initialization and only a
+            // second selection starts the bridge connection.
+            showProgramTab(callback, params, function () {
+                connectionController
+                    .initConnection(robot)
+                    .catch(function (error) { return LOG.error('Initial robot connection failed: ' + error); });
+            });
         });
     }
     else {

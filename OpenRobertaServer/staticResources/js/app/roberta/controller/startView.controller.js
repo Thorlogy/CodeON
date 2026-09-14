@@ -1,4 +1,4 @@
-define(["require", "exports", "guiState.controller", "startView.model", "table", "jquery", "blockly", "tour.controller", "program.controller", "import.controller", "util.roberta", "message", "bootstrap-table"], function (require, exports, GUISTATE_C, STARTVIEW, table_1, $, Blockly, TOUR_C, PROGRAM_C, IMPORT_C, UTIL, MSG) {
+define(["require", "exports", "guiState.controller", "startView.model", "table", "jquery", "blockly", "util.roberta", "message", "bootstrap-table"], function (require, exports, GUISTATE_C, STARTVIEW, table_1, $, Blockly, UTIL, MSG) {
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.init = void 0;
     var robots = [];
@@ -65,7 +65,7 @@ define(["require", "exports", "guiState.controller", "startView.model", "table",
             });
         };
         var preloadAll = function (images) { return Promise.all(images.map(preload)); };
-        var images = robots.map(function (robot) { return '/css/img/system_preview/' + robot.name + (robot.name === 'cozmo' || robot.name === 'apitor' ? '.svg' : '.jpg'); });
+        var images = robots.map(function (robot) { return '/css/img/system_preview/' + robot.name + (['cozmo', 'apitor', 'rcx', 'edisonv2', 'rcj'].includes(robot.name) ? '.png' : '.jpg'); });
         $.when(preloadAll(images)).then(function (images) {
             initRobotList();
             initRobotToolbar();
@@ -89,21 +89,6 @@ define(["require", "exports", "guiState.controller", "startView.model", "table",
     function initRobotList() {
         var myLang = GUISTATE_C.getLanguage();
         var startRobots = robots.slice(0, numPopularRobots);
-        function openSelectedRobotProgram(robot, attempt) {
-            var programTab = document.getElementById('tabProgram');
-            var navigationReady = $('.notStart.disabled').length === 0;
-            if (GUISTATE_C.getRobot() === robot && navigationReady) {
-                programTab.click();
-                if (programTab.classList.contains('active')) {
-                    return;
-                }
-            }
-            if (attempt < 50) {
-                window.setTimeout(function () {
-                    openSelectedRobotProgram(robot, attempt + 1);
-                }, 100);
-            }
-        }
         function clickRobot(e, value, row, optBookmark) {
             e.stopPropagation();
             $('.accordion-collapse.show').collapse('hide');
@@ -122,9 +107,6 @@ define(["require", "exports", "guiState.controller", "startView.model", "table",
                 robot = 'calliope2017';
             }
             mainCallback(robot, extensions); // TODO call mainCallback(row.name, extensions)
-            window.setTimeout(function () {
-                openSelectedRobotProgram(robot, 0);
-            }, 0);
             UTIL.cleanUri();
             if (optBookmark) {
                 var uri;
@@ -401,17 +383,6 @@ define(["require", "exports", "guiState.controller", "startView.model", "table",
             });
             $('#robotTable').bootstrapTable('filterBy', myFilter, myFilterAlgorithm);
         });
-        $('#startImportProg').onWrap('click', function (e) {
-            e.stopPropagation();
-            IMPORT_C.importXmlFromStart(mainCallback);
-        }, 'import clicked');
-        $('#takeATour').onWrap('click', function (e) {
-            e.stopPropagation();
-            mainCallback('ev3lejosv1', {}, function () {
-                PROGRAM_C.newProgram(true);
-                TOUR_C.start('welcome');
-            });
-        }, 'take a tour clicked');
     }
     function translate($element) {
         $element.find('[lkey]').each(function (index) {
