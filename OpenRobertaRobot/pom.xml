@@ -83,25 +83,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>de.fhg.iais.tools</groupId>
-                <artifactId>ConstantGenerator</artifactId>
-                <configuration>
-                    <constantsSource>./constantsSource.txt</constantsSource>
-                    <javaSrcDir>./src/main/java</javaSrcDir>
-                    <javaPackageName>de.fhg.iais.roberta.util.basic</javaPackageName>
-                    <javaClassName>C</javaClassName>
-                    <typescriptOutFile>../OpenRobertaWeb/src/app/nepostackmachine/interpreter.constants.ts</typescriptOutFile>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>default-cli</id>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
 </project>

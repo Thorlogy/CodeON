@@ -20,6 +20,7 @@
 
     { "id": "test.graph", "type": "test", "label": "Architecture graph contract", "command": "npm run test:architecture-graph" },
     { "id": "test.code-graph", "type": "test", "label": "Local code graph contract", "command": "npm run test:code-graph" },
+    { "id": "test.constants", "type": "test", "label": "Generated Java and TypeScript constants", "command": "npm run test:constants" },
     { "id": "test.sensors", "type": "test", "label": "Cross-robot sensor toolboxes", "command": "node scripts/test-system-sensor-toolboxes.js" },
     { "id": "test.cozmo-contract", "type": "test", "label": "Cozmo fixed-configuration contract", "command": "mvn -pl RobotCozmo -am -Dtest=CozmoFixedConfigurationTest -DfailIfNoTests=false -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test" },
     { "id": "test.cozmo-simulation", "type": "test", "label": "Cozmo simulation contract", "command": "node scripts/test-cozmo-simulation-static.js" },
@@ -81,6 +82,14 @@
       "robots": [],
       "tests": ["test.graph", "test.code-graph"],
       "reason": "Developer guidance or the reviewed impact model changed."
+    },
+    {
+      "id": "generated-constants",
+      "paths": ["OpenRobertaRobot/constantsSource.txt", "OpenRobertaRobot/src/main/java/de/fhg/iais/roberta/util/basic/C.java", "OpenRobertaWeb/src/app/nepostackmachine/interpreter.constants.ts", "scripts/generate-codeon-constants.js"],
+      "risk": "critical",
+      "robots": ["robot.rcx", "robot.edison", "robot.rcj", "robot.cozmo", "robot.apitor"],
+      "tests": ["test.graph", "test.constants", "test.java-reactor", "test.server-package"],
+      "reason": "Shared interpreter constants must stay byte-for-byte synchronized between Java and TypeScript without a private build dependency."
     },
     {
       "id": "code-buddy-retrieval",

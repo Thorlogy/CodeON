@@ -159,6 +159,20 @@ an `127.0.0.1` und werden beim Beenden gemeinsam wieder beendet. Fehlt eine opti
 Roboter-Abhängigkeit, bleiben Server und die übrigen Systeme verfügbar; Hinweise
 stehen in `admin/logs/robot-bridges.log`.
 
+### Gemeinsame Konstanten ändern
+
+Die Quelle der gemeinsamen Java- und TypeScript-Konstanten ist
+`OpenRobertaRobot/constantsSource.txt`. Nach einer Änderung werden beide
+eingecheckten Ausgabedateien lokal neu erzeugt:
+
+```bash
+npm run generate:constants
+```
+
+Der Generator benötigt nur Node.js und ersetzt den früher verwendeten, nicht
+öffentlich verfügbaren Maven-Generator. Mit `npm run test:constants` lässt sich
+prüfen, ob beide Ausgabedateien aktuell sind; dieselbe Prüfung läuft auch in CI.
+
 ### Frontend bearbeiten
 
 Die bearbeitbaren Frontendquellen liegen in `OpenRobertaWeb/src`. Der Build erzeugt
@@ -180,6 +194,7 @@ npx gulp watch
 ### Tests
 
 ```bash
+npm run test:constants
 npm run test:architecture-graph
 npm run test:code-graph
 node scripts/test-system-sensor-toolboxes.js
