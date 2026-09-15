@@ -34,6 +34,18 @@ fixed repository paths. Even in this focused mode it checks ID and port
 collisions across the complete manifest set. It never executes commands stored
 in project metadata.
 
+For a guided, read-only progress view, use:
+
+```shell
+npm run robot:status -- --id cozmo
+```
+
+The status separates manifest validity, bridge registration, complete-system
+registration, declared verification commands and physical hardware acceptance.
+It deliberately does not run tests or infer that a declared check passed. Use
+`--json` for machine-readable output. An incomplete bridge is normal progress
+in this view; `robot:check` remains the strict consistency gate for CI.
+
 Preview a new, deliberately disconnected bridge scaffold with:
 
 ```shell

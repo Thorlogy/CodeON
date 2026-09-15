@@ -300,9 +300,11 @@ function exportedClassBody(contents, className) {
 }
 
 function repositoryChecks(manifest) {
-    const errors = [];
+    const bridgeErrors = [];
+    const completeErrors = [];
     const warnings = [];
-    const ok = (condition, message) => { if (!condition) errors.push(message); };
+    let activeErrors = bridgeErrors;
+    const ok = (condition, message) => { if (!condition) activeErrors.push(message); };
     const adapterFile = `RobotIntegrationKit/python/src/codeon_robot_bridge/${manifest.bridge.adapter}_adapter.py`;
     const adapterTestFile = `RobotIntegrationKit/python/tests/test_${manifest.bridge.adapter}_adapter.py`;
     ok(exists(adapterFile), `Missing bridge adapter: ${adapterFile}`);
@@ -326,7 +328,8 @@ function repositoryChecks(manifest) {
         ok(new RegExp(`^${manifest.bridge.optionalDependency.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*=`, 'm').test(pyproject), `Missing Python optional dependency group ${manifest.bridge.optionalDependency}.`);
     }
 
-    if (manifest.scope !== 'complete') return { errors, warnings };
+    if (manifest.scope !== 'complete') return { errors: [...bridgeErrors], warnings, bridgeErrors, completeErrors };
+    activeErrors = completeErrors;
     const modulePath = manifest.module;
     ok(exists(`${modulePath}/pom.xml`), `Missing robot module ${modulePath}/pom.xml.`);
     const rootPom = readText('pom.xml');
@@ -380,7 +383,21 @@ function repositoryChecks(manifest) {
     ok(nodeIds.has(`robot.${manifest.id}`), `Architecture graph lacks robot.${manifest.id}.`);
     ok(graph.nodes.some((node) => node.type === 'module' && node.path === modulePath), `Architecture graph lacks module ${modulePath}.`);
     for (const checkId of manifest.requiredChecks) ok(nodeIds.has(checkId), `Architecture graph lacks required check ${checkId}.`);
-    return { errors, warnings };
+    return { errors: [...bridgeErrors, ...completeErrors], warnings, bridgeErrors, completeErrors };
+}
+
+function requiredCheckCommands(requiredChecks) {
+    if (!Array.isArray(requiredChecks)) return [];
+    const graph = JSON.parse(readText(ARCHITECTURE_GRAPH));
+    const commands = new Map(
+        (graph.nodes || [])
+            .filter((node) => node.type === 'test'
+                && typeof node.id === 'string'
+                && typeof node.command === 'string'
+                && /^[^\u0000-\u001f\u007f]{1,2000}$/u.test(node.command))
+            .map((node) => [node.id, node.command])
+    );
+    return requiredChecks.map((id) => ({ id, command: commands.get(id) || null }));
 }
 
 module.exports = {
@@ -393,6 +410,7 @@ module.exports = {
     readManifestFile,
     registeredRobotIds,
     repositoryChecks,
+    requiredCheckCommands,
     reservedLocalPorts,
     resolveManifestPath,
     safeId,

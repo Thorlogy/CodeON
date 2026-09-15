@@ -172,6 +172,12 @@ consistency checks: finding a capability name, connection construction or 3D
 registration does not prove runtime behavior or replace adapter, browser,
 simulation and physical hardware tests.
 
+`npm run robot:status -- --id <robot-id>` presents the same integration as a
+read-only sequence of manifest, bridge, complete-system, verification and
+hardware phases. It is an orientation aid, not a test runner or CI replacement:
+declared test commands are always displayed as pending and must be run and
+recorded separately through the normal workflow.
+
 `npm run robot:new -- --dry-run ...` previews a fail-closed bridge scaffold,
 including exact paths and hashes in normal output. Add `--json` when the exact
 generated content is required. Only a separate invocation with `--write`,

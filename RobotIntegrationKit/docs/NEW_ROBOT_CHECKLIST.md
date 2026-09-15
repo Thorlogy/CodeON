@@ -13,6 +13,15 @@ on the schema rather than by changing a reference robot. Run
 as `bridge` until every complete-system field exists. A draft must never be
 added to the active robot whitelist.
 
+At any point, inspect the next incomplete phase without changing files:
+
+```shell
+npm run robot:status -- --id <id>
+```
+
+This guide reports static repository evidence only. Its verification phase
+lists required commands but never executes them or labels them successful.
+
 To preview a safe bridge scaffold without writing files, run:
 
 ```shell
