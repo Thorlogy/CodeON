@@ -35,7 +35,7 @@
       "type": "string",
       "minLength": 1,
       "maxLength": 80,
-      "pattern": "^[^\\u0000-\\u001F\\u007F]+$"
+      "pattern": "^(?!\\s)[^\\u0000-\\u001F\\u007F]*[^\\s\\u0000-\\u001F\\u007F]$"
     },
     "scope": {
       "enum": ["bridge", "complete"]
@@ -118,7 +118,9 @@
       "additionalProperties": {
         "oneOf": [
           {
-            "type": "number"
+            "type": "number",
+            "minimum": -1000000000,
+            "maximum": 1000000000
           },
           {
             "type": "object",
@@ -126,10 +128,14 @@
             "required": ["min", "max"],
             "properties": {
               "min": {
-                "type": "number"
+                "type": "number",
+                "minimum": -1000000000,
+                "maximum": 1000000000
               },
               "max": {
-                "type": "number"
+                "type": "number",
+                "minimum": -1000000000,
+                "maximum": 1000000000
               }
             }
           }
@@ -160,6 +166,7 @@
     "knownLimitations": {
       "type": "array",
       "maxItems": 20,
+      "uniqueItems": true,
       "items": {
         "type": "string",
         "minLength": 1,
@@ -201,6 +208,27 @@
     {
       "if": {
         "properties": {
+          "scope": {
+            "const": "bridge"
+          }
+        }
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            { "required": ["configurationMode"] },
+            { "required": ["module"] },
+            { "required": ["browserConnectionClass"] },
+            { "required": ["browserBehaviourClass"] },
+            { "required": ["previewImage"] },
+            { "required": ["simulation"] }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
           "activation": {
             "const": "active"
           }
@@ -210,6 +238,22 @@
         "properties": {
           "scope": {
             "const": "complete"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "hardwareStatus": {
+            "const": "verified-with-limitations"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "knownLimitations": {
+            "minItems": 1
           }
         }
       }

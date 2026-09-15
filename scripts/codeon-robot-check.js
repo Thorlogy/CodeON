@@ -18,14 +18,36 @@ function usage() {
 
 function parseArguments(args) {
     const options = { id: null, json: false, help: false };
+    const seen = new Set();
     for (let index = 0; index < args.length; index += 1) {
         const arg = args[index];
-        if (arg === '--json') options.json = true;
+        if (arg === '--json') {
+            if (seen.has(arg)) throw new Error('Duplicate option: --json');
+            seen.add(arg);
+            options.json = true;
+        }
         else if (arg === '--help' || arg === '-h') options.help = true;
-        else if (arg === '--id' && index + 1 < args.length) options.id = args[++index];
+        else if (arg === '--id' && index + 1 < args.length && !args[index + 1].startsWith('--')) {
+            if (seen.has(arg)) throw new Error('Duplicate option: --id');
+            seen.add(arg);
+            options.id = args[++index];
+        }
         else throw new Error(`Unknown or incomplete argument: ${arg}`);
     }
     return options;
+}
+
+function buildReport(loaded, selectedId = null, checkRepository = repositoryChecks) {
+    const selected = selectedId === null ? loaded : loaded.filter(({ fileName }) => fileName === `${selectedId}.json`);
+    if (selectedId !== null && selected.length === 0) throw new Error(`No robot integration manifest found for id: ${selectedId}`);
+    const results = selected.map(({ fileName, manifest }) => {
+        const errors = validateManifest(manifest, fileName);
+        const repository = errors.length === 0 ? checkRepository(manifest) : { errors: [], warnings: [] };
+        return { id: manifest.id || fileName, file: fileName, errors: [...errors, ...repository.errors], warnings: repository.warnings };
+    });
+    const setErrors = validateManifestSet(loaded);
+    const errorCount = results.reduce((sum, result) => sum + result.errors.length, 0) + setErrors.length;
+    return { ok: errorCount === 0, checked: results.length, manifestSetChecked: loaded.length, errorCount, results, setErrors };
 }
 
 function run(args = process.argv.slice(2)) {
@@ -34,26 +56,21 @@ function run(args = process.argv.slice(2)) {
         console.log(usage());
         return 0;
     }
-    const paths = options.id ? [resolveManifestPath(options.id)] : listManifestPaths();
+    if (options.id) resolveManifestPath(options.id);
+    const paths = listManifestPaths();
     if (paths.length === 0) throw new Error('No robot integration manifests found.');
     const loaded = paths.map((filePath) => ({ fileName: path.basename(filePath), manifest: readManifestFile(filePath) }));
-    const results = loaded.map(({ fileName, manifest }) => {
-        const errors = validateManifest(manifest, fileName);
-        const repository = errors.length === 0 ? repositoryChecks(manifest) : { errors: [], warnings: [] };
-        return { id: manifest.id || fileName, file: fileName, errors: [...errors, ...repository.errors], warnings: repository.warnings };
-    });
-    const setErrors = validateManifestSet(loaded);
-    const errorCount = results.reduce((sum, result) => sum + result.errors.length, 0) + setErrors.length;
-    const report = { ok: errorCount === 0, checked: results.length, errorCount, results, setErrors };
+    const report = buildReport(loaded, options.id);
     if (options.json) console.log(JSON.stringify(report, null, 2));
     else {
-        for (const result of results) {
+        for (const result of report.results) {
             console.log(`${result.errors.length ? 'FAIL' : 'OK'} ${result.id} (${result.file})`);
             for (const warning of result.warnings) console.log(`  WARN ${warning}`);
             for (const error of result.errors) console.log(`  ERROR ${error}`);
         }
-        for (const error of setErrors) console.log(`ERROR ${error}`);
-        console.log(`${report.ok ? 'Robot integration checks passed' : 'Robot integration checks failed'}: ${results.length} manifest(s), ${errorCount} error(s).`);
+        for (const error of report.setErrors) console.log(`ERROR ${error}`);
+        const scope = options.id ? `${report.checked} selected manifest(s), ${report.manifestSetChecked} checked globally` : `${report.checked} manifest(s)`;
+        console.log(`${report.ok ? 'Robot integration checks passed' : 'Robot integration checks failed'}: ${scope}, ${report.errorCount} error(s).`);
     }
     return report.ok ? 0 : 1;
 }
@@ -68,4 +85,4 @@ if (require.main === module) {
     }
 }
 
-module.exports = { parseArguments, run };
+module.exports = { buildReport, parseArguments, run };

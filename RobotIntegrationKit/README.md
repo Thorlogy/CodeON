@@ -29,8 +29,10 @@ npm run robot:check
 ```
 
 Validate only one known robot with `npm run robot:check -- --id cozmo`. The
-command accepts an allowlisted robot ID, reads only from the manifest directory
-and never executes commands stored in project metadata.
+command accepts only an ID for an existing checked manifest and reads only
+fixed repository paths. Even in this focused mode it checks ID and port
+collisions across the complete manifest set. It never executes commands stored
+in project metadata.
 
 Preview a new, deliberately disconnected bridge scaffold with:
 
@@ -39,11 +41,15 @@ npm run robot:new -- --dry-run --id myrobot --name "My Robot" \
   --transport ble --port 2299 --host macos
 ```
 
-This first generator stage has no write mode. It prints the draft manifest,
-planned files and content hashes, rejects existing IDs, files and bridge ports,
-and never modifies the repository. The scaffold exposes no actuator or sensor
-and refuses to connect until its hardware protocol has been implemented and
-reviewed.
+This first generator stage has no write mode. Its normal output prints the
+draft manifest plus planned paths and content hashes; `--json` additionally
+contains the exact generated content. It rejects IDs already present in the
+architecture graph, active robot list or manifests, existing target files, and
+ports reserved by CodeON, a local launcher or another manifest. An optional
+dependency name must begin with the new robot ID and must not reuse an existing
+extra. The command never modifies the repository. The scaffold exposes no
+actuator or sensor and refuses to connect until its hardware protocol has been
+implemented and reviewed.
 
 ## Local development
 

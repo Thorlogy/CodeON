@@ -62,7 +62,7 @@ registrations:
 | Capabilities and limits | `capabilities.py` and the adapter manifest | Use a stable lowercase robot identifier and conservative limits. |
 | Vendor adapter | `RobotIntegrationKit/python/src/codeon_robot_bridge/<id>_adapter.py` | Keep vendor imports isolated and failures explicit. |
 | Adapter selection | `RobotIntegrationKit/python/src/codeon_robot_bridge/server.py` | Register the adapter without weakening host, origin or size limits. |
-| Optional dependency | `RobotIntegrationKit/python/pyproject.toml` | Put vendor packages in a robot-specific extra. |
+| Optional dependency | `RobotIntegrationKit/python/pyproject.toml` | Put vendor packages in a new robot-specific extra named `<id>` or `<id>-<purpose>`. |
 | Shared contract | `RobotIntegrationKit/python/tests/test_bridge_contract.py` | Preserve protocol, heartbeat and stop behavior. |
 | Robot tests | `RobotIntegrationKit/python/tests/test_<id>_adapter.py` | Cover success, failure, limits and repeated stop. |
 | Local launch | platform launcher and its tests | Add only after manual startup works; use a unique loopback port. |
@@ -159,11 +159,23 @@ documentation allows another person to reproduce both setup and acceptance.
 
 `npm run robot:check` validates every manifest and its repository registrations
 without modifying files. Use `npm run robot:check -- --id <robot-id>` for one
-known manifest. The checker accepts no arbitrary manifest path, does not invoke
-shell commands and treats commands in the architecture graph as informational.
+known manifest. A focused check still detects ID and port collisions across all
+manifests. The checker accepts no arbitrary manifest path, does not invoke shell
+commands and treats commands in the architecture graph as informational.
+
+The JSON Schema checks portable structure and the cross-field rules it can
+express. `robot:check` is authoritative for relationships that standard JSON
+Schema cannot express here, including ordered ranges, ID-derived adapter,
+preview and browser class names, robot-specific dependency names, repository
+registrations and global uniqueness. Repository checks are deliberately static
+consistency checks: finding a capability name, connection construction or 3D
+registration does not prove runtime behavior or replace adapter, browser,
+simulation and physical hardware tests.
 
 `npm run robot:new -- --dry-run ...` previews a fail-closed bridge scaffold,
-including exact paths, content and hashes. This first stage intentionally has
-no write mode, accepts no output or template path and makes no registrations.
-Neither tool infers a proprietary protocol, invents safe motor limits or claims
-hardware verification.
+including exact paths and hashes in normal output. Add `--json` when the exact
+generated content is required. This first stage intentionally has no write
+mode, accepts no output or template path and makes no registrations. It also
+rejects identifiers and local ports already reserved by active CodeON systems,
+launchers or manifests. Neither tool infers a proprietary protocol, invents
+safe motor limits or claims hardware verification.

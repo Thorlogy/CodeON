@@ -6,10 +6,12 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const {
-    MANIFEST_DIR,
     ROOT,
     listManifestPaths,
+    optionalDependencyGroups,
     readManifestFile,
+    registeredRobotIds,
+    reservedLocalPorts,
     safeId,
     validateManifest,
     validateManifestSet
@@ -78,7 +80,10 @@ function validateOptions(options) {
     if (!Array.isArray(options.hosts) || options.hosts.length === 0) throw new Error('At least one --host is required.');
     if (new Set(options.hosts).size !== options.hosts.length) throw new Error('Duplicate host.');
     for (const host of options.hosts) if (!HOSTS.has(host)) throw new Error(`Unsupported host: ${host}`);
-    if (options.optionalDependency !== undefined && (typeof options.optionalDependency !== 'string' || !/^[a-z][a-z0-9-]{0,47}$/.test(options.optionalDependency))) throw new Error('Optional dependency group has an invalid name.');
+    if (options.optionalDependency !== undefined) {
+        if (typeof options.optionalDependency !== 'string' || !/^[a-z][a-z0-9-]{0,47}$/.test(options.optionalDependency)) throw new Error('Optional dependency group has an invalid name.');
+        if (options.optionalDependency !== options.id && !options.optionalDependency.startsWith(`${options.id}-`)) throw new Error('Optional dependency group must be robot-specific and start with the robot id.');
+    }
 }
 
 function adapterClassFor(id) {
@@ -147,6 +152,11 @@ function plannedFile(relativePath, content) {
 
 function buildPlan(options) {
     validateOptions(options);
+    if (registeredRobotIds().has(options.id)) throw new Error(`Robot id is already registered: ${options.id}`);
+    const port = Number(options.port);
+    const portOwners = reservedLocalPorts().get(port);
+    if (portOwners) throw new Error(`Local port ${port} is already reserved by ${[...portOwners].sort().join(', ')}.`);
+    if (options.optionalDependency && optionalDependencyGroups().has(options.optionalDependency)) throw new Error(`Python optional dependency group already exists: ${options.optionalDependency}`);
     const manifest = buildManifest(options);
     const manifestErrors = validateManifest(manifest, `${options.id}.json`);
     if (manifestErrors.length) throw new Error(`Generated manifest is invalid: ${manifestErrors[0]}`);

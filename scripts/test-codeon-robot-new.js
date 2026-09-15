@@ -6,7 +6,12 @@ const assert = require('assert');
 const childProcess = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const { ROOT } = require('./codeon-robot-manifest');
+const {
+    ROOT,
+    optionalDependencyGroups,
+    registeredRobotIds,
+    reservedLocalPorts
+} = require('./codeon-robot-manifest');
 const {
     adapterClassFor,
     buildPlan,
@@ -80,9 +85,20 @@ assert.throws(() => validateOptions(options({ port: '80' })), /Port/);
 assert.throws(() => validateOptions(options({ hosts: ['macos', 'macos'] })), /Duplicate host/);
 assert.throws(() => validateOptions(options({ hosts: ['other'] })), /Unsupported host/);
 assert.throws(() => validateOptions(options({ optionalDependency: '../vendor' })), /dependency/);
+assert.throws(() => validateOptions(options({ optionalDependency: 'server' })), /robot-specific/);
+assert.doesNotThrow(() => validateOptions(options({ optionalDependency: 'dryrunbot-vendor' })));
 assert.throws(() => validateOptions(options({ unexpected: true })), /Unknown option property/);
-assert.throws(() => buildPlan(options({ id: 'cozmo', port: '2299' })), /duplicate robot id/);
-assert.throws(() => buildPlan(options({ port: '2223' })), /already used/);
+for (const id of ['rcx', 'edison', 'edisonv2', 'rcj', 'cozmo', 'apitor']) {
+    assert.throws(() => buildPlan(options({ id })), /already registered/, `Registered robot id must be rejected: ${id}`);
+}
+for (const port of ['1999', '2222', '2223', '2224']) {
+    assert.throws(() => buildPlan(options({ port })), /already reserved/, `Reserved local port must be rejected: ${port}`);
+}
+assert.ok(['rcx', 'edison', 'edisonv2', 'rcj', 'cozmo', 'apitor'].every((id) => registeredRobotIds().has(id)));
+assert.ok([1999, 2222, 2223, 2224].every((port) => reservedLocalPorts().has(port)));
+assert.ok(['server', 'cozmo', 'cozmo-vision', 'apitor'].every((group) => optionalDependencyGroups().has(group)));
+assert.strictEqual(buildPlan(options({ optionalDependency: 'dryrunbot-vendor' })).manifest.bridge.optionalDependency, 'dryrunbot-vendor');
+targets.forEach((target) => assert.strictEqual(fs.existsSync(path.join(ROOT, target)), false, `Dry run wrote a file after validation checks: ${target}`));
 
 const productionSource = fs.readFileSync(path.join(ROOT, 'scripts/codeon-robot-new.js'), 'utf8');
 assert.doesNotMatch(productionSource, /require\(['"]child_process['"]\)/, 'Generator must not execute child processes.');

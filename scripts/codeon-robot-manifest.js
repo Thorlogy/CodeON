@@ -7,6 +7,10 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const MANIFEST_DIR = path.join(ROOT, 'RobotIntegrationKit', 'manifests');
+const ARCHITECTURE_GRAPH = 'architecture/codeon-architecture-graph.json';
+const SERVER_PROPERTIES = 'OpenRobertaServer/src/main/resources/openRoberta.properties';
+const LOCAL_LAUNCHER = 'start-codeon-rcx.py';
+const PYPROJECT = 'RobotIntegrationKit/python/pyproject.toml';
 const MAX_MANIFEST_BYTES = 64 * 1024;
 const TOP_LEVEL_KEYS = new Set([
     '$schema', 'schemaVersion', 'id', 'displayName', 'scope', 'activation', 'transport',
@@ -37,6 +41,10 @@ function isPlainObject(value) {
 
 function safeId(value) {
     return typeof value === 'string' && /^[a-z][a-z0-9]{1,31}$/.test(value);
+}
+
+function escapeRegularExpression(value) {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function push(errors, condition, message) {
@@ -94,7 +102,11 @@ function validateManifest(manifest, fileName = '') {
         push(errors, typeof manifest.bridge.adapterClass === 'string' && /^[A-Z][A-Za-z0-9]{1,79}Adapter$/.test(manifest.bridge.adapterClass), 'bridge.adapterClass has an invalid name.');
         push(errors, Number.isInteger(manifest.bridge.port) && manifest.bridge.port >= 1024 && manifest.bridge.port <= 65535, 'bridge.port must be an integer from 1024 to 65535.');
         push(errors, typeof manifest.bridge.autoStart === 'boolean', 'bridge.autoStart must be boolean.');
-        if (Object.hasOwn(manifest.bridge, 'optionalDependency')) push(errors, typeof manifest.bridge.optionalDependency === 'string' && /^[a-z][a-z0-9-]{0,47}$/.test(manifest.bridge.optionalDependency), 'bridge.optionalDependency has an invalid name.');
+        if (Object.hasOwn(manifest.bridge, 'optionalDependency')) {
+            const dependency = manifest.bridge.optionalDependency;
+            push(errors, typeof dependency === 'string' && /^[a-z][a-z0-9-]{0,47}$/.test(dependency), 'bridge.optionalDependency has an invalid name.');
+            if (safeId(manifest.id) && typeof dependency === 'string') push(errors, dependency === manifest.id || dependency.startsWith(`${manifest.id}-`), 'bridge.optionalDependency must be robot-specific and start with the robot id.');
+        }
     }
 
     push(errors, isPlainObject(manifest.capabilities), 'capabilities must be a plain object.');
@@ -159,8 +171,13 @@ function validateManifestSet(items) {
     const ids = new Set();
     const ports = new Map();
     for (const item of items) {
-        const manifest = item.manifest || item;
-        const label = item.fileName || manifest.id || '<unknown>';
+        const wrapped = isPlainObject(item) && Object.hasOwn(item, 'manifest');
+        const manifest = wrapped ? item.manifest : item;
+        const label = (wrapped && item.fileName) || (isPlainObject(manifest) && manifest.id) || '<unknown>';
+        if (!isPlainObject(manifest)) {
+            errors.push(`${label}: manifest root is invalid, so global uniqueness cannot be checked.`);
+            continue;
+        }
         if (ids.has(manifest.id)) errors.push(`${label}: duplicate robot id ${manifest.id}.`);
         ids.add(manifest.id);
         const port = manifest.bridge && manifest.bridge.port;
@@ -209,12 +226,87 @@ function parseProperties(contents) {
     return values;
 }
 
+function registeredRobotIds() {
+    const ids = new Set();
+    const graph = JSON.parse(readText(ARCHITECTURE_GRAPH));
+    for (const node of graph.nodes || []) {
+        if (node.type === 'robot' && typeof node.id === 'string' && node.id.startsWith('robot.')) {
+            const id = node.id.slice('robot.'.length);
+            if (safeId(id)) ids.add(id);
+        }
+    }
+    const properties = parseProperties(readText(SERVER_PROPERTIES));
+    for (const id of (properties.get('robot.whitelist') || '').split(',').map((value) => value.trim())) {
+        if (safeId(id)) ids.add(id);
+    }
+    return ids;
+}
+
+function addReservedPort(ports, port, owner) {
+    if (!Number.isInteger(port) || port < 1 || port > 65535) return;
+    if (!ports.has(port)) ports.set(port, new Set());
+    ports.get(port).add(owner);
+}
+
+function reservedLocalPorts() {
+    const ports = new Map();
+    const properties = parseProperties(readText(SERVER_PROPERTIES));
+    const serverPort = Number(properties.get('server.port'));
+    addReservedPort(ports, serverPort, `${SERVER_PROPERTIES}:server.port`);
+
+    for (const raw of readText(LOCAL_LAUNCHER).split(/\r?\n/)) {
+        const numeric = raw.match(/^\s*([A-Z][A-Z0-9_]*_PORT)\s*=\s*([0-9]+)\s*$/);
+        if (numeric) addReservedPort(ports, Number(numeric[2]), `${LOCAL_LAUNCHER}:${numeric[1]}`);
+        const localUrl = raw.match(/^\s*([A-Z][A-Z0-9_]*_URL)\s*=\s*["'](?:https?|wss?):\/\/(?:127\.0\.0\.1|localhost|\[::1\]):([0-9]+)(?:\/[^"']*)?["']\s*$/);
+        if (localUrl) addReservedPort(ports, Number(localUrl[2]), `${LOCAL_LAUNCHER}:${localUrl[1]}`);
+    }
+
+    for (const filePath of listManifestPaths()) {
+        const manifest = readManifestFile(filePath);
+        addReservedPort(ports, manifest.bridge && manifest.bridge.port, `manifest:${manifest.id || path.basename(filePath)}`);
+    }
+    return ports;
+}
+
+function optionalDependencyGroups() {
+    const groups = new Set();
+    let inOptionalDependencies = false;
+    for (const raw of readText(PYPROJECT).split(/\r?\n/)) {
+        const line = raw.trim();
+        if (/^\[.*\]$/.test(line)) {
+            inOptionalDependencies = line === '[project.optional-dependencies]';
+            continue;
+        }
+        if (!inOptionalDependencies || !line || line.startsWith('#')) continue;
+        const match = line.match(/^([a-z][a-z0-9-]{0,47})\s*=/);
+        if (match) groups.add(match[1]);
+    }
+    return groups;
+}
+
+function adapterDeclaresRobot(contents, id) {
+    return contents.includes('CapabilityManifest(')
+        && new RegExp(`\\brobot\\s*=\\s*['"]${escapeRegularExpression(id)}['"]`).test(contents);
+}
+
+function exportedClassBody(contents, className) {
+    const declaration = new RegExp(`\\bexport\\s+class\\s+${escapeRegularExpression(className)}\\b`).exec(contents);
+    if (!declaration) return null;
+    const start = declaration.index;
+    const remainder = contents.slice(start + declaration[0].length);
+    const nextClass = /\nexport\s+(?:abstract\s+)?class\s+/.exec(remainder);
+    const end = nextClass ? start + declaration[0].length + nextClass.index : contents.length;
+    return contents.slice(start, end);
+}
+
 function repositoryChecks(manifest) {
     const errors = [];
     const warnings = [];
     const ok = (condition, message) => { if (!condition) errors.push(message); };
     const adapterFile = `RobotIntegrationKit/python/src/codeon_robot_bridge/${manifest.bridge.adapter}_adapter.py`;
+    const adapterTestFile = `RobotIntegrationKit/python/tests/test_${manifest.bridge.adapter}_adapter.py`;
     ok(exists(adapterFile), `Missing bridge adapter: ${adapterFile}`);
+    ok(exists(adapterTestFile), `Missing bridge adapter test: ${adapterTestFile}`);
     const serverPath = 'RobotIntegrationKit/python/src/codeon_robot_bridge/server.py';
     if (exists(serverPath)) {
         const server = readText(serverPath);
@@ -225,6 +317,8 @@ function repositoryChecks(manifest) {
     if (exists(adapterFile)) {
         const adapter = readText(adapterFile);
         ok(adapter.includes(`class ${manifest.bridge.adapterClass}(RobotAdapter)`), `Adapter file does not define ${manifest.bridge.adapterClass}.`);
+        ok(adapter.includes('CapabilityManifest('), 'Adapter does not construct a CapabilityManifest.');
+        ok(adapterDeclaresRobot(adapter, manifest.id), `Adapter capability manifest does not declare robot ${manifest.id}.`);
         for (const capability of [...manifest.capabilities.actuators, ...manifest.capabilities.sensors]) ok(adapter.includes(capability), `Adapter does not mention declared capability ${capability}.`);
     }
     if (manifest.bridge.optionalDependency) {
@@ -266,7 +360,11 @@ function repositoryChecks(manifest) {
     }
 
     const connections = readText('OpenRobertaWeb/src/app/roberta/controller/connections/connections.ts');
-    ok(connections.includes(`export class ${manifest.browserConnectionClass}`), `Browser connection ${manifest.browserConnectionClass} is not exported.`);
+    const connectionBody = exportedClassBody(connections, manifest.browserConnectionClass);
+    ok(connectionBody !== null, `Browser connection ${manifest.browserConnectionClass} is not exported.`);
+    if (connectionBody !== null) {
+        ok(connectionBody.includes(`new ${manifest.browserBehaviourClass}(`), `Browser connection ${manifest.browserConnectionClass} does not construct ${manifest.browserBehaviourClass}.`);
+    }
     const behaviourFiles = fs.readdirSync(path.join(ROOT, 'OpenRobertaWeb/src/app/nepostackmachine')).filter((name) => name.endsWith('.ts'));
     ok(behaviourFiles.some((name) => readText(`OpenRobertaWeb/src/app/nepostackmachine/${name}`).includes(`class ${manifest.browserBehaviourClass}`)), `Browser behaviour ${manifest.browserBehaviourClass} is missing.`);
     ok(exists(`OpenRobertaServer/staticResources/css/img/system_preview/${manifest.previewImage}`), `Preview image ${manifest.previewImage} is missing.`);
@@ -288,9 +386,14 @@ function repositoryChecks(manifest) {
 module.exports = {
     MANIFEST_DIR,
     ROOT,
+    adapterDeclaresRobot,
+    exportedClassBody,
     listManifestPaths,
+    optionalDependencyGroups,
     readManifestFile,
+    registeredRobotIds,
     repositoryChecks,
+    reservedLocalPorts,
     resolveManifestPath,
     safeId,
     validateManifest,

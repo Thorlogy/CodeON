@@ -27,13 +27,16 @@ until the stop path and conservative limits have independent evidence.
 
 ## Bridge prototype
 
-1. Choose a stable lowercase robot identifier.
+1. Choose a stable lowercase robot identifier and an unused local bridge port;
+   the preview rejects registrations and ports already known to CodeON.
 2. Document model, firmware, host operating systems, protocol evidence and
    third-party licensing.
 3. Publish only demonstrated capabilities and conservative physical limits.
 4. Implement connect, disconnect, status, idempotent stop, commands and
    sensors through `RobotAdapter`.
-5. Keep vendor libraries optional and isolated inside the adapter.
+5. Keep vendor libraries optional and isolated inside the adapter. Name a new
+   dependency extra `<id>` or `<id>-<purpose>`; never reuse `server` or another
+   robot's extra.
 6. Add a deterministic fake or recorded test double.
 7. Pass the shared conformance tests without hardware or vendor dependencies.
 8. Verify repeated connection, emergency stop, watchdog, transport loss and
