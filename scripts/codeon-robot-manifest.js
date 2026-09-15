@@ -64,7 +64,7 @@ function validateManifest(manifest, fileName = '') {
     if (Object.hasOwn(manifest, '$schema')) push(errors, typeof manifest.$schema === 'string' && manifest.$schema.length <= 200, '$schema must be a string of at most 200 characters.');
     push(errors, manifest.schemaVersion === 1, 'schemaVersion must be 1.');
     push(errors, safeId(manifest.id), 'id must match ^[a-z][a-z0-9]{1,31}$.');
-    push(errors, typeof manifest.displayName === 'string' && manifest.displayName.trim() === manifest.displayName && manifest.displayName.length >= 1 && manifest.displayName.length <= 80, 'displayName must be a trimmed string of 1 to 80 characters.');
+    push(errors, typeof manifest.displayName === 'string' && manifest.displayName.trim() === manifest.displayName && /^[^\u0000-\u001f\u007f]{1,80}$/u.test(manifest.displayName), 'displayName must be a trimmed, single-line string of 1 to 80 characters.');
     for (const [key, values] of Object.entries(ENUMS)) {
         if (Object.hasOwn(manifest, key)) push(errors, values.includes(manifest[key]), `${key} has an unsupported value.`);
     }

@@ -32,6 +32,19 @@ Validate only one known robot with `npm run robot:check -- --id cozmo`. The
 command accepts an allowlisted robot ID, reads only from the manifest directory
 and never executes commands stored in project metadata.
 
+Preview a new, deliberately disconnected bridge scaffold with:
+
+```shell
+npm run robot:new -- --dry-run --id myrobot --name "My Robot" \
+  --transport ble --port 2299 --host macos
+```
+
+This first generator stage has no write mode. It prints the draft manifest,
+planned files and content hashes, rejects existing IDs, files and bridge ports,
+and never modifies the repository. The scaffold exposes no actuator or sensor
+and refuses to connect until its hardware protocol has been implemented and
+reviewed.
+
 ## Local development
 
 The core and fake-adapter contract have no vendor runtime dependencies:

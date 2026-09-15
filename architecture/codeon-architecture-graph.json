@@ -113,7 +113,7 @@
     },
     {
       "id": "robot-integration-contract",
-      "paths": ["RobotIntegrationKit/README.md", "RobotIntegrationKit/docs/", "RobotIntegrationKit/schema/", "RobotIntegrationKit/manifests/", "scripts/codeon-robot-manifest.js", "scripts/codeon-robot-check.js", "scripts/test-codeon-robot-check.js"],
+      "paths": ["RobotIntegrationKit/README.md", "RobotIntegrationKit/docs/", "RobotIntegrationKit/schema/", "RobotIntegrationKit/manifests/", "RobotIntegrationKit/templates/", "scripts/codeon-robot-manifest.js", "scripts/codeon-robot-check.js", "scripts/codeon-robot-new.js", "scripts/test-codeon-robot-check.js", "scripts/test-codeon-robot-new.js"],
       "risk": "medium",
       "robots": ["robot.cozmo", "robot.apitor"],
       "tests": ["test.graph", "test.code-graph", "test.robot-integration"],

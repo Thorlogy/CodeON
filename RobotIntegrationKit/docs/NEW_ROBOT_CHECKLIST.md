@@ -13,6 +13,18 @@ on the schema rather than by changing a reference robot. Run
 as `bridge` until every complete-system field exists. A draft must never be
 added to the active robot whitelist.
 
+To preview a safe bridge scaffold without writing files, run:
+
+```shell
+npm run robot:new -- --dry-run --id <id> --name "<display name>" \
+  --transport <wifi|ble|usb|serial|other-local> --port <loopback-port> \
+  --host <macos|windows|linux>
+```
+
+The preview is intentionally disconnected, advertises no hardware capability
+and rejects all commands. Do not turn those safeguards into working movement
+until the stop path and conservative limits have independent evidence.
+
 ## Bridge prototype
 
 1. Choose a stable lowercase robot identifier.

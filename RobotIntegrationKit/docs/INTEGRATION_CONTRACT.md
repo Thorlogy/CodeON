@@ -162,6 +162,8 @@ without modifying files. Use `npm run robot:check -- --id <robot-id>` for one
 known manifest. The checker accepts no arbitrary manifest path, does not invoke
 shell commands and treats commands in the architecture graph as informational.
 
-The later `robot:new` wizard will generate reviewed templates on an isolated
-branch. Neither tool will infer a proprietary protocol, invent safe motor
-limits or claim hardware verification.
+`npm run robot:new -- --dry-run ...` previews a fail-closed bridge scaffold,
+including exact paths, content and hashes. This first stage intentionally has
+no write mode, accepts no output or template path and makes no registrations.
+Neither tool infers a proprietary protocol, invents safe motor limits or claims
+hardware verification.
