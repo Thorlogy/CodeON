@@ -21,7 +21,15 @@ npm run robot:new -- --dry-run --id <id> --name "<display name>" \
   --host <macos|windows|linux>
 ```
 
-The preview is intentionally disconnected, advertises no hardware capability
+Review every path and hash; use `--json` to inspect the exact generated content.
+Only then repeat the complete command with `--write`, `--confirm <id>` and
+`--plan-hash <hash-from-dry-run>` in place of `--dry-run`. This creates the
+manifest, adapter, adapter test and hardware-acceptance worksheet, but performs
+no registration and never overwrites an existing path. Check `git status`
+immediately afterwards. If the process was terminated abruptly, inspect all
+four reported targets before retrying.
+
+The scaffold is intentionally disconnected, advertises no hardware capability
 and rejects all commands. Do not turn those safeguards into working movement
 until the stop path and conservative limits have independent evidence.
 

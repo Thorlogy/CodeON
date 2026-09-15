@@ -41,13 +41,30 @@ npm run robot:new -- --dry-run --id myrobot --name "My Robot" \
   --transport ble --port 2299 --host macos
 ```
 
-This first generator stage has no write mode. Its normal output prints the
-draft manifest plus planned paths and content hashes; `--json` additionally
-contains the exact generated content. It rejects IDs already present in the
-architecture graph, active robot list or manifests, existing target files, and
-ports reserved by CodeON, a local launcher or another manifest. An optional
-dependency name must begin with the new robot ID and must not reuse an existing
-extra. The command never modifies the repository. The scaffold exposes no
+Its normal output prints the draft manifest plus planned paths and content
+hashes; `--json` additionally contains the exact generated content. After
+reviewing that preview, create only those four files with a second explicit
+command:
+
+```shell
+npm run robot:new -- --write --confirm myrobot \
+  --plan-hash PLAN_HASH_FROM_DRY_RUN --id myrobot --name "My Robot" \
+  --transport ble --port 2299 --host macos
+```
+
+Replace `PLAN_HASH_FROM_DRY_RUN` with the displayed value. The ID after
+`--confirm` must exactly match `--id`, and `--plan-hash` must match the complete
+reviewed preview. Write mode accepts no output path, creates no directories and
+never overwrites a path. It does not register the adapter with the bridge and
+changes no launcher, server, dependency group or active robot list. Normal
+write failures roll back files created by that invocation. If the process or
+computer is terminated abruptly, inspect the four reported paths with
+`git status` before retrying.
+
+Both modes reject IDs already present in the architecture graph, active robot
+list or manifests, existing target files, and ports reserved by CodeON, a local
+launcher or another manifest. An optional dependency name must begin with the
+new robot ID and must not reuse an existing extra. The scaffold exposes no
 actuator or sensor and refuses to connect until its hardware protocol has been
 implemented and reviewed.
 

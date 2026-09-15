@@ -174,8 +174,16 @@ simulation and physical hardware tests.
 
 `npm run robot:new -- --dry-run ...` previews a fail-closed bridge scaffold,
 including exact paths and hashes in normal output. Add `--json` when the exact
-generated content is required. This first stage intentionally has no write
-mode, accepts no output or template path and makes no registrations. It also
-rejects identifiers and local ports already reserved by active CodeON systems,
-launchers or manifests. Neither tool infers a proprietary protocol, invents
-safe motor limits or claims hardware verification.
+generated content is required. Only a separate invocation with `--write`,
+`--confirm <robot-id>` and `--plan-hash <reviewed-sha256>` may create the four
+fixed scaffold files. The plan hash binds the write to the exact preview. The
+writer verifies the paths, byte counts and hashes again, creates files
+exclusively and rolls its own files back after an ordinary failure. It accepts
+no output or template path, does not create directories, never overwrites and
+makes no registrations.
+
+An abrupt process or operating-system termination cannot guarantee rollback;
+inspect the four reported paths before retrying. Both modes reject identifiers
+and local ports already reserved by active CodeON systems, launchers or
+manifests. Neither mode infers a proprietary protocol, invents safe motor limits
+or claims hardware verification.
