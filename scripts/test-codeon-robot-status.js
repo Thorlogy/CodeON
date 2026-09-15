@@ -70,9 +70,15 @@ assert.strictEqual(systemPending.phases.find((item) => item.id === 'system').sta
 
 const invalid = JSON.parse(JSON.stringify(bridgeManifest));
 invalid.bridge.port = 80;
+invalid.displayName = 'Unsafe\u202eRobot';
+invalid.knownLimitations = ['Unsafe\u001b[2Jlimitation'];
 const blocked = buildStatus([{ fileName: 'guidebot.json', manifest: invalid }], 'guidebot', () => { throw new Error('must not run'); }, () => []);
 assert.strictEqual(blocked.phases.find((item) => item.id === 'manifest').state, 'blocked');
 assert.strictEqual(blocked.phases.find((item) => item.id === 'bridge').state, 'blocked');
+assert.strictEqual(blocked.phases.find((item) => item.id === 'hardware').state, 'blocked');
+assert.strictEqual(blocked.displayName, null);
+assert.ok(!formatStatus(blocked).includes('\u001b'));
+assert.ok(!formatStatus(blocked).includes('\u202e'));
 
 assert.deepStrictEqual(parseArguments(['--id', 'cozmo', '--json']), { id: 'cozmo', json: true, help: false });
 assert.throws(() => parseArguments([]), /--id is required/);

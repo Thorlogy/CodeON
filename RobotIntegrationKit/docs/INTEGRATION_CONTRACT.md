@@ -2,8 +2,9 @@
 
 This document describes the current, reviewed contract for adding a robot to a
 local CodeON fork. It records the manual integration points that exist today.
-The integration checker and future wizard implement this contract rather than
-inventing a second path through the codebase.
+The integration checker, guarded scaffold generator and read-only progress
+guide implement this contract rather than inventing a second path through the
+codebase.
 
 CodeON remains usable while an integration is incomplete. A new integration
 must be developed on a separate branch and must not be added to the active

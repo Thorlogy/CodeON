@@ -99,6 +99,7 @@ assertActionsArePinned(unitTestWorkflow, 'Unit test workflow');
 assert.match(architectureWorkflow, /permissions:\s*\n\s+contents: read/);
 assert.match(architectureWorkflow, /persist-credentials: false/);
 assert.match(architectureWorkflow, /package-manager-cache: false/);
+assert.match(architectureWorkflow, /run: npm run test:robot-integration/, 'Architecture CI must run the robot-integration developer-tooling checks.');
 assertActionsArePinned(architectureWorkflow, 'Architecture workflow');
 
 assert.strictEqual(robotSummary(graph, 'cozmo').configurationMode, 'fixed');

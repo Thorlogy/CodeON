@@ -71,10 +71,12 @@ Das [CodeON Robot Integration Kit](RobotIntegrationKit/README.md) trennt
 herstellerspezifische Hardwareadapter vom gemeinsamen Bridge-Protokoll. Der
 aktuelle [Integrationsvertrag](RobotIntegrationKit/docs/INTEGRATION_CONTRACT.md)
 beschreibt zwei sichere Wege: einen Bridge-Prototyp für Hardwareexperimente und
-ein vollständiges, lokal auswählbares CodeON-Robotersystem. Ein geführter
-Generator ist geplant; bis dahin dokumentiert die
-[Checkliste](RobotIntegrationKit/docs/NEW_ROBOT_CHECKLIST.md) alle verbindlichen
-Prüfschritte und manuellen Registrierungen.
+ein vollständiges, lokal auswählbares CodeON-Robotersystem. `npm run robot:new`
+erstellt nach Vorschau und ausdrücklicher Bestätigung ein isoliertes,
+bewegungsunfähiges Bridge-Grundgerüst. `npm run robot:status -- --id <id>` führt
+anschließend lesend durch die offenen Phasen. Die
+[Checkliste](RobotIntegrationKit/docs/NEW_ROBOT_CHECKLIST.md) dokumentiert alle
+verbindlichen Prüfschritte und weiterhin manuellen Registrierungen.
 
 ## Schnellstart mit LEGO RCX
 

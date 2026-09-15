@@ -12,6 +12,7 @@ const SERVER_PROPERTIES = 'OpenRobertaServer/src/main/resources/openRoberta.prop
 const LOCAL_LAUNCHER = 'start-codeon-rcx.py';
 const PYPROJECT = 'RobotIntegrationKit/python/pyproject.toml';
 const MAX_MANIFEST_BYTES = 64 * 1024;
+const UNSAFE_TERMINAL_TEXT = /[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/u;
 const TOP_LEVEL_KEYS = new Set([
     '$schema', 'schemaVersion', 'id', 'displayName', 'scope', 'activation', 'transport',
     'configurationMode', 'module', 'browserConnectionClass', 'browserBehaviourClass',
@@ -43,6 +44,16 @@ function safeId(value) {
     return typeof value === 'string' && /^[a-z][a-z0-9]{1,31}$/.test(value);
 }
 
+function safeDiagnosticText(value, fallback = '<unsafe value>') {
+    return typeof value === 'string' && value.length > 0 && value.length <= 500 && !UNSAFE_TERMINAL_TEXT.test(value)
+        ? value
+        : fallback;
+}
+
+function isManifestFileName(value) {
+    return typeof value === 'string' && /^[a-z][a-z0-9]{1,31}\.json$/.test(value);
+}
+
 function escapeRegularExpression(value) {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -58,8 +69,8 @@ function validateStringList(errors, value, label, pattern, maxItems, allowEmpty 
     push(errors, value.length <= maxItems, `${label} exceeds ${maxItems} entries.`);
     const seen = new Set();
     for (const item of value) {
-        push(errors, typeof item === 'string' && pattern.test(item), `${label} contains an invalid value: ${String(item)}`);
-        push(errors, !seen.has(item), `${label} contains a duplicate: ${String(item)}`);
+        push(errors, typeof item === 'string' && pattern.test(item), `${label} contains an invalid value.`);
+        push(errors, !seen.has(item), `${label} contains a duplicate value.`);
         seen.add(item);
     }
 }
@@ -67,12 +78,12 @@ function validateStringList(errors, value, label, pattern, maxItems, allowEmpty 
 function validateManifest(manifest, fileName = '') {
     const errors = [];
     if (!isPlainObject(manifest)) return ['Manifest root must be a plain JSON object.'];
-    for (const key of Object.keys(manifest)) push(errors, TOP_LEVEL_KEYS.has(key), `Unknown top-level property: ${key}`);
+    for (const key of Object.keys(manifest)) push(errors, TOP_LEVEL_KEYS.has(key), `Unknown top-level property: ${safeDiagnosticText(key)}`);
     for (const key of REQUIRED_KEYS) push(errors, Object.hasOwn(manifest, key), `Missing required property: ${key}`);
     if (Object.hasOwn(manifest, '$schema')) push(errors, typeof manifest.$schema === 'string' && manifest.$schema.length <= 200, '$schema must be a string of at most 200 characters.');
     push(errors, manifest.schemaVersion === 1, 'schemaVersion must be 1.');
     push(errors, safeId(manifest.id), 'id must match ^[a-z][a-z0-9]{1,31}$.');
-    push(errors, typeof manifest.displayName === 'string' && manifest.displayName.trim() === manifest.displayName && /^[^\u0000-\u001f\u007f]{1,80}$/u.test(manifest.displayName), 'displayName must be a trimmed, single-line string of 1 to 80 characters.');
+    push(errors, typeof manifest.displayName === 'string' && manifest.displayName.trim() === manifest.displayName && /^[^\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]{1,80}$/u.test(manifest.displayName), 'displayName must be a trimmed, terminal-safe single-line string of 1 to 80 characters.');
     for (const [key, values] of Object.entries(ENUMS)) {
         if (Object.hasOwn(manifest, key)) push(errors, values.includes(manifest[key]), `${key} has an unsupported value.`);
     }
@@ -95,7 +106,7 @@ function validateManifest(manifest, fileName = '') {
     push(errors, isPlainObject(manifest.bridge), 'bridge must be a plain object.');
     if (isPlainObject(manifest.bridge)) {
         const allowed = new Set(['adapter', 'adapterClass', 'port', 'autoStart', 'optionalDependency']);
-        for (const key of Object.keys(manifest.bridge)) push(errors, allowed.has(key), `Unknown bridge property: ${key}`);
+        for (const key of Object.keys(manifest.bridge)) push(errors, allowed.has(key), `Unknown bridge property: ${safeDiagnosticText(key)}`);
         for (const key of ['adapter', 'adapterClass', 'port', 'autoStart']) push(errors, Object.hasOwn(manifest.bridge, key), `bridge is missing: ${key}`);
         push(errors, safeId(manifest.bridge.adapter), 'bridge.adapter has an invalid name.');
         if (safeId(manifest.id) && safeId(manifest.bridge.adapter)) push(errors, manifest.bridge.adapter === manifest.id, 'bridge.adapter must equal the robot id.');
@@ -111,21 +122,22 @@ function validateManifest(manifest, fileName = '') {
 
     push(errors, isPlainObject(manifest.capabilities), 'capabilities must be a plain object.');
     if (isPlainObject(manifest.capabilities)) {
-        for (const key of Object.keys(manifest.capabilities)) push(errors, key === 'actuators' || key === 'sensors', `Unknown capabilities property: ${key}`);
+        for (const key of Object.keys(manifest.capabilities)) push(errors, key === 'actuators' || key === 'sensors', `Unknown capabilities property: ${safeDiagnosticText(key)}`);
         for (const key of ['actuators', 'sensors']) validateStringList(errors, manifest.capabilities[key], `capabilities.${key}`, /^[A-Za-z][A-Za-z0-9]{0,63}$/, 64);
     }
 
     push(errors, isPlainObject(manifest.limits) && Object.keys(manifest.limits).length >= 1 && Object.keys(manifest.limits).length <= 32, 'limits must contain 1 to 32 entries.');
     if (isPlainObject(manifest.limits)) {
         for (const [key, value] of Object.entries(manifest.limits)) {
-            push(errors, /^[A-Za-z][A-Za-z0-9]{0,63}$/.test(key), `Invalid limit name: ${key}`);
+            const safeKey = safeDiagnosticText(key, '<invalid limit name>');
+            push(errors, /^[A-Za-z][A-Za-z0-9]{0,63}$/.test(key), `Invalid limit name: ${safeKey}`);
             if (typeof value === 'number') {
-                push(errors, Number.isFinite(value) && Math.abs(value) <= 1e9, `Limit ${key} must be finite and bounded.`);
+                push(errors, Number.isFinite(value) && Math.abs(value) <= 1e9, `Limit ${safeKey} must be finite and bounded.`);
             } else {
-                push(errors, isPlainObject(value), `Limit ${key} must be a number or range.`);
+                push(errors, isPlainObject(value), `Limit ${safeKey} must be a number or range.`);
                 if (isPlainObject(value)) {
-                    push(errors, Object.keys(value).length === 2 && Object.hasOwn(value, 'min') && Object.hasOwn(value, 'max'), `Limit range ${key} must contain only min and max.`);
-                    push(errors, Number.isFinite(value.min) && Number.isFinite(value.max) && Math.abs(value.min) <= 1e9 && Math.abs(value.max) <= 1e9 && value.min <= value.max, `Limit range ${key} is invalid.`);
+                    push(errors, Object.keys(value).length === 2 && Object.hasOwn(value, 'min') && Object.hasOwn(value, 'max'), `Limit range ${safeKey} must contain only min and max.`);
+                    push(errors, Number.isFinite(value.min) && Number.isFinite(value.max) && Math.abs(value.min) <= 1e9 && Math.abs(value.max) <= 1e9 && value.min <= value.max, `Limit range ${safeKey} is invalid.`);
                 }
             }
         }
@@ -133,7 +145,7 @@ function validateManifest(manifest, fileName = '') {
 
     validateStringList(errors, manifest.supportedHosts, 'supportedHosts', /^(macos|windows|linux)$/, 3, false);
     validateStringList(errors, manifest.requiredChecks, 'requiredChecks', /^test\.[a-z0-9.-]{1,63}$/, 32, false);
-    validateStringList(errors, manifest.knownLimitations, 'knownLimitations', /^.{1,500}$/s, 20);
+    validateStringList(errors, manifest.knownLimitations, 'knownLimitations', /^[^\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]{1,500}$/u, 20);
     if (manifest.hardwareStatus === 'verified-with-limitations') push(errors, Array.isArray(manifest.knownLimitations) && manifest.knownLimitations.length > 0, 'verified-with-limitations requires at least one known limitation.');
     return errors;
 }
@@ -147,19 +159,29 @@ function resolveManifestPath(id) {
 }
 
 function readManifestFile(filePath) {
+    const label = isManifestFileName(path.basename(filePath)) ? path.basename(filePath) : '<unsafe-manifest-name>';
     const stat = fs.lstatSync(filePath);
-    if (!stat.isFile() || stat.isSymbolicLink()) throw new Error(`Manifest must be a regular file: ${path.basename(filePath)}`);
-    if (stat.size > MAX_MANIFEST_BYTES) throw new Error(`Manifest exceeds ${MAX_MANIFEST_BYTES} bytes: ${path.basename(filePath)}`);
+    if (!stat.isFile() || stat.isSymbolicLink()) throw new Error(`Manifest must be a regular file: ${label}`);
+    if (stat.size > MAX_MANIFEST_BYTES) throw new Error(`Manifest exceeds ${MAX_MANIFEST_BYTES} bytes: ${label}`);
     const realDirectory = fs.realpathSync(MANIFEST_DIR);
     const realFile = fs.realpathSync(filePath);
-    if (!realFile.startsWith(realDirectory + path.sep)) throw new Error(`Manifest resolves outside its directory: ${path.basename(filePath)}`);
-    return JSON.parse(fs.readFileSync(realFile, 'utf8'));
+    if (!realFile.startsWith(realDirectory + path.sep)) throw new Error(`Manifest resolves outside its directory: ${label}`);
+    return parseManifestJson(fs.readFileSync(realFile, 'utf8'), label);
+}
+
+function parseManifestJson(contents, label = '<manifest>') {
+    try {
+        return JSON.parse(contents);
+    } catch (_error) {
+        throw new Error(`Manifest is not valid JSON: ${safeDiagnosticText(label, '<unsafe-manifest-name>')}`);
+    }
 }
 
 function listManifestPaths() {
     const files = [];
     for (const entry of fs.readdirSync(MANIFEST_DIR, { withFileTypes: true })) {
         if (!entry.name.endsWith('.json')) continue;
+        if (!isManifestFileName(entry.name)) throw new Error('Manifest filename must match a safe robot ID followed by .json.');
         if (!entry.isFile() || entry.isSymbolicLink()) throw new Error(`Manifest must be a regular file: ${entry.name}`);
         files.push(path.join(MANIFEST_DIR, entry.name));
     }
@@ -173,16 +195,17 @@ function validateManifestSet(items) {
     for (const item of items) {
         const wrapped = isPlainObject(item) && Object.hasOwn(item, 'manifest');
         const manifest = wrapped ? item.manifest : item;
-        const label = (wrapped && item.fileName) || (isPlainObject(manifest) && manifest.id) || '<unknown>';
+        const rawLabel = (wrapped && item.fileName) || (isPlainObject(manifest) && manifest.id) || '<unknown>';
+        const label = safeDiagnosticText(rawLabel);
         if (!isPlainObject(manifest)) {
             errors.push(`${label}: manifest root is invalid, so global uniqueness cannot be checked.`);
             continue;
         }
-        if (ids.has(manifest.id)) errors.push(`${label}: duplicate robot id ${manifest.id}.`);
+        if (ids.has(manifest.id)) errors.push(`${label}: duplicate robot id ${safeDiagnosticText(manifest.id, '<invalid id>')}.`);
         ids.add(manifest.id);
         const port = manifest.bridge && manifest.bridge.port;
         if (Number.isInteger(port) && ports.has(port)) errors.push(`${label}: bridge port ${port} is already used by ${ports.get(port)}.`);
-        if (Number.isInteger(port)) ports.set(port, manifest.id);
+        if (Number.isInteger(port)) ports.set(port, safeDiagnosticText(manifest.id, '<invalid id>'));
     }
     return errors;
 }
@@ -263,7 +286,8 @@ function reservedLocalPorts() {
 
     for (const filePath of listManifestPaths()) {
         const manifest = readManifestFile(filePath);
-        addReservedPort(ports, manifest.bridge && manifest.bridge.port, `manifest:${manifest.id || path.basename(filePath)}`);
+        const owner = safeId(manifest.id) ? manifest.id : path.basename(filePath, '.json');
+        addReservedPort(ports, manifest.bridge && manifest.bridge.port, `manifest:${owner}`);
     }
     return ports;
 }
@@ -299,6 +323,17 @@ function exportedClassBody(contents, className) {
     return contents.slice(start, end);
 }
 
+function bridgeServerChecks(manifest, fileExists = exists, fileReader = readText) {
+    const errors = [];
+    const serverPath = 'RobotIntegrationKit/python/src/codeon_robot_bridge/server.py';
+    if (!fileExists(serverPath)) return [`Missing bridge server: ${serverPath}`];
+    const server = fileReader(serverPath);
+    if (!server.includes(`from .${manifest.bridge.adapter}_adapter import ${manifest.bridge.adapterClass}`)) errors.push(`Bridge server does not import ${manifest.bridge.adapterClass}.`);
+    if (!new RegExp(`choices=\\([^)]*['"]${manifest.bridge.adapter}['"]`).test(server)) errors.push(`Bridge CLI does not allow adapter ${manifest.bridge.adapter}.`);
+    if (!server.includes(`${manifest.bridge.adapterClass}(`)) errors.push(`Bridge server does not construct ${manifest.bridge.adapterClass}.`);
+    return errors;
+}
+
 function repositoryChecks(manifest) {
     const bridgeErrors = [];
     const completeErrors = [];
@@ -309,13 +344,7 @@ function repositoryChecks(manifest) {
     const adapterTestFile = `RobotIntegrationKit/python/tests/test_${manifest.bridge.adapter}_adapter.py`;
     ok(exists(adapterFile), `Missing bridge adapter: ${adapterFile}`);
     ok(exists(adapterTestFile), `Missing bridge adapter test: ${adapterTestFile}`);
-    const serverPath = 'RobotIntegrationKit/python/src/codeon_robot_bridge/server.py';
-    if (exists(serverPath)) {
-        const server = readText(serverPath);
-        ok(server.includes(`from .${manifest.bridge.adapter}_adapter import ${manifest.bridge.adapterClass}`), `Bridge server does not import ${manifest.bridge.adapterClass}.`);
-        ok(new RegExp(`choices=\\([^)]*['\"]${manifest.bridge.adapter}['\"]`).test(server), `Bridge CLI does not allow adapter ${manifest.bridge.adapter}.`);
-        ok(server.includes(`${manifest.bridge.adapterClass}(`), `Bridge server does not construct ${manifest.bridge.adapterClass}.`);
-    }
+    bridgeErrors.push(...bridgeServerChecks(manifest));
     if (exists(adapterFile)) {
         const adapter = readText(adapterFile);
         ok(adapter.includes(`class ${manifest.bridge.adapterClass}(RobotAdapter)`), `Adapter file does not define ${manifest.bridge.adapterClass}.`);
@@ -394,7 +423,7 @@ function requiredCheckCommands(requiredChecks) {
             .filter((node) => node.type === 'test'
                 && typeof node.id === 'string'
                 && typeof node.command === 'string'
-                && /^[^\u0000-\u001f\u007f]{1,2000}$/u.test(node.command))
+                && /^[^\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]{1,2000}$/u.test(node.command))
             .map((node) => [node.id, node.command])
     );
     return requiredChecks.map((id) => ({ id, command: commands.get(id) || null }));
@@ -404,9 +433,12 @@ module.exports = {
     MANIFEST_DIR,
     ROOT,
     adapterDeclaresRobot,
+    bridgeServerChecks,
     exportedClassBody,
+    isManifestFileName,
     listManifestPaths,
     optionalDependencyGroups,
+    parseManifestJson,
     readManifestFile,
     registeredRobotIds,
     repositoryChecks,

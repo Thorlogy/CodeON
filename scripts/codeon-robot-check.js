@@ -43,7 +43,8 @@ function buildReport(loaded, selectedId = null, checkRepository = repositoryChec
     const results = selected.map(({ fileName, manifest }) => {
         const errors = validateManifest(manifest, fileName);
         const repository = errors.length === 0 ? checkRepository(manifest) : { errors: [], warnings: [] };
-        return { id: manifest.id || fileName, file: fileName, errors: [...errors, ...repository.errors], warnings: repository.warnings };
+        const id = errors.length === 0 ? manifest.id : path.basename(fileName, '.json');
+        return { id, file: fileName, errors: [...errors, ...repository.errors], warnings: repository.warnings };
     });
     const setErrors = validateManifestSet(loaded);
     const errorCount = results.reduce((sum, result) => sum + result.errors.length, 0) + setErrors.length;

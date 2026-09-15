@@ -8,8 +8,11 @@ const path = require('path');
 const {
     ROOT,
     adapterDeclaresRobot,
+    bridgeServerChecks,
     exportedClassBody,
+    isManifestFileName,
     listManifestPaths,
+    parseManifestJson,
     readManifestFile,
     repositoryChecks,
     resolveManifestPath,
@@ -29,6 +32,12 @@ assert.deepStrictEqual([rangeLimit.min.minimum, rangeLimit.min.maximum], [-10000
 assert.deepStrictEqual([rangeLimit.max.minimum, rangeLimit.max.maximum], [-1000000000, 1000000000]);
 assert.ok(schema.allOf.some((rule) => rule.if?.properties?.scope?.const === 'bridge' && rule.then?.not?.anyOf), 'Schema must forbid complete-system fields on bridge manifests.');
 assert.ok(schema.allOf.some((rule) => rule.if?.properties?.hardwareStatus?.const === 'verified-with-limitations' && rule.then?.properties?.knownLimitations?.minItems === 1), 'Schema must require a limitation for verified-with-limitations.');
+const schemaDisplayName = new RegExp(schema.properties.displayName.pattern, 'u');
+const schemaLimitation = new RegExp(schema.properties.knownLimitations.items.pattern, 'u');
+assert.strictEqual(schemaDisplayName.test('Safe Robot'), true);
+assert.strictEqual(schemaDisplayName.test('Unsafe\u202eRobot'), false, 'Schema must reject bidirectional display-name controls.');
+assert.strictEqual(schemaLimitation.test('Safe limitation.'), true);
+assert.strictEqual(schemaLimitation.test('Unsafe\u001b[2Jlimitation'), false, 'Schema must reject terminal controls in limitations.');
 assert.deepStrictEqual(
     [...new Set(schema.required)].sort(),
     ['schemaVersion', 'id', 'displayName', 'scope', 'activation', 'transport', 'bridge', 'capabilities', 'limits', 'supportedHosts', 'hardwareStatus', 'requiredChecks', 'knownLimitations'].sort(),
@@ -57,6 +66,10 @@ assert.ok(errorsFor((value) => { value.scope = 'bridge'; }).some((error) => erro
 assert.ok(errorsFor((value) => { value.knownLimitations = []; }).some((error) => error.includes('at least one')));
 assert.ok(errorsFor((value) => { value.bridge.adapter = 'other'; }).some((error) => error.includes('must equal')));
 assert.ok(errorsFor((value) => { value.bridge.optionalDependency = 'server'; }).some((error) => error.includes('robot-specific')));
+const unsafeLimitationErrors = errorsFor((value) => { value.knownLimitations = ['Unsafe\u001b[2Jlimitation']; });
+assert.ok(unsafeLimitationErrors.some((error) => error.includes('invalid value')));
+assert.ok(unsafeLimitationErrors.every((error) => !error.includes('\u001b')), 'Validation errors must not repeat unsafe manifest text.');
+assert.ok(errorsFor((value) => { value.displayName = 'Unsafe\u202eRobot'; }).some((error) => error.includes('terminal-safe')));
 
 assert.strictEqual(adapterDeclaresRobot('value = CapabilityManifest(robot="cozmo")', 'cozmo'), true);
 assert.strictEqual(adapterDeclaresRobot('value = CapabilityManifest(robot="other")', 'cozmo'), false);
@@ -66,6 +79,30 @@ assert.match(exportedClassBody(connectionFixture, 'FirstConnection'), /FirstBeha
 assert.doesNotMatch(exportedClassBody(connectionFixture, 'FirstConnection'), /SecondBehaviour/);
 assert.strictEqual(exportedClassBody(connectionFixture, 'MissingConnection'), null);
 assert.strictEqual(exportedClassBody('export class FirstConnectionSuffix {}', 'FirstConnection'), null);
+
+assert.strictEqual(isManifestFileName('safe2.json'), true);
+assert.strictEqual(isManifestFileName('../safe2.json'), false);
+assert.strictEqual(isManifestFileName('unsafe\u001b.json'), false);
+let invalidJsonError;
+try {
+    parseManifestJson('{"value":\u001b}', 'unsafe\u001b.json');
+} catch (error) {
+    invalidJsonError = error;
+}
+assert.ok(invalidJsonError instanceof Error);
+assert.strictEqual(invalidJsonError.message, 'Manifest is not valid JSON: <unsafe-manifest-name>');
+assert.ok(!invalidJsonError.message.includes('\u001b'));
+
+assert.deepStrictEqual(bridgeServerChecks(base, () => false, () => { throw new Error('must not read'); }), [
+    'Missing bridge server: RobotIntegrationKit/python/src/codeon_robot_bridge/server.py'
+]);
+const registeredServer = [
+    'from .cozmo_adapter import CozmoAdapter',
+    'choices=("fake", "cozmo")',
+    'adapter = CozmoAdapter()'
+].join('\n');
+assert.deepStrictEqual(bridgeServerChecks(base, () => true, () => registeredServer), []);
+assert.strictEqual(bridgeServerChecks(base, () => true, () => '').length, 3);
 
 assert.throws(() => resolveManifestPath('../cozmo'), /unsafe/);
 assert.throws(() => resolveManifestPath('/tmp/cozmo'), /unsafe/);
@@ -80,6 +117,12 @@ const collision = JSON.parse(JSON.stringify(base));
 collision.id = 'second';
 assert.ok(validateManifestSet([base, collision]).some((error) => error.includes('already used')));
 assert.ok(validateManifestSet([{ fileName: 'broken.json', manifest: null }]).some((error) => error.includes('root is invalid')));
+const unsafeSetErrors = validateManifestSet([
+    { fileName: 'unsafe\u001b.json', manifest: { id: 'bad\u001b', bridge: { port: 2299 } } },
+    { fileName: 'unsafe\u001b.json', manifest: { id: 'bad\u001b', bridge: { port: 2299 } } }
+]);
+assert.ok(unsafeSetErrors.length >= 2);
+assert.ok(unsafeSetErrors.every((error) => !error.includes('\u001b')), 'Global validation errors must not repeat unsafe manifest text.');
 
 const bridgeBase = {
     schemaVersion: 1,
@@ -123,6 +166,11 @@ const mismatchedReport = buildReport(
     () => ({ errors: [], warnings: [] })
 );
 assert.ok(mismatchedReport.results[0].errors.some((error) => error.includes('filename')), 'Focused checks must report an ID mismatch in the selected manifest file.');
+const unsafeManifest = JSON.parse(JSON.stringify(bridgeBase));
+unsafeManifest.id = 'bad\u001b';
+const unsafeReport = buildReport([{ fileName: 'onebot.json', manifest: unsafeManifest }]);
+assert.strictEqual(unsafeReport.results[0].id, 'onebot');
+assert.ok(JSON.stringify(unsafeReport).includes('\\u001b') === false, 'Reports must not repeat unsafe manifest text.');
 
 for (const script of ['scripts/codeon-robot-manifest.js', 'scripts/codeon-robot-check.js']) {
     const source = fs.readFileSync(path.join(ROOT, script), 'utf8');

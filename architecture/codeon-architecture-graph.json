@@ -20,7 +20,7 @@
 
     { "id": "test.graph", "type": "test", "label": "Architecture graph contract", "command": "npm run test:architecture-graph" },
     { "id": "test.code-graph", "type": "test", "label": "Local code graph contract", "command": "npm run test:code-graph" },
-    { "id": "test.robot-integration", "type": "test", "label": "Read-only robot integration manifests", "command": "npm run test:robot-integration" },
+    { "id": "test.robot-integration", "type": "test", "label": "Robot integration developer tooling", "command": "npm run test:robot-integration" },
     { "id": "test.robot-bridge", "type": "test", "label": "Shared local robot bridge contract", "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=RobotIntegrationKit/python/src python3 -m unittest discover -s RobotIntegrationKit/python/tests -p 'test_bridge_contract.py' -v" },
     { "id": "test.constants", "type": "test", "label": "Generated Java and TypeScript constants", "command": "npm run test:constants" },
     { "id": "test.sensors", "type": "test", "label": "Cross-robot sensor toolboxes", "command": "node scripts/test-system-sensor-toolboxes.js" },
@@ -117,7 +117,7 @@
       "risk": "medium",
       "robots": ["robot.cozmo", "robot.apitor"],
       "tests": ["test.graph", "test.code-graph", "test.robot-integration"],
-      "reason": "The local robot integration contract and its read-only consistency checker changed."
+      "reason": "The local robot integration contract or its guarded developer tooling changed."
     },
     {
       "id": "robot-bridge-core",

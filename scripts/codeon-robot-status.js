@@ -49,6 +49,7 @@ function buildStatus(loaded, selectedId, checkRepository = repositoryChecks, loo
     if (selected.length === 0) throw new Error(`No robot integration manifest found for id: ${selectedId}`);
     const { fileName, manifest } = selected[0];
     const manifestErrors = validateManifest(manifest, fileName);
+    const manifestValid = manifestErrors.length === 0;
     const setErrors = validateManifestSet(loaded);
     const contractErrors = [...manifestErrors, ...setErrors];
     const repository = manifestErrors.length === 0
@@ -79,7 +80,7 @@ function buildStatus(loaded, selectedId, checkRepository = repositoryChecks, loo
         }
     }
 
-    const declaredChecks = manifestErrors.length === 0 ? lookupChecks(manifest.requiredChecks) : [];
+    const declaredChecks = manifestValid ? lookupChecks(manifest.requiredChecks) : [];
     phases.push(phase(
         'verification',
         'pending',
@@ -87,8 +88,10 @@ function buildStatus(loaded, selectedId, checkRepository = repositoryChecks, loo
         declaredChecks.map(({ id, command }) => command ? `${id}: ${command}` : `${id}: no command found`)
     ));
 
-    const limitations = Array.isArray(manifest.knownLimitations) ? manifest.knownLimitations : [];
-    if (manifest.hardwareStatus === 'verified') {
+    const limitations = manifestValid && Array.isArray(manifest.knownLimitations) ? manifest.knownLimitations : [];
+    if (!manifestValid) {
+        phases.push(phase('hardware', 'blocked', 'Hardware assessment is blocked by the manifest contract.'));
+    } else if (manifest.hardwareStatus === 'verified') {
         phases.push(phase('hardware', 'complete', 'The manifest records hardware verification.'));
     } else if (manifest.hardwareStatus === 'verified-with-limitations') {
         phases.push(phase('hardware', 'attention', 'Hardware is recorded as verified with known limitations.', limitations));
@@ -102,16 +105,16 @@ function buildStatus(loaded, selectedId, checkRepository = repositoryChecks, loo
     else if (manifest.scope === 'bridge') nextActions.push('Keep scope=bridge until stop, watchdog, disconnect and hardware-absent behavior have independent evidence.');
     else if (completeErrors.length > 0) nextActions.push(...completeErrors.map((error) => `Complete system step: ${error}`));
     if (declaredChecks.length > 0) nextActions.push('Run the declared checks explicitly; this status command never executes them or marks them passed.');
-    if (manifest.hardwareStatus === 'verified-with-limitations') nextActions.push('Retain or resolve every documented hardware limitation before claiming full verification.');
-    else if (manifest.hardwareStatus !== 'verified') nextActions.push('Complete and document physical hardware acceptance before changing hardwareStatus.');
+    if (manifestValid && manifest.hardwareStatus === 'verified-with-limitations') nextActions.push('Retain or resolve every documented hardware limitation before claiming full verification.');
+    else if (manifestValid && manifest.hardwareStatus !== 'verified') nextActions.push('Complete and document physical hardware acceptance before changing hardwareStatus.');
 
     return {
-        id: manifest.id || selectedId,
-        displayName: manifest.displayName || null,
+        id: manifestValid ? manifest.id : selectedId,
+        displayName: manifestValid ? manifest.displayName : null,
         file: fileName,
-        scope: manifest.scope || null,
-        activation: manifest.activation || null,
-        hardwareStatus: manifest.hardwareStatus || null,
+        scope: manifestValid ? manifest.scope : null,
+        activation: manifestValid ? manifest.activation : null,
+        hardwareStatus: manifestValid ? manifest.hardwareStatus : null,
         staticallyConsistent: contractErrors.length === 0 && repositoryErrors.length === 0,
         phases,
         requiredChecks: declaredChecks,
