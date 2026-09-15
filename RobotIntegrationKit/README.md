@@ -21,12 +21,31 @@ Before starting a new integration, choose between a bridge prototype and a
 complete CodeON robot system in `docs/INTEGRATION_CONTRACT.md`. The shorter
 execution list is available in `docs/NEW_ROBOT_CHECKLIST.md`.
 
+The checked reference manifests live in `manifests/`. Validate both references
+without changing repository files:
+
+```shell
+npm run robot:check
+```
+
+Validate only one known robot with `npm run robot:check -- --id cozmo`. The
+command accepts an allowlisted robot ID, reads only from the manifest directory
+and never executes commands stored in project metadata.
+
 ## Local development
 
-The core and fake adapter have no runtime dependencies:
+The core and fake-adapter contract have no vendor runtime dependencies:
 
 ```shell
 PYTHONPATH=RobotIntegrationKit/python/src python3 -m unittest discover \
+  -s RobotIntegrationKit/python/tests -p 'test_bridge_contract.py' -v
+```
+
+Run the complete adapter suite from the isolated environment after installing
+the robot-specific extras:
+
+```shell
+PYTHONPATH=RobotIntegrationKit/python/src .venv/bin/python -m unittest discover \
   -s RobotIntegrationKit/python/tests -v
 ```
 

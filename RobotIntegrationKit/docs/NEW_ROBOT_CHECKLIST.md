@@ -7,6 +7,12 @@ Read `INTEGRATION_CONTRACT.md` first and choose one scope:
 - **Complete system:** robot card, plugin, toolbox, browser connection and
   optional simulation after the bridge safety gates pass.
 
+Create a draft manifest under `RobotIntegrationKit/manifests/<id>.json`, based
+on the schema rather than by changing a reference robot. Run
+`npm run robot:check -- --id <id>` after each registration step. Keep its scope
+as `bridge` until every complete-system field exists. A draft must never be
+added to the active robot whitelist.
+
 ## Bridge prototype
 
 1. Choose a stable lowercase robot identifier.

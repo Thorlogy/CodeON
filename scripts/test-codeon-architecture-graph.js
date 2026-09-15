@@ -45,6 +45,18 @@ assert.strictEqual(changePlannerImpact.risk, 'medium');
 assert.deepStrictEqual(changePlannerImpact.unknownPaths, []);
 assert.ok(changePlannerImpact.requiredChecks.some((test) => test.id === 'test.code-graph'));
 
+const robotIntegrationImpact = impactForPaths(graph, ['RobotIntegrationKit/manifests/cozmo.json']);
+assert.strictEqual(robotIntegrationImpact.risk, 'medium');
+assert.deepStrictEqual(robotIntegrationImpact.unknownPaths, []);
+assert.deepStrictEqual(robotIntegrationImpact.affectedRobots.map((robot) => robot.id), ['robot.apitor', 'robot.cozmo']);
+assert.ok(robotIntegrationImpact.requiredChecks.some((test) => test.id === 'test.robot-integration'));
+
+const robotBridgeImpact = impactForPaths(graph, ['RobotIntegrationKit/python/src/codeon_robot_bridge/adapter.py']);
+assert.strictEqual(robotBridgeImpact.risk, 'critical');
+assert.strictEqual(robotBridgeImpact.reviewRequired, true);
+assert.deepStrictEqual(robotBridgeImpact.unknownPaths, []);
+assert.ok(robotBridgeImpact.requiredChecks.some((test) => test.id === 'test.robot-bridge'));
+
 const constantsImpact = impactForPaths(graph, ['scripts/generate-codeon-constants.js']);
 assert.strictEqual(constantsImpact.risk, 'critical');
 assert.deepStrictEqual(constantsImpact.unknownPaths, []);

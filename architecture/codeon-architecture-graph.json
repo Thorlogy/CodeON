@@ -20,6 +20,8 @@
 
     { "id": "test.graph", "type": "test", "label": "Architecture graph contract", "command": "npm run test:architecture-graph" },
     { "id": "test.code-graph", "type": "test", "label": "Local code graph contract", "command": "npm run test:code-graph" },
+    { "id": "test.robot-integration", "type": "test", "label": "Read-only robot integration manifests", "command": "npm run test:robot-integration" },
+    { "id": "test.robot-bridge", "type": "test", "label": "Shared local robot bridge contract", "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=RobotIntegrationKit/python/src python3 -m unittest discover -s RobotIntegrationKit/python/tests -p 'test_bridge_contract.py' -v" },
     { "id": "test.constants", "type": "test", "label": "Generated Java and TypeScript constants", "command": "npm run test:constants" },
     { "id": "test.sensors", "type": "test", "label": "Cross-robot sensor toolboxes", "command": "node scripts/test-system-sensor-toolboxes.js" },
     { "id": "test.cozmo-contract", "type": "test", "label": "Cozmo fixed-configuration contract", "command": "mvn -pl RobotCozmo -am -Dtest=CozmoFixedConfigurationTest -DfailIfNoTests=false -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test" },
@@ -55,7 +57,9 @@
     { "from": "robot.edison", "type": "verified-by", "to": "test.sensors" },
     { "from": "robot.rcj", "type": "verified-by", "to": "test.sensors" },
     { "from": "robot.cozmo", "type": "verified-by", "to": "test.cozmo-contract" },
+    { "from": "robot.cozmo", "type": "verified-by", "to": "test.robot-bridge" },
     { "from": "robot.cozmo", "type": "verified-by", "to": "test.cozmo-simulation" },
+    { "from": "robot.apitor", "type": "verified-by", "to": "test.robot-bridge" },
     { "from": "robot.apitor", "type": "verified-by", "to": "test.apitor-simulation" }
   ],
   "impactRules": [
@@ -106,6 +110,22 @@
       "robots": [],
       "tests": ["test.graph", "test.code-graph"],
       "reason": "Developer planning must remain local, bounded, shell-free, and explicit about heuristic relationships."
+    },
+    {
+      "id": "robot-integration-contract",
+      "paths": ["RobotIntegrationKit/README.md", "RobotIntegrationKit/docs/", "RobotIntegrationKit/schema/", "RobotIntegrationKit/manifests/", "scripts/codeon-robot-manifest.js", "scripts/codeon-robot-check.js", "scripts/test-codeon-robot-check.js"],
+      "risk": "medium",
+      "robots": ["robot.cozmo", "robot.apitor"],
+      "tests": ["test.graph", "test.code-graph", "test.robot-integration"],
+      "reason": "The local robot integration contract and its read-only consistency checker changed."
+    },
+    {
+      "id": "robot-bridge-core",
+      "paths": ["RobotIntegrationKit/python/"],
+      "risk": "critical",
+      "robots": ["robot.cozmo", "robot.apitor"],
+      "tests": ["test.graph", "test.robot-bridge", "test.cozmo-contract", "test.cozmo-simulation", "test.apitor-simulation"],
+      "reason": "The shared local bridge controls physical actuators and must retain stop, watchdog, protocol, and adapter guarantees."
     },
     {
       "id": "parent-build",

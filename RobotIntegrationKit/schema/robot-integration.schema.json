@@ -1,0 +1,217 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://codeon.local/schema/robot-integration.schema.json",
+  "title": "CodeON robot integration manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "displayName",
+    "scope",
+    "activation",
+    "transport",
+    "bridge",
+    "capabilities",
+    "limits",
+    "supportedHosts",
+    "hardwareStatus",
+    "requiredChecks",
+    "knownLimitations"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]{1,31}$"
+    },
+    "displayName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "scope": {
+      "enum": ["bridge", "complete"]
+    },
+    "activation": {
+      "enum": ["draft", "active"]
+    },
+    "transport": {
+      "enum": ["wifi", "ble", "usb", "serial", "other-local"]
+    },
+    "configurationMode": {
+      "enum": ["fixed", "user-configurable", "built-in"]
+    },
+    "module": {
+      "type": "string",
+      "pattern": "^Robot[A-Z][A-Za-z0-9]{1,47}$"
+    },
+    "browserConnectionClass": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Za-z0-9]{1,79}Connection$"
+    },
+    "browserBehaviourClass": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Za-z0-9]{1,79}$"
+    },
+    "previewImage": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]{1,31}\\.(png|jpg)$"
+    },
+    "simulation": {
+      "enum": ["none", "planned", "2d", "3d", "2d-3d"]
+    },
+    "bridge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["adapter", "adapterClass", "port", "autoStart"],
+      "properties": {
+        "adapter": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]{1,31}$"
+        },
+        "adapterClass": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Za-z0-9]{1,79}Adapter$"
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1024,
+          "maximum": 65535
+        },
+        "autoStart": {
+          "type": "boolean"
+        },
+        "optionalDependency": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,47}$"
+        }
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actuators", "sensors"],
+      "properties": {
+        "actuators": {
+          "$ref": "#/$defs/capabilityList"
+        },
+        "sensors": {
+          "$ref": "#/$defs/capabilityList"
+        }
+      }
+    },
+    "limits": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 32,
+      "propertyNames": {
+        "pattern": "^[A-Za-z][A-Za-z0-9]{0,63}$"
+      },
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["min", "max"],
+            "properties": {
+              "min": {
+                "type": "number"
+              },
+              "max": {
+                "type": "number"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "supportedHosts": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": ["macos", "windows", "linux"]
+      }
+    },
+    "hardwareStatus": {
+      "enum": ["experimental", "hardware-pending", "verified", "verified-with-limitations"]
+    },
+    "requiredChecks": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^test\\.[a-z0-9.-]{1,63}$"
+      }
+    },
+    "knownLimitations": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      }
+    }
+  },
+  "$defs": {
+    "capabilityList": {
+      "type": "array",
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z][A-Za-z0-9]{0,63}$"
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "scope": {
+            "const": "complete"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "configurationMode",
+          "module",
+          "browserConnectionClass",
+          "browserBehaviourClass",
+          "previewImage",
+          "simulation"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "activation": {
+            "const": "active"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "scope": {
+            "const": "complete"
+          }
+        }
+      }
+    }
+  ]
+}

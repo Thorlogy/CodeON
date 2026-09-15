@@ -2,8 +2,8 @@
 
 This document describes the current, reviewed contract for adding a robot to a
 local CodeON fork. It records the manual integration points that exist today.
-The future integration checker and wizard must implement this contract rather
-than inventing a second path through the codebase.
+The integration checker and future wizard implement this contract rather than
+inventing a second path through the codebase.
 
 CodeON remains usable while an integration is incomplete. A new integration
 must be developed on a separate branch and must not be added to the active
@@ -155,9 +155,13 @@ vendor dependency remains optional, the fake path works without hardware, all
 required checks pass, every stop path has been physically verified, and the
 documentation allows another person to reproduce both setup and acceptance.
 
-## Planned automation boundary
+## Automation boundary
 
-The planned `robot:check` command will validate these registrations without
-modifying files. The later `robot:new` wizard will generate reviewed templates
-only after the checker exists. Neither tool will infer a proprietary protocol,
-invent safe motor limits or claim hardware verification.
+`npm run robot:check` validates every manifest and its repository registrations
+without modifying files. Use `npm run robot:check -- --id <robot-id>` for one
+known manifest. The checker accepts no arbitrary manifest path, does not invoke
+shell commands and treats commands in the architecture graph as informational.
+
+The later `robot:new` wizard will generate reviewed templates on an isolated
+branch. Neither tool will infer a proprietary protocol, invent safe motor
+limits or claim hardware verification.

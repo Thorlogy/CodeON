@@ -1,0 +1,74 @@
+{
+  "$schema": "../schema/robot-integration.schema.json",
+  "schemaVersion": 1,
+  "id": "cozmo",
+  "displayName": "Cozmo",
+  "scope": "complete",
+  "activation": "active",
+  "transport": "wifi",
+  "configurationMode": "fixed",
+  "module": "RobotCozmo",
+  "browserConnectionClass": "CozmoConnection",
+  "browserBehaviourClass": "RobotBridgeBehaviour",
+  "previewImage": "cozmo.png",
+  "simulation": "2d-3d",
+  "bridge": {
+    "adapter": "cozmo",
+    "adapterClass": "CozmoAdapter",
+    "port": 2223,
+    "autoStart": true,
+    "optionalDependency": "cozmo-vision"
+  },
+  "capabilities": {
+    "actuators": [
+      "differentialDrive",
+      "head",
+      "lift",
+      "lights",
+      "display",
+      "audio",
+      "camera",
+      "lightCubes",
+      "behaviors"
+    ],
+    "sensors": [
+      "battery",
+      "accelerometer",
+      "gyroscope",
+      "wheelSpeed",
+      "pose",
+      "snapshot",
+      "face",
+      "cliff",
+      "lightCubes"
+    ]
+  },
+  "limits": {
+    "wheelSpeedMmPerSec": {
+      "min": -150,
+      "max": 150
+    },
+    "headAngleRadians": {
+      "min": -0.4,
+      "max": 0.7
+    },
+    "liftHeightMm": {
+      "min": 32,
+      "max": 92
+    },
+    "heartbeatTimeoutMs": 1000
+  },
+  "supportedHosts": ["macos"],
+  "hardwareStatus": "verified-with-limitations",
+  "requiredChecks": [
+    "test.robot-bridge",
+    "test.cozmo-contract",
+    "test.cozmo-simulation",
+    "test.java-reactor",
+    "test.sensors"
+  ],
+  "knownLimitations": [
+    "The lift works without load but does not yet raise a Light Cube reliably.",
+    "Light Cube radio and marker functions still require complete hardware acceptance."
+  ]
+}
