@@ -73,6 +73,11 @@ write failures roll back files created by that invocation. If the process or
 computer is terminated abruptly, inspect the four reported paths with
 `git status` before retrying.
 
+All four fixed parent directories, including `docs/acceptance/`, are kept in
+version control. The writer intentionally refuses to create a missing parent;
+this makes a damaged or incomplete checkout fail before any scaffold file is
+written.
+
 Both modes reject IDs already present in the architecture graph, active robot
 list or manifests, existing target files, and ports reserved by CodeON, a local
 launcher or another manifest. An optional dependency name must begin with the

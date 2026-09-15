@@ -45,7 +45,11 @@ const targets = [
     'RobotIntegrationKit/python/tests/test_dryrunbot_adapter.py',
     'RobotIntegrationKit/docs/acceptance/dryrunbot.md'
 ];
-targets.forEach((target) => assert.strictEqual(fs.existsSync(path.join(ROOT, target)), false, `Test target must start absent: ${target}`));
+targets.forEach((target) => {
+    const parent = fs.lstatSync(path.dirname(path.join(ROOT, target)));
+    assert.ok(parent.isDirectory() && !parent.isSymbolicLink(), `Scaffold parent must be a versioned real directory: ${target}`);
+    assert.strictEqual(fs.existsSync(path.join(ROOT, target)), false, `Test target must start absent: ${target}`);
+});
 
 const first = buildPlan(options());
 const second = buildPlan(options());
