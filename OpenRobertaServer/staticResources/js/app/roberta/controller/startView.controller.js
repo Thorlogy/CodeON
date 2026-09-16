@@ -1,4 +1,4 @@
-define(["require", "exports", "guiState.controller", "startView.model", "table", "jquery", "blockly", "util.roberta", "message", "bootstrap-table"], function (require, exports, GUISTATE_C, STARTVIEW, table_1, $, Blockly, UTIL, MSG) {
+define(["require", "exports", "guiState.controller", "startView.model", "table", "jquery", "blockly", "util.roberta", "message", "robotIntegrationAssistant.controller", "bootstrap-table"], function (require, exports, GUISTATE_C, STARTVIEW, table_1, $, Blockly, UTIL, MSG, ROBOT_INTEGRATION_ASSISTANT) {
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.init = void 0;
     var robots = [];
@@ -69,6 +69,7 @@ define(["require", "exports", "guiState.controller", "startView.model", "table",
         $.when(preloadAll(images)).then(function (images) {
             initRobotList();
             initRobotToolbar();
+            ROBOT_INTEGRATION_ASSISTANT.init(robots.map(function (robot) { return robot.name; }), GUISTATE_C.getLanguage());
             initRobotListEvents();
             fetchRSSFeed();
             ready.resolve();

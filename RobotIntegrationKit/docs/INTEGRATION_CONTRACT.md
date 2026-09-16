@@ -179,6 +179,39 @@ hardware phases. It is an orientation aid, not a test runner or CI replacement:
 declared test commands are always displayed as pending and must be run and
 recorded separately through the normal workflow.
 
+The graphical assistant enabled with `robotIntegrationAssistant=1` on an exact
+loopback host is an additional passive preview of the first integration phase.
+It has no network, repository, storage, download or hardware capability. It may
+reject obviously invalid or already active robot identifiers, but its browser
+checks do not replace the repository-aware command-line preflight. The normal
+start page remains unchanged when the explicit parameter is absent.
+
+Before exposing its scaffold preview, the assistant performs a deterministic
+feasibility assessment. A locked protocol, unavailable local control, missing
+actuator control or a missing safe-stop command produces `not-ready` and keeps
+the next step closed. Partial or unknown evidence produces `research-required`;
+documented local control, direct actuator control, a safe stop and available
+test hardware produce `well-suited`. Sensor access may remain unavailable for
+robots whose declared capabilities do not include sensors. A supplied HTTP(S)
+reference is displayed as evidence only and is never fetched or interpreted.
+
+After a valid scaffold preview, the assistant can also describe a bounded
+hardware profile: stationary, wheeled or tracked construction; kinematics;
+optional wheel/track geometry and speed; up to twelve actuators and twelve
+sensors; control/value types; units; numeric ranges; safe states; command
+completion and sampled/event access. Component identifiers are unique across
+both categories. Invalid values produce neither profile nor block mapping.
+
+The resulting hardware profile and block mapping are deliberately separate
+preview documents, not extensions of the authoritative integration manifest.
+The profile is always `draft` and `hardwareTested: false`. Suggested mappings
+refer to semantic block concepts such as drive, stop, motor, distance, touch or
+wait-until; they do not assert that a concrete Blockly block supports the new
+device. Every mapping carries `expertReviewRequired: true`, and unfamiliar
+drive, actuator or sensor types are classified as custom work. A later expert
+must reconcile the suggestions with the robot's protocol, CodeON AST/runtime,
+toolbox and generator before any block is exposed.
+
 `npm run robot:new -- --dry-run ...` previews a fail-closed bridge scaffold,
 including exact paths and hashes in normal output. Add `--json` when the exact
 generated content is required. Only a separate invocation with `--write`,

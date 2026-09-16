@@ -173,6 +173,9 @@
       "startView.controller": [
         "app/roberta/controller/startView.controller"
       ],
+      "robotIntegrationAssistant.controller": [
+        "app/roberta/controller/robotIntegrationAssistant.controller"
+      ],
       "simulation.constants": [
         "app/simulation/simulationLogic/constants"
       ],

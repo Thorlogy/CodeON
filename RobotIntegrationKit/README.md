@@ -46,6 +46,42 @@ It deliberately does not run tests or infer that a declared check passed. Use
 `--json` for machine-readable output. An incomplete bridge is normal progress
 in this view; `robot:check` remains the strict consistency gate for CI.
 
+### Passive assistant inside CodeON
+
+A first graphical preview is available only on an explicitly enabled local
+CodeON start page. Open CodeON on a loopback address with the query parameter
+`robotIntegrationAssistant=1`, for example:
+
+```text
+http://localhost:1999/?robotIntegrationAssistant=1
+```
+
+The button **Integrate your own robot** then appears above the robot cards. Its
+first step records an optional HTTP(S) specification URL and assesses the
+available protocol evidence, local control, actuator and sensor access, safe
+stop and test-hardware availability. The deterministic result is **well
+suited**, **research required** or **not ready**. A not-ready result keeps the
+scaffold step closed. Otherwise the assistant validates the basic ID, display
+name, transport, port and host fields and previews the draft manifest, four
+planned paths and the remaining phases. A third, still passive step describes
+the drive layout, optional geometry, actuators, sensors, ranges, units, safe
+states and synchronous/asynchronous behaviour. It previews a separate hardware
+profile and suggested mappings to familiar CodeON block concepts. Every mapping
+is marked for expert review; no Blockly definition, toolbox entry or runtime
+handler is created or enabled. It is hidden without the parameter and on every
+non-loopback host.
+
+This browser view is deliberately passive. It does not write or download
+files, store input, fetch or evaluate a referenced specification, call a
+server, run tests, activate a system or communicate with hardware. Its checks
+are preliminary; the command-line `robot:new`,
+`robot:check` and `robot:status` tools remain authoritative.
+
+The hardware and block-mapping previews are design records, not accepted
+manifest-schema fields. They intentionally keep `reviewStatus: draft`,
+`hardwareTested: false` and `expert-review-required` until an implementer has
+checked protocol semantics, units, limits, stop behaviour and physical hardware.
+
 Preview a new, deliberately disconnected bridge scaffold with:
 
 ```shell
