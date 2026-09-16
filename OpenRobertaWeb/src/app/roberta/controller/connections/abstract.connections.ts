@@ -10,6 +10,7 @@ import * as MSG from 'message';
 // @ts-ignore
 import * as Blockly from 'blockly';
 import * as CONNECTION_C from 'connection.controller';
+import { buildConnectionDiagnosticView, ConnectionDiagnostics } from 'connectionDiagnostics';
 
 export abstract class AbstractConnection implements ConnectionInterface {
     public abstract isRobotConnected(): boolean;
@@ -93,11 +94,11 @@ export abstract class AbstractConnection implements ConnectionInterface {
      */
     showRobotInfo(): void {
         if (GUISTATE_C.getRobotName().length !== 0) {
-            $('#robotName').html(GUISTATE_C.getRobotName());
+            $('#robotName').text(GUISTATE_C.getRobotName());
         } else {
-            $('#robotName').html('-');
+            $('#robotName').text('-');
         }
-        $('#robotSystem').html(GUISTATE_C.getRobotRealName());
+        $('#robotSystem').text(GUISTATE_C.getRobotRealName());
         if (GUISTATE_C.getRobotState() === 'wait' || $('#head-navi-icon-robot').hasClass('wait')) {
             $('#robotStateWait').css('display', 'inline');
             $('#robotStateDisconnected').css('display', 'none');
@@ -122,7 +123,43 @@ export abstract class AbstractConnection implements ConnectionInterface {
         } else {
             $('#robotWait').text(Math.round(robotWait / 1000) + ' s');
         }
+        const diagnosticView = buildConnectionDiagnosticView(this.getDiagnostics(), GUISTATE_C.getLanguage(), GUISTATE_C.getRobotGroup());
+        const fields = {
+            Title: diagnosticView.title,
+            CodeOnLabel: diagnosticView.codeOnLabel,
+            CodeOnValue: diagnosticView.codeOnValue,
+            ConnectionLabel: diagnosticView.connectionLabel,
+            ConnectionValue: diagnosticView.connectionValue,
+            EndpointLabel: diagnosticView.endpointLabel,
+            EndpointValue: diagnosticView.endpointValue,
+            BridgeLabel: diagnosticView.bridgeLabel,
+            BridgeValue: diagnosticView.bridgeValue,
+            RobotLabel: diagnosticView.robotLabel,
+            RobotValue: diagnosticView.robotValue,
+            HeartbeatLabel: diagnosticView.heartbeatLabel,
+            HeartbeatValue: diagnosticView.heartbeatValue,
+            ResponseLabel: diagnosticView.responseLabel,
+            ResponseValue: diagnosticView.responseValue,
+            ErrorLabel: diagnosticView.errorLabel,
+            ErrorValue: diagnosticView.errorValue,
+            RecommendationLabel: diagnosticView.recommendationLabel,
+            RecommendationValue: diagnosticView.recommendationValue,
+        };
+        (Object.keys(fields) as Array<keyof typeof fields>).forEach((name) => $('#connectionDiagnostic' + name).text(fields[name]));
         $('#show-robot-info').modal('show');
+    }
+
+    getDiagnostics(): ConnectionDiagnostics {
+        return {
+            connectionKind: 'generic',
+            connectionName: this.constructor && this.constructor.name ? this.constructor.name : 'CodeON connection',
+            bridgeState: 'not-applicable',
+            robotConnected: this.isRobotConnected(),
+            connecting: false,
+            retryScheduled: false,
+            healthMonitorActive: false,
+            heartbeatActive: false,
+        };
     }
 
     /**

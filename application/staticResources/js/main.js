@@ -28,7 +28,7 @@
 })();
 require.config({
     baseUrl: '.',
-    urlArgs: 'v=codeon-live-20260915-38',
+    urlArgs: 'v=codeon-live-20260916-39',
     paths: {
         ace: 'libs/ace/ace',
         ace_lang: 'libs/ace/ext-language_tools',
@@ -90,6 +90,7 @@ require.config({
         'robot.controller': 'js/app/roberta/controller/robot.controller',
         'robot.model': 'js/app/roberta/models/robot.model',
         robotBridge: 'js/app/roberta/models/robotBridge',
+        connectionDiagnostics: 'js/app/roberta/models/connectionDiagnostics',
         'cozmo.blocks': 'js/app/roberta/cozmo.blocks',
         'apitor.blocks': 'js/app/roberta/apitor.blocks',
         'tour.controller': 'js/app/roberta/controller/tour.controller',

@@ -13,6 +13,17 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -83,8 +94,15 @@ define(["require", "exports"], function (require, exports) {
             return new Promise(function (resolve, reject) {
                 var socket = new WebSocket(_this.url);
                 _this.socket = socket;
-                socket.onopen = function () { return resolve(); };
-                socket.onerror = function () { return reject(new RobotBridgeError('TRANSPORT_ERROR', 'Robot bridge is not reachable')); };
+                socket.onopen = function () {
+                    _this.openedAt = Date.now();
+                    resolve();
+                };
+                socket.onerror = function () {
+                    var error = new RobotBridgeError('TRANSPORT_ERROR', 'Robot bridge is not reachable');
+                    _this.recordError(error);
+                    reject(error);
+                };
                 socket.onmessage = function (event) { return _this.handleResponse(event.data); };
                 socket.onclose = function () { return _this.handleClose(); };
             });
@@ -157,6 +175,24 @@ define(["require", "exports"], function (require, exports) {
             }
             this.socket = undefined;
         };
+        RobotBridgeClient.prototype.getDiagnostics = function () {
+            return {
+                connectionKind: 'local-bridge',
+                connectionName: 'CodeON Robot Bridge Protocol 1.0',
+                endpoint: this.url,
+                bridgeState: this.getBridgeState(),
+                robotConnected: false,
+                connecting: this.getBridgeState() === 'connecting',
+                retryScheduled: false,
+                healthMonitorActive: false,
+                heartbeatActive: this.heartbeatTimer !== undefined,
+                openedAt: this.openedAt,
+                lastResponseAt: this.lastResponseAt,
+                lastHeartbeatAt: this.lastHeartbeatAt,
+                lastClosedAt: this.lastClosedAt,
+                lastError: this.lastError && __assign({}, this.lastError),
+            };
+        };
         RobotBridgeClient.prototype.request = function (type, values, timeoutMs) {
             var _this = this;
             if (values === void 0) { values = {}; }
@@ -169,9 +205,11 @@ define(["require", "exports"], function (require, exports) {
             return new Promise(function (resolve, reject) {
                 var timeout = window.setTimeout(function () {
                     _this.pending.delete(id);
-                    reject(new RobotBridgeError('REQUEST_TIMEOUT', 'Robot bridge did not answer in time'));
+                    var error = new RobotBridgeError('REQUEST_TIMEOUT', 'Robot bridge did not answer in time');
+                    _this.recordError(error);
+                    reject(error);
                 }, timeoutMs);
-                _this.pending.set(id, { resolve: resolve, reject: reject, timeout: timeout });
+                _this.pending.set(id, { resolve: resolve, reject: reject, timeout: timeout, type: type });
                 _this.socket.send(JSON.stringify(message));
             });
         };
@@ -190,11 +228,16 @@ define(["require", "exports"], function (require, exports) {
             window.clearTimeout(pending.timeout);
             this.pending.delete(response.id);
             if (response.ok) {
+                this.lastResponseAt = Date.now();
+                if (pending.type === 'heartbeat')
+                    this.lastHeartbeatAt = this.lastResponseAt;
                 pending.resolve(response.result);
             }
             else {
                 var error = response.error || { code: 'BRIDGE_ERROR', message: 'Robot bridge rejected the request' };
-                pending.reject(new RobotBridgeError(error.code, error.message));
+                var bridgeError = new RobotBridgeError(error.code, error.message);
+                this.recordError(bridgeError);
+                pending.reject(bridgeError);
             }
         };
         RobotBridgeClient.prototype.startHeartbeat = function () {
@@ -214,12 +257,29 @@ define(["require", "exports"], function (require, exports) {
         };
         RobotBridgeClient.prototype.handleClose = function () {
             this.stopHeartbeat();
+            this.lastClosedAt = Date.now();
             this.socket = undefined;
+            if (this.pending.size > 0)
+                this.recordError(new RobotBridgeError('TRANSPORT_CLOSED', 'Robot bridge connection was closed'));
             this.pending.forEach(function (pending) {
                 window.clearTimeout(pending.timeout);
                 pending.reject(new RobotBridgeError('TRANSPORT_CLOSED', 'Robot bridge connection was closed'));
             });
             this.pending.clear();
+        };
+        RobotBridgeClient.prototype.getBridgeState = function () {
+            if (!this.socket)
+                return 'closed';
+            if (this.socket.readyState === 0)
+                return 'connecting';
+            if (this.socket.readyState === 1)
+                return 'open';
+            if (this.socket.readyState === 2)
+                return 'closing';
+            return 'closed';
+        };
+        RobotBridgeClient.prototype.recordError = function (error) {
+            this.lastError = { code: String(error.code || 'BRIDGE_ERROR'), message: String(error.message || 'Robot bridge error'), at: Date.now() };
         };
         return RobotBridgeClient;
     }());

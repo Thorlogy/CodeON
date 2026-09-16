@@ -1,3 +1,5 @@
+import { ConnectionDiagnostics } from 'connectionDiagnostics';
+
 export interface ConnectionInterface {
     init(): void;
 
@@ -44,6 +46,8 @@ export interface ConnectionInterface {
     showConnectionModal(): void;
 
     showRobotInfo(): void;
+
+    getDiagnostics(): ConnectionDiagnostics;
 
     showWlanModal(): void;
 }

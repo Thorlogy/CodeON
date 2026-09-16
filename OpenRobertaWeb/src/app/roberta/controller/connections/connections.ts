@@ -21,6 +21,7 @@ import { Interpreter } from 'interpreter.interpreter';
 import { RobotBridgeBehaviour } from 'interpreter.robotBridgeBehaviour';
 import { ApitorRobotBridgeBehaviour } from 'interpreter.apitorRobotBridgeBehaviour';
 import { RobotBridgeClient, RobotBridgeError, RobotBridgeManifest } from 'robotBridge';
+import { ConnectionDiagnostics, DiagnosticError } from 'connectionDiagnostics';
 // @ts-ignore AMD side-effect module that registers the Cozmo Blockly blocks.
 import 'cozmo.blocks';
 // @ts-ignore AMD side-effect module that registers the Apitor Blockly blocks.
@@ -2163,6 +2164,7 @@ export class CozmoConnection extends AbstractConnection {
     private connecting = false;
     private stopped = false;
     private helpShown = false;
+    private lastConnectionError: DiagnosticError | undefined;
 
     override init(): void {
         this.stopped = false;
@@ -2179,6 +2181,23 @@ export class CozmoConnection extends AbstractConnection {
 
     isRobotConnected(): boolean {
         return this.connected;
+    }
+
+    override getDiagnostics(): ConnectionDiagnostics {
+        const diagnostics = this.bridge.getDiagnostics();
+        const bridgeError = diagnostics.lastError;
+        return {
+            ...diagnostics,
+            connectionName: 'Cozmo · CodeON Robot Bridge',
+            robotConnected: this.connected,
+            connecting: this.connecting || diagnostics.connecting,
+            retryScheduled: this.retryTimer !== undefined,
+            healthMonitorActive: this.healthTimer !== undefined,
+            lastError:
+                this.lastConnectionError && (!bridgeError || this.lastConnectionError.at >= bridgeError.at)
+                    ? { ...this.lastConnectionError }
+                    : bridgeError,
+        };
     }
 
     protected run(result: any): void {
@@ -2259,6 +2278,7 @@ export class CozmoConnection extends AbstractConnection {
             this.startHealthMonitor();
         } catch (error) {
             this.connected = false;
+            this.recordConnectionError(error);
             if (error instanceof RobotBridgeError && error.code === 'SESSION_REPLACED') {
                 this.stopped = true;
                 this.clearRetry();
@@ -2430,6 +2450,7 @@ export class CozmoConnection extends AbstractConnection {
     }
 
     private hardwareError(error: Error): void {
+        this.recordConnectionError(error);
         this.stopped = true;
         this.clearTaskRunTimer();
         this.bridge.stopAll().catch(() => undefined);
@@ -2466,6 +2487,14 @@ export class CozmoConnection extends AbstractConnection {
         $('#head-navi-icon-robot').attr('title', 'Cozmo wird verbunden: ' + detail);
         console.info('Cozmo wird im Hintergrund verbunden:', detail);
     }
+
+    private recordConnectionError(error: unknown): void {
+        this.lastConnectionError = {
+            code: error instanceof RobotBridgeError ? error.code : 'CONNECTION_ERROR',
+            message: error instanceof Error ? error.message : String(error),
+            at: Date.now(),
+        };
+    }
 }
 
 /** Apitor Robot X connection through its dedicated local BLE bridge. */
@@ -2475,6 +2504,7 @@ export class ApitorConnection extends AbstractConnection {
     private retryTimer: number | undefined;
     private connected = false;
     private stopped = false;
+    private lastConnectionError: DiagnosticError | undefined;
 
     override init(): void {
         this.stopped = false;
@@ -2489,6 +2519,21 @@ export class ApitorConnection extends AbstractConnection {
 
     isRobotConnected(): boolean {
         return this.connected;
+    }
+
+    override getDiagnostics(): ConnectionDiagnostics {
+        const diagnostics = this.bridge.getDiagnostics();
+        const bridgeError = diagnostics.lastError;
+        return {
+            ...diagnostics,
+            connectionName: 'Apitor Robot X · CodeON Robot Bridge',
+            robotConnected: this.connected,
+            retryScheduled: this.retryTimer !== undefined,
+            lastError:
+                this.lastConnectionError && (!bridgeError || this.lastConnectionError.at >= bridgeError.at)
+                    ? { ...this.lastConnectionError }
+                    : bridgeError,
+        };
     }
 
     protected run(result: any): void {
@@ -2548,6 +2593,7 @@ export class ApitorConnection extends AbstractConnection {
             GUISTATE_C.setConnectionState('wait');
         } catch (error) {
             this.connected = false;
+            this.recordConnectionError(error);
             $('#head-navi-icon-robot').removeClass('busy wait').addClass('error');
             GUISTATE_C.setRunEnabled(false);
             const detail = error instanceof Error ? error.message : String(error);
@@ -2581,6 +2627,7 @@ export class ApitorConnection extends AbstractConnection {
     }
 
     private hardwareError(error: Error): void {
+        this.recordConnectionError(error);
         this.stopped = true;
         this.bridge.stopAll().catch(() => undefined);
         if (this.interpreter && !this.interpreter.isTerminated()) this.interpreter.terminate();
@@ -2605,6 +2652,14 @@ export class ApitorConnection extends AbstractConnection {
             window.clearTimeout(this.retryTimer);
             this.retryTimer = undefined;
         }
+    }
+
+    private recordConnectionError(error: unknown): void {
+        this.lastConnectionError = {
+            code: error instanceof RobotBridgeError ? error.code : 'CONNECTION_ERROR',
+            message: error instanceof Error ? error.message : String(error),
+            at: Date.now(),
+        };
     }
 }
 

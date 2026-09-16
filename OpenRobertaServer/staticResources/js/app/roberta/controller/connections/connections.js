@@ -13,6 +13,17 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -2657,6 +2668,12 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
         CozmoConnection.prototype.isRobotConnected = function () {
             return this.connected;
         };
+        CozmoConnection.prototype.getDiagnostics = function () {
+            var diagnostics = this.bridge.getDiagnostics();
+            var bridgeError = diagnostics.lastError;
+            return __assign(__assign({}, diagnostics), { connectionName: 'Cozmo · CodeON Robot Bridge', robotConnected: this.connected, connecting: this.connecting || diagnostics.connecting, retryScheduled: this.retryTimer !== undefined, healthMonitorActive: this.healthTimer !== undefined, lastError: this.lastConnectionError && (!bridgeError || this.lastConnectionError.at >= bridgeError.at)
+                    ? __assign({}, this.lastConnectionError) : bridgeError });
+        };
         CozmoConnection.prototype.run = function (result) {
             var _this = this;
             if (result.rc !== 'ok' || !result.compiledCode) {
@@ -2760,6 +2777,7 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
                         case 5:
                             error_7 = _a.sent();
                             this.connected = false;
+                            this.recordConnectionError(error_7);
                             if (error_7 instanceof robotBridge_1.RobotBridgeError && error_7.code === 'SESSION_REPLACED') {
                                 this.stopped = true;
                                 this.clearRetry();
@@ -2885,6 +2903,7 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
         CozmoConnection.prototype.hardwareError = function (error) {
             var _this = this;
             var _a;
+            this.recordConnectionError(error);
             this.stopped = true;
             this.clearTaskRunTimer();
             this.bridge.stopAll().catch(function () { return undefined; });
@@ -2922,6 +2941,13 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
             $('#head-navi-icon-robot').attr('title', 'Cozmo wird verbunden: ' + detail);
             console.info('Cozmo wird im Hintergrund verbunden:', detail);
         };
+        CozmoConnection.prototype.recordConnectionError = function (error) {
+            this.lastConnectionError = {
+                code: error instanceof robotBridge_1.RobotBridgeError ? error.code : 'CONNECTION_ERROR',
+                message: error instanceof Error ? error.message : String(error),
+                at: Date.now(),
+            };
+        };
         return CozmoConnection;
     }(abstract_connections_1.AbstractConnection));
     exports.CozmoConnection = CozmoConnection;
@@ -2958,6 +2984,12 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
         };
         ApitorConnection.prototype.isRobotConnected = function () {
             return this.connected;
+        };
+        ApitorConnection.prototype.getDiagnostics = function () {
+            var diagnostics = this.bridge.getDiagnostics();
+            var bridgeError = diagnostics.lastError;
+            return __assign(__assign({}, diagnostics), { connectionName: 'Apitor Robot X · CodeON Robot Bridge', robotConnected: this.connected, retryScheduled: this.retryTimer !== undefined, lastError: this.lastConnectionError && (!bridgeError || this.lastConnectionError.at >= bridgeError.at)
+                    ? __assign({}, this.lastConnectionError) : bridgeError });
         };
         ApitorConnection.prototype.run = function (result) {
             var _this = this;
@@ -3034,6 +3066,7 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
                         case 4:
                             error_8 = _a.sent();
                             this.connected = false;
+                            this.recordConnectionError(error_8);
                             $('#head-navi-icon-robot').removeClass('busy wait').addClass('error');
                             GUISTATE_C.setRunEnabled(false);
                             detail = error_8 instanceof Error ? error_8.message : String(error_8);
@@ -3062,6 +3095,7 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
         };
         ApitorConnection.prototype.hardwareError = function (error) {
             var _this = this;
+            this.recordConnectionError(error);
             this.stopped = true;
             this.bridge.stopAll().catch(function () { return undefined; });
             if (this.interpreter && !this.interpreter.isTerminated())
@@ -3086,6 +3120,13 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
                 window.clearTimeout(this.retryTimer);
                 this.retryTimer = undefined;
             }
+        };
+        ApitorConnection.prototype.recordConnectionError = function (error) {
+            this.lastConnectionError = {
+                code: error instanceof robotBridge_1.RobotBridgeError ? error.code : 'CONNECTION_ERROR',
+                message: error instanceof Error ? error.message : String(error),
+                at: Date.now(),
+            };
         };
         return ApitorConnection;
     }(abstract_connections_1.AbstractConnection));

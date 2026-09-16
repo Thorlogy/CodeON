@@ -92,6 +92,11 @@ Hintergrund. Danach genügt `http://localhost:1999`; beim Auswählen von Cozmo i
 kein zusätzlicher Bridge-Start nötig. NQC wird nur für den RCX benötigt. Die
 plattformspezifischen Installationswerkzeuge liegen im Wurzelverzeichnis.
 
+Unter **Roboter → Info** zeigt CodeON eine rein lesende
+[Verbindungsdiagnose](docs/CodeON_Connection_Diagnostics.md). Sie unterscheidet
+zwischen Oberfläche, lokaler Bridge und tatsächlicher Roboterverbindung und
+nennt bei Cozmo und Apitor eine passende nächste Prüfmaßnahme.
+
 ## Datenverarbeitung
 
 CodeON selbst läuft vollständig lokal. Server und Roboter-Bridges binden an
@@ -257,6 +262,7 @@ benötigt aber die jeweiligen Cross-Compiler und weitere Systemwerkzeuge.
 - [Architecture and Impact Graph](docs/CodeON_Architecture_Graph.md)
 - [Lokaler Symbol- und Abhängigkeitsgraph](docs/CodeON_Local_Code_Graph.md)
 - [CodeON Change Planner](docs/CodeON_Change_Planner.md)
+- [Verbindungsdiagnose](docs/CodeON_Connection_Diagnostics.md)
 - [Migrationsstatus](docs/CodeON_Migration_Status.md)
 
 ## Hilfe und Support

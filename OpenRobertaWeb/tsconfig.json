@@ -131,6 +131,9 @@
       "robotBridge": [
         "app/roberta/models/robotBridge"
       ],
+      "connectionDiagnostics": [
+        "app/roberta/models/connectionDiagnostics"
+      ],
       "interpreter.apitorRobotBridgeBehaviour": [
         "app/nepostackmachine/interpreter.apitorRobotBridgeBehaviour"
       ],

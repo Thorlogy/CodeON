@@ -29,8 +29,8 @@ you may not use this file except
         not keep an outdated code-to-blocks controller in the browser cache.
     -->
     <script src='js/app/mission-evaluator/mission-evaluator.js?v=codeon-standard-sensors-20260802-2'></script>
-    <script>var require = { urlArgs: 'v=codeon-live-20260915-38' };</script>
-    <script data-main='js/main' src='js/require.js?v=codeon-live-20260915-38'></script>
+    <script>var require = { urlArgs: 'v=codeon-live-20260916-39' };</script>
+    <script data-main='js/main' src='js/require.js?v=codeon-live-20260916-39'></script>
     <script src='js/app/simulation/simulationLogic/simulation3d.adapter.js?v=codeon-3d-robomission-7'></script>
     <link href='manifest.webapp.json' rel='manifest'>
     <link href='/css/img/codeon-favicon.svg?v=20260715' rel='icon' type='image/svg+xml'>
@@ -2111,7 +2111,7 @@ you may not use this file except
     </div>
     <!-- Popup show robot info -->
     <div class='modal fade' id='show-robot-info'>
-        <div class='modal-dialog modal-sm'>
+        <div class='modal-dialog modal-lg modal-dialog-scrollable'>
             <div class='modal-content'>
                 <div class='modal-header'>
                     <h5 class='modal-title' lkey='Blockly.Msg.MENU_ROBOT_STATE_INFO'>Robot state</h5>
@@ -2135,6 +2135,32 @@ you may not use this file except
                     <span lkey='Blockly.Msg.POPUP_ROBOT_WAIT'>Wartezeit</span>
                     :&nbsp;
                     <span id='robotWait'></span>
+                    <hr />
+                    <section id='connectionDiagnostics' aria-live='polite'>
+                        <h6 id='connectionDiagnosticTitle'></h6>
+                        <dl class='row small mb-0'>
+                            <dt class='col-sm-4' id='connectionDiagnosticCodeOnLabel'></dt>
+                            <dd class='col-sm-8' id='connectionDiagnosticCodeOnValue'></dd>
+                            <dt class='col-sm-4' id='connectionDiagnosticConnectionLabel'></dt>
+                            <dd class='col-sm-8' id='connectionDiagnosticConnectionValue'></dd>
+                            <dt class='col-sm-4' id='connectionDiagnosticEndpointLabel'></dt>
+                            <dd class='col-sm-8 text-break' id='connectionDiagnosticEndpointValue'></dd>
+                            <dt class='col-sm-4' id='connectionDiagnosticBridgeLabel'></dt>
+                            <dd class='col-sm-8' id='connectionDiagnosticBridgeValue'></dd>
+                            <dt class='col-sm-4' id='connectionDiagnosticRobotLabel'></dt>
+                            <dd class='col-sm-8' id='connectionDiagnosticRobotValue'></dd>
+                            <dt class='col-sm-4' id='connectionDiagnosticHeartbeatLabel'></dt>
+                            <dd class='col-sm-8' id='connectionDiagnosticHeartbeatValue'></dd>
+                            <dt class='col-sm-4' id='connectionDiagnosticResponseLabel'></dt>
+                            <dd class='col-sm-8' id='connectionDiagnosticResponseValue'></dd>
+                            <dt class='col-sm-4' id='connectionDiagnosticErrorLabel'></dt>
+                            <dd class='col-sm-8 text-break' id='connectionDiagnosticErrorValue'></dd>
+                        </dl>
+                        <div class='alert alert-info mt-3 mb-0'>
+                            <strong id='connectionDiagnosticRecommendationLabel'></strong>
+                            <span id='connectionDiagnosticRecommendationValue'></span>
+                        </div>
+                    </section>
                 </div>
                 <div class='modal-footer'>
                     <button class='btn' data-bs-dismiss='modal' type='button'>OK</button>
