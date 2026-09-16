@@ -13,7 +13,7 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-define(["require", "exports", "program.model", "guiState.controller", "guiState.controller", "program.controller", "robot.controller", "jquery", "util.roberta", "message", "blockly", "connection.controller"], function (require, exports, PROGRAM, GUISTATE_C, guiState_controller_1, PROG_C, ROBOT_C, $, UTIL, MSG, Blockly, CONNECTION_C) {
+define(["require", "exports", "program.model", "guiState.controller", "guiState.controller", "program.controller", "robot.controller", "jquery", "util.roberta", "message", "blockly", "connection.controller", "connectionDiagnostics"], function (require, exports, PROGRAM, GUISTATE_C, guiState_controller_1, PROG_C, ROBOT_C, $, UTIL, MSG, Blockly, CONNECTION_C, connectionDiagnostics_1) {
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.AbstractPromptConnection = exports.AbstractConnection = void 0;
     var AbstractConnection = /** @class */ (function () {
@@ -71,12 +71,12 @@ define(["require", "exports", "program.model", "guiState.controller", "guiState.
          */
         AbstractConnection.prototype.showRobotInfo = function () {
             if (GUISTATE_C.getRobotName().length !== 0) {
-                $('#robotName').html(GUISTATE_C.getRobotName());
+                $('#robotName').text(GUISTATE_C.getRobotName());
             }
             else {
-                $('#robotName').html('-');
+                $('#robotName').text('-');
             }
-            $('#robotSystem').html(GUISTATE_C.getRobotRealName());
+            $('#robotSystem').text(GUISTATE_C.getRobotRealName());
             if (GUISTATE_C.getRobotState() === 'wait' || $('#head-navi-icon-robot').hasClass('wait')) {
                 $('#robotStateWait').css('display', 'inline');
                 $('#robotStateDisconnected').css('display', 'none');
@@ -105,7 +105,42 @@ define(["require", "exports", "program.model", "guiState.controller", "guiState.
             else {
                 $('#robotWait').text(Math.round(robotWait / 1000) + ' s');
             }
+            var diagnosticView = (0, connectionDiagnostics_1.buildConnectionDiagnosticView)(this.getDiagnostics(), GUISTATE_C.getLanguage(), GUISTATE_C.getRobotGroup());
+            var fields = {
+                Title: diagnosticView.title,
+                CodeOnLabel: diagnosticView.codeOnLabel,
+                CodeOnValue: diagnosticView.codeOnValue,
+                ConnectionLabel: diagnosticView.connectionLabel,
+                ConnectionValue: diagnosticView.connectionValue,
+                EndpointLabel: diagnosticView.endpointLabel,
+                EndpointValue: diagnosticView.endpointValue,
+                BridgeLabel: diagnosticView.bridgeLabel,
+                BridgeValue: diagnosticView.bridgeValue,
+                RobotLabel: diagnosticView.robotLabel,
+                RobotValue: diagnosticView.robotValue,
+                HeartbeatLabel: diagnosticView.heartbeatLabel,
+                HeartbeatValue: diagnosticView.heartbeatValue,
+                ResponseLabel: diagnosticView.responseLabel,
+                ResponseValue: diagnosticView.responseValue,
+                ErrorLabel: diagnosticView.errorLabel,
+                ErrorValue: diagnosticView.errorValue,
+                RecommendationLabel: diagnosticView.recommendationLabel,
+                RecommendationValue: diagnosticView.recommendationValue,
+            };
+            Object.keys(fields).forEach(function (name) { return $('#connectionDiagnostic' + name).text(fields[name]); });
             $('#show-robot-info').modal('show');
+        };
+        AbstractConnection.prototype.getDiagnostics = function () {
+            return {
+                connectionKind: 'generic',
+                connectionName: this.constructor && this.constructor.name ? this.constructor.name : 'CodeON connection',
+                bridgeState: 'not-applicable',
+                robotConnected: this.isRobotConnected(),
+                connecting: false,
+                retryScheduled: false,
+                healthMonitorActive: false,
+                heartbeatActive: false,
+            };
         };
         /**
          * Show WLAN credentials form to save them for further REST calls.

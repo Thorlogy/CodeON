@@ -1,3 +1,5 @@
+import { BridgeState, ConnectionDiagnostics, DiagnosticError } from 'connectionDiagnostics';
+
 export interface RobotBridgeManifest {
     robot: string;
     adapterVersion: string;
@@ -17,6 +19,7 @@ interface PendingRequest {
     resolve: (value: any) => void;
     reject: (reason: Error) => void;
     timeout: number;
+    type: string;
 }
 
 export class RobotBridgeError extends Error {
@@ -32,6 +35,11 @@ export class RobotBridgeClient {
     private sequence = 0;
     private pending = new Map<string, PendingRequest>();
     private heartbeatTimer: number | undefined;
+    private openedAt: number | undefined;
+    private lastResponseAt: number | undefined;
+    private lastHeartbeatAt: number | undefined;
+    private lastClosedAt: number | undefined;
+    private lastError: DiagnosticError | undefined;
 
     constructor(
         private readonly url = 'ws://127.0.0.1:2223',
@@ -46,8 +54,15 @@ export class RobotBridgeClient {
         return new Promise((resolve, reject) => {
             const socket = new WebSocket(this.url);
             this.socket = socket;
-            socket.onopen = () => resolve();
-            socket.onerror = () => reject(new RobotBridgeError('TRANSPORT_ERROR', 'Robot bridge is not reachable'));
+            socket.onopen = () => {
+                this.openedAt = Date.now();
+                resolve();
+            };
+            socket.onerror = () => {
+                const error = new RobotBridgeError('TRANSPORT_ERROR', 'Robot bridge is not reachable');
+                this.recordError(error);
+                reject(error);
+            };
             socket.onmessage = (event) => this.handleResponse(event.data);
             socket.onclose = () => this.handleClose();
         });
@@ -98,6 +113,25 @@ export class RobotBridgeClient {
         this.socket = undefined;
     }
 
+    public getDiagnostics(): ConnectionDiagnostics {
+        return {
+            connectionKind: 'local-bridge',
+            connectionName: 'CodeON Robot Bridge Protocol 1.0',
+            endpoint: this.url,
+            bridgeState: this.getBridgeState(),
+            robotConnected: false,
+            connecting: this.getBridgeState() === 'connecting',
+            retryScheduled: false,
+            healthMonitorActive: false,
+            heartbeatActive: this.heartbeatTimer !== undefined,
+            openedAt: this.openedAt,
+            lastResponseAt: this.lastResponseAt,
+            lastHeartbeatAt: this.lastHeartbeatAt,
+            lastClosedAt: this.lastClosedAt,
+            lastError: this.lastError && { ...this.lastError },
+        };
+    }
+
     private request<T>(type: string, values: { [name: string]: any } = {}, timeoutMs = this.requestTimeoutMs): Promise<T> {
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
             return Promise.reject(new RobotBridgeError('TRANSPORT_CLOSED', 'Robot bridge connection is closed'));
@@ -107,9 +141,11 @@ export class RobotBridgeClient {
         return new Promise<T>((resolve, reject) => {
             const timeout = window.setTimeout(() => {
                 this.pending.delete(id);
-                reject(new RobotBridgeError('REQUEST_TIMEOUT', 'Robot bridge did not answer in time'));
+                const error = new RobotBridgeError('REQUEST_TIMEOUT', 'Robot bridge did not answer in time');
+                this.recordError(error);
+                reject(error);
             }, timeoutMs);
-            this.pending.set(id, { resolve, reject, timeout });
+            this.pending.set(id, { resolve, reject, timeout, type });
             this.socket!.send(JSON.stringify(message));
         });
     }
@@ -128,10 +164,14 @@ export class RobotBridgeClient {
         window.clearTimeout(pending.timeout);
         this.pending.delete(response.id);
         if (response.ok) {
+            this.lastResponseAt = Date.now();
+            if (pending.type === 'heartbeat') this.lastHeartbeatAt = this.lastResponseAt;
             pending.resolve(response.result);
         } else {
             const error = response.error || { code: 'BRIDGE_ERROR', message: 'Robot bridge rejected the request' };
-            pending.reject(new RobotBridgeError(error.code, error.message));
+            const bridgeError = new RobotBridgeError(error.code, error.message);
+            this.recordError(bridgeError);
+            pending.reject(bridgeError);
         }
     }
 
@@ -153,11 +193,25 @@ export class RobotBridgeClient {
 
     private handleClose(): void {
         this.stopHeartbeat();
+        this.lastClosedAt = Date.now();
         this.socket = undefined;
+        if (this.pending.size > 0) this.recordError(new RobotBridgeError('TRANSPORT_CLOSED', 'Robot bridge connection was closed'));
         this.pending.forEach((pending) => {
             window.clearTimeout(pending.timeout);
             pending.reject(new RobotBridgeError('TRANSPORT_CLOSED', 'Robot bridge connection was closed'));
         });
         this.pending.clear();
+    }
+
+    private getBridgeState(): BridgeState {
+        if (!this.socket) return 'closed';
+        if (this.socket.readyState === 0) return 'connecting';
+        if (this.socket.readyState === 1) return 'open';
+        if (this.socket.readyState === 2) return 'closing';
+        return 'closed';
+    }
+
+    private recordError(error: RobotBridgeError): void {
+        this.lastError = { code: String(error.code || 'BRIDGE_ERROR'), message: String(error.message || 'Robot bridge error'), at: Date.now() };
     }
 }

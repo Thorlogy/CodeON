@@ -21,6 +21,7 @@
     { "id": "test.graph", "type": "test", "label": "Architecture graph contract", "command": "npm run test:architecture-graph" },
     { "id": "test.code-graph", "type": "test", "label": "Local code graph contract", "command": "npm run test:code-graph" },
     { "id": "test.robot-integration", "type": "test", "label": "Robot integration developer tooling", "command": "npm run test:robot-integration" },
+    { "id": "test.connection-diagnostics", "type": "test", "label": "Read-only robot connection diagnostics", "command": "npm run test:connection-diagnostics" },
     { "id": "test.robot-bridge", "type": "test", "label": "Shared local robot bridge contract", "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=RobotIntegrationKit/python/src python3 -m unittest discover -s RobotIntegrationKit/python/tests -p 'test_bridge_contract.py' -v" },
     { "id": "test.constants", "type": "test", "label": "Generated Java and TypeScript constants", "command": "npm run test:constants" },
     { "id": "test.sensors", "type": "test", "label": "Cross-robot sensor toolboxes", "command": "node scripts/test-system-sensor-toolboxes.js" },
@@ -60,7 +61,12 @@
     { "from": "robot.cozmo", "type": "verified-by", "to": "test.robot-bridge" },
     { "from": "robot.cozmo", "type": "verified-by", "to": "test.cozmo-simulation" },
     { "from": "robot.apitor", "type": "verified-by", "to": "test.robot-bridge" },
-    { "from": "robot.apitor", "type": "verified-by", "to": "test.apitor-simulation" }
+    { "from": "robot.apitor", "type": "verified-by", "to": "test.apitor-simulation" },
+    { "from": "robot.rcx", "type": "verified-by", "to": "test.connection-diagnostics" },
+    { "from": "robot.edison", "type": "verified-by", "to": "test.connection-diagnostics" },
+    { "from": "robot.rcj", "type": "verified-by", "to": "test.connection-diagnostics" },
+    { "from": "robot.cozmo", "type": "verified-by", "to": "test.connection-diagnostics" },
+    { "from": "robot.apitor", "type": "verified-by", "to": "test.connection-diagnostics" }
   ],
   "impactRules": [
     {
@@ -126,6 +132,14 @@
       "robots": ["robot.cozmo", "robot.apitor"],
       "tests": ["test.graph", "test.robot-bridge", "test.cozmo-contract", "test.cozmo-simulation", "test.apitor-simulation"],
       "reason": "The shared local bridge controls physical actuators and must retain stop, watchdog, protocol, and adapter guarantees."
+    },
+    {
+      "id": "connection-diagnostics",
+      "paths": ["OpenRobertaWeb/src/app/roberta/models/connectionDiagnostics.ts", "OpenRobertaWeb/src/app/roberta/models/robotBridge.ts", "OpenRobertaWeb/src/app/roberta/controller/connections/connection.interface.ts", "OpenRobertaWeb/src/app/roberta/controller/connections/abstract.connections.ts", "OpenRobertaWeb/src/app/roberta/controller/connections/connections.ts", "docs/CodeON_Connection_Diagnostics.md", "scripts/test-codeon-connection-diagnostics.js"],
+      "risk": "high",
+      "robots": ["robot.rcx", "robot.edison", "robot.rcj", "robot.cozmo", "robot.apitor"],
+      "tests": ["test.graph", "test.connection-diagnostics", "test.cozmo-simulation", "test.apitor-simulation", "test.sensors", "test.simulation-3d"],
+      "reason": "Connection diagnostics are shared, read-only UI and must not alter connection, retry, heartbeat, or hardware behavior."
     },
     {
       "id": "parent-build",

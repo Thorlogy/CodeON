@@ -165,7 +165,7 @@ assert.ok(codeControllerSource.includes("target.closest('#codeButton')"), 'Die d
     assert.strictEqual(read(pair[0]), read(pair[1]), 'Server- und Paketversion müssen identisch sein: ' + pair[0]);
 });
 
-const liveCacheVersion = 'codeon-live-20260915-38';
+const liveCacheVersion = 'codeon-live-20260916-39';
 [
     'OpenRobertaWeb/src/main.js',
     'OpenRobertaServer/staticResources/js/main.js',
