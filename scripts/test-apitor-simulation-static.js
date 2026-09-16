@@ -41,4 +41,34 @@ assert.strictEqual(server3d, packaged3d, 'Server- und Paketversion des 3D-Adapte
 assert.ok(server3d.includes('isApitorSelected'), 'Apitor-Erkennung fehlt im 3D-Adapter.');
 assert.ok(server3d.includes('0xf58220'), 'Apitor-Farbe fehlt im 3D-Adapter.');
 
+const runControllerSource = read('OpenRobertaWeb/src/app/roberta/controller/progRun.controller.ts');
+assert.ok(runControllerSource.includes("robotGroup === 'apitor'"), 'Apitor-spezifische Starthilfe fehlt im Run-Controller.');
+assert.ok(
+    runControllerSource.includes('Blockly.Msg.POPUP_RUN_NOTIFICATION_APITOR'),
+    'Apitor-Starthilfe verwendet keinen Uebersetzungsschluessel.'
+);
+assert.ok(
+    runControllerSource.includes('Blockly.Msg.POPUP_RUN_NOTIFICATION_COZMO') &&
+        runControllerSource.includes(': Blockly.Msg.POPUP_RUN_NOTIFICATION;'),
+    'Die bestehenden Cozmo- und Standardhinweise muessen unveraendert erreichbar bleiben.'
+);
+
+const serverRunController = read('OpenRobertaServer/staticResources/js/app/roberta/controller/progRun.controller.js');
+const packagedRunController = read('application/staticResources/js/app/roberta/controller/progRun.controller.js');
+assert.strictEqual(serverRunController, packagedRunController, 'Server- und Paketversion des Run-Controllers muessen identisch sein.');
+assert.ok(serverRunController.includes('POPUP_RUN_NOTIFICATION_APITOR'), 'Apitor-Starthilfe fehlt in der ausgelieferten Webanwendung.');
+
+const serverGermanMessages = read('OpenRobertaServer/staticResources/blockly/msg/js/de.js');
+const packagedGermanMessages = read('application/staticResources/blockly/msg/js/de.js');
+assert.strictEqual(serverGermanMessages, packagedGermanMessages, 'Server- und Paketversion der deutschen Texte muessen identisch sein.');
+assert.ok(serverGermanMessages.includes('POPUP_RUN_NOTIFICATION_APITOR'), 'Der deutsche Apitor-Hinweis fehlt.');
+assert.ok(serverGermanMessages.includes('UR2045SI'), 'Der erkennbare Bluetooth-Name fehlt im deutschen Apitor-Hinweis.');
+
+const serverEnglishMessages = read('OpenRobertaServer/staticResources/blockly/msg/json/en.json');
+const packagedEnglishMessages = read('application/staticResources/blockly/msg/json/en.json');
+assert.strictEqual(serverEnglishMessages, packagedEnglishMessages, 'Server- und Paketversion der englischen Texte muessen identisch sein.');
+const englishMessages = JSON.parse(serverEnglishMessages);
+assert.ok(englishMessages.POPUP_RUN_NOTIFICATION_APITOR, 'Der englische Apitor-Hinweis fehlt.');
+assert.ok(englishMessages.POPUP_RUN_NOTIFICATION_APITOR.includes('UR2045SI'), 'Der erkennbare Bluetooth-Name fehlt im englischen Apitor-Hinweis.');
+
 console.log('CodeON-Apitor-Simulationspruefung erfolgreich.');
