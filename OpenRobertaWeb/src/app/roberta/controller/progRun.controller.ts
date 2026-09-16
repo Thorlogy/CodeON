@@ -121,11 +121,15 @@ function showRunNotification() {
     const notificationElement = $('#releaseInfo');
     const notificationElementTitle = notificationElement.children('#releaseInfoTitle');
     const notificationElementDescription = notificationElement.children('#releaseInfoContent');
+    const robotGroup = GUISTATE_C.getRobotGroup();
     const notificationMessage =
-        GUISTATE_C.getRobotGroup() === 'cozmo'
+        robotGroup === 'cozmo'
             ? Blockly.Msg.POPUP_RUN_NOTIFICATION_COZMO ||
               'Prepare Cozmo: 1. Switch Cozmo on. 2. Connect this computer to the Wi-Fi shown on Cozmo\'s display; no internet connection is normal. 3. Put Cozmo on a clear surface. 4. Press Start again. The local Cozmo bridge starts automatically with CodeON.'
-            : Blockly.Msg.POPUP_RUN_NOTIFICATION;
+            : robotGroup === 'apitor'
+              ? Blockly.Msg.POPUP_RUN_NOTIFICATION_APITOR ||
+                'Connect Apitor: 1. Turn on Bluetooth on this computer. 2. Switch on the Apitor hub. 3. Open Bluetooth settings and look for UR2045SI; the suffix may differ on other hubs. 4. Connect this computer to the hub. 5. Wait briefly until Start becomes available, then press Start again. The local Apitor bridge starts automatically with CodeON.'
+              : Blockly.Msg.POPUP_RUN_NOTIFICATION;
     notificationElementDescription.html(notificationMessage);
     notificationElementTitle.html(Blockly.Msg.POPUP_ATTENTION);
     const notification = notificationElement.off('notificationFadeInComplete.codeonRunHelp').on('notificationFadeInComplete.codeonRunHelp', function () {
