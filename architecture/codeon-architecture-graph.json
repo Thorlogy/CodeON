@@ -23,6 +23,7 @@
     { "id": "test.robot-integration", "type": "test", "label": "Robot integration developer tooling", "command": "npm run test:robot-integration" },
     { "id": "test.connection-diagnostics", "type": "test", "label": "Read-only robot connection diagnostics", "command": "npm run test:connection-diagnostics" },
     { "id": "test.robot-bridge", "type": "test", "label": "Shared local robot bridge contract", "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=RobotIntegrationKit/python/src python3 -m unittest discover -s RobotIntegrationKit/python/tests -p 'test_bridge_contract.py' -v" },
+    { "id": "test.behavior-runtime", "type": "test", "label": "Cooperative behavior arbitration and Cozmo presets", "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=RobotIntegrationKit/python/src python3 -m unittest discover -s RobotIntegrationKit/python/tests -p 'test_*behavior*.py' -v" },
     { "id": "test.constants", "type": "test", "label": "Generated Java and TypeScript constants", "command": "npm run test:constants" },
     { "id": "test.sensors", "type": "test", "label": "Cross-robot sensor toolboxes", "command": "node scripts/test-system-sensor-toolboxes.js" },
     { "id": "test.cozmo-contract", "type": "test", "label": "Cozmo fixed-configuration contract", "command": "mvn -pl RobotCozmo -am -Dtest=CozmoFixedConfigurationTest -DfailIfNoTests=false -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test" },
@@ -59,6 +60,7 @@
     { "from": "robot.rcj", "type": "verified-by", "to": "test.sensors" },
     { "from": "robot.cozmo", "type": "verified-by", "to": "test.cozmo-contract" },
     { "from": "robot.cozmo", "type": "verified-by", "to": "test.robot-bridge" },
+    { "from": "robot.cozmo", "type": "verified-by", "to": "test.behavior-runtime" },
     { "from": "robot.cozmo", "type": "verified-by", "to": "test.cozmo-simulation" },
     { "from": "robot.apitor", "type": "verified-by", "to": "test.robot-bridge" },
     { "from": "robot.apitor", "type": "verified-by", "to": "test.apitor-simulation" },
@@ -79,7 +81,7 @@
     },
     {
       "id": "project-documentation",
-      "paths": ["README.md", "CONTRIBUTING.md", "SECURITY.md", ".github/pull_request_template.md"],
+      "paths": ["README.md", "CONTRIBUTING.md", "SECURITY.md", ".github/pull_request_template.md", "docs/CodeON_MVP_Audit_2026-09-16.md", "docs/CodeON_Open_Roberta_Migration_Audit_2026-09-16.md", "docs/CodeON_Rollback_2026-09-16.md"],
       "risk": "low",
       "robots": [],
       "tests": ["test.graph"],
@@ -130,7 +132,7 @@
       "paths": ["RobotIntegrationKit/python/"],
       "risk": "critical",
       "robots": ["robot.cozmo", "robot.apitor"],
-      "tests": ["test.graph", "test.robot-bridge", "test.cozmo-contract", "test.cozmo-simulation", "test.apitor-simulation"],
+      "tests": ["test.graph", "test.robot-bridge", "test.behavior-runtime", "test.cozmo-contract", "test.cozmo-simulation", "test.apitor-simulation"],
       "reason": "The shared local bridge controls physical actuators and must retain stop, watchdog, protocol, and adapter guarantees."
     },
     {

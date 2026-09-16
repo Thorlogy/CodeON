@@ -36,6 +36,12 @@ For the JAXB-based Cozmo contract on Java 17 or newer, use the exact command pri
 
 The reduced CodeON parent reactor contains RCX, Edison, RCJ/RobotSpike, Cozmo, Apitor, the shared robot core, and the server. Some historical server tests still enumerate upstream plugins that are not part of this reactor and therefore fail on missing resources such as `ev3dev.properties`, `bob3.properties`, or `microbitv2.properties`. The impact graph consequently reports two honest checks for shared Java changes: active robot reactor tests and a test-skipping server package build. Reconciliation of the historical server test inventory is separate technical debt; it is not silently ignored or represented as green.
 
+The architecture workflow also executes three dependency-free Python contracts:
+the shared bridge safety contract, the cooperative Behavior arbitration/Cozmo
+preset tests, and the cross-platform local launcher tests. Optional hardware
+adapter suites that require BLE, PyCozmo, OpenCV, or physical devices remain a
+separate environment-specific verification layer.
+
 The impact command prints machine-readable JSON containing risk, affected robots, required checks, matched reasons, and any unknown paths. Unknown paths deliberately require manual review; they are never reported as safe.
 
 ## Security model
