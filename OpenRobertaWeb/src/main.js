@@ -32,7 +32,7 @@
 
 require.config({
     baseUrl: '.',
-    urlArgs: 'v=codeon-live-20260914-35',
+    urlArgs: 'v=codeon-live-20260915-38',
     paths: {
         ace: 'libs/ace/ace',
         ace_lang: 'libs/ace/ext-language_tools',
@@ -60,6 +60,7 @@ require.config({
 
         'codeToBlocks': 'js/helper/codeToBlocks',
         'startView.controller': 'js/app/roberta/controller/startView.controller',
+        'robotIntegrationAssistant.controller': 'js/app/roberta/controller/robotIntegrationAssistant.controller',
         'confDelete.controller': 'js/app/roberta/controller/confDelete.controller',
         'configuration.controller': 'js/app/roberta/controller/configuration.controller',
         'configuration.model': 'js/app/roberta/models/configuration.model',

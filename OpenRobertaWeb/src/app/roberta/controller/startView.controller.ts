@@ -15,6 +15,7 @@ import 'bootstrap-table';
 import * as Blockly from 'blockly';
 import * as UTIL from 'util.roberta';
 import * as MSG from 'message';
+import * as ROBOT_INTEGRATION_ASSISTANT from 'robotIntegrationAssistant.controller';
 
 var robots = [];
 var mainCallback: Function;
@@ -90,6 +91,10 @@ export function init(callback: Function) {
     $.when(preloadAll(images)).then((images) => {
         initRobotList();
         initRobotToolbar();
+        ROBOT_INTEGRATION_ASSISTANT.init(
+            robots.map((robot) => robot.name),
+            GUISTATE_C.getLanguage()
+        );
         initRobotListEvents();
         fetchRSSFeed();
         ready.resolve();

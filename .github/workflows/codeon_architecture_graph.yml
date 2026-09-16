@@ -21,6 +21,7 @@ jobs:
           package-manager-cache: false
       - run: npm run test:architecture-graph
       - run: npm run test:code-graph
+      - run: npm run test:robot-integration
       - run: node scripts/test-system-sensor-toolboxes.js
       - run: node scripts/test-cozmo-simulation-static.js
       - run: node scripts/test-apitor-simulation-static.js

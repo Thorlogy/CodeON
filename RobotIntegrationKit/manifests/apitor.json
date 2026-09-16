@@ -1,0 +1,54 @@
+{
+  "$schema": "../schema/robot-integration.schema.json",
+  "schemaVersion": 1,
+  "id": "apitor",
+  "displayName": "Apitor Robot X",
+  "scope": "complete",
+  "activation": "active",
+  "transport": "ble",
+  "configurationMode": "user-configurable",
+  "module": "RobotApitor",
+  "browserConnectionClass": "ApitorConnection",
+  "browserBehaviourClass": "ApitorRobotBridgeBehaviour",
+  "previewImage": "apitor.png",
+  "simulation": "2d-3d",
+  "bridge": {
+    "adapter": "apitor",
+    "adapterClass": "ApitorAdapter",
+    "port": 2224,
+    "autoStart": true,
+    "optionalDependency": "apitor"
+  },
+  "capabilities": {
+    "actuators": [
+      "individualMotorControl",
+      "lights"
+    ],
+    "sensors": [
+      "colorRaw",
+      "colorGroup",
+      "infrared1",
+      "infrared2",
+      "sensorSnapshot"
+    ]
+  },
+  "limits": {
+    "motorSpeedLevel": {
+      "min": 1,
+      "max": 12
+    },
+    "heartbeatTimeoutMs": 1000
+  },
+  "supportedHosts": ["macos"],
+  "hardwareStatus": "verified-with-limitations",
+  "requiredChecks": [
+    "test.robot-bridge",
+    "test.apitor-simulation",
+    "test.java-reactor",
+    "test.sensors"
+  ],
+  "knownLimitations": [
+    "Infrared and LED functions still require additional hardware acceptance.",
+    "Infrared values are raw readings and not calibrated distances in centimetres."
+  ]
+}

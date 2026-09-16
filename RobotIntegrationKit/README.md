@@ -17,12 +17,124 @@ adapter contract and must pass the shared conformance tests.
 See `docs/PROTOCOL_V1.md` for the wire contract and `python/tests` for the
 executable adapter contract.
 
+Before starting a new integration, choose between a bridge prototype and a
+complete CodeON robot system in `docs/INTEGRATION_CONTRACT.md`. The shorter
+execution list is available in `docs/NEW_ROBOT_CHECKLIST.md`.
+
+The checked reference manifests live in `manifests/`. Validate both references
+without changing repository files:
+
+```shell
+npm run robot:check
+```
+
+Validate only one known robot with `npm run robot:check -- --id cozmo`. The
+command accepts only an ID for an existing checked manifest and reads only
+fixed repository paths. Even in this focused mode it checks ID and port
+collisions across the complete manifest set. It never executes commands stored
+in project metadata.
+
+For a guided, read-only progress view, use:
+
+```shell
+npm run robot:status -- --id cozmo
+```
+
+The status separates manifest validity, bridge registration, complete-system
+registration, declared verification commands and physical hardware acceptance.
+It deliberately does not run tests or infer that a declared check passed. Use
+`--json` for machine-readable output. An incomplete bridge is normal progress
+in this view; `robot:check` remains the strict consistency gate for CI.
+
+### Passive assistant inside CodeON
+
+A first graphical preview is available only on an explicitly enabled local
+CodeON start page. Open CodeON on a loopback address with the query parameter
+`robotIntegrationAssistant=1`, for example:
+
+```text
+http://localhost:1999/?robotIntegrationAssistant=1
+```
+
+The button **Integrate your own robot** then appears above the robot cards. Its
+first step records an optional HTTP(S) specification URL and assesses the
+available protocol evidence, local control, actuator and sensor access, safe
+stop and test-hardware availability. The deterministic result is **well
+suited**, **research required** or **not ready**. A not-ready result keeps the
+scaffold step closed. Otherwise the assistant validates the basic ID, display
+name, transport, port and host fields and previews the draft manifest, four
+planned paths and the remaining phases. A third, still passive step describes
+the drive layout, optional geometry, actuators, sensors, ranges, units, safe
+states and synchronous/asynchronous behaviour. It previews a separate hardware
+profile and suggested mappings to familiar CodeON block concepts. Every mapping
+is marked for expert review; no Blockly definition, toolbox entry or runtime
+handler is created or enabled. It is hidden without the parameter and on every
+non-loopback host.
+
+This browser view is deliberately passive. It does not write or download
+files, store input, fetch or evaluate a referenced specification, call a
+server, run tests, activate a system or communicate with hardware. Its checks
+are preliminary; the command-line `robot:new`,
+`robot:check` and `robot:status` tools remain authoritative.
+
+The hardware and block-mapping previews are design records, not accepted
+manifest-schema fields. They intentionally keep `reviewStatus: draft`,
+`hardwareTested: false` and `expert-review-required` until an implementer has
+checked protocol semantics, units, limits, stop behaviour and physical hardware.
+
+Preview a new, deliberately disconnected bridge scaffold with:
+
+```shell
+npm run robot:new -- --dry-run --id myrobot --name "My Robot" \
+  --transport ble --port 2299 --host macos
+```
+
+Its normal output prints the draft manifest plus planned paths and content
+hashes; `--json` additionally contains the exact generated content. After
+reviewing that preview, create only those four files with a second explicit
+command:
+
+```shell
+npm run robot:new -- --write --confirm myrobot \
+  --plan-hash PLAN_HASH_FROM_DRY_RUN --id myrobot --name "My Robot" \
+  --transport ble --port 2299 --host macos
+```
+
+Replace `PLAN_HASH_FROM_DRY_RUN` with the displayed value. The ID after
+`--confirm` must exactly match `--id`, and `--plan-hash` must match the complete
+reviewed preview. Write mode accepts no output path, creates no directories and
+never overwrites a path. It does not register the adapter with the bridge and
+changes no launcher, server, dependency group or active robot list. Normal
+write failures roll back files created by that invocation. If the process or
+computer is terminated abruptly, inspect the four reported paths with
+`git status` before retrying.
+
+All four fixed parent directories, including `docs/acceptance/`, are kept in
+version control. The writer intentionally refuses to create a missing parent;
+this makes a damaged or incomplete checkout fail before any scaffold file is
+written.
+
+Both modes reject IDs already present in the architecture graph, active robot
+list or manifests, existing target files, and ports reserved by CodeON, a local
+launcher or another manifest. An optional dependency name must begin with the
+new robot ID and must not reuse an existing extra. The scaffold exposes no
+actuator or sensor and refuses to connect until its hardware protocol has been
+implemented and reviewed.
+
 ## Local development
 
-The core and fake adapter have no runtime dependencies:
+The core and fake-adapter contract have no vendor runtime dependencies:
 
 ```shell
 PYTHONPATH=RobotIntegrationKit/python/src python3 -m unittest discover \
+  -s RobotIntegrationKit/python/tests -p 'test_bridge_contract.py' -v
+```
+
+Run the complete adapter suite from the isolated environment after installing
+the robot-specific extras:
+
+```shell
+PYTHONPATH=RobotIntegrationKit/python/src .venv/bin/python -m unittest discover \
   -s RobotIntegrationKit/python/tests -v
 ```
 
@@ -70,28 +182,12 @@ Suggested first hardware program:
 4. track the face once and stop camera analysis;
 5. stop the program and verify that all motors and the camera stop immediately.
 
-## Cozmo parallel tasks
+## Cozmo behavior-control compatibility
 
-The Cozmo expert toolbox contains a `Parallel task` category. Each task header
-starts a separate, visually independent block stack. Place the task stacks
-next to each other in the Blockly workspace to make simultaneous behaviours
-visible.
-
-- All task headers currently use the `program start` trigger.
-- Priorities range from 0 to 100; the higher number wins.
-- Tasks may run simultaneously while they use different resources, for
-  example driving and speech.
-- If two tasks request the same resource, the higher-priority task takes it
-  over. Equal priorities produce a visible conflict and stop the program
-  safely.
-- Driving, head, lift, audio, camera/face tracking, display and lights are
-  arbitrated independently.
-- Finishing or stopping a task releases its resources. The global stop button
-  terminates every task and sends the hardware emergency stop.
-
-Programs without a parallel-task header retain the original single-stack
-execution path. The parallel-task format is currently Cozmo-specific so other
-robots are unaffected.
+User-defined parallel-task blocks are currently not exposed in the Cozmo
+toolboxes because their behavior was not clear enough for learners. Some
+internal scheduling support remains for compatibility and built-in behaviors,
+but it is not part of the supported integration template for new robots.
 
 ## Apitor Robot X
 
