@@ -99,8 +99,12 @@ nennt bei Cozmo und Apitor eine passende nächste Prüfmaßnahme.
 
 ## Datenverarbeitung
 
-CodeON selbst läuft vollständig lokal. Server und Roboter-Bridges binden an
-`127.0.0.1` und senden keine Daten nach außen.
+Der CodeON-Server und die Roboter-Bridges laufen lokal und binden an
+`127.0.0.1`. Zwei bewusst gewählte Funktionen können externe Dienste nutzen:
+Die Hardwareübertragung für Edison V2 ruft die Edison-Programmierschnittstelle
+auf, und der optionale Code Buddy kann nach ausdrücklicher Zustimmung einen
+Cloud-Anbieter verwenden. Die lokalen Bridges für RCX, Cozmo und Apitor senden
+keine Programmdaten an einen CodeON-Server im Internet.
 
 Optional lässt sich der Code Buddy als Programmier-Assistent verwenden. Hier
 gibt es zwei Fälle:
@@ -264,6 +268,9 @@ benötigt aber die jeweiligen Cross-Compiler und weitere Systemwerkzeuge.
 - [CodeON Change Planner](docs/CodeON_Change_Planner.md)
 - [Verbindungsdiagnose](docs/CodeON_Connection_Diagnostics.md)
 - [Migrationsstatus](docs/CodeON_Migration_Status.md)
+- [Verifizierter MVP- und Architektur-Audit (16.09.2026)](docs/CodeON_MVP_Audit_2026-09-16.md)
+- [Open-Roberta-Migrationsaudit (16.09.2026)](docs/CodeON_Open_Roberta_Migration_Audit_2026-09-16.md)
+- [Sicherer Rücksprung zum Stand vor dem Audit](docs/CodeON_Rollback_2026-09-16.md)
 
 ## Hilfe und Support
 

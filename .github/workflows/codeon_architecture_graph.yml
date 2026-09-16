@@ -22,6 +22,12 @@ jobs:
       - run: npm run test:architecture-graph
       - run: npm run test:code-graph
       - run: npm run test:robot-integration
+      - name: Test shared robot bridge contract
+        run: PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=RobotIntegrationKit/python/src python3 -m unittest discover -s RobotIntegrationKit/python/tests -p 'test_bridge_contract.py' -v
+      - name: Test cooperative behavior runtime
+        run: PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=RobotIntegrationKit/python/src python3 -m unittest discover -s RobotIntegrationKit/python/tests -p 'test_*behavior*.py' -v
+      - name: Test local launchers
+        run: PYTHONDONTWRITEBYTECODE=1 python3 -m unittest RobotRCX/src/test/python/test_start_codeon_rcx.py
       - run: node scripts/test-system-sensor-toolboxes.js
       - run: node scripts/test-cozmo-simulation-static.js
       - run: node scripts/test-apitor-simulation-static.js
