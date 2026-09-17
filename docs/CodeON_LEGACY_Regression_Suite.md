@@ -23,15 +23,19 @@ markers in their NQC and Python target code.
 | --- | --- | --- |
 | RCX | drive continuously, wait, stop | NQC |
 | Edison V2 | drive a distance, play a tone | Python |
-| RCJ RescueOnlineSim | drive a distance, wait | no separate physical target generator |
+| RCJ RescueOnlineSim | drive a distance, show text | no separate physical target generator |
 | Cozmo | drive a distance, raise the lift | bridge stack code |
 | Apitor Robot X | run motor M1, wait, stop | bridge stack code |
 
 The fixtures live in
-`OpenRobertaServer/src/test/resources/codeonLegacyPrograms/`. RCJ uses a
-minimal test configuration containing only its differential drive and two
-drive motors. This isolates the program workflow from unrelated legacy
-configuration blocks.
+`OpenRobertaServer/src/test/resources/codeonLegacyPrograms/`. Every case uses
+the corresponding robot plugin's standard configuration.
+
+The RCJ case also protects the standard configuration's colour-sensor block.
+RCJ stores it as `robConf_colour`, while older robot configurations use
+`robBrick_colour`; both names resolve to the same generic colour-sensor
+component. A focused `RcjConfigurationDefaultTest` checks the colour and
+inductive sensors in the RCJ default configuration directly.
 
 ## Run locally
 
@@ -50,7 +54,4 @@ requests and pushes to `master` or `develop`.
 
 The suite does not claim to execute browser physics, connect hardware, or
 validate every available block. Hardware tests and the static 3D simulation
-contracts remain separate. The RCJ display action is not part of this initial
-baseline because its hidden configuration-port binding needs a separate,
-focused compatibility test before it can become a reliable regression
-fixture.
+contracts remain separate.

@@ -5,7 +5,7 @@ import de.fhg.iais.roberta.transformer.forClass.NepoConfiguration;
 import de.fhg.iais.roberta.util.dbc.DbcException;
 
 @NepoConfiguration(name = "COLOR", category = "CONFIGURATION_SENSOR",
-    blocklyNames = {"robBrick_colour"})
+    blocklyNames = {"robBrick_colour", "robConf_colour"})
 public final class ColorSensor extends ConfigurationComponent {
     private ColorSensor() {
         super(null, null, null, null, null);
