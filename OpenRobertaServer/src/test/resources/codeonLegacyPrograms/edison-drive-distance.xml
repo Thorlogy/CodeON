@@ -1,0 +1,33 @@
+<block_set xmlns="http://de.fhg.iais.roberta.blockly" robottype="edisonv2" xmlversion="3.1" description="CodeON LEGACY regression: Edison drive and tone" tags="">
+    <instance x="50" y="50">
+        <block type="robControls_start" id="edison-start" intask="true" deletable="false">
+            <mutation declare="false"/>
+            <field name="DEBUG">TRUE</field>
+        </block>
+        <block type="robActions_motorDiff_on_for" id="edison-drive" intask="true">
+            <field name="DIRECTION">FOREWARD</field>
+            <value name="POWER">
+                <block type="math_integer" id="edison-power" intask="true">
+                    <field name="NUM">30</field>
+                </block>
+            </value>
+            <value name="DISTANCE">
+                <block type="math_integer" id="edison-distance" intask="true">
+                    <field name="NUM">10</field>
+                </block>
+            </value>
+        </block>
+        <block type="robActions_play_tone" id="edison-tone" intask="true">
+            <value name="FREQUENCE">
+                <block type="math_integer" id="edison-frequency" intask="true">
+                    <field name="NUM">440</field>
+                </block>
+            </value>
+            <value name="DURATION">
+                <block type="math_integer" id="edison-tone-duration" intask="true">
+                    <field name="NUM">100</field>
+                </block>
+            </value>
+        </block>
+    </instance>
+</block_set>

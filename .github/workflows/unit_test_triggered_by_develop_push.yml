@@ -36,5 +36,7 @@ jobs:
         run: npm run test:connection-diagnostics
       - name: Test active CodeON robot reactor
         run: mvn --batch-mode -pl OpenRobertaRobot,RobotEdison,RobotSpike,RobotCozmo,RobotApitor,RobotRCX -am -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test
+      - name: Test representative CodeON LEGACY programs
+        run: mvn --batch-mode -pl OpenRobertaServer -am -Dtest=CodeOnLegacyProgramRegressionTest -DfailIfNoTests=false -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test
       - name: Package CodeON server reactor
         run: mvn --batch-mode -pl OpenRobertaServer -am -DskipTests package

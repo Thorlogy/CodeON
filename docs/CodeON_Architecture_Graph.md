@@ -42,6 +42,13 @@ preset tests, and the cross-platform local launcher tests. Optional hardware
 adapter suites that require BLE, PyCozmo, OpenCV, or physical devices remain a
 separate environment-specific verification layer.
 
+The five active robot systems additionally share a focused LEGACY program
+regression suite. It verifies Blockly loading and regeneration plus the
+generated stack-machine operation order for RCX, Edison V2, RCJ, Cozmo, and
+Apitor. RCX and Edison also exercise their physical target-language generators.
+The exact scope and command are documented in
+`docs/CodeON_LEGACY_Regression_Suite.md`.
+
 The impact command prints machine-readable JSON containing risk, affected robots, required checks, matched reasons, and any unknown paths. Unknown paths deliberately require manual review; they are never reported as safe.
 
 ## Security model
