@@ -61,7 +61,7 @@ public class CodeOnLegacyProgramRegressionTest {
                     opcodes("DriveAction", "stopDrive", "ToneAction", "stop"),
                     markers("import Ed", "Ed.Drive", "Ed.PlayTone")
                 },
-                {"rcj", "rcj-drive-wait.xml", opcodes("DriveAction", "stopDrive", "WaitTimeSTMT", "stop"), null},
+                {"rcj", "rcj-drive-display.xml", opcodes("DriveAction", "stopDrive", "ShowTextAction", "stop"), null},
                 {"cozmo", "cozmo-drive-lift.xml", opcodes("DriveAction", "stopDrive", "motorOnAction", "stop"), null},
                 {"apitor", "apitor-motor-stop.xml", opcodes("motorOnAction", "WaitTimeSTMT", "motorStop", "stop"), null}
             });
@@ -95,15 +95,12 @@ public class CodeOnLegacyProgramRegressionTest {
     }
 
     private Project project(RobotFactory factory, String programXml) {
-        String configurationXml = "rcj".equals(this.robot)
-            ? Util.readResourceContent(RESOURCE_DIR + "rcj-minimal-configuration.xml")
-            : factory.getConfigurationDefault();
         return new Project.Builder()
             .setRobot(this.robot)
             .setProgramName("CodeON_LEGACY_" + this.robot)
             .setFactory(factory)
             .setProgramXml(programXml)
-            .setConfigurationXml(configurationXml)
+            .setConfigurationXml(factory.getConfigurationDefault())
             .setLanguage(Language.ENGLISH)
             .build();
     }

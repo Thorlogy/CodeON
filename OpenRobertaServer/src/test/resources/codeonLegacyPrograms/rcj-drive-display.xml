@@ -1,4 +1,4 @@
-<block_set xmlns="http://de.fhg.iais.roberta.blockly" robottype="rcj" xmlversion="3.1" description="CodeON LEGACY regression: RCJ drive and wait" tags="">
+<block_set xmlns="http://de.fhg.iais.roberta.blockly" robottype="rcj" xmlversion="3.1" description="CodeON LEGACY regression: RCJ drive and display" tags="">
     <instance x="50" y="50">
         <block type="robControls_start" id="rcj-start" intask="true" deletable="false">
             <mutation declare="false"/>
@@ -18,10 +18,17 @@
                 </block>
             </value>
         </block>
-        <block type="robControls_wait_time" id="rcj-wait" intask="true">
-            <value name="WAIT">
-                <block type="math_number" id="rcj-wait-time" intask="true">
-                    <field name="NUM">250</field>
+        <block type="actions_display_text_rcj" id="rcj-display" intask="true">
+            <field name="ACTORPORT">_B</field>
+            <hide name="ACTORPORT" value="_B"/>
+            <value name="TEXT">
+                <block type="text" id="rcj-text" intask="true">
+                    <field name="TEXT">CodeON</field>
+                </block>
+            </value>
+            <value name="ROW">
+                <block type="math_number" id="rcj-row" intask="true">
+                    <field name="NUM">0</field>
                 </block>
             </value>
         </block>
