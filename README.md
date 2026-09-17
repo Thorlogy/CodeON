@@ -271,6 +271,7 @@ benötigt aber die jeweiligen Cross-Compiler und weitere Systemwerkzeuge.
 - [Verifizierter MVP- und Architektur-Audit (16.09.2026)](docs/CodeON_MVP_Audit_2026-09-16.md)
 - [Open-Roberta-Migrationsaudit (16.09.2026)](docs/CodeON_Open_Roberta_Migration_Audit_2026-09-16.md)
 - [Sicherer Rücksprung zum Stand vor dem Audit](docs/CodeON_Rollback_2026-09-16.md)
+- [LEGACY-Regressionssuite für alle aktiven Robotersysteme](docs/CodeON_LEGACY_Regression_Suite.md)
 
 ## Hilfe und Support
 

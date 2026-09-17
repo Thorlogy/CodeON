@@ -32,6 +32,7 @@
     { "id": "test.simulation-3d", "type": "test", "label": "Shared 3D simulation contract", "command": "node scripts/test-codeon-3d-static.js" },
     { "id": "test.buddy-security", "type": "test", "label": "Code Buddy credential and runtime security", "command": "node scripts/test-codeon-buddy-security.js" },
     { "id": "test.local-launcher", "type": "test", "label": "Local server and robot bridge launcher", "command": "python3 -m unittest RobotRCX/src/test/python/test_start_codeon_rcx.py" },
+    { "id": "test.legacy-programs", "type": "test", "label": "Five active CodeON LEGACY program regressions", "command": "mvn --batch-mode -pl OpenRobertaServer -am -Dtest=CodeOnLegacyProgramRegressionTest -DfailIfNoTests=false -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test" },
     { "id": "test.java-reactor", "type": "test", "label": "Active robot Maven reactor tests", "command": "mvn -pl OpenRobertaRobot,RobotEdison,RobotSpike,RobotCozmo,RobotApitor,RobotRCX -am -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test" },
     { "id": "test.server-package", "type": "test", "label": "Server reactor package build", "command": "mvn -pl OpenRobertaServer -am -DskipTests package" }
   ],
@@ -68,7 +69,12 @@
     { "from": "robot.edison", "type": "verified-by", "to": "test.connection-diagnostics" },
     { "from": "robot.rcj", "type": "verified-by", "to": "test.connection-diagnostics" },
     { "from": "robot.cozmo", "type": "verified-by", "to": "test.connection-diagnostics" },
-    { "from": "robot.apitor", "type": "verified-by", "to": "test.connection-diagnostics" }
+    { "from": "robot.apitor", "type": "verified-by", "to": "test.connection-diagnostics" },
+    { "from": "robot.rcx", "type": "verified-by", "to": "test.legacy-programs" },
+    { "from": "robot.edison", "type": "verified-by", "to": "test.legacy-programs" },
+    { "from": "robot.rcj", "type": "verified-by", "to": "test.legacy-programs" },
+    { "from": "robot.cozmo", "type": "verified-by", "to": "test.legacy-programs" },
+    { "from": "robot.apitor", "type": "verified-by", "to": "test.legacy-programs" }
   ],
   "impactRules": [
     {
@@ -81,7 +87,7 @@
     },
     {
       "id": "project-documentation",
-      "paths": ["README.md", "CONTRIBUTING.md", "SECURITY.md", ".github/pull_request_template.md", "docs/CodeON_MVP_Audit_2026-09-16.md", "docs/CodeON_Open_Roberta_Migration_Audit_2026-09-16.md", "docs/CodeON_Rollback_2026-09-16.md"],
+      "paths": ["README.md", "CONTRIBUTING.md", "SECURITY.md", ".github/pull_request_template.md", "docs/CodeON_MVP_Audit_2026-09-16.md", "docs/CodeON_Open_Roberta_Migration_Audit_2026-09-16.md", "docs/CodeON_Rollback_2026-09-16.md", "docs/CodeON_LEGACY_Regression_Suite.md"],
       "risk": "low",
       "robots": [],
       "tests": ["test.graph"],
@@ -100,7 +106,7 @@
       "paths": ["OpenRobertaRobot/constantsSource.txt", "OpenRobertaRobot/src/main/java/de/fhg/iais/roberta/util/basic/C.java", "OpenRobertaWeb/src/app/nepostackmachine/interpreter.constants.ts", "scripts/generate-codeon-constants.js"],
       "risk": "critical",
       "robots": ["robot.rcx", "robot.edison", "robot.rcj", "robot.cozmo", "robot.apitor"],
-      "tests": ["test.graph", "test.constants", "test.java-reactor", "test.server-package"],
+      "tests": ["test.graph", "test.constants", "test.legacy-programs", "test.java-reactor", "test.server-package"],
       "reason": "Shared interpreter constants must stay byte-for-byte synchronized between Java and TypeScript without a private build dependency."
     },
     {
@@ -148,7 +154,7 @@
       "paths": ["pom.xml"],
       "risk": "critical",
       "robots": ["robot.rcx", "robot.edison", "robot.rcj", "robot.cozmo", "robot.apitor"],
-      "tests": ["test.graph", "test.java-reactor", "test.server-package"],
+      "tests": ["test.graph", "test.legacy-programs", "test.java-reactor", "test.server-package"],
       "reason": "The parent reactor controls all active robot modules."
     },
     {
@@ -164,7 +170,7 @@
       "paths": ["OpenRobertaRobot/"],
       "risk": "critical",
       "robots": ["robot.rcx", "robot.edison", "robot.rcj", "robot.cozmo", "robot.apitor"],
-      "tests": ["test.graph", "test.java-reactor", "test.sensors"],
+      "tests": ["test.graph", "test.legacy-programs", "test.java-reactor", "test.sensors"],
       "reason": "Every active robot plugin depends on the shared robot core."
     },
     {
@@ -172,7 +178,7 @@
       "paths": ["OpenRobertaServer/", "scripts/test-codeon-buddy-security.js"],
       "risk": "high",
       "robots": ["robot.rcx", "robot.edison", "robot.rcj", "robot.cozmo", "robot.apitor"],
-      "tests": ["test.graph", "test.java-reactor", "test.server-package", "test.sensors", "test.cozmo-simulation", "test.apitor-simulation", "test.simulation-3d", "test.buddy-security"],
+      "tests": ["test.graph", "test.legacy-programs", "test.java-reactor", "test.server-package", "test.sensors", "test.cozmo-simulation", "test.apitor-simulation", "test.simulation-3d", "test.buddy-security"],
       "reason": "The server binds all active plugins and delivers shared browser resources."
     },
     {
@@ -196,7 +202,7 @@
       "paths": ["RobotRCX/"],
       "risk": "high",
       "robots": ["robot.rcx"],
-      "tests": ["test.graph", "test.sensors", "test.java-reactor"],
+      "tests": ["test.graph", "test.sensors", "test.legacy-programs", "test.java-reactor"],
       "reason": "RCX plugin behavior or its dependency on Edison changed."
     },
     {
@@ -204,7 +210,7 @@
       "paths": ["RobotEdison/"],
       "risk": "high",
       "robots": ["robot.edison", "robot.rcx"],
-      "tests": ["test.graph", "test.sensors", "test.java-reactor"],
+      "tests": ["test.graph", "test.sensors", "test.legacy-programs", "test.java-reactor"],
       "reason": "RCX currently has a Maven dependency on RobotEdison."
     },
     {
@@ -212,7 +218,7 @@
       "paths": ["RobotSpike/"],
       "risk": "critical",
       "robots": ["robot.rcj", "robot.cozmo", "robot.apitor"],
-      "tests": ["test.graph", "test.sensors", "test.java-reactor", "test.cozmo-contract", "test.cozmo-simulation", "test.apitor-simulation"],
+      "tests": ["test.graph", "test.sensors", "test.legacy-programs", "test.java-reactor", "test.cozmo-contract", "test.cozmo-simulation", "test.apitor-simulation"],
       "reason": "Cozmo and Apitor both depend on RobotSpike in addition to RCJ."
     },
     {
@@ -220,7 +226,7 @@
       "paths": ["RobotCozmo/"],
       "risk": "high",
       "robots": ["robot.cozmo"],
-      "tests": ["test.graph", "test.sensors", "test.cozmo-contract", "test.cozmo-simulation"],
+      "tests": ["test.graph", "test.sensors", "test.legacy-programs", "test.cozmo-contract", "test.cozmo-simulation"],
       "reason": "Cozmo has a fixed configuration contract and dedicated simulation."
     },
     {
@@ -228,8 +234,16 @@
       "paths": ["RobotApitor/"],
       "risk": "high",
       "robots": ["robot.apitor"],
-      "tests": ["test.graph", "test.sensors", "test.apitor-simulation"],
+      "tests": ["test.graph", "test.sensors", "test.legacy-programs", "test.apitor-simulation"],
       "reason": "Apitor has a dedicated configuration and simulation contract."
+    },
+    {
+      "id": "legacy-program-regressions",
+      "paths": ["OpenRobertaServer/src/test/java/de/fhg/iais/roberta/javaServer/integrationTest/CodeOnLegacyProgramRegressionTest.java", "OpenRobertaServer/src/test/resources/codeonLegacyPrograms/", "docs/CodeON_LEGACY_Regression_Suite.md"],
+      "risk": "medium",
+      "robots": ["robot.rcx", "robot.edison", "robot.rcj", "robot.cozmo", "robot.apitor"],
+      "tests": ["test.graph", "test.legacy-programs"],
+      "reason": "The five representative LEGACY program fixtures protect loading, regeneration, and generated execution order for every active robot."
     }
   ]
 }
