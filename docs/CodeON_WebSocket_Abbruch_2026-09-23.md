@@ -138,8 +138,26 @@ Commit/Push nur nach ausdrücklichem Auftrag durchführen.
 
 ## Sicherung und Freigabe
 
-Rücksprungpunkt unverändert: lokaler Tag
+Rücksprungpunkt unverändert: lokal und auf GitHub gesicherter Tag
 `codeon-rollback-2026-09-22-before-install-fixes` auf Commit
 `05d877da056705b54a9a6790a77556af6d934b31`.
 Die Wiederherstellung ohne Überschreiben offener Arbeit ist in Paket 1 beschrieben.
-Alle drei Pakete bleiben lokal uncommittet; kein Push und kein neuer GitHub-Lauf.
+Alle drei Pakete wurden mit Commit `5ca2884ce9bba1c5784d76dfa646f1523be1d9ed`
+auf `fix/macos-first-install` zu `Thorlogy/CodeON` übertragen. Der GitHub-Lauf
+[CodeON architecture safety graph](https://github.com/Thorlogy/CodeON/actions/runs/35851643724)
+für diesen Commit war erfolgreich. `master` wurde dabei nicht verändert.
+
+## Hardware-Rückmeldung und offene Abnahme
+
+Der Nutzer hat nach der Testanleitung auf dem bisherigen Arbeitsrechner
+zurückgemeldet: „cozmo und rcx hat geklappt“. Damit liegen erfolgreiche
+Nutzer-Rückmeldungen für Cozmo und RCX vor. Ein separates detailliertes
+Messprotokoll zu jedem einzelnen Testschritt liegt nicht vor; die Meldung
+belegt insbesondere keine erneut getestete Firmwareinstallation oder
+Fehlerfall-Diagnose.
+
+Apitor war nicht griffbereit und wurde ausdrücklich **noch nicht getestet**.
+Die automatisierten Apitor-/Bridge-Tests ersetzen diese physische Gegenprobe
+nicht. Der Pull Request wird deshalb als Entwurf vorbereitet. Kein Merge in
+`master` vor dem noch ausstehenden Apitor-Test und der anschließenden Freigabe.
+Dieser Nachtrag ändert ausschließlich die Dokumentation, keinen Laufzeitcode.
