@@ -155,12 +155,16 @@ def find_cozmo_python() -> Path | None:
     for candidate in candidates:
         if not executable(candidate):
             continue
-        check = subprocess.run(
-            [str(candidate), "-c", "import pycozmo, websockets"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            check=False,
-        )
+        try:
+            check = subprocess.run(
+                [str(candidate), "-c", "import pycozmo; from websockets.asyncio.server import serve"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=10,
+                check=False,
+            )
+        except (OSError, subprocess.SubprocessError):
+            continue
         if check.returncode == 0:
             return candidate
     return None
@@ -201,6 +205,7 @@ def preflight() -> dict:
     firmware = find_firmware()
     java = shutil.which("java")
     java_version = java_major_version(java)
+    cozmo_python = find_cozmo_python()
     return {
         "platform": platform.system(),
         "python": {
@@ -225,6 +230,12 @@ def preflight() -> dict:
             "optional": True,
             "value": str(nqc) if nqc else None,
             "help": HELP_URLS["nqc"],
+        },
+        "cozmo": {
+            "ok": cozmo_python is not None,
+            "optional": True,
+            "value": str(cozmo_python) if cozmo_python else None,
+            "help": "CodeON-Cozmo-Bridge-starten.command (macOS; Einrichtung/Reparatur mit Internet); RobotCozmo/README.md",
         },
         "firmware": {
             "ok": firmware is not None,
@@ -251,13 +262,14 @@ def print_preflight(checks: dict) -> None:
         "java": "Java",
         "codeon": "CodeON-Anwendung",
         "nqc": "NQC-Compiler",
+        "cozmo": "Cozmo-Python-Umgebung",
         "firmware": "RCX-Firmwaredatei",
         "bridge": "RCX-Bridge",
         "server": "CodeON-Server",
     }
     for key in labels:
         item = checks[key]
-        optional = " (für RCX)" if key == "nqc" else (" (nur bei RCX ohne Firmware)" if item.get("optional") else "")
+        optional = {"nqc": " (für RCX)", "cozmo": " (für Cozmo)", "firmware": " (nur bei RCX ohne Firmware)"}.get(key, "")
         if key in ("bridge", "server"):
             state = "LÄUFT" if item["ok"] else "AUS"
         else:
@@ -265,6 +277,8 @@ def print_preflight(checks: dict) -> None:
         value = " – " + str(item["value"]) if item.get("value") else ""
         if key == "java" and item.get("version"):
             value += f" (Version {item['version']})"
+        elif key == "java" and not item["ok"]:
+            value = " – keine nutzbare Java-Laufzeit erkannt; bitte Java installieren oder prüfen."
         print(f"[{state:7}] {labels[key]}{optional}{value}")
         if not item["ok"] and item.get("help"):
             print(f"          Hilfe/Download: {item['help']}")
@@ -492,7 +506,7 @@ def start(args: argparse.Namespace) -> int:
         checks["server"]["ok"] = url_reachable(CODEON_URL)
 
         if not nqc:
-            print("\nRCX-Bridge wird nicht gestartet, weil NQC fehlt. Cozmo und die übrigen Systeme sind verfügbar.")
+            print("\nRCX-Bridge wird nicht gestartet, weil NQC fehlt. Die CodeON-Oberfläche kann trotzdem starten.")
         elif not checks["bridge"]["ok"]:
             bridge_log = bridge_log_path.open("a", encoding="utf-8")
             bridge_process = subprocess.Popen(
@@ -526,11 +540,18 @@ def start(args: argparse.Namespace) -> int:
                 f"Protokoll: {cozmo_bridge_log_path}"
             )
         elif platform.system() == "Darwin":
-            print(
-                "Cozmo-Bridge wurde auf macOS nicht im Hintergrund gestartet. "
-                "Bitte CodeON über CodeON-Starten.command öffnen, damit macOS den Zugriff "
-                "auf Cozmos lokales WLAN dem richtigen Terminal-Kontext erlaubt."
-            )
+            if not checks["cozmo"]["ok"]:
+                print(
+                    "Cozmo-Umgebung fehlt oder kann nicht geladen werden. "
+                    "Mit Internetverbindung CodeON-Cozmo-Bridge-starten.command "
+                    "zur Einrichtung/Reparatur öffnen; erst danach ins Cozmo-WLAN wechseln."
+                )
+            else:
+                print(
+                    "Cozmo-Umgebung ist vorhanden, die Bridge läuft aber nicht. "
+                    "Bitte CodeON über CodeON-Starten.command öffnen; zur Diagnose "
+                    "CodeON-Cozmo-Bridge-starten.command verwenden."
+                )
         else:
             cozmo_python = find_cozmo_python()
             if cozmo_python:
@@ -657,7 +678,7 @@ def start(args: argparse.Namespace) -> int:
             return 5
 
         print(f"CodeON ist bereit: {CODEON_URL}")
-        print("Dieses Fenster offen lassen. RCX-, Cozmo- und Apitor-Bridge laufen automatisch im Hintergrund.")
+        print("Dieses Fenster offen lassen. Den Startstatus jeder Roboter-Bridge findest du oben.")
         if not firmware:
             print("Hinweis: Eine Firmwaredatei wird nur benötigt, falls auf dem RCX keine Firmware installiert ist.")
         if not args.no_browser:
@@ -701,6 +722,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--no-browser", action="store_true", help="Browser nicht automatisch öffnen")
     parser.add_argument("--json", action="store_true", help="Prüfergebnis als JSON ausgeben")
     parser.add_argument("--stop-running-server", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--find-cozmo-python", action="store_true", help=argparse.SUPPRESS)
     return parser.parse_args()
 
 
@@ -710,6 +732,11 @@ def raise_keyboard_interrupt() -> None:
 
 if __name__ == "__main__":
     arguments = parse_args()
+    if arguments.find_cozmo_python:
+        cozmo_python = find_cozmo_python()
+        if cozmo_python:
+            print(cozmo_python)
+        raise SystemExit(0 if cozmo_python else 1)
     if arguments.stop_running_server:
         stop_previous_codeon_server()
         stop_previous_cozmo_bridge()

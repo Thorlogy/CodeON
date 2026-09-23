@@ -71,6 +71,14 @@ class BridgeContractTest(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(response["ok"])
         self.assertEqual("PROTOCOL_ERROR", response["error"]["code"])
 
+    async def test_non_string_types_are_protocol_errors_without_adapter_calls(self):
+        for value in ([], {}, None, True, 1):
+            with self.subTest(value=value):
+                response = await self.session.handle(request(value))
+                self.assertEqual("PROTOCOL_ERROR", response["error"]["code"])
+        self.assertFalse(self.adapter.connected)
+        self.assertEqual([], self.adapter.commands)
+
 
 if __name__ == "__main__":
     unittest.main()

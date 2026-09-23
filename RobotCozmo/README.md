@@ -10,13 +10,35 @@ Der bestätigte Durchbruch, die technische Ursache und das reproduzierbare Prüf
 
 ## Start auf macOS
 
-1. Den Mac im normalen WLAN lassen, `CodeON-Starten.command` doppelt anklicken und das Terminalfenster geöffnet lassen. Die Cozmo-Bridge startet in dem von macOS benötigten Terminal-Kontext.
+Vor dem ersten Start auf einem neuen Mac mit Internetzugang einmal
+`CodeON-Cozmo-Bridge-starten.command` ausführen. Es richtet die Umgebung
+`.codeon-cozmo-venv` ein und repariert fehlende Abhängigkeiten. Danach die
+separate Bridge mit Strg+C beenden und den Hauptstarter verwenden.
+
+1. Den Mac im normalen WLAN lassen, `CodeON-Starten.command` doppelt anklicken und das Terminalfenster geöffnet lassen. Die Cozmo-Bridge startet mit der eingerichteten Python-Umgebung in dem von macOS benötigten Terminal-Kontext.
 2. `http://localhost:1999` öffnen, Cozmo einschalten und erst dann den Mac mit Cozmos WLAN verbinden.
 3. In CodeON unter **Roboter** den Eintrag **Cozmo** wählen.
 4. Ein Programm aus Fahr-, Lenk-, Warte-, Schleifen-, Logik- und Mathematikblöcken erstellen.
 5. Cozmo auf eine freie Bodenfläche stellen und **Start** drücken.
 
-`CodeON-Cozmo-Bridge-starten.command` bleibt nur als Diagnose- und Entwicklungswerkzeug erhalten; im normalen Betrieb wird es nicht benötigt.
+`CodeON-Cozmo-Bridge-starten.command` dient der Ersteinrichtung, Reparatur und
+Diagnose; nach erfolgreicher Einrichtung genügt der Hauptstarter.
+
+Die Basiseinrichtung installiert Fahr-/Motorsteuerung und Bridge. Für die
+optionale lokale Gesichtserkennung wird zusätzlich das Extra `cozmo-vision`
+benötigt (in der verwendeten Bridge-Umgebung, noch mit Internetzugang):
+
+```bash
+.codeon-cozmo-venv/bin/python -m pip install -e 'RobotIntegrationKit/python[cozmo-vision,server]'
+```
+
+Bei einer vorhandenen Entwicklerumgebung `.venv` stattdessen deren
+`.venv/bin/python` verwenden. Die Startprüfung meldet nur die
+Basisabhängigkeiten, nicht die Verfügbarkeit dieser optionalen Kamerafunktion.
+
+Cozmos WLAN bietet keinen Internetzugang. Alle Pakete deshalb vor dem
+WLAN-Wechsel installieren. Den macOS-Zugriff auf das lokale Netzwerk für den
+Terminal-Kontext erlauben; sonst kann die Bridge laufen, ohne Cozmo zu erreichen.
 
 Nach einem Wechsel zurück ins normale WLAN bleibt die Bridge aktiv und verbindet
 sich beim nächsten Wechsel ins Cozmo-WLAN automatisch neu. Die Bridge-Logs unter

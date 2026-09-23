@@ -49,7 +49,7 @@ class BridgeSession:
             raise ProtocolError("version must be 1.0")
         if not isinstance(message.get("id"), str) or not message["id"]:
             raise ProtocolError("id must be a non-empty string")
-        if message.get("type") not in {
+        if not isinstance(message.get("type"), str) or message["type"] not in {
             "capabilities",
             "connect",
             "disconnect",

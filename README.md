@@ -87,10 +87,17 @@ Die ausführliche Anleitung steht in [RCX-ERSTE-SCHRITTE.md](RCX-ERSTE-SCHRITTE.
 - Windows: `CodeON-Starten.cmd` doppelt anklicken
 - Linux: `./start-codeon.sh`
 
-Der Startassistent startet CodeON sowie die RCX- und Cozmo-Bridge automatisch im
-Hintergrund. Danach genügt `http://localhost:1999`; beim Auswählen von Cozmo ist
-kein zusätzlicher Bridge-Start nötig. NQC wird nur für den RCX benötigt. Die
+Der Startassistent startet CodeON und die Roboter-Bridges, deren Voraussetzungen
+eingerichtet sind. Für Cozmo auf einem neuen Mac zuerst mit Internetzugang
+`CodeON-Cozmo-Bridge-starten.command` zur Einrichtung ausführen, anschließend
+die separate Bridge beenden und den Hauptstarter öffnen. Danach genügt
+`http://localhost:1999`; beim Auswählen von Cozmo ist kein zusätzlicher
+Bridge-Start nötig. NQC wird nur für den RCX benötigt. Die
 plattformspezifischen Installationswerkzeuge liegen im Wurzelverzeichnis.
+
+Cozmos eigenes WLAN hat keinen Internetzugang. Alle erforderlichen Downloads
+und Installationen vor dem Wechsel in dieses Netz abschließen und den
+macOS-Zugriff auf das lokale Netzwerk erlauben.
 
 Unter **Roboter → Info** zeigt CodeON eine rein lesende
 [Verbindungsdiagnose](docs/CodeON_Connection_Diagnostics.md). Sie unterscheidet

@@ -24,10 +24,19 @@ jobs:
       - run: npm run test:robot-integration
       - name: Test shared robot bridge contract
         run: PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=RobotIntegrationKit/python/src python3 -m unittest discover -s RobotIntegrationKit/python/tests -p 'test_bridge_contract.py' -v
+      - name: Test optional robot dependency diagnostics
+        run: PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=RobotIntegrationKit/python/src python3 -m unittest discover -s RobotIntegrationKit/python/tests -p 'test_dependency_errors.py' -v
+      - name: Test WebSocket validation and disconnect safety with simulated adapters
+        run: |
+          python3 -m venv "$RUNNER_TEMP/codeon-websocket-tests"
+          "$RUNNER_TEMP/codeon-websocket-tests/bin/python" -m pip install './RobotIntegrationKit/python[server]'
+          PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=RobotIntegrationKit/python/src "$RUNNER_TEMP/codeon-websocket-tests/bin/python" -m unittest discover -s RobotIntegrationKit/python/tests -p 'test_server*.py' -v
       - name: Test cooperative behavior runtime
         run: PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=RobotIntegrationKit/python/src python3 -m unittest discover -s RobotIntegrationKit/python/tests -p 'test_*behavior*.py' -v
       - name: Test local launchers
         run: PYTHONDONTWRITEBYTECODE=1 python3 -m unittest RobotRCX/src/test/python/test_start_codeon_rcx.py
+      - name: Test RCX transfer and read-only firmware diagnostics
+        run: PYTHONDONTWRITEBYTECODE=1 python3 -m unittest RobotRCX/src/test/python/test_rcx_bridge.py
       - run: node scripts/test-system-sensor-toolboxes.js
       - run: node scripts/test-cozmo-simulation-static.js
       - run: node scripts/test-apitor-simulation-static.js

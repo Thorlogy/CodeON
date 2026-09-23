@@ -23,6 +23,7 @@
     { "id": "test.robot-integration", "type": "test", "label": "Robot integration developer tooling", "command": "npm run test:robot-integration" },
     { "id": "test.connection-diagnostics", "type": "test", "label": "Read-only robot connection diagnostics", "command": "npm run test:connection-diagnostics" },
     { "id": "test.robot-bridge", "type": "test", "label": "Shared local robot bridge contract", "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=RobotIntegrationKit/python/src python3 -m unittest discover -s RobotIntegrationKit/python/tests -p 'test_bridge_contract.py' -v" },
+    { "id": "test.websocket-safety", "type": "test", "label": "WebSocket validation and disconnect safety (requires server extra; loopback, simulated adapters)", "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=RobotIntegrationKit/python/src python3 -m unittest discover -s RobotIntegrationKit/python/tests -p 'test_server*.py' -v" },
     { "id": "test.behavior-runtime", "type": "test", "label": "Cooperative behavior arbitration and Cozmo presets", "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=RobotIntegrationKit/python/src python3 -m unittest discover -s RobotIntegrationKit/python/tests -p 'test_*behavior*.py' -v" },
     { "id": "test.constants", "type": "test", "label": "Generated Java and TypeScript constants", "command": "npm run test:constants" },
     { "id": "test.sensors", "type": "test", "label": "Cross-robot sensor toolboxes", "command": "node scripts/test-system-sensor-toolboxes.js" },
@@ -32,6 +33,7 @@
     { "id": "test.simulation-3d", "type": "test", "label": "Shared 3D simulation contract", "command": "node scripts/test-codeon-3d-static.js" },
     { "id": "test.buddy-security", "type": "test", "label": "Code Buddy credential and runtime security", "command": "node scripts/test-codeon-buddy-security.js" },
     { "id": "test.local-launcher", "type": "test", "label": "Local server and robot bridge launcher", "command": "python3 -m unittest RobotRCX/src/test/python/test_start_codeon_rcx.py" },
+    { "id": "test.rcx-bridge", "type": "test", "label": "RCX transfer and bounded read-only firmware diagnostics", "command": "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest RobotRCX/src/test/python/test_rcx_bridge.py" },
     { "id": "test.legacy-programs", "type": "test", "label": "Five active CodeON LEGACY program regressions", "command": "mvn --batch-mode -pl OpenRobertaServer -am -Dtest=CodeOnLegacyProgramRegressionTest -DfailIfNoTests=false -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test" },
     { "id": "test.java-reactor", "type": "test", "label": "Active robot Maven reactor tests", "command": "mvn -pl OpenRobertaRobot,RobotEdison,RobotSpike,RobotCozmo,RobotApitor,RobotRCX -am -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test" },
     { "id": "test.server-package", "type": "test", "label": "Server reactor package build", "command": "mvn -pl OpenRobertaServer -am -DskipTests package" }
@@ -57,13 +59,16 @@
     { "from": "module.server", "type": "depends-on", "to": "module.apitor" },
 
     { "from": "robot.rcx", "type": "verified-by", "to": "test.sensors" },
+    { "from": "robot.rcx", "type": "verified-by", "to": "test.rcx-bridge" },
     { "from": "robot.edison", "type": "verified-by", "to": "test.sensors" },
     { "from": "robot.rcj", "type": "verified-by", "to": "test.sensors" },
     { "from": "robot.cozmo", "type": "verified-by", "to": "test.cozmo-contract" },
     { "from": "robot.cozmo", "type": "verified-by", "to": "test.robot-bridge" },
+    { "from": "robot.cozmo", "type": "verified-by", "to": "test.websocket-safety" },
     { "from": "robot.cozmo", "type": "verified-by", "to": "test.behavior-runtime" },
     { "from": "robot.cozmo", "type": "verified-by", "to": "test.cozmo-simulation" },
     { "from": "robot.apitor", "type": "verified-by", "to": "test.robot-bridge" },
+    { "from": "robot.apitor", "type": "verified-by", "to": "test.websocket-safety" },
     { "from": "robot.apitor", "type": "verified-by", "to": "test.apitor-simulation" },
     { "from": "robot.rcx", "type": "verified-by", "to": "test.connection-diagnostics" },
     { "from": "robot.edison", "type": "verified-by", "to": "test.connection-diagnostics" },
@@ -138,7 +143,7 @@
       "paths": ["RobotIntegrationKit/python/"],
       "risk": "critical",
       "robots": ["robot.cozmo", "robot.apitor"],
-      "tests": ["test.graph", "test.robot-bridge", "test.behavior-runtime", "test.cozmo-contract", "test.cozmo-simulation", "test.apitor-simulation"],
+      "tests": ["test.graph", "test.robot-bridge", "test.websocket-safety", "test.behavior-runtime", "test.cozmo-contract", "test.cozmo-simulation", "test.apitor-simulation"],
       "reason": "The shared local bridge controls physical actuators and must retain stop, watchdog, protocol, and adapter guarantees."
     },
     {
@@ -202,7 +207,7 @@
       "paths": ["RobotRCX/"],
       "risk": "high",
       "robots": ["robot.rcx"],
-      "tests": ["test.graph", "test.sensors", "test.legacy-programs", "test.java-reactor"],
+      "tests": ["test.graph", "test.sensors", "test.legacy-programs", "test.java-reactor", "test.rcx-bridge"],
       "reason": "RCX plugin behavior or its dependency on Edison changed."
     },
     {

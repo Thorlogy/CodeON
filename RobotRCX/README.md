@@ -13,10 +13,10 @@ Für die normale Benutzung sind **weder Maven noch npm noch ein eigener
 CodeON-Build** nötig. Das Repository enthält unter `application` eine fertige
 lokale CodeON-Anwendung.
 
-Für Endnutzer wird das kompakte Komplettpaket von der
-[GitHub-Releases-Seite](https://github.com/Thorlogy/CodeON/releases) empfohlen.
-Es enthält die fertige Anwendung, Bridge, Starter und Einsteigeranleitung,
-jedoch aus Lizenzgründen weder NQC noch die LEGO-Firmware.
+Für Endnutzer steht der [aktuelle Stand als Branch-ZIP](https://github.com/Thorlogy/CodeON/archive/refs/heads/master.zip)
+bereit. Er enthält die fertige Anwendung, Bridge, Starter und Einsteigeranleitung,
+jedoch weder NQC noch die LEGO-Firmware. Ein separates Installationspaket wird
+derzeit nicht als Release bereitgestellt; siehe [Erste Schritte](../RCX-ERSTE-SCHRITTE.md).
 
 ### macOS
 
@@ -167,11 +167,30 @@ automatisch gestartet.
 
 ## Fehlende RCX-Firmware automatisch behandeln
 
-NQC erkennt einen eingeschalteten RCX ohne Firmware eindeutig mit der Meldung
-`No firmware installed`. Tritt dieser Fall während einer Programmübertragung
-auf, fragt CodeON den Benutzer, ob zuerst die Firmware übertragen werden soll.
+Eine ausbleibende IR-Antwort beweist **nicht**, dass Firmware fehlt. Nach einer
+nicht bestätigten Programmübertragung (NQC-Code 253 oder Zeitüberschreitung)
+fragt die Bridge daher höchstens dreimal lesend `nqc -getversion` ab, mit je
+drei Sekunden Prozess-Timeout. Erfolgreiche Übertragungen bleiben unverändert
+und erhalten keine zusätzlichen Abfragen. Die Diagnose kann die Fehlermeldung
+um bis zu ungefähr neun Sekunden verzögern.
+
+Nur `No firmware installed` oder eine erfolgreich abgefragte Firmwareversion
+`00000000` führt zum vorhandenen Firmwareangebot. Eine erkannte Version ungleich
+Null wird gemeldet; eine unbekannte Antwort bleibt ausdrücklich **unbekannt**.
+LCD-Symbole und eine lokal vorhandene `.LGO`-Datei beweisen keine installierte
+Firmware auf dem RCX. Auch `/probe` verwendet diese begrenzte Diagnose.
+
+Bei bestätigtem Fehlen fragt CodeON, ob zuerst Firmware übertragen werden soll.
 Nur nach ausdrücklicher Bestätigung ruft die Bridge `nqc -firmware ...` auf und
 wiederholt anschließend automatisch die Programmübertragung.
+
+Die Bridge selbst wiederholt weder Programmübertragung/Programmstart noch
+Firmwareübertragung. Nach einem unklaren Ergebnis bitte zuerst den RCX-Zustand
+prüfen, bevor erneut übertragen wird. Gleichzeitige Tower-Zugriffe innerhalb
+der Bridge werden mit „Tower wird gerade verwendet“ abgewiesen, nicht
+aufgeschoben. Externe NQC-Terminalbefehle können diese Sperre nicht beachten;
+sie daher nicht parallel zur Bridge verwenden. `/status` und die
+Firmware-Fortschrittsanzeige bleiben währenddessen ohne Towerzugriff verfügbar.
 
 Die proprietäre LEGO-Firmware wird nicht mit CodeON verteilt. Eine rechtmäßig
 bezogene `FIRM0332.LGO` (empfohlen) oder `FIRM0328.LGO` wird hier abgelegt:
@@ -188,6 +207,17 @@ RCX_FIRMWARE_PATH=/pfad/zu/FIRM0332.LGO ./ora.sh start-from-git
 
 Ohne konfigurierte Datei bleibt die Firmware des RCX unverändert und CodeON
 zeigt einen verständlichen Hinweis mit dem erwarteten Speicherort an.
+
+### Wenn Firmwareübertragungen scheitern
+
+- Batterien und freie IR-Sichtlinie prüfen. Vor einem neuen, bewusst gestarteten
+  Firmwareversuch den RCX aus-/einschalten und anschließend zeitnah übertragen.
+  Nicht während einer noch laufenden Übertragung unterbrechen.
+- Ist der USB-Tower nach Abschluss eines Versuchs nicht mehr ansprechbar,
+  kann Abziehen und Wiederanstecken helfen. Im Frischinstallationstest half
+  dies nach einer manuellen Schnellübertragung; die Ursache ist nicht bewiesen.
+- Die Bridge bleibt beim bisherigen `-firmware`-Verfahren. Sie schaltet nicht
+  automatisch auf `-firmfast` um und ändert keinen RCX-Abschalt-Timer.
 
 ## Zugriffsschutz
 

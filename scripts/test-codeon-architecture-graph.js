@@ -16,6 +16,10 @@ const {
 const graph = loadGraph();
 assert.deepStrictEqual(validateGraph(graph), [], 'Architecture graph must match repository structure and plugin properties.');
 
+const rcxBridgeImpact = impactForPaths(graph, ['RobotRCX/rcx-bridge.py']);
+assert.deepStrictEqual(rcxBridgeImpact.affectedRobots.map((robot) => robot.id), ['robot.rcx']);
+assert.ok(rcxBridgeImpact.requiredChecks.some((test) => test.id === 'test.rcx-bridge'));
+
 const coreImpact = impactForPaths(graph, ['OpenRobertaRobot/src/main/java/de/fhg/iais/roberta/factory/RobotFactory.java']);
 assert.strictEqual(coreImpact.risk, 'critical');
 assert.deepStrictEqual(coreImpact.affectedRobots.map((robot) => robot.id), ['robot.apitor', 'robot.cozmo', 'robot.edison', 'robot.rcj', 'robot.rcx']);
@@ -61,6 +65,7 @@ assert.strictEqual(robotBridgeImpact.risk, 'critical');
 assert.strictEqual(robotBridgeImpact.reviewRequired, true);
 assert.deepStrictEqual(robotBridgeImpact.unknownPaths, []);
 assert.ok(robotBridgeImpact.requiredChecks.some((test) => test.id === 'test.robot-bridge'));
+assert.ok(robotBridgeImpact.requiredChecks.some((test) => test.id === 'test.websocket-safety'));
 
 const constantsImpact = impactForPaths(graph, ['scripts/generate-codeon-constants.js']);
 assert.strictEqual(constantsImpact.risk, 'critical');
@@ -77,6 +82,9 @@ assert.ok(ciImpact.requiredChecks.some((test) => test.id === 'test.graph'));
 
 const unitTestWorkflow = fs.readFileSync(path.resolve(__dirname, '../.github/workflows/unit_test_triggered_by_develop_push.yml'), 'utf8');
 const architectureWorkflow = fs.readFileSync(path.resolve(__dirname, '../.github/workflows/codeon_architecture_graph.yml'), 'utf8');
+assert.ok(architectureWorkflow.includes('python3 -m unittest RobotRCX/src/test/python/test_rcx_bridge.py'));
+assert.ok(architectureWorkflow.includes("-p 'test_server*.py' -v"));
+assert.ok(architectureWorkflow.includes("pip install './RobotIntegrationKit/python[server]'"));
 
 function assertActionsArePinned(workflow, workflowName) {
     const actionReferences = Array.from(workflow.matchAll(/uses:\s+([^\s#]+)/g), (match) => match[1]);

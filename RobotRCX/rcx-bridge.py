@@ -28,6 +28,7 @@ import base64
 import json
 import os
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -45,6 +46,49 @@ MAX_REQUEST_BYTES = 1024 * 1024
 MAX_PROGRAM_BYTES = 256 * 1024
 PROGRAM_TRANSFER_TIMEOUT_SECONDS = 20
 FIRMWARE_TRANSFER_TIMEOUT_SECONDS = 600
+VERSION_PROBE_ATTEMPTS = 3
+VERSION_PROBE_TIMEOUT_SECONDS = 3
+
+# Serialize tower operations within this bridge process. Never queue a stale upload
+# behind a firmware installation, or interleave diagnostics with a download.
+_tower_lock = threading.Lock()
+TOWER_BUSY_MESSAGE = "Der IR-Tower wird gerade verwendet. Bitte den laufenden Vorgang abwarten."
+FIRMWARE_MISSING_MESSAGE = (
+    "Auf dem RCX wurde keine Firmware erkannt. Nach deiner Zustimmung kann "
+    "CodeON zuerst eine lokal bereitgestellte LEGO-RCX-Firmware übertragen."
+)
+
+
+def diagnose_rcx_firmware(nqc):
+    """Bounded, read-only diagnosis; caller must hold _tower_lock.
+
+    Unknown output and timeouts are never evidence of missing firmware.
+    Only version queries are retried, never downloads or program execution.
+    """
+    cmd = [nqc] + nqc_serial_args() + ["-getversion"]
+    detail = "Keine verwertbare Versionsantwort."
+    for _ in range(VERSION_PROBE_ATTEMPTS):
+        try:
+            proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                                  timeout=VERSION_PROBE_TIMEOUT_SECONDS)
+        except subprocess.TimeoutExpired:
+            detail = "Zeitüberschreitung bei der Versionsabfrage."
+            continue
+        except OSError as error:
+            return "unknown", "Versionsabfrage konnte nicht gestartet werden: %s" % error
+        out = ((proc.stdout or "") + "\n" + (proc.stderr or "")).strip()
+        if "no firmware installed" in out.lower():
+            return "missing", FIRMWARE_MISSING_MESSAGE
+        version = re.search(
+            r"^Current Version \[ROM/Firmware\]:\s*([0-9a-f]{8})\s*/\s*([0-9a-f]{8})\s*$",
+            out, re.IGNORECASE | re.MULTILINE,
+        )
+        if proc.returncode == 0 and version:
+            if int(version.group(2), 16) == 0:
+                return "missing", FIRMWARE_MISSING_MESSAGE
+            return "present", "RCX-Firmware erkannt: " + version.group(2) + ".\n" + out
+        detail = out or "Keine verwertbare Versionsantwort."
+    return "unknown", "Firmwarezustand konnte nicht ermittelt werden. " + detail
 
 # Reihenfolge der Kandidaten, wo nqc gesucht wird. Der erste Treffer gewinnt.
 # 1. Umgebungsvariable NQC_PATH (falls gesetzt)
@@ -103,6 +147,15 @@ def nqc_serial_args():
 # Uebertragungslogik
 # ----------------------------------------------------------------------------
 def transfer_rcx(rcx_bytes, program_slot=1, run_after=False):
+    if not _tower_lock.acquire(blocking=False):
+        return False, TOWER_BUSY_MESSAGE, "tower_busy"
+    try:
+        return _transfer_rcx(rcx_bytes, program_slot, run_after)
+    finally:
+        _tower_lock.release()
+
+
+def _transfer_rcx(rcx_bytes, program_slot=1, run_after=False):
     """
     Schreibt die uebergebenen .rcx-Bytes in eine temporaere Datei und ruft
     nqc auf, um sie auf den RCX zu uebertragen. Gibt
@@ -134,11 +187,13 @@ def transfer_rcx(rcx_bytes, program_slot=1, run_after=False):
         
         # Popen verwenden, um den Prozess bei Timeout sauber beenden zu koennen
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        timed_out = False
         try:
             stdout_bytes, stderr_bytes = proc.communicate(timeout=PROGRAM_TRANSFER_TIMEOUT_SECONDS)
             returncode = proc.returncode
             out = (stdout_bytes or b"").decode("utf-8", errors="replace") + (stderr_bytes or b"").decode("utf-8", errors="replace")
         except subprocess.TimeoutExpired:
+            timed_out = True
             proc.kill()
             stdout_bytes, stderr_bytes = proc.communicate()
             returncode = proc.returncode or 253
@@ -147,24 +202,23 @@ def transfer_rcx(rcx_bytes, program_slot=1, run_after=False):
         print("[RCX-Bridge] NQC exit code:", returncode)
         print("[RCX-Bridge] NQC output:", out.strip())
         
-        if returncode == 0:
+        if returncode == 0 and not timed_out:
             msg = "Programm erfolgreich auf den RCX uebertragen."
             if not run_after:
                 msg += " Gruenen Run-Knopf am RCX druecken."
             return True, msg + ("\n" + out.strip() if out.strip() else ""), None
         elif "no firmware installed" in out.lower():
+            return False, FIRMWARE_MISSING_MESSAGE, "firmware_missing"
+        elif returncode == 253 or timed_out:
+            firmware_state, diagnosis = diagnose_rcx_firmware(nqc)
+            if firmware_state == "missing":
+                return False, FIRMWARE_MISSING_MESSAGE, "firmware_missing"
             return False, (
-                "Auf dem RCX wurde keine Firmware erkannt. Nach deiner Zustimmung kann "
-                "CodeON zuerst eine lokal bereitgestellte LEGO-RCX-Firmware übertragen."
-            ), "firmware_missing"
-        elif returncode == 253:
-            return False, (
-                "Übertragung fehlgeschlagen: Der RCX-Roboter hat nicht geantwortet (NQC-Fehler 253).\n\n"
-                "Bitte stelle sicher, dass:\n"
-                "1. der RCX eingeschaltet ist (LCD zeigt Zahlen),\n"
-                "2. die Firmware auf dem RCX geladen ist (falls nicht, 'Firmware übertragen' klicken),\n"
-                "3. der Infrarot-Turm direkt auf das Empfängerfenster des RCX zeigt (Sichtlinie frei),\n"
-                "4. die Batterien des RCX nicht zu schwach sind."
+                "Die Programmübertragung wurde nicht bestätigt. "
+                "Sie wurde nicht automatisch wiederholt; bitte den Zustand am RCX prüfen.\n\n"
+                + diagnosis + "\n\n"
+                "RCX einschalten, freie Sicht zwischen IR-Tower und Empfänger sicherstellen "
+                "und Batterien prüfen. Das LCD allein bestätigt keine geladene Firmware."
             ), "no_reply"
         else:
             return False, ("Uebertragung fehlgeschlagen (nqc-Code %d).\n%s"
@@ -178,20 +232,29 @@ def transfer_rcx(rcx_bytes, program_slot=1, run_after=False):
 
 def probe_rcx():
     """Fragt die RCX-Version ab - harmloser Verbindungstest, ueberträgt nichts."""
-    nqc = find_nqc()
-    if not nqc:
-        return False, "nqc nicht gefunden."
-    cmd = [nqc] + nqc_serial_args() + ["-getversion"]
+    if not _tower_lock.acquire(blocking=False):
+        return False, TOWER_BUSY_MESSAGE
     try:
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=20)
-        out = (proc.stdout or "") + (proc.stderr or "")
-        return (proc.returncode == 0), out.strip()
-    except Exception as e:
-        return False, str(e)
+        nqc = find_nqc()
+        if not nqc:
+            return False, "nqc nicht gefunden."
+        state, message = diagnose_rcx_firmware(nqc)
+        return state == "present", message
+    finally:
+        _tower_lock.release()
 
 
 def install_firmware():
     """Install configured LEGO firmware after explicit confirmation in CodeON."""
+    if not _tower_lock.acquire(blocking=False):
+        return False, TOWER_BUSY_MESSAGE
+    try:
+        return _install_firmware()
+    finally:
+        _tower_lock.release()
+
+
+def _install_firmware():
     nqc = find_nqc()
     firmware = find_firmware()
     if not nqc:
