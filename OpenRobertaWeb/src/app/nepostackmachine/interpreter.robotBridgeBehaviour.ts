@@ -9,6 +9,46 @@ import { State } from './interpreter.state';
  * stack-machine percentages and distances into protocol values.
  */
 export class RobotBridgeBehaviour extends RobotSimBehaviour {
+    private static statusActive = false;
+    private static statusExpanded = true;
+    private static statusVisible = false;
+    private static statusGeneration = 0;
+    private readonly statusGeneration: number;
+
+    public static activateStatus(): void {
+        RobotBridgeBehaviour.statusActive = true;
+    }
+
+    public static deactivateStatus(): void {
+        RobotBridgeBehaviour.statusVisible = false;
+        RobotBridgeBehaviour.statusActive = false;
+        ++RobotBridgeBehaviour.statusGeneration;
+        document.getElementById('codeon-cozmo-status')?.remove();
+        document.getElementById('codeon-cozmo-camera-privacy')?.remove();
+        document.getElementById('head-navi-tooltip-robot-status')?.setAttribute('aria-expanded', 'false');
+    }
+
+    /** UI-only: never connects, polls or sends commands to a robot. */
+    public static toggleStatus(robot: string, name: string): void {
+        RobotBridgeBehaviour.statusVisible = !RobotBridgeBehaviour.statusVisible;
+        let panel = document.getElementById('codeon-cozmo-status');
+        if (!panel) {
+            RobotBridgeBehaviour.statusExpanded = true;
+            const german = (document.documentElement.lang || navigator.language).toLowerCase().startsWith('de');
+            RobotBridgeBehaviour.renderStatusPanel(name + '\n' + (robot === 'cozmo'
+                ? (german ? 'Noch keine Statusdaten. Sie werden bei der Ausführung auf Cozmo aktualisiert.' : 'No status data yet. Data is updated when running a program on Cozmo.')
+                : (german ? 'Für dieses Robotersystem sind hier keine Live-Sensordaten verfügbar.' : 'Live sensor data is not available here for this robot.')));
+            panel = document.getElementById('codeon-cozmo-status');
+        } else {
+            panel.hidden = !RobotBridgeBehaviour.statusVisible;
+            if (!panel.hidden) {
+                RobotBridgeBehaviour.statusExpanded = true;
+                RobotBridgeBehaviour.renderStatusPanel(document.getElementById('codeon-cozmo-status-details').textContent);
+            }
+        }
+        document.getElementById('head-navi-tooltip-robot-status')?.setAttribute('aria-expanded', String(!panel.hidden));
+    }
+
     private readonly maxWheelSpeedMmPerSec: number;
     private readonly trackWidthMm: number;
     private motionGeneration = 0;
@@ -25,6 +65,7 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
 
     constructor(private readonly bridge: RobotBridgeClient, maxWheelSpeedMmPerSec = 150, trackWidthMm = 70, private readonly onError?: (error: Error) => void) {
         super();
+        this.statusGeneration = ++RobotBridgeBehaviour.statusGeneration;
         this.maxWheelSpeedMmPerSec = maxWheelSpeedMmPerSec;
         this.trackWidthMm = trackWidthMm;
         this.updateStatusPanel();
@@ -409,30 +450,9 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
     }
 
     private updateStatusPanel(): void {
-        const id = 'codeon-cozmo-status';
-        let panel = document.getElementById(id);
-        if (!panel) {
-            panel = document.createElement('div');
-            panel.id = id;
-            Object.assign(panel.style, {
-                position: 'fixed',
-                right: '18px',
-                top: '64px',
-                zIndex: '9999',
-                minWidth: '250px',
-                maxWidth: '360px',
-                padding: '10px 14px',
-                borderRadius: '6px',
-                color: '#ffffff',
-                background: 'rgba(0, 52, 74, 0.92)',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.25)',
-                fontSize: '13px',
-                lineHeight: '1.45',
-                whiteSpace: 'pre-line',
-                pointerEvents: 'none',
-            });
-            document.body.appendChild(panel);
-        }
+        // Late sensor/command responses from a previous robot or run must not
+        // recreate its overlay after the connection has been disposed.
+        if (!RobotBridgeBehaviour.statusActive || this.statusGeneration !== RobotBridgeBehaviour.statusGeneration) return;
         const german = this.isGerman();
         const face = this.sensorSnapshot.face || {};
         const camera = this.sensorSnapshot.cameraEnabled
@@ -483,7 +503,7 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
         const visualTask = this.taskContext
             ? `${this.taskContext.name} · ${this.isGerman() ? 'Priorität' : 'priority'} ${this.taskContext.priority}`
             : behaviorStatus;
-        panel.textContent =
+        const statusText =
             `🤖 Cozmo ${german ? 'Status' : 'status'}\n${german ? 'Aktion' : 'Action'}: ${this.lastAction || (german ? 'Bereit' : 'Ready')}\n` +
             `${german ? 'Kamera' : 'Camera'}: ${camera}${cameraDetail}\n${german ? 'Gesicht' : 'Face'}: ${
                 face.detected
@@ -502,6 +522,50 @@ export class RobotBridgeBehaviour extends RobotSimBehaviour {
             `\n${german ? 'Würfel' : 'Cubes'}: ${cubeSummary} · ${german ? 'Marker' : 'marker'} ${cubeMarker.detected ? '●' : '○'}` +
             `\n${german ? 'Task' : 'Task'}: ${visualTask}` +
             (error || cameraError ? `\n⚠ ${error || cameraError}` : '');
+        RobotBridgeBehaviour.renderStatusPanel(statusText);
+    }
+
+    private static renderStatusPanel(statusText: string): void {
+        const german = (document.documentElement.lang || navigator.language).toLowerCase().startsWith('de');
+        let panel = document.getElementById('codeon-cozmo-status');
+        if (!panel) {
+            panel = document.createElement('div');
+            panel.id = 'codeon-cozmo-status';
+            panel.hidden = !RobotBridgeBehaviour.statusVisible;
+            panel.setAttribute('role', 'region');
+            panel.setAttribute('aria-label', german ? 'Roboter-Status' : 'Robot status');
+            Object.assign(panel.style, {
+                position: 'fixed', right: '18px', top: '64px', zIndex: '9999',
+                maxWidth: 'min(360px, calc(100vw - 36px))', padding: '10px 14px',
+                borderRadius: '6px', color: '#ffffff', background: 'rgba(0, 52, 74, 0.92)',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.25)', fontSize: '13px',
+                lineHeight: '1.45', whiteSpace: 'pre-line', pointerEvents: 'auto',
+            });
+            document.body.appendChild(panel);
+        }
+        let toggle = panel.querySelector('button');
+        let content = panel.querySelector('div');
+        if (!toggle) {
+            toggle = document.createElement('button');
+            toggle.type = 'button';
+            toggle.setAttribute('aria-controls', 'codeon-cozmo-status-details');
+            Object.assign(toggle.style, { background: 'transparent', color: 'inherit', border: '1px solid currentColor', borderRadius: '4px', cursor: 'pointer' });
+            panel.appendChild(toggle);
+            content = document.createElement('div');
+            content.id = 'codeon-cozmo-status-details';
+            panel.appendChild(content);
+        }
+        toggle.onclick = () => {
+            RobotBridgeBehaviour.statusExpanded = !RobotBridgeBehaviour.statusExpanded;
+            RobotBridgeBehaviour.renderStatusPanel(content.textContent);
+        };
+        toggle.textContent = RobotBridgeBehaviour.statusExpanded
+            ? (german ? 'Details einklappen' : 'Collapse details')
+            : (german ? 'Details ausklappen' : 'Expand details');
+        toggle.setAttribute('aria-expanded', String(RobotBridgeBehaviour.statusExpanded));
+        content.textContent = statusText;
+        content.hidden = !RobotBridgeBehaviour.statusExpanded;
+        document.getElementById('head-navi-tooltip-robot-status')?.setAttribute('aria-expanded', String(!panel.hidden));
     }
 
     private isGerman(): boolean {

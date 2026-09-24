@@ -2167,6 +2167,7 @@ export class CozmoConnection extends AbstractConnection {
     private lastConnectionError: DiagnosticError | undefined;
 
     override init(): void {
+        RobotBridgeBehaviour.activateStatus();
         this.stopped = false;
         GUISTATE_C.setPing(false);
         GUISTATE_C.setRunEnabled(false);
@@ -2253,6 +2254,7 @@ export class CozmoConnection extends AbstractConnection {
         this.taskBehaviour = undefined;
         this.connected = false;
         this.bridge.stopAll().catch(() => undefined).finally(() => this.bridge.close());
+        RobotBridgeBehaviour.deactivateStatus();
         super.terminate();
     }
 

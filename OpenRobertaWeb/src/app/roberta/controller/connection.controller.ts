@@ -1,5 +1,6 @@
 import { ConnectionInterface } from 'connection.interface';
 import * as GUISTATE_C from 'guiState.controller';
+import { RobotBridgeBehaviour } from 'interpreter.robotBridgeBehaviour';
 
 let connectionInstance: ConnectionInterface;
 let connectionRobotName: string | undefined;
@@ -14,6 +15,7 @@ export async function initConnection(robotName: string) {
 }
 
 export async function switchConnection(robotName: string) {
+    RobotBridgeBehaviour.deactivateStatus();
     if (getConnectionInstance()) {
         getConnectionInstance().terminate();
     }

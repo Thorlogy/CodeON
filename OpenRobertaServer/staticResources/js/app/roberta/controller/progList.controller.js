@@ -322,13 +322,6 @@ define(["require", "exports", "log", "util.roberta", "message", "progList.model"
             }
             return false;
         },
-        'click .gallery': function (e, value, row) {
-            e.stopPropagation();
-            if (!row[2].sharedFrom && !GUISTATE_C.isUserMemberOfUserGroup()) {
-                $('#share-with-gallery').trigger('updateAndShow', [row]);
-            }
-            return false;
-        },
         'click .load': function (e, value, row) {
             e.stopPropagation();
             loadFromListing(row);
@@ -427,21 +420,12 @@ define(["require", "exports", "log", "util.roberta", "message", "progList.model"
             }
             if (row[2].sharedFrom) {
                 result += '<a href="#" class="share disabled" data-status="disabled"><span class="typcn typcn-flow-merge"></span></a>';
-                if (!GUISTATE_C.isUserMemberOfUserGroup()) {
-                    result += '<a href="#" class="gallery disabled" data-status="disabled"><span class="typcn typcn-th-large-outline"></span></a>';
-                }
             }
             else {
                 result +=
                     '<a href="#" class="share" rel="tooltip" lkey="Blockly.Msg.PROGLIST_SHARE_TOOLTIP" data-bs-original-title="' +
                         Blockly.Msg.PROGLIST_SHARE_TOOLTIP +
                         '" title=""><span class="typcn typcn-flow-merge"></span></a>';
-                if (!GUISTATE_C.isUserMemberOfUserGroup()) {
-                    result +=
-                        '<a href="#" class="gallery" rel="tooltip" lkey="Blockly.Msg.PROGLIST_SHARE_WITH_GALLERY_TOOLTIP" data-bs-original-title="' +
-                            Blockly.Msg.PROGLIST_SHARE_WITH_GALLERY_TOOLTIP +
-                            '" title=""><span class="typcn typcn-th-large-outline"></span></a>';
-                }
             }
         }
         result +=

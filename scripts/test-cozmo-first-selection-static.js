@@ -65,9 +65,9 @@ assert.match(
 );
 assert.match(server, /function showProgramTab\(callback, params, opt_onProgramTabReady\)/);
 assert.match(server, /\.initConnection\(robot\)[\s\S]*?Initial robot connection failed/);
-assert.match(source, /codeon-live-20260916-40/);
-assert.match(server, /codeon-live-20260916-40/);
+assert.match(source, /codeon-live-20260924-status-41/);
+assert.match(server, /codeon-live-20260924-status-41/);
 assert.strictEqual(serverIndex, applicationIndex, 'the packaged application must contain the same index as the server resources');
-assert.match(serverIndex, /codeon-live-20260916-40/);
+assert.match(serverIndex, /codeon-live-20260924-status-41/);
 
 console.log('Cozmo first-selection initialization checks passed.');

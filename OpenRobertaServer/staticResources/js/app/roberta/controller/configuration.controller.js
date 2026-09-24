@@ -6,6 +6,7 @@ define(["require", "exports", "log", "util.roberta", "message", "guiState.contro
     var confVis;
     var listenToBricklyEvents = true;
     var seen = false;
+    var fixedConfigurationWorkspace = false;
     function init() {
         initView();
         initEvents();
@@ -20,6 +21,7 @@ define(["require", "exports", "log", "util.roberta", "message", "guiState.contro
      *            toolbox
      */
     function initView() {
+        fixedConfigurationWorkspace = GUISTATE_C.getRobotGroup() === 'cozmo';
         // Cozmo's hardware is fixed. Passing its deliberately empty toolbox to
         // Blockly aborts the first robot initialization in some Blockly builds.
         // A workspace without a toolbox still supports the read-only overview and
@@ -84,6 +86,9 @@ define(["require", "exports", "log", "util.roberta", "message", "guiState.contro
             GUISTATE_C.setConfigurationXML(xml);
             bricklyWorkspace.setVisible(false);
         });
+        initWorkspaceEvents();
+    }
+    function initWorkspaceEvents() {
         if (bricklyWorkspace.robControls && bricklyWorkspace.robControls.saveProgram) {
             Blockly.bindEvent_(bricklyWorkspace.robControls.saveProgram, 'mousedown', null, function (e) {
                 LOG.info('saveConfiguration from brickly button');
@@ -351,7 +356,8 @@ define(["require", "exports", "log", "util.roberta", "message", "guiState.contro
         var xml = Blockly.Xml.domToText(dom);
         configurationToBricklyWorkspace(xml);
         var toolbox = GUISTATE_C.getConfigurationToolbox();
-        bricklyWorkspace.updateToolbox(toolbox);
+        if (!fixedConfigurationWorkspace)
+            bricklyWorkspace.updateToolbox(toolbox);
     }
     exports.reloadView = reloadView;
     function changeRobotSvg() {
@@ -366,13 +372,22 @@ define(["require", "exports", "log", "util.roberta", "message", "guiState.contro
     exports.changeRobotSvg = changeRobotSvg;
     function resetView() {
         if (bricklyWorkspace) {
+            // Blockly cannot change a workspace between no toolbox and a
+            // categorized toolbox. Recreate only when crossing Cozmo's fixed mode.
+            if (fixedConfigurationWorkspace !== (GUISTATE_C.getRobotGroup() === 'cozmo')) {
+                resetConfVisIfAvailable();
+                bricklyWorkspace.dispose();
+                initView();
+                initWorkspaceEvents();
+            }
             bricklyWorkspace.setDevice({
                 group: GUISTATE_C.getRobotGroup(),
                 robot: GUISTATE_C.getRobot(),
             });
             initConfigurationEnvironment();
             var toolbox = GUISTATE_C.getConfigurationToolbox();
-            bricklyWorkspace.updateToolbox(toolbox);
+            if (!fixedConfigurationWorkspace)
+                bricklyWorkspace.updateToolbox(toolbox);
         }
     }
     exports.resetView = resetView;

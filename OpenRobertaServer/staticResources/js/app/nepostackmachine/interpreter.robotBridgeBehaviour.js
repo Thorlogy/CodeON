@@ -36,12 +36,47 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
             _this.resourceOwners = {};
             _this.taskConflictReported = false;
             _this.cameraRequested = false;
+            _this.statusGeneration = ++RobotBridgeBehaviour.statusGeneration;
             _this.maxWheelSpeedMmPerSec = maxWheelSpeedMmPerSec;
             _this.trackWidthMm = trackWidthMm;
             _this.updateStatusPanel();
             _this.pollSensors();
             return _this;
         }
+        RobotBridgeBehaviour.activateStatus = function () {
+            RobotBridgeBehaviour.statusActive = true;
+        };
+        RobotBridgeBehaviour.deactivateStatus = function () {
+            var _a, _b, _c;
+            RobotBridgeBehaviour.statusVisible = false;
+            RobotBridgeBehaviour.statusActive = false;
+            ++RobotBridgeBehaviour.statusGeneration;
+            (_a = document.getElementById('codeon-cozmo-status')) === null || _a === void 0 ? void 0 : _a.remove();
+            (_b = document.getElementById('codeon-cozmo-camera-privacy')) === null || _b === void 0 ? void 0 : _b.remove();
+            (_c = document.getElementById('head-navi-tooltip-robot-status')) === null || _c === void 0 ? void 0 : _c.setAttribute('aria-expanded', 'false');
+        };
+        /** UI-only: never connects, polls or sends commands to a robot. */
+        RobotBridgeBehaviour.toggleStatus = function (robot, name) {
+            var _a;
+            RobotBridgeBehaviour.statusVisible = !RobotBridgeBehaviour.statusVisible;
+            var panel = document.getElementById('codeon-cozmo-status');
+            if (!panel) {
+                RobotBridgeBehaviour.statusExpanded = true;
+                var german = (document.documentElement.lang || navigator.language).toLowerCase().startsWith('de');
+                RobotBridgeBehaviour.renderStatusPanel(name + '\n' + (robot === 'cozmo'
+                    ? (german ? 'Noch keine Statusdaten. Sie werden bei der Ausführung auf Cozmo aktualisiert.' : 'No status data yet. Data is updated when running a program on Cozmo.')
+                    : (german ? 'Für dieses Robotersystem sind hier keine Live-Sensordaten verfügbar.' : 'Live sensor data is not available here for this robot.')));
+                panel = document.getElementById('codeon-cozmo-status');
+            }
+            else {
+                panel.hidden = !RobotBridgeBehaviour.statusVisible;
+                if (!panel.hidden) {
+                    RobotBridgeBehaviour.statusExpanded = true;
+                    RobotBridgeBehaviour.renderStatusPanel(document.getElementById('codeon-cozmo-status-details').textContent);
+                }
+            }
+            (_a = document.getElementById('head-navi-tooltip-robot-status')) === null || _a === void 0 ? void 0 : _a.setAttribute('aria-expanded', String(!panel.hidden));
+        };
         RobotBridgeBehaviour.prototype.driveAction = function (_name, direction, speed, distance, time) {
             var _a;
             var signedSpeed = this.directionSign(direction) * this.toWheelSpeed(speed);
@@ -425,30 +460,10 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
             document.body.appendChild(indicator);
         };
         RobotBridgeBehaviour.prototype.updateStatusPanel = function () {
-            var id = 'codeon-cozmo-status';
-            var panel = document.getElementById(id);
-            if (!panel) {
-                panel = document.createElement('div');
-                panel.id = id;
-                Object.assign(panel.style, {
-                    position: 'fixed',
-                    right: '18px',
-                    top: '64px',
-                    zIndex: '9999',
-                    minWidth: '250px',
-                    maxWidth: '360px',
-                    padding: '10px 14px',
-                    borderRadius: '6px',
-                    color: '#ffffff',
-                    background: 'rgba(0, 52, 74, 0.92)',
-                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.25)',
-                    fontSize: '13px',
-                    lineHeight: '1.45',
-                    whiteSpace: 'pre-line',
-                    pointerEvents: 'none',
-                });
-                document.body.appendChild(panel);
-            }
+            // Late sensor/command responses from a previous robot or run must not
+            // recreate its overlay after the connection has been disposed.
+            if (!RobotBridgeBehaviour.statusActive || this.statusGeneration !== RobotBridgeBehaviour.statusGeneration)
+                return;
             var german = this.isGerman();
             var face = this.sensorSnapshot.face || {};
             var camera = this.sensorSnapshot.cameraEnabled
@@ -498,23 +513,66 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
             var visualTask = this.taskContext
                 ? "".concat(this.taskContext.name, " \u00B7 ").concat(this.isGerman() ? 'Priorität' : 'priority', " ").concat(this.taskContext.priority)
                 : behaviorStatus;
-            panel.textContent =
-                "\uD83E\uDD16 Cozmo ".concat(german ? 'Status' : 'status', "\n").concat(german ? 'Aktion' : 'Action', ": ").concat(this.lastAction || (german ? 'Bereit' : 'Ready'), "\n") +
-                    "".concat(german ? 'Kamera' : 'Camera', ": ").concat(camera).concat(cameraDetail, "\n").concat(german ? 'Gesicht' : 'Face', ": ").concat(face.detected
+            var statusText = "\uD83E\uDD16 Cozmo ".concat(german ? 'Status' : 'status', "\n").concat(german ? 'Aktion' : 'Action', ": ").concat(this.lastAction || (german ? 'Bereit' : 'Ready'), "\n") +
+                "".concat(german ? 'Kamera' : 'Camera', ": ").concat(camera).concat(cameraDetail, "\n").concat(german ? 'Gesicht' : 'Face', ": ").concat(face.detected
+                    ? german
+                        ? 'gerade erkannt'
+                        : 'detected now'
+                    : faceDetections > 0
                         ? german
-                            ? 'gerade erkannt'
-                            : 'detected now'
-                        : faceDetections > 0
-                            ? german
-                                ? "erkannt \u00B7 ".concat(faceDetections, " Treffer")
-                                : "detected \u00B7 ".concat(faceDetections, " hits")
-                            : german
-                                ? 'noch nicht erkannt'
-                                : 'not detected yet', "\n") +
-                    "".concat(german ? 'Audio' : 'Audio', ": ").concat(audio, "\n").concat(position) +
-                    "\n".concat(german ? 'Würfel' : 'Cubes', ": ").concat(cubeSummary, " \u00B7 ").concat(german ? 'Marker' : 'marker', " ").concat(cubeMarker.detected ? '●' : '○') +
-                    "\n".concat(german ? 'Task' : 'Task', ": ").concat(visualTask) +
-                    (error || cameraError ? "\n\u26A0 ".concat(error || cameraError) : '');
+                            ? "erkannt \u00B7 ".concat(faceDetections, " Treffer")
+                            : "detected \u00B7 ".concat(faceDetections, " hits")
+                        : german
+                            ? 'noch nicht erkannt'
+                            : 'not detected yet', "\n") +
+                "".concat(german ? 'Audio' : 'Audio', ": ").concat(audio, "\n").concat(position) +
+                "\n".concat(german ? 'Würfel' : 'Cubes', ": ").concat(cubeSummary, " \u00B7 ").concat(german ? 'Marker' : 'marker', " ").concat(cubeMarker.detected ? '●' : '○') +
+                "\n".concat(german ? 'Task' : 'Task', ": ").concat(visualTask) +
+                (error || cameraError ? "\n\u26A0 ".concat(error || cameraError) : '');
+            RobotBridgeBehaviour.renderStatusPanel(statusText);
+        };
+        RobotBridgeBehaviour.renderStatusPanel = function (statusText) {
+            var _a;
+            var german = (document.documentElement.lang || navigator.language).toLowerCase().startsWith('de');
+            var panel = document.getElementById('codeon-cozmo-status');
+            if (!panel) {
+                panel = document.createElement('div');
+                panel.id = 'codeon-cozmo-status';
+                panel.hidden = !RobotBridgeBehaviour.statusVisible;
+                panel.setAttribute('role', 'region');
+                panel.setAttribute('aria-label', german ? 'Roboter-Status' : 'Robot status');
+                Object.assign(panel.style, {
+                    position: 'fixed', right: '18px', top: '64px', zIndex: '9999',
+                    maxWidth: 'min(360px, calc(100vw - 36px))', padding: '10px 14px',
+                    borderRadius: '6px', color: '#ffffff', background: 'rgba(0, 52, 74, 0.92)',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.25)', fontSize: '13px',
+                    lineHeight: '1.45', whiteSpace: 'pre-line', pointerEvents: 'auto',
+                });
+                document.body.appendChild(panel);
+            }
+            var toggle = panel.querySelector('button');
+            var content = panel.querySelector('div');
+            if (!toggle) {
+                toggle = document.createElement('button');
+                toggle.type = 'button';
+                toggle.setAttribute('aria-controls', 'codeon-cozmo-status-details');
+                Object.assign(toggle.style, { background: 'transparent', color: 'inherit', border: '1px solid currentColor', borderRadius: '4px', cursor: 'pointer' });
+                panel.appendChild(toggle);
+                content = document.createElement('div');
+                content.id = 'codeon-cozmo-status-details';
+                panel.appendChild(content);
+            }
+            toggle.onclick = function () {
+                RobotBridgeBehaviour.statusExpanded = !RobotBridgeBehaviour.statusExpanded;
+                RobotBridgeBehaviour.renderStatusPanel(content.textContent);
+            };
+            toggle.textContent = RobotBridgeBehaviour.statusExpanded
+                ? (german ? 'Details einklappen' : 'Collapse details')
+                : (german ? 'Details ausklappen' : 'Expand details');
+            toggle.setAttribute('aria-expanded', String(RobotBridgeBehaviour.statusExpanded));
+            content.textContent = statusText;
+            content.hidden = !RobotBridgeBehaviour.statusExpanded;
+            (_a = document.getElementById('head-navi-tooltip-robot-status')) === null || _a === void 0 ? void 0 : _a.setAttribute('aria-expanded', String(!panel.hidden));
         };
         RobotBridgeBehaviour.prototype.isGerman = function () {
             var pageLanguage = document.documentElement.lang || '';
@@ -526,6 +584,10 @@ define(["require", "exports", "./interpreter.constants", "./interpreter.robotSim
             else
                 console.error(error);
         };
+        RobotBridgeBehaviour.statusActive = false;
+        RobotBridgeBehaviour.statusExpanded = true;
+        RobotBridgeBehaviour.statusVisible = false;
+        RobotBridgeBehaviour.statusGeneration = 0;
         return RobotBridgeBehaviour;
     }(interpreter_robotSimBehaviour_1.RobotSimBehaviour));
     exports.RobotBridgeBehaviour = RobotBridgeBehaviour;

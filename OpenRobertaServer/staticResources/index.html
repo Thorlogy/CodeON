@@ -29,8 +29,8 @@ you may not use this file except
         not keep an outdated code-to-blocks controller in the browser cache.
     -->
     <script src='js/app/mission-evaluator/mission-evaluator.js?v=codeon-standard-sensors-20260802-2'></script>
-    <script>var require = { urlArgs: 'v=codeon-live-20260916-40' };</script>
-    <script data-main='js/main' src='js/require.js?v=codeon-live-20260916-40'></script>
+    <script>var require = { urlArgs: 'v=codeon-live-20260924-status-41' };</script>
+    <script data-main='js/main' src='js/require.js?v=codeon-live-20260924-status-41'></script>
     <script src='js/app/simulation/simulationLogic/simulation3d.adapter.js?v=codeon-3d-robomission-7'></script>
     <link href='manifest.webapp.json' rel='manifest'>
     <link href='/css/img/codeon-favicon.svg?v=20260715' rel='icon' type='image/svg+xml'>
@@ -424,12 +424,13 @@ you may not use this file except
                                 lkey='Blockly.Msg.MENU_TUTORIAL'>tutorial</span>
                         </a>
                     </li>
-                    <li class='nav-item notStart' id='head-navigation-gallery'>
-                        <a class='nav-link' data-bs-original-title='' href='#' id='head-navi-tooltip-gallery'>
-                            <span class='head-navi-icons typcn typcn-th-large-outline'
-                                id='head-navi-icon-gallery'></span>
+                    <li class='nav-item notStart' id='head-navigation-robot-status'>
+                        <a class='nav-link' data-bs-original-title='' href='#' id='head-navi-tooltip-robot-status'
+                            role='button' aria-controls='codeon-cozmo-status' aria-expanded='false'>
+                            <span class='head-navi-icons typcn typcn-info-large-outline'
+                                id='head-navi-icon-robot-status'></span>
                             <span class='head-navi-title hidden-sm hidden-md hidden-lg'
-                                lkey='Blockly.Msg.MENU_GALLERY'>gallery</span>
+                                lkey='Blockly.Msg.MENU_ROBOT_STATUS'>Roboter-Status</span>
                         </a>
                     </li>
                     <!-- Menu Languages -->
@@ -499,10 +500,6 @@ you may not use this file except
                         <a class='nav-link' data-bs-toggle='tab' href='#sourceCodeEditorPane' id='tabSourceCodeEditor'
                             role='tab'>Source code editor
                         </a>
-                    </li>
-                    <li class='nav-item hidden'>
-                        <a class='nav-link' data-bs-toggle='tab' href='#galleryList' id='tabGalleryList'
-                            role='tab'>Galery</a>
                     </li>
                     <li class='nav-item hidden'>
                         <a class='nav-link' data-bs-toggle='tab' href='#tutorialList' id='tabTutorialList'
@@ -1111,14 +1108,6 @@ you may not use this file except
         </div>
 
     </div>
-    </div>
-    <div class='tab-pane fade  mx-3' id='galleryList'>
-        <div class='listToolbar' id='galleryListToolbar'>
-            <button class='btn' id='backGalleryList'>
-                <i class='typcn typcn-arrow-left'></i>
-            </button>
-        </div>
-        <table class='galleryTable' id='galleryTable'></table>
     </div>
     <div class='tab-pane fade  mx-3' id='tutorialList'>
         <div class='listToolbar' id='tutorialListToolbar'>
@@ -2250,26 +2239,6 @@ you may not use this file except
         </div>
     </div>
     <!--  Popup to show relations / share programs -->
-    <div class='modal fade' id='share-with-gallery'>
-        <div class='modal-dialog modal-md'>
-            <div class='modal-content'>
-                <div class='modal-header'>
-                    <h5 class='modal-title' id='#headShareGallery'>Share</h5>
-                    <button aria-label='Close' class='btn-close' data-bs-dismiss='modal' type='button'></button>
-                </div>
-                <!-- <form id="share-program-form"> -->
-                <div class='modal-body'>
-                    <table class='galleryTable' id='galleryPreview'></table>
-                    <span id='textShareGallery'></span>
-                </div>
-                <div class='modal-footer'>
-                    <button class='btn btn-primary' id='shareWithGallery' type='button'>OK</button>
-                    <button class='btn backButton' id='cancelShareWithGallery' data-bs-dismiss='modal'
-                        lkey='Blockly.Msg.POPUP_CANCEL' type='button'></button>
-                </div>
-            </div>
-        </div>
-    </div>
     <!-- Popup show message -->
     <div class='modal fade' id='show-message'>
         <div class='modal-dialog modal-sm'>

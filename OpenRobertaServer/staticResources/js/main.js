@@ -28,7 +28,7 @@
 })();
 require.config({
     baseUrl: '.',
-    urlArgs: 'v=codeon-live-20260916-40',
+    urlArgs: 'v=codeon-live-20260924-status-41',
     paths: {
         ace: 'libs/ace/ace',
         ace_lang: 'libs/ace/ext-language_tools',
@@ -352,7 +352,6 @@ function init() {
     })
         .then(function () {
         aceEditor.init();
-        galleryListController.init();
         tutorialListController.init();
         logListController.init();
         legalController.init();
