@@ -15,7 +15,6 @@ import * as USER_C from 'user.controller';
 import * as NN_C from 'nn.controller';
 import { switchLanguage as PROGLIST_C_switchLanguage } from 'progList.controller';
 import { switchLanguage as CONFLIST_C_switchLanguage } from 'confList.controller';
-import { switchLanguage as GALLERYLIST_C_switchLanguage } from 'galleryList.controller';
 import { switchLanguage as TUTORIALLIST_C_switchLanguage } from 'tutorialList.controller';
 import { switchLanguage as LOGLIST_C_switchLanguage } from 'logList.controller';
 import { switchLanguage as PROGINFO_C_switchLanguage } from 'progInfo.controller';
@@ -653,7 +652,6 @@ function setLanguage(language) {
         CONFIGURATION_C.reloadView();
         PROGLIST_C_switchLanguage();
         CONFLIST_C_switchLanguage();
-        GALLERYLIST_C_switchLanguage();
         TUTORIALLIST_C_switchLanguage();
         LOGLIST_C_switchLanguage();
         PROGINFO_C_switchLanguage();

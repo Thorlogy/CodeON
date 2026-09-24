@@ -26,7 +26,10 @@ def _default_ble_factory():
     try:
         from bleak import BleakClient, BleakScanner
     except ImportError as error:
-        raise AdapterError("Bleak is not installed; install the 'apitor' extra") from error
+        raise AdapterError(
+            f"Bleak konnte nicht geladen werden ({error}). "
+            "Apitor-Unterstützung über das 'apitor'-Extra einrichten/reparieren."
+        ) from error
     return BleakClient, BleakScanner
 
 

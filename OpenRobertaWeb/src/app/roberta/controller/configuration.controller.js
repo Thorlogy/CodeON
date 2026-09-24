@@ -14,6 +14,7 @@ var bricklyWorkspace;
 var confVis;
 var listenToBricklyEvents = true;
 var seen = false;
+var fixedConfigurationWorkspace = false;
 
 function init() {
     initView();
@@ -29,6 +30,7 @@ function init() {
  *            toolbox
  */
 function initView() {
+    fixedConfigurationWorkspace = GUISTATE_C.getRobotGroup() === 'cozmo';
     // Cozmo's hardware is fixed. Passing its deliberately empty toolbox to
     // Blockly aborts the first robot initialization in some Blockly builds.
     // A workspace without a toolbox still supports the read-only overview and
@@ -100,6 +102,10 @@ function initEvents() {
         bricklyWorkspace.setVisible(false);
     });
 
+    initWorkspaceEvents();
+}
+
+function initWorkspaceEvents() {
     if (bricklyWorkspace.robControls && bricklyWorkspace.robControls.saveProgram) {
         Blockly.bindEvent_(bricklyWorkspace.robControls.saveProgram, 'mousedown', null, function (e) {
             LOG.info('saveConfiguration from brickly button');
@@ -384,7 +390,7 @@ function reloadView() {
     var xml = Blockly.Xml.domToText(dom);
     configurationToBricklyWorkspace(xml);
     var toolbox = GUISTATE_C.getConfigurationToolbox();
-    bricklyWorkspace.updateToolbox(toolbox);
+    if (!fixedConfigurationWorkspace) bricklyWorkspace.updateToolbox(toolbox);
 }
 
 function changeRobotSvg() {
@@ -399,13 +405,21 @@ function changeRobotSvg() {
 
 function resetView() {
     if (bricklyWorkspace) {
+        // Blockly cannot change a workspace between no toolbox and a
+        // categorized toolbox. Recreate only when crossing Cozmo's fixed mode.
+        if (fixedConfigurationWorkspace !== (GUISTATE_C.getRobotGroup() === 'cozmo')) {
+            resetConfVisIfAvailable();
+            bricklyWorkspace.dispose();
+            initView();
+            initWorkspaceEvents();
+        }
         bricklyWorkspace.setDevice({
             group: GUISTATE_C.getRobotGroup(),
             robot: GUISTATE_C.getRobot(),
         });
         initConfigurationEnvironment();
         var toolbox = GUISTATE_C.getConfigurationToolbox();
-        bricklyWorkspace.updateToolbox(toolbox);
+        if (!fixedConfigurationWorkspace) bricklyWorkspace.updateToolbox(toolbox);
     }
 }
 

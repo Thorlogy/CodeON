@@ -1,7 +1,8 @@
-define(["require", "exports", "message", "comm", "wrap", "user.controller", "notification.controller", "guiState.controller", "program.controller", "progRun.controller", "configuration.controller", "import.controller", "tour.controller", "sourceCodeEditor.controller", "progTutorial.controller", "util.roberta", "connection.controller", "blockly"], function (require, exports, MSG, COMM, WRAP, USER_C, NOTIFICATION_C, GUISTATE_C, PROGRAM_C, RUN_C, CONFIGURATION_C, IMPORT_C, TOUR_C, SOURCECODE_C, TUTORIAL_C, UTIL, CONNECTION_C, Blockly) {
+define(["require", "exports", "message", "comm", "wrap", "user.controller", "notification.controller", "guiState.controller", "program.controller", "progRun.controller", "configuration.controller", "import.controller", "tour.controller", "sourceCodeEditor.controller", "progTutorial.controller", "util.roberta", "connection.controller", "interpreter.robotBridgeBehaviour", "blockly"], function (require, exports, MSG, COMM, WRAP, USER_C, NOTIFICATION_C, GUISTATE_C, PROGRAM_C, RUN_C, CONFIGURATION_C, IMPORT_C, TOUR_C, SOURCECODE_C, TUTORIAL_C, UTIL, CONNECTION_C, interpreter_robotBridgeBehaviour_1, Blockly) {
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.init = void 0;
     var n = 0;
+    var robotStatusClickInstalled = false;
     var QUERY_START = '?';
     var QUERY_DELIMITER = '&';
     var QUERY_ASSIGNMENT = '=';
@@ -9,7 +10,6 @@ define(["require", "exports", "message", "comm", "wrap", "user.controller", "not
     var Q_ACTIVATE_ACCOUNT = 'activateAccount';
     var Q_LOAD_SYSTEM = 'loadSystem';
     var Q_TUTORIAL = 'tutorial';
-    var Q_GALLERY = 'gallery';
     var Q_TOUR = 'tour';
     var Q_KIOSK = 'kiosk';
     var Q_EXAMPLE_VIEW = 'exampleView';
@@ -73,8 +73,7 @@ define(["require", "exports", "message", "comm", "wrap", "user.controller", "not
                 newUrl = domain + QUERY_START + 'loadSystem' + QUERY_ASSIGNMENT + target[1];
             }
             else if (target[0] === '#gallery') {
-                deprecated = false;
-                newUrl = domain + QUERY_START + 'loadSystem' + QUERY_ASSIGNMENT + '<ROBOT_SYSTEM>' + QUERY_DELIMITER + Q_GALLERY;
+                return; // The gallery is no longer part of CodeON.
             }
             else if (target[0] === '#tutorial') {
                 deprecated = false;
@@ -147,7 +146,6 @@ define(["require", "exports", "message", "comm", "wrap", "user.controller", "not
                 var tutorial = getUrlParameter(Q_TUTORIAL);
                 var loadProgram = getUrlParameter(Q_LOAD_PROGRAM);
                 var exampleView = getUrlParameter(Q_EXAMPLE_VIEW);
-                var gallery = getUrlParameter(Q_GALLERY);
                 var extensions = getUrlParameter(Q_EXTENSIONS);
                 if (tutorial) {
                     var kiosk = getUrlParameter(Q_KIOSK);
@@ -167,11 +165,6 @@ define(["require", "exports", "message", "comm", "wrap", "user.controller", "not
                 else if (exampleView) {
                     callback = function () {
                         $('#menuListExamples').clickWrap();
-                    };
-                }
-                else if (gallery) {
-                    callback = function () {
-                        $('#tabGalleryList').tabWrapShow();
                     };
                 }
                 else if (extensions) {
@@ -277,10 +270,6 @@ define(["require", "exports", "message", "comm", "wrap", "user.controller", "not
             toggle: false,
         });*/
         $('.navbar-collapse').on('click', '.dropdown-menu a,.visible-xs', function () {
-            $('#navbarCollapse').collapse('hide');
-        });
-        // for gallery
-        $('#head-navigation-gallery').on('click', 'a,.visible-xs', function () {
             $('#navbarCollapse').collapse('hide');
         });
         if (GUISTATE_C.isPublicServerVersion()) {
@@ -475,10 +464,20 @@ define(["require", "exports", "message", "comm", "wrap", "user.controller", "not
         $('.menuLogin').onWrap('click', function () {
             USER_C.showLoginForm();
         }, 'head navigation menu item login clicked');
-        $('#head-navigation-gallery').onWrap('click', function () {
-            $('#tabGalleryList').tabWrapShow();
-            return false;
-        }, 'gallery clicked');
+        // Read-only UI: independent of the global robot-action lock and of
+        // navigation nodes that may be replaced during view/language changes.
+        if (!robotStatusClickInstalled) {
+            robotStatusClickInstalled = true;
+            document.addEventListener('click', function (event) {
+                var target = event.target;
+                if (!(target instanceof Element) || !target.closest('#head-navi-tooltip-robot-status'))
+                    return;
+                event.preventDefault();
+                event.stopPropagation();
+                interpreter_robotBridgeBehaviour_1.RobotBridgeBehaviour.toggleStatus(GUISTATE_C.getRobot(), GUISTATE_C.getRobotRealName());
+                $('#navbarCollapse').collapse('hide');
+            }, true);
+        }
         $('#head-navigation-tutorial').onWrap('click', function () {
             $('#tabTutorialList').tabWrapShow();
             return false;

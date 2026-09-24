@@ -26,7 +26,11 @@ def _default_client_factory():
     try:
         import pycozmo
     except ImportError as error:
-        raise AdapterError("PyCozmo is not installed; install the 'cozmo' extra") from error
+        raise AdapterError(
+            f"PyCozmo konnte nicht geladen werden ({error}). "
+            "Cozmo-Unterstützung über CodeON-Cozmo-Bridge-starten.command "
+            "oder das 'cozmo'-Extra einrichten/reparieren."
+        ) from error
     # PyCozmo sends robot audio through its animation controller. Animations
     # must therefore remain enabled even though CodeON does not use Cozmo's
     # procedural face animation.

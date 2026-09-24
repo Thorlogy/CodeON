@@ -28,11 +28,11 @@ python3 start-codeon-rcx.py --stop-running-server
 
 # macOS assigns local-network permission according to the launching context.
 # Start Cozmo directly from this Terminal window, like the successful probe.
-if [[ -x .venv/bin/python ]] && .venv/bin/python -c 'import pycozmo, websockets' >/dev/null 2>&1
+if COZMO_PYTHON=$(python3 start-codeon-rcx.py --find-cozmo-python)
 then
   mkdir -p .codeon-runtime/logs
   export CODEON_COZMO_TERMINAL_LAUNCH=1
-  PYTHONPATH=RobotIntegrationKit/python/src .venv/bin/python -u -m codeon_robot_bridge.server \
+  PYTHONPATH=RobotIntegrationKit/python/src "$COZMO_PYTHON" -u -m codeon_robot_bridge.server \
     --adapter cozmo --pid-file .codeon-runtime/cozmo-bridge.pid \
     --log-file .codeon-runtime/logs/cozmo-bridge.log \
     >/dev/null 2>&1 &

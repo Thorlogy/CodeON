@@ -5,17 +5,21 @@ möchten. Programmier- oder Serverkenntnisse sind nicht erforderlich.
 
 ## 1. CodeON herunterladen
 
-Auf der GitHub-Seite **Releases** das neueste Paket mit dem Namen
-`CodeON-RCX-....zip` herunterladen und entpacken:
-
-<https://github.com/Thorlogy/CodeON/releases>
-
-Das Paket enthält CodeON, die RCX-Bridge und die einfachen Starter. Ein
-Entwicklerprogramm oder ein eigener CodeON-Build wird nicht benötigt.
+Den [aktuellen CodeON-Stand als ZIP](https://github.com/Thorlogy/CodeON/archive/refs/heads/master.zip)
+herunterladen, entpacken und den Ordner beispielsweise unter **Dokumente** ablegen.
+Das Repository-ZIP enthält die gebaute Anwendung unter `application/`, die
+Bridges und die Starter. Maven, Node und ein eigener CodeON-Build sind für
+diesen Start nicht erforderlich. Die Preview-Releases enthalten derzeit kein
+separates `CodeON-RCX-….zip`-Installationspaket.
 
 ## 2. Starten
 
 ### macOS
+
+Benötigt werden Python 3.10 oder neuer und eine nutzbare Java-Laufzeit
+(empfohlen: Temurin 11). Auf Apple Silicon die arm64-/aarch64-Version wählen,
+auf Intel-Macs x64. Der Starter zeigt fehlende Voraussetzungen samt Download-Link.
+Ein vorhandenes `/usr/bin/java` allein bedeutet noch nicht, dass Java installiert ist.
 
 `CodeON-Starten.command` doppelt anklicken.
 
@@ -126,10 +130,32 @@ geöffnet.
 Auf macOS kann ein fehlender NQC-Compiler mit
 `RCX-Werkzeuge-installieren.command` eingerichtet werden. Das Skript lädt den
 freien NQC-Quellcode vom offiziellen BrickBot-Projekt und baut ihn lokal.
+Dafür werden Homebrew und die Xcode Command Line Tools benötigt; die Hinweise
+des Skripts beachten. NQC ist nur für reale RCX-Übertragungen erforderlich.
 
 Unter Windows übernimmt `CodeON-Installation.cmd` die Erstprüfung und ruft
 `RCX-Werkzeuge-installieren.cmd` auf. Unter Linux steht dafür
 `RCX-Werkzeuge-installieren.sh` bereit.
+
+### Cozmo auf einem neuen Mac einrichten
+
+1. Im normalen WLAN mit Internetzugang bleiben.
+2. Einmal `CodeON-Cozmo-Bridge-starten.command` öffnen. Das Skript richtet die
+   Cozmo-Python-Umgebung ein oder repariert fehlende Abhängigkeiten. Ab Python
+   3.13 wird das von PyCozmo benötigte `chunk`-Modul automatisch mitinstalliert.
+3. Nach erfolgreichem Start der Bridge dieses Einrichtungsfenster mit Strg+C
+   beenden. Anschließend `CodeON-Starten.command` öffnen; der Hauptstarter
+   erkennt die eingerichtete Umgebung und startet die Bridge mit.
+4. Erst jetzt den Mac mit Cozmos WLAN verbinden. **Dieses WLAN hat keinen
+   Internetzugang.** Downloads und Installation vorher abschließen.
+5. macOS-Zugriff auf das lokale Netzwerk für den verwendeten Terminal-Kontext
+   erlauben. In CodeON Cozmo auswählen und auf einer freien Bodenfläche testen.
+
+Ein laufender Bridge-Prozess bedeutet noch nicht, dass Cozmo verbunden ist.
+Die Verbindung wird in CodeON angezeigt. Bei Einrichtungsfehlern das separate
+Cozmo-Skript mit Internetzugang erneut öffnen und die konkrete Meldung beachten.
+Ein durch den Finder gestartetes Terminal kann nach Strg+C „Prozess beendet“
+anzeigen; für weitere Befehle ein neues Terminalfenster öffnen.
 
 ## 4. RCX anschließen
 

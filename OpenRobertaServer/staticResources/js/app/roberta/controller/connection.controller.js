@@ -34,7 +34,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-define(["require", "exports", "guiState.controller"], function (require, exports, GUISTATE_C) {
+define(["require", "exports", "guiState.controller", "interpreter.robotBridgeBehaviour"], function (require, exports, GUISTATE_C, interpreter_robotBridgeBehaviour_1) {
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.setIsAgent = exports.getIsAgent = exports.getSocket = exports.setSocket = exports.setConnectionInstance = exports.getConnectionRobotName = exports.getConnectionInstance = exports.setConnection = exports.switchConnection = exports.initConnection = void 0;
     var connectionInstance;
@@ -63,6 +63,7 @@ define(["require", "exports", "guiState.controller"], function (require, exports
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
+                        interpreter_robotBridgeBehaviour_1.RobotBridgeBehaviour.deactivateStatus();
                         if (getConnectionInstance()) {
                             getConnectionInstance().terminate();
                         }

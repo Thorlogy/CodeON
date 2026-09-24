@@ -1,5 +1,8 @@
 import importlib.util
+import io
 import os
+import subprocess
+import sys
 import tempfile
 import unittest
 import zipfile
@@ -18,7 +21,123 @@ PACKAGER = importlib.util.module_from_spec(PACKAGER_SPEC)
 PACKAGER_SPEC.loader.exec_module(PACKAGER)
 
 
+@unittest.skipUnless(Path("/bin/bash").is_file(), "macOS shell launcher contract")
+class CozmoShellLauncherTest(unittest.TestCase):
+    def run_launcher(self, launcher, *, healthy, install_fails=False):
+        """Run the real shell script with fake interpreters: no network or hardware."""
+        with tempfile.TemporaryDirectory(prefix="codeon launcher ") as tmp:
+            root = Path(tmp)
+            script = root / launcher
+            script.write_bytes((STARTER_PATH.parent / launcher).read_bytes())
+            fake_python = f'''#!{sys.executable}
+import os, pathlib, sys, time
+root = pathlib.Path(os.environ["TEST_ROOT"])
+args = sys.argv[1:]
+with (root / "calls").open("a") as log:
+    log.write(repr(args) + "\\n")
+if "--find-cozmo-python" in args:
+    if os.environ["TEST_HEALTHY"] == "1":
+        print(root / ".codeon-cozmo-venv/bin/python")
+        sys.exit(0)
+    sys.exit(1)
+if args[:2] == ["-m", "pip"]:
+    sys.exit(int(os.environ["TEST_INSTALL_FAILS"]))
+if "codeon_robot_bridge.server" in args:
+    assert os.environ.get("CODEON_COZMO_TERMINAL_LAUNCH") == "1"
+    (root / "bridge-started").touch()
+if args == ["start-codeon-rcx.py"]:
+    if os.environ["TEST_HEALTHY"] == "1":
+        deadline = time.monotonic() + 3
+        while not (root / "bridge-started").exists() and time.monotonic() < deadline:
+            time.sleep(0.01)
+        assert (root / "bridge-started").exists()
+    (root / "application-started").touch()
+'''
+            for path in (root / "bin/python3", root / ".codeon-cozmo-venv/bin/python"):
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(fake_python, encoding="utf-8")
+                path.chmod(0o755)
+            env = dict(os.environ, PATH=str(root / "bin") + os.pathsep + os.environ.get("PATH", ""),
+                       TEST_ROOT=str(root), TEST_HEALTHY=str(int(healthy)), TEST_INSTALL_FAILS=str(int(install_fails)))
+            result = subprocess.run(["/bin/bash", str(script)], env=env, input="\n", text=True,
+                                    capture_output=True, timeout=10)
+            return result, (root / "calls").read_text(), (root / "bridge-started").exists(), (root / "application-started").exists()
+
+    def test_setup_reuses_healthy_environment_without_pip(self):
+        result, calls, bridge, _ = self.run_launcher("CodeON-Cozmo-Bridge-starten.command", healthy=True)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertNotIn("'pip'", calls)
+        self.assertTrue(bridge)
+
+    def test_setup_repairs_existing_but_incomplete_environment(self):
+        result, calls, bridge, _ = self.run_launcher("CodeON-Cozmo-Bridge-starten.command", healthy=False)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn("'pip', 'install'", calls)
+        self.assertIn("from websockets.asyncio.server import serve", calls)
+        self.assertTrue(bridge)
+
+    def test_failed_installation_does_not_start_bridge(self):
+        result, _, bridge, _ = self.run_launcher("CodeON-Cozmo-Bridge-starten.command", healthy=False, install_fails=True)
+        self.assertEqual(2, result.returncode)
+        self.assertIn("Einrichtung fehlgeschlagen", result.stdout)
+        self.assertFalse(bridge)
+
+    def test_main_launcher_uses_setup_environment_in_terminal_context(self):
+        result, calls, bridge, application = self.run_launcher("CodeON-Starten.command", healthy=True)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertTrue(bridge)
+        self.assertTrue(application)
+        self.assertNotIn("'pip'", calls)
+
+    def test_main_launcher_starts_other_robots_without_cozmo_or_downloads(self):
+        result, calls, bridge, application = self.run_launcher("CodeON-Starten.command", healthy=False)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertFalse(bridge)
+        self.assertTrue(application)
+        self.assertNotIn("'pip'", calls)
+
+
 class CodeOnRcxStarterTest(unittest.TestCase):
+
+    def test_cozmo_resolver_preserves_healthy_existing_environment(self):
+        with patch.object(STARTER, "executable", return_value=True), patch.object(
+            STARTER.subprocess, "run", return_value=MagicMock(returncode=0)
+        ) as run, patch.object(STARTER.platform, "system", return_value="Darwin"):
+            self.assertEqual(STARTER.ROOT / ".venv/bin/python", STARTER.find_cozmo_python())
+        self.assertEqual(1, run.call_count)
+        self.assertIn("from websockets.asyncio.server import serve", run.call_args.args[0][-1])
+
+    def test_cozmo_resolver_falls_back_to_setup_environment(self):
+        failures = (MagicMock(returncode=1), OSError("broken interpreter"), subprocess.TimeoutExpired("python", 10))
+        for failure in failures:
+            with self.subTest(failure=failure), patch.object(STARTER, "executable", return_value=True), patch.object(
+                STARTER.subprocess, "run", side_effect=[failure, MagicMock(returncode=0)]
+            ), patch.object(STARTER.platform, "system", return_value="Darwin"):
+                self.assertEqual(STARTER.ROOT / ".codeon-cozmo-venv/bin/python", STARTER.find_cozmo_python())
+
+    def test_missing_cozmo_environment_does_not_block_other_robots(self):
+        with patch.object(STARTER, "find_cozmo_python", return_value=None), patch.object(
+            STARTER, "find_nqc", return_value=None
+        ), patch.object(STARTER, "find_firmware", return_value=None), patch.object(
+            STARTER, "java_major_version", return_value=11
+        ), patch.object(STARTER.shutil, "which", return_value="java"), patch.object(
+            STARTER, "url_json", return_value=None
+        ), patch.object(STARTER, "url_reachable", return_value=False):
+            checks = STARTER.preflight()
+        self.assertFalse(checks["cozmo"]["ok"])
+        self.assertTrue(checks["cozmo"]["optional"])
+        self.assertEqual([], STARTER.required_missing(checks))
+        # RCX/RCJ (user-configurable) and Edison (built-in) remain selectable.
+        self.assertTrue({"rcx", "edisonv2", "rcj"}.issubset(STARTER.SUPPORTED_ROBOTS))
+
+    def test_java_stub_is_not_displayed_as_installed_runtime(self):
+        checks = {key: {"ok": True} for key in ("python", "codeon", "nqc", "cozmo", "firmware", "bridge", "server")}
+        checks["java"] = {"ok": False, "value": "/usr/bin/java", "version": None}
+        output = io.StringIO()
+        with patch("sys.stdout", output):
+            STARTER.print_preflight(checks)
+        self.assertIn("keine nutzbare Java-Laufzeit", output.getvalue())
+        self.assertNotIn("/usr/bin/java", output.getvalue())
 
     def test_java_version_supports_modern_and_legacy_formats(self):
         modern = MagicMock(stderr='openjdk version "17.0.12"', stdout="")
@@ -96,6 +215,8 @@ class CodeOnRcxStarterTest(unittest.TestCase):
         self.assertIn("CODEON_COZMO_TERMINAL_LAUNCH=1", launcher)
         self.assertIn("--log-file .codeon-runtime/logs/cozmo-bridge.log", launcher)
         self.assertNotIn(">>.codeon-runtime/logs/cozmo-bridge.log", launcher)
+        self.assertIn("--find-cozmo-python", launcher)
+        self.assertIn('"$COZMO_PYTHON" -u -m codeon_robot_bridge.server', launcher)
 
     def test_python_starter_does_not_spawn_cozmo_on_macos(self):
         source = STARTER_PATH.read_text(encoding="utf-8")

@@ -13,10 +13,12 @@ import * as SOURCECODE_C from 'sourceCodeEditor.controller';
 import * as TUTORIAL_C from 'progTutorial.controller';
 import * as UTIL from 'util.roberta';
 import * as CONNECTION_C from 'connection.controller';
+import { RobotBridgeBehaviour } from 'interpreter.robotBridgeBehaviour';
 // @ts-ignore
 import * as Blockly from 'blockly';
 
 let n = 0;
+let robotStatusClickInstalled = false;
 
 const QUERY_START = '?';
 const QUERY_DELIMITER = '&';
@@ -25,7 +27,6 @@ const Q_FORGOT_PASSWORD = 'forgotPassword';
 const Q_ACTIVATE_ACCOUNT = 'activateAccount';
 const Q_LOAD_SYSTEM = 'loadSystem';
 const Q_TUTORIAL = 'tutorial';
-const Q_GALLERY = 'gallery';
 const Q_TOUR = 'tour';
 const Q_KIOSK = 'kiosk';
 const Q_EXAMPLE_VIEW = 'exampleView';
@@ -88,8 +89,7 @@ function handleQuery() {
             mainCallback && mainCallback instanceof Function && mainCallback(target[1], {});
             newUrl = domain + QUERY_START + 'loadSystem' + QUERY_ASSIGNMENT + target[1];
         } else if (target[0] === '#gallery') {
-            deprecated = false;
-            newUrl = domain + QUERY_START + 'loadSystem' + QUERY_ASSIGNMENT + '<ROBOT_SYSTEM>' + QUERY_DELIMITER + Q_GALLERY;
+            return; // The gallery is no longer part of CodeON.
         } else if (target[0] === '#tutorial') {
             deprecated = false;
             newUrl = domain + QUERY_START + 'loadSystem' + QUERY_ASSIGNMENT + '<ROBOT_SYSTEM>' + QUERY_DELIMITER + Q_TUTORIAL;
@@ -162,7 +162,6 @@ function handleQuery() {
             let tutorial: string = getUrlParameter(Q_TUTORIAL);
             let loadProgram: string = getUrlParameter(Q_LOAD_PROGRAM);
             let exampleView: string = getUrlParameter(Q_EXAMPLE_VIEW);
-            let gallery: string = getUrlParameter(Q_GALLERY);
             let extensions: string = getUrlParameter(Q_EXTENSIONS);
             if (tutorial) {
                 let kiosk = getUrlParameter(Q_KIOSK);
@@ -180,10 +179,6 @@ function handleQuery() {
             } else if (exampleView) {
                 callback = function () {
                     $('#menuListExamples').clickWrap();
-                };
-            } else if (gallery) {
-                callback = function () {
-                    $('#tabGalleryList').tabWrapShow();
                 };
             } else if (extensions) {
                 let extensionsArray = extensions.split(',');
@@ -296,10 +291,6 @@ function initMenuEvents() {
     });*/
 
     $('.navbar-collapse').on('click', '.dropdown-menu a,.visible-xs', function () {
-        $('#navbarCollapse').collapse('hide');
-    });
-    // for gallery
-    $('#head-navigation-gallery').on('click', 'a,.visible-xs', function () {
         $('#navbarCollapse').collapse('hide');
     });
     if (GUISTATE_C.isPublicServerVersion()) {
@@ -511,14 +502,19 @@ function initMenuEvents() {
         'head navigation menu item login clicked'
     );
 
-    $('#head-navigation-gallery').onWrap(
-        'click',
-        function () {
-            $('#tabGalleryList').tabWrapShow();
-            return false;
-        },
-        'gallery clicked'
-    );
+    // Read-only UI: independent of the global robot-action lock and of
+    // navigation nodes that may be replaced during view/language changes.
+    if (!robotStatusClickInstalled) {
+        robotStatusClickInstalled = true;
+        document.addEventListener('click', (event) => {
+            const target = event.target;
+            if (!(target instanceof Element) || !target.closest('#head-navi-tooltip-robot-status')) return;
+            event.preventDefault();
+            event.stopPropagation();
+            RobotBridgeBehaviour.toggleStatus(GUISTATE_C.getRobot(), GUISTATE_C.getRobotRealName());
+            $('#navbarCollapse').collapse('hide');
+        }, true);
+    }
     $('#head-navigation-tutorial').onWrap(
         'click',
         function () {

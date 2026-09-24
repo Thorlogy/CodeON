@@ -2654,6 +2654,7 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
             return _this;
         }
         CozmoConnection.prototype.init = function () {
+            interpreter_robotBridgeBehaviour_1.RobotBridgeBehaviour.activateStatus();
             this.stopped = false;
             GUISTATE_C.setPing(false);
             GUISTATE_C.setRunEnabled(false);
@@ -2736,6 +2737,7 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
             this.taskBehaviour = undefined;
             this.connected = false;
             this.bridge.stopAll().catch(function () { return undefined; }).finally(function () { return _this.bridge.close(); });
+            interpreter_robotBridgeBehaviour_1.RobotBridgeBehaviour.deactivateStatus();
             _super.prototype.terminate.call(this);
         };
         CozmoConnection.prototype.setState = function () { };

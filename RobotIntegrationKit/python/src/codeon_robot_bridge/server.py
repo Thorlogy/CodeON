@@ -100,6 +100,7 @@ async def _watchdog(session: BridgeSession, stop: asyncio.Event) -> None:
 async def _serve(args: argparse.Namespace) -> None:
     try:
         from websockets.asyncio.server import serve
+        from websockets.exceptions import ConnectionClosedOK
     except ImportError as error:
         raise SystemExit("Install the server extra: pip install -e '.[server]'") from error
 
@@ -122,16 +123,23 @@ async def _serve(args: argparse.Namespace) -> None:
         _log(f"browser connection opened; newest session selected ({len(connections)} open)")
         try:
             async for raw_message in connection:
+                message = None
                 try:
                     message = json.loads(raw_message)
-                except (json.JSONDecodeError, TypeError):
+                except (ValueError, TypeError, RecursionError):
+                    # Malformed JSON, binary encoding and decoder limits are
+                    # protocol errors, not failures of the robot connection.
                     response = {
                         "id": None,
                         "ok": False,
                         "error": {"code": "PROTOCOL_ERROR", "message": "message must be valid JSON"},
                     }
                 else:
-                    if message.get("type") == "connect" and connection is not active_connection:
+                    if (
+                        isinstance(message, dict)
+                        and message.get("type") == "connect"
+                        and connection is not active_connection
+                    ):
                         response = {
                             "id": message.get("id"),
                             "ok": False,
@@ -143,6 +151,8 @@ async def _serve(args: argparse.Namespace) -> None:
                     else:
                         response = await session.handle(message)
                 message_type = message.get("type", "invalid") if isinstance(message, dict) else "invalid"
+                if not isinstance(message_type, str):
+                    message_type = "invalid"
                 if not response.get("ok") or message_type not in {"heartbeat", "sensor", "status"}:
                     request_name = message_type
                     if message_type == "command":
@@ -158,6 +168,10 @@ async def _serve(args: argparse.Namespace) -> None:
                             f"{error.get('message', 'unknown error')}"
                         )
                 await connection.send(json.dumps(response, separators=(",", ":")))
+        except ConnectionClosedOK:
+            # A browser may close while an adapter request is still finishing.
+            # The safety cleanup below must run even if its reply cannot be sent.
+            pass
         finally:
             connections.discard(connection)
             if connection is active_connection:
