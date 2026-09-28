@@ -1192,6 +1192,26 @@ define(["require", "exports", "interpreter.constants", "simulation.math", "guiSt
             $('#brick' + _this.id).hide();
             return _this;
         }
+        /** Include commands not yet consumed by this animation frame. */
+        RCXChassis.prototype.hasActiveOutputs = function (robot) {
+            var motors = robot.interpreter.getRobotBehaviour().getActionState('motors', false) || {};
+            var active = function (motor, key) {
+                var port = Object.keys(motors).find(function (p) { return p.toLowerCase() === motor.port.toLowerCase(); });
+                var pending = motors[key] != null ? motors[key] : port ? motors[port] : undefined;
+                return Number(pending != null ? pending : motor.speed) !== 0;
+            };
+            return active(this.left, C.MOTOR_LEFT) || active(this.right, C.MOTOR_RIGHT) ||
+                !!(this.manipulator && active(this.manipulator, this.manipulator.port));
+        };
+        /** Explicit user stop, unlike natural task completion. Preserve pose/encoders. */
+        RCXChassis.prototype.stopOutputs = function (robot) {
+            robot.interpreter.getRobotBehaviour().getActionState('motors', true);
+            this.left.speed = this.right.speed = 0;
+            this.angle = this.distance = 0;
+            this.encoder.leftAngle = this.encoder.rightAngle = 0;
+            if (this.manipulator)
+                this.manipulator.speed = this.manipulator.angle = 0;
+        };
         RCXChassis.prototype.updateAction = function (myRobot, dt, interpreterRunning) {
             // Unlike newer controllers, the RCX firmware keeps driving after task
             // main returns. Preserve that behavior only after natural termination;
