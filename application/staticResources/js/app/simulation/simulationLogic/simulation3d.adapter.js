@@ -8,6 +8,7 @@
     var camera;
     var renderer;
     var robotMesh;
+    var robotModelKey = null;
     var cozmoCube;
     var cozmoCubePlaced = false;
     var cozmoCubeHeld = false;
@@ -68,6 +69,7 @@
     }
 
     function isRcxSelected(robot) {
+        if (robot) return /rcx/i.test([robot.constructor && robot.constructor.name, robot.chassis && robot.chassis.constructor && robot.chassis.constructor.name].join(' '));
         var robotButton = getElement('simRobot');
         if (robotButton && robotButton.classList.contains('typcn-rcx')) return true;
         var robotType = robot
@@ -77,6 +79,7 @@
     }
 
     function isApitorSelected(robot) {
+        if (robot) return /apitor/i.test([robot.constructor && robot.constructor.name, robot.chassis && robot.chassis.constructor && robot.chassis.constructor.name].join(' '));
         var robotButton = getElement('simRobot');
         if (robotButton && robotButton.classList.contains('typcn-apitor')) return true;
         var robotType = robot
@@ -86,6 +89,7 @@
     }
 
     function isCozmoSelected(robot) {
+        if (robot) return /cozmo/i.test([robot.constructor && robot.constructor.name, robot.chassis && robot.chassis.constructor && robot.chassis.constructor.name].join(' '));
         var robotButton = getElement('simRobot');
         if (robotButton && robotButton.classList.contains('typcn-cozmo')) return true;
         var robotType = robot
@@ -96,6 +100,7 @@
 
     function updateRobotAppearance(robot) {
         if (!robotMesh) return;
+        if (robotModelKey === 'rcx' || robotModelKey === 'apitor' || robotModelKey === 'edison') return; // Preserve model materials.
         var isRcx = isRcxSelected(robot);
         var isApitor = isApitorSelected(robot);
         var isCozmo = isCozmoSelected(robot);
@@ -231,11 +236,20 @@
         return cube;
     }
 
-    function buildRobot() {
-        if (isCozmoSelected()) return buildCozmoRobot();
+    function isEdisonSelected(robot) {
+        if (robot) return /edison/i.test([robot.constructor && robot.constructor.name, robot.chassis && robot.chassis.constructor && robot.chassis.constructor.name].join(' '));
+        var button = getElement('simRobot');
+        return !!(button && (button.classList.contains('typcn-edison') || button.classList.contains('typcn-edisonv2')));
+    }
+
+    function buildRobot(robot) {
+        if (isCozmoSelected(robot)) return buildCozmoRobot();
+        if (isRcxSelected(robot)) return window.CodeOnRcxVisual(THREE);
+        if (isApitorSelected(robot)) return window.CodeOnApitorVisual(THREE);
+        if (isEdisonSelected(robot)) return window.CodeOnEdisonVisual(THREE);
         var group = new THREE.Group();
-        var isRcx = isRcxSelected();
-        var isApitor = isApitorSelected();
+        var isRcx = isRcxSelected(robot);
+        var isApitor = isApitorSelected(robot);
 
         var bodyMaterial = new THREE.MeshPhongMaterial({
             color: isApitor ? 0xf58220 : isRcx ? 0xf7d900 : 0x8a9bb5,
@@ -332,6 +346,38 @@
         group.add(direction);
 
         return group;
+    }
+
+    function ensureRobotModel(robot) {
+        var nextKey = isCozmoSelected(robot) ? 'cozmo' : isRcxSelected(robot) ? 'rcx' : isApitorSelected(robot) ? 'apitor' : isEdisonSelected(robot) ? 'edison' : 'generic';
+        if (robotMesh && robotModelKey === nextKey) return;
+        // Build first; a construction failure must not destroy the last model.
+        var nextMesh = buildRobot(robot);
+        var geometries = new Set();
+        var materials = new Set();
+        [robotMesh, cozmoCube].forEach(function (old) {
+            if (!old) return;
+            if (old.parent) old.parent.remove(old);
+            old.traverse(function (node) {
+                if (node.geometry) geometries.add(node.geometry);
+                if (node.material) (Array.isArray(node.material) ? node.material : [node.material]).forEach(function (material) { materials.add(material); });
+            });
+        });
+        geometries.forEach(function (geometry) { geometry.dispose(); });
+        materials.forEach(function (material) { material.dispose(); });
+        cozmoCube = null;
+        cozmoCubePlaced = false;
+        cozmoCubeHeld = false;
+        robotMesh = nextMesh;
+        robotModelKey = nextKey;
+        scene.add(robotMesh);
+        lastRobotPose = null;
+        wheelRotation = { left: 0, right: 0 };
+        robotDrag = null;
+        if (nextKey === 'cozmo') {
+            cozmoCube = createCozmoCube();
+            scene.add(cozmoCube);
+        }
     }
 
     function createOverlay(container) {
@@ -1063,14 +1109,8 @@
         raycaster = new THREE.Raycaster();
         groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
-        robotMesh = buildRobot();
-        scene.add(robotMesh);
-        if (robotMesh.userData.isCozmo) {
-            cozmoCube = createCozmoCube();
-            scene.add(cozmoCube);
-            cozmoCubePlaced = false;
-            cozmoCubeHeld = false;
-        }
+        var simScene = getSimulationScene();
+        ensureRobotModel(simScene && simScene.robots && simScene.robots[0]);
 
         attachNavigation();
         initialized = true;
@@ -1116,11 +1156,12 @@
         var trackWidth = robot.chassis && robot.chassis.TRACKWIDTH ? robot.chassis.TRACKWIDTH : 45;
         var leftDistance = forwardDistance - dTheta * trackWidth / 2;
         var rightDistance = forwardDistance + dTheta * trackWidth / 2;
-        var visualRadius = Math.max(0.78 * robotVisualScale, 0.001);
+        var visualRadius = Math.max((robotMesh.userData.visualWheelRadius || 0.78) * robotVisualScale, 0.001);
         wheelRotation.left += leftDistance * scale / visualRadius;
         wheelRotation.right += rightDistance * scale / visualRadius;
-        if (robotMesh.userData.leftWheel) robotMesh.userData.leftWheel.rotation.x = wheelRotation.left;
-        if (robotMesh.userData.rightWheel) robotMesh.userData.rightWheel.rotation.x = wheelRotation.right;
+        var rotationSign = robotMesh.userData.wheelRotationSign || 1;
+        if (robotMesh.userData.leftWheel) robotMesh.userData.leftWheel.rotation.x = rotationSign * wheelRotation.left;
+        if (robotMesh.userData.rightWheel) robotMesh.userData.rightWheel.rotation.x = rotationSign * wheelRotation.right;
         lastRobotPose = { x: pose.x, y: pose.y, theta: pose.theta };
         return Math.abs(forwardDistance) > 0.01 || Math.abs(dTheta) > 0.0005;
     }
@@ -1203,6 +1244,7 @@
         var robot = simScene && simScene.robots && simScene.robots.length ? simScene.robots[0] : null;
         if (!robot || !robot.pose) return;
 
+        ensureRobotModel(robot);
         updateRobotAppearance(robot);
         var sensorState = updateRobotSensorsAppearance(robot) || { touch: false, touchFound: false, light: null };
         expandSimulationGround(simScene);
@@ -1215,7 +1257,7 @@
         // visible 3D robot (including its wheels) inside that footprint so a
         // collision and the rendered contact point agree.
         var robotVisualScale = (45 * scale) / 3.3;
-        var frontVisual = 2.16 * robotVisualScale;
+        var frontVisual = (robotMesh.userData.frontExtent || 2.16) * robotVisualScale;
         var frontCollision = 25 * scale;
         var rearwardCorrection = Math.max(0, frontVisual - frontCollision);
         lastWorldScale = scale;
@@ -1372,6 +1414,10 @@
             return {
                 enabled: enabled,
                 initialized: initialized,
+                robotModel: robotModelKey,
+                robotParts: robotMesh ? (function () { var names = []; robotMesh.traverse(function (node) { if (node.name) names.push(node.name); }); return names; })() : [],
+                cozmoCubePresent: !!cozmoCube,
+                cozmoCubeHeld: cozmoCubeHeld,
                 objectCount: Object.keys(worldObjectRecords).length,
                 groundExpanded: !!groundBackup,
                 robotDraggable: true,

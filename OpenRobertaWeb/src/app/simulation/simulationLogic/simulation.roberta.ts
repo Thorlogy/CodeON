@@ -32,6 +32,7 @@ import {
 import { Pose } from 'robot.base.mobile';
 import { Simulation } from 'progSim.controller';
 import * as SIMATH from 'simulation.math';
+import { RCXChassis } from 'robot.actuators';
 
 export class SimulationRoberta implements Simulation {
     private static _instance: SimulationRoberta;
@@ -166,6 +167,11 @@ export class SimulationRoberta implements Simulation {
 
     isInterpreterRunning(): boolean {
         return this._interpreterRunning;
+    }
+
+    hasPersistentMotorOutputs(): boolean {
+        return this.scene.robots.some(robot =>
+            robot['chassis'] instanceof RCXChassis && robot['chassis'].hasActiveOutputs(robot));
     }
 
     set interpreterRunning(value: boolean) {
@@ -876,6 +882,10 @@ export class SimulationRoberta implements Simulation {
     }
 
     stopProgram(): void {
+        // Clear retained RCX outputs before termination callbacks update the UI.
+        this.scene.robots.forEach(robot => {
+            if (robot['chassis'] instanceof RCXChassis) robot['chassis'].stopOutputs(robot);
+        });
         this.interpreters.forEach((interpreter) => {
             interpreter.removeHighlights();
             interpreter.terminate();

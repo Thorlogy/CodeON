@@ -19,6 +19,7 @@ const INITIAL_WIDTH = 0.5;
 
 export interface Simulation {
     isInterpreterRunning(): boolean;
+    hasPersistentMotorOutputs?(): boolean;
 
     init(result: object[], refresh: boolean, callback: () => void, robotType?: string): Promise<void>;
 
@@ -97,7 +98,7 @@ class ProgSimController {
         $('#simControl').onWrap(
             'click.sim',
             function () {
-                if (!SIM.isInterpreterRunning()) {
+                if (!SIM.isInterpreterRunning() && !SIM.hasPersistentMotorOutputs?.()) {
                     let myCallback = function (result) {
                         if (result.rc == 'ok') {
                             MSG.displayMessage('MESSAGE_EDIT_START', 'TOAST', GUISTATE_C.getProgramName(), null, null);
@@ -106,6 +107,7 @@ class ProgSimController {
                             result.savedName = GUISTATE_C.getProgramName();
                             result.updateNNView = true;
                             SIM.run([result], function () {
+                                if (SIM.hasPersistentMotorOutputs?.()) return;
                                 $('#simControl').addClass('typcn-media-play-outline').removeClass('typcn-media-stop');
                                 $('#simControl').attr('data-bs-original-title', Blockly.Msg.MENU_SIM_START_TOOLTIP);
                             });
@@ -527,7 +529,7 @@ class ProgSimDebugController extends ProgSimController {
                     result.updateNNView = true;
                     SIM.run([result], function () {
                         $('#simControl').addClass('typcn-media-play-outline').removeClass('typcn-play');
-                        $('#simStop').addClass('disabled');
+                        $('#simStop').toggleClass('disabled', !SIM.hasPersistentMotorOutputs());
                     });
                     SIM.interpreterAddEvent(event);
                 }
@@ -858,13 +860,14 @@ class ProgSimMultiController extends ProgSimController {
         $('#simControl').onWrap(
             'click.sim',
             function () {
-                if (!SIM.isInterpreterRunning()) {
+                if (!SIM.isInterpreterRunning() && !SIM.hasPersistentMotorOutputs?.()) {
                     $('#simControl').addClass('typcn-media-stop').removeClass('typcn-media-play-outline');
                     $('#simControl').attr('data-bs-original-title', Blockly.Msg.MENU_SIM_STOP_TOOLTIP);
                     C.loadProgramms().then((loadedPrograms) => {
                         Promise.all(loadedPrograms).then(
                             (values) => {
                                 SIM.run(C.getSortedExtractedPrograms(), function () {
+                                    if (SIM.hasPersistentMotorOutputs?.()) return;
                                     $('#simControl').addClass('typcn-media-play-outline').removeClass('typcn-media-stop');
                                     $('#simControl').attr('data-bs-original-title', Blockly.Msg.MENU_SIM_START_TOOLTIP);
                                 });

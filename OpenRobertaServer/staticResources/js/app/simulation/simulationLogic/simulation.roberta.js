@@ -38,7 +38,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-define(["require", "exports", "interpreter.constants", "util.roberta", "interpreter.interpreter", "interpreter.robotSimBehaviour", "message", "jquery", "huebee", "blockly", "nn.controller", "simulation.scene", "robot.base", "simulation.objects", "simulation.math"], function (require, exports, C, UTIL, SIM_I, ROBOT_B, MSG, $, HUEBEE, Blockly, NN_CTRL, simulation_scene_1, robot_base_1, simulation_objects_1, SIMATH) {
+define(["require", "exports", "interpreter.constants", "util.roberta", "interpreter.interpreter", "interpreter.robotSimBehaviour", "message", "jquery", "huebee", "blockly", "nn.controller", "simulation.scene", "robot.base", "simulation.objects", "simulation.math", "robot.actuators"], function (require, exports, C, UTIL, SIM_I, ROBOT_B, MSG, $, HUEBEE, Blockly, NN_CTRL, simulation_scene_1, robot_base_1, simulation_objects_1, SIMATH, robot_actuators_1) {
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.SimulationRoberta = void 0;
     var SimulationRoberta = /** @class */ (function () {
@@ -192,6 +192,11 @@ define(["require", "exports", "interpreter.constants", "util.roberta", "interpre
         });
         SimulationRoberta.prototype.isInterpreterRunning = function () {
             return this._interpreterRunning;
+        };
+        SimulationRoberta.prototype.hasPersistentMotorOutputs = function () {
+            return this.scene.robots.some(function (robot) {
+                return robot['chassis'] instanceof robot_actuators_1.RCXChassis && robot['chassis'].hasActiveOutputs(robot);
+            });
         };
         Object.defineProperty(SimulationRoberta.prototype, "interpreterRunning", {
             set: function (value) {
@@ -880,6 +885,11 @@ define(["require", "exports", "interpreter.constants", "util.roberta", "interpre
             this.canceled = true;
         };
         SimulationRoberta.prototype.stopProgram = function () {
+            // Clear retained RCX outputs before termination callbacks update the UI.
+            this.scene.robots.forEach(function (robot) {
+                if (robot['chassis'] instanceof robot_actuators_1.RCXChassis)
+                    robot['chassis'].stopOutputs(robot);
+            });
             this.interpreters.forEach(function (interpreter) {
                 interpreter.removeHighlights();
                 interpreter.terminate();

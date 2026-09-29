@@ -405,9 +405,18 @@ function changeRobotSvg() {
 
 function resetView() {
     if (bricklyWorkspace) {
-        // Blockly cannot change a workspace between no toolbox and a
-        // categorized toolbox. Recreate only when crossing Cozmo's fixed mode.
-        if (fixedConfigurationWorkspace !== (GUISTATE_C.getRobotGroup() === 'cozmo')) {
+        var fixedConfiguration = GUISTATE_C.getRobotGroup() === 'cozmo';
+        var toolbox = fixedConfiguration ? null : GUISTATE_C.getConfigurationToolbox();
+        var toolboxTree = Blockly.Options.parseToolboxTree(toolbox);
+        var hasCategories = !!(toolboxTree && toolboxTree.getElementsByTagName('category').length);
+        // Blockly cannot change between absent, flat and categorized toolboxes.
+        // This is a rendering constraint, not a robot configuration mode: Apitor
+        // remains user-configurable even though its toolbox has no categories.
+        if (
+            fixedConfigurationWorkspace !== fixedConfiguration ||
+            !!bricklyWorkspace.options.languageTree !== !!toolboxTree ||
+            bricklyWorkspace.options.hasCategories !== hasCategories
+        ) {
             resetConfVisIfAvailable();
             bricklyWorkspace.dispose();
             initView();
@@ -418,7 +427,6 @@ function resetView() {
             robot: GUISTATE_C.getRobot(),
         });
         initConfigurationEnvironment();
-        var toolbox = GUISTATE_C.getConfigurationToolbox();
         if (!fixedConfigurationWorkspace) bricklyWorkspace.updateToolbox(toolbox);
     }
 }

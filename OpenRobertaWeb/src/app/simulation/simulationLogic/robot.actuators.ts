@@ -1243,6 +1243,27 @@ export class NXTChassis extends LegoChassis {
 }
 
 export class RCXChassis extends LegoChassis {
+    /** Include commands not yet consumed by this animation frame. */
+    hasActiveOutputs(robot: RobotBase): boolean {
+        const motors = robot.interpreter.getRobotBehaviour().getActionState('motors', false) || {};
+        const active = (motor, key) => {
+            const port = Object.keys(motors).find(p => p.toLowerCase() === motor.port.toLowerCase());
+            const pending = motors[key] != null ? motors[key] : port ? motors[port] : undefined;
+            return Number(pending != null ? pending : motor.speed) !== 0;
+        };
+        return active(this.left, C.MOTOR_LEFT) || active(this.right, C.MOTOR_RIGHT) ||
+            !!(this.manipulator && active(this.manipulator, this.manipulator.port));
+    }
+
+    /** Explicit user stop, unlike natural task completion. Preserve pose/encoders. */
+    stopOutputs(robot: RobotBase): void {
+        robot.interpreter.getRobotBehaviour().getActionState('motors', true);
+        this.left.speed = this.right.speed = 0;
+        this.angle = this.distance = 0;
+        this.encoder.leftAngle = this.encoder.rightAngle = 0;
+        if (this.manipulator) this.manipulator.speed = this.manipulator.angle = 0;
+    }
+
     geom: Geometry = {
         x: -30,
         y: -20,

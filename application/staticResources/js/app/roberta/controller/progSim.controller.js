@@ -108,7 +108,8 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
             var SIM = this.SIM;
             var C = this;
             $('#simControl').onWrap('click.sim', function () {
-                if (!SIM.isInterpreterRunning()) {
+                var _a;
+                if (!SIM.isInterpreterRunning() && !((_a = SIM.hasPersistentMotorOutputs) === null || _a === void 0 ? void 0 : _a.call(SIM))) {
                     var myCallback = function (result) {
                         if (result.rc == 'ok') {
                             MSG.displayMessage('MESSAGE_EDIT_START', 'TOAST', GUISTATE_C.getProgramName(), null, null);
@@ -117,6 +118,9 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
                             result.savedName = GUISTATE_C.getProgramName();
                             result.updateNNView = true;
                             SIM.run([result], function () {
+                                var _a;
+                                if ((_a = SIM.hasPersistentMotorOutputs) === null || _a === void 0 ? void 0 : _a.call(SIM))
+                                    return;
                                 $('#simControl').addClass('typcn-media-play-outline').removeClass('typcn-media-stop');
                                 $('#simControl').attr('data-bs-original-title', Blockly.Msg.MENU_SIM_START_TOOLTIP);
                             });
@@ -402,7 +406,7 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
                         result.updateNNView = true;
                         SIM.run([result], function () {
                             $('#simControl').addClass('typcn-media-play-outline').removeClass('typcn-play');
-                            $('#simStop').addClass('disabled');
+                            $('#simStop').toggleClass('disabled', !SIM.hasPersistentMotorOutputs());
                         });
                         SIM.interpreterAddEvent(event);
                     }
@@ -724,12 +728,16 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
             var C = this;
             $('#simControl').onWrap('click.sim', function () {
                 var _this = this;
-                if (!SIM.isInterpreterRunning()) {
+                var _a;
+                if (!SIM.isInterpreterRunning() && !((_a = SIM.hasPersistentMotorOutputs) === null || _a === void 0 ? void 0 : _a.call(SIM))) {
                     $('#simControl').addClass('typcn-media-stop').removeClass('typcn-media-play-outline');
                     $('#simControl').attr('data-bs-original-title', Blockly.Msg.MENU_SIM_STOP_TOOLTIP);
                     C.loadProgramms().then(function (loadedPrograms) {
                         Promise.all(loadedPrograms).then(function (values) {
                             SIM.run(C.getSortedExtractedPrograms(), function () {
+                                var _a;
+                                if ((_a = SIM.hasPersistentMotorOutputs) === null || _a === void 0 ? void 0 : _a.call(SIM))
+                                    return;
                                 $('#simControl').addClass('typcn-media-play-outline').removeClass('typcn-media-stop');
                                 $('#simControl').attr('data-bs-original-title', Blockly.Msg.MENU_SIM_START_TOOLTIP);
                             });
