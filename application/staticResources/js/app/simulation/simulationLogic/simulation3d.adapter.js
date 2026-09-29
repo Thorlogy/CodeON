@@ -100,7 +100,7 @@
 
     function updateRobotAppearance(robot) {
         if (!robotMesh) return;
-        if (robotModelKey === 'rcx') return; // Preserve the approved RCX materials.
+        if (robotModelKey === 'rcx' || robotModelKey === 'apitor' || robotModelKey === 'edison') return; // Preserve model materials.
         var isRcx = isRcxSelected(robot);
         var isApitor = isApitorSelected(robot);
         var isCozmo = isCozmoSelected(robot);
@@ -236,9 +236,17 @@
         return cube;
     }
 
+    function isEdisonSelected(robot) {
+        if (robot) return /edison/i.test([robot.constructor && robot.constructor.name, robot.chassis && robot.chassis.constructor && robot.chassis.constructor.name].join(' '));
+        var button = getElement('simRobot');
+        return !!(button && (button.classList.contains('typcn-edison') || button.classList.contains('typcn-edisonv2')));
+    }
+
     function buildRobot(robot) {
         if (isCozmoSelected(robot)) return buildCozmoRobot();
         if (isRcxSelected(robot)) return window.CodeOnRcxVisual(THREE);
+        if (isApitorSelected(robot)) return window.CodeOnApitorVisual(THREE);
+        if (isEdisonSelected(robot)) return window.CodeOnEdisonVisual(THREE);
         var group = new THREE.Group();
         var isRcx = isRcxSelected(robot);
         var isApitor = isApitorSelected(robot);
@@ -341,7 +349,7 @@
     }
 
     function ensureRobotModel(robot) {
-        var nextKey = isCozmoSelected(robot) ? 'cozmo' : isRcxSelected(robot) ? 'rcx' : 'generic';
+        var nextKey = isCozmoSelected(robot) ? 'cozmo' : isRcxSelected(robot) ? 'rcx' : isApitorSelected(robot) ? 'apitor' : isEdisonSelected(robot) ? 'edison' : 'generic';
         if (robotMesh && robotModelKey === nextKey) return;
         // Build first; a construction failure must not destroy the last model.
         var nextMesh = buildRobot(robot);

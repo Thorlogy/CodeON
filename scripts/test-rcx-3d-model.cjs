@@ -6,13 +6,15 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const base = 'staticResources/js/app/simulation/simulationLogic/';
 const THREE = require(path.join(root, 'application/staticResources/libs/three.min.js'));
-for (const name of ['robot.rcx.visual.js', 'simulation3d.adapter.js']) {
+for (const name of ['robot.rcx.visual.js', 'robot.apitor.visual.js', 'robot.edison.visual.js', 'simulation3d.adapter.js']) {
     assert.equal(fs.readFileSync(path.join(root,'OpenRobertaServer',base,name),'utf8'),fs.readFileSync(path.join(root,'application',base,name),'utf8'));
 }
 const window = {addEventListener(){}};
 const document = {addEventListener(){},getElementById(){return {classList:{contains(name){return name==='typcn-cozmo';}}};}};
 const context = vm.createContext({window,document,THREE,Set,console});
 vm.runInContext(fs.readFileSync(path.join(root,'application',base,'robot.rcx.visual.js'),'utf8'),context);
+vm.runInContext(fs.readFileSync(path.join(root,'application',base,'robot.apitor.visual.js'),'utf8'),context);
+vm.runInContext(fs.readFileSync(path.join(root,'application',base,'robot.edison.visual.js'),'utf8'),context);
 let source=fs.readFileSync(path.join(root,'application',base,'simulation3d.adapter.js'),'utf8');
 assert.ok(source.includes('    window.CodeOnSim3D = {'));
 source=source.replace('    window.CodeOnSim3D = {',`    window.test = {
@@ -43,7 +45,7 @@ assert.ok(mesh.userData.rightWheel.rotation.x<oldLeft);
 t.ensure(rcx);assert.equal(t.mesh(),mesh,'same model is preserved on restart');
 for(const name of ['RobotCozmo','RobotRcx','RobotApitor','RobotEdison','RobotRcj','RobotRcx','RobotCozmo']){
     const r=robot(name);t.ensure(r);const debug=window.CodeOnSim3D.getDebugState();
-    assert.equal(debug.robotModel,name==='RobotCozmo'?'cozmo':name==='RobotRcx'?'rcx':'generic');
+    assert.equal(debug.robotModel,name==='RobotCozmo'?'cozmo':name==='RobotRcx'?'rcx':name==='RobotApitor'?'apitor':name==='RobotEdison'?'edison':'generic');
     assert.equal(debug.cozmoCubePresent,name==='RobotCozmo');
     assert.equal(t.mesh().userData.isCozmo===true,name==='RobotCozmo');
 }
@@ -57,3 +59,27 @@ cozmo.chassis.liftPosition=.4;t.placeCube();t.lift(cozmo);
 let disposed=0;held.geometry.addEventListener('dispose',()=>disposed++);t.ensure(rcx);
 assert.equal(disposed,1,'held cube disposed exactly once');assert.equal(t.cube(),null);
 console.log('PASS RCX geometry/footprint/wheels, stale icon, all model transitions, Cozmo pickup/transport/release/restart/disposal.');
+const apitor=robot('RobotApitor');t.ensure(apitor);const apitorMesh=t.mesh();
+const apitorBox=new THREE.Box3().setFromObject(apitorMesh);
+assert.ok(Math.abs(apitorBox.getSize(new THREE.Vector3()).x-3.3)<1e-6);
+assert.ok(apitorBox.min.y>=-1e-6);
+assert.ok(-apitorBox.min.z<=apitorMesh.userData.frontExtent+1e-6);
+for(const absent of ['cozmoLift','touchBumper','lightSensorLens','robotDisplay']) assert.ok(!apitorMesh.getObjectByName(absent));
+t.wheels(apitor,1,1);apitor.pose.x=10;t.wheels(apitor,1,1);
+assert.ok(apitorMesh.userData.leftWheel.rotation.x<0);
+assert.equal(apitorMesh.userData.leftWheel.rotation.x,apitorMesh.userData.rightWheel.rotation.x);
+const angle=apitorMesh.userData.leftWheel.rotation.x;apitor.pose.x=0;t.wheels(apitor,1,1);
+assert.ok(apitorMesh.userData.leftWheel.rotation.x>angle,'reverse travel reverses wheels');
+const snapshot=JSON.stringify(apitor);t.ensure(apitor);assert.equal(t.mesh(),apitorMesh);assert.equal(JSON.stringify(apitor),snapshot);
+console.log('PASS Apitor footprint, no invented sensors/display/gripper, wheel directions, restart state.');
+const edison=robot('RobotEdison');t.ensure(edison);const em=t.mesh(),eb=new THREE.Box3().setFromObject(em);
+assert.ok(Math.abs(eb.getSize(new THREE.Vector3()).x-3.3)<1e-6);
+assert.ok(eb.min.y>=-1e-6 && -eb.min.z<=em.userData.frontExtent+1e-6);
+for(const part of ['clearCover','mountingStud','playButton','stopButton','recordButton']) assert.ok(em.getObjectByName(part));
+for(const part of ['cozmoLift','touchBumper','lightSensorLens','robotDisplay']) assert.ok(!em.getObjectByName(part));
+t.wheels(edison,1,1);edison.pose.x=10;t.wheels(edison,1,1);
+assert.ok(em.userData.leftWheel.rotation.x<0 && em.userData.leftWheel.rotation.x===em.userData.rightWheel.rotation.x);
+const ea=em.userData.leftWheel.rotation.x;edison.pose.x=0;t.wheels(edison,1,1);
+assert.ok(em.userData.leftWheel.rotation.x>ea);
+const es=JSON.stringify(edison);t.ensure(edison);assert.equal(t.mesh(),em);assert.equal(JSON.stringify(edison),es);
+console.log('PASS Edison geometry, controls, wheel directions, no invented gripper/display, unchanged state.');

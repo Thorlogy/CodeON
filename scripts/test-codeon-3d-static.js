@@ -56,7 +56,7 @@ assert.strictEqual(serverSource, runtimeSource, 'Quell- und Laufzeitversion des 
     assert.ok(fs.readFileSync(runtimeIndex, 'utf8').indexOf(feature) !== -1, '3D-Struktur fehlt im Laufzeit-Index: ' + feature);
 });
 
-const version = 'simulation3d.adapter.js?v=codeon-3d-rcx-9';
+const version = 'simulation3d.adapter.js?v=codeon-3d-edison-11';
 assert.ok(fs.readFileSync(serverIndex, 'utf8').indexOf(version) !== -1, 'Cache-Version fehlt im Quell-Index.');
 assert.ok(fs.readFileSync(runtimeIndex, 'utf8').indexOf(version) !== -1, 'Cache-Version fehlt im Laufzeit-Index.');
 
@@ -64,6 +64,9 @@ const modelScript = 'robot.rcx.visual.js?v=rcx-2';
 for (const index of [serverIndex, runtimeIndex]) {
     const html = fs.readFileSync(index, 'utf8');
     assert.ok(html.indexOf(modelScript) >= 0 && html.indexOf(modelScript) < html.indexOf(version), 'RCX model must load before adapter.');
+    const edisonScript='robot.edison.visual.js?v=edison-1';
+    assert.ok(html.indexOf(edisonScript)>=0 && html.indexOf(edisonScript)<html.indexOf(version),'Edison model must load before adapter.');
+    assert.ok(html.indexOf('robot.apitor.visual.js?v=apitor-1') >= 0 && html.indexOf('robot.apitor.visual.js?v=apitor-1') < html.indexOf(version), 'Apitor model must load before adapter.');
 }
 require('./test-rcx-3d-model.cjs');
 
