@@ -108,4 +108,5 @@ for (const toolboxFile of toolboxFiles) {
     assert(!/UNSUPPORTED SENSOR|undefined sensor/i.test(toolbox), `${toolboxFile} contains an undefined sensor label`);
 }
 
+require('./test-rcj-color-configuration.cjs');
 console.log('System sensor toolbox checks passed.');

@@ -32,7 +32,7 @@
 
 require.config({
     baseUrl: '.',
-    urlArgs: 'v=codeon-live-20260928-rcx-stop-43',
+    urlArgs: 'v=codeon-live-20261006-sensor-mounts-47',
     paths: {
         ace: 'libs/ace/ace',
         ace_lang: 'libs/ace/ext-language_tools',

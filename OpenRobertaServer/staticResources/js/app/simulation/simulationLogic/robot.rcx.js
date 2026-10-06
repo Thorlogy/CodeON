@@ -28,11 +28,15 @@ define(["require", "exports", "robot.ev3", "robot.actuators", "robot.sensors"], 
         RobotRcx.prototype.configure = function (configuration) {
             this.chassis = new robot_actuators_1.RCXChassis(this.id, configuration, 2, this.pose);
             var sensors = configuration['SENSORS'];
+            var touchPorts = Object.keys(sensors).filter(function (port) { return sensors[port]['TYPE'] === 'TOUCH'; }).sort();
             var _loop_1 = function (c) {
                 switch (sensors[c]['TYPE']) {
-                    case 'TOUCH':
-                        this_1[c] = new robot_sensors_1.TouchSensor(c, 25, 0, this_1.chassis.geom.color);
+                    case 'TOUCH': {
+                        var index = touchPorts.indexOf(c);
+                        var y = touchPorts.length > 1 ? (index - (touchPorts.length - 1) / 2) * 12 : 0;
+                        this_1[c] = new robot_sensors_1.TouchSensor(c, 25, y, this_1.chassis.geom.color, touchPorts.length > 1);
                         break;
+                    }
                     case 'LIGHT': {
                         var myColorLightSensors_1 = [];
                         var rcx_1 = this_1;
@@ -55,6 +59,13 @@ define(["require", "exports", "robot.ev3", "robot.actuators", "robot.sensors"], 
             }
             var myButtons = [];
             this.buttons = new robot_sensors_1.EV3Keys(myButtons, this.id);
+            this.sensorMountOverlay = {
+                drawPriority: 99,
+                draw: function (ctx, robot) {
+                    var overlay = window.CodeOnSensorOverlay2D;
+                    if (overlay) overlay.draw(ctx, robot, { rcx: RobotRcx, rcj: null, sensors: { TouchSensor: robot_sensors_1.TouchSensor, LightSensor: robot_sensors_1.LightSensor } });
+                }
+            };
         };
         return RobotRcx;
     }(robot_ev3_1.default));

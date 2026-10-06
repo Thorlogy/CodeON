@@ -9,6 +9,11 @@
     var renderer;
     var robotMesh;
     var robotModelKey = null;
+    var sensorTypes = null;
+    var sensorTypesRequested = false;
+    var sensorMountConfigurationId = null;
+    var sensorMountPreferences = Object.create(null);
+    var sensorVisualState = { count: 0, groups: 0, revision: 0 };
     var cozmoCube;
     var cozmoCubePlaced = false;
     var cozmoCubeHeld = false;
@@ -144,6 +149,35 @@
             lightLens.material.color.setRGB(level / 255, level / 255, level / 255);
         }
         return state;
+    }
+
+    function syncConfiguredSensors(robot, offset) {
+        if (!window.CodeOnSensorVisuals || !window.CodeOnSensorGeometry) return;
+        if (!sensorTypes) {
+            if (!sensorTypesRequested && window.require) {
+                sensorTypesRequested = true;
+                window.require(['robot.rcx', 'robot.rcj', 'robot.sensors'], function (rcx, rcj, sensors) {
+                    sensorTypes = { rcx: rcx.default, rcj: rcj.default, sensors: sensors };
+                }, function () { console.warn('3D sensor class modules could not be loaded.'); });
+            }
+            return;
+        }
+        var selected = robot instanceof sensorTypes.rcx || robot instanceof sensorTypes.rcj;
+        if (window.CodeOnSensorMounts) window.CodeOnSensorMounts.setAvailable(selected);
+        if (!selected) { sensorVisualState = { count: 0, groups: 0, revision: 0 }; sensorMountConfigurationId = null; sensorMountPreferences = Object.create(null); return; }
+        var descriptors = window.CodeOnSensorVisuals.describe(robot, sensorTypes);
+        var family = robot instanceof sensorTypes.rcx ? 'rcx' : 'rcj';
+        if (window.CodeOnSensorMounts) {
+            var configId = window.CodeOnSensorMounts.configurationId(family, descriptors);
+            if (configId !== sensorMountConfigurationId) {
+                sensorMountConfigurationId = configId;
+                sensorMountPreferences = window.CodeOnSensorMounts.read(null, family, descriptors);
+            }
+            descriptors = window.CodeOnSensorVisuals.applyMounts(robot, descriptors, sensorMountPreferences);
+        }
+        sensorVisualState = window.CodeOnSensorGeometry.update(THREE, robotMesh, descriptors, offset);
+        // Hide only the old decorative sensor parts, not chassis/wheels/gripper.
+        (robotMesh.userData.legacySensorParts || []).forEach(function (part) { part.visible = false; });
     }
 
     function buildCozmoRobot() {
@@ -312,18 +346,21 @@
         frontBumper.position.set(0, 0.58, -2.05);
         frontBumper.castShadow = true;
         group.add(frontBumper);
+        group.userData.legacySensorParts = [frontBumper];
 
         [-0.92, 0.92].forEach(function (x) {
             var bumperSupport = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.78), bumperMaterial);
             bumperSupport.position.set(x, 0.58, -1.72);
             bumperSupport.castShadow = true;
             group.add(bumperSupport);
+            group.userData.legacySensorParts.push(bumperSupport);
         });
 
         var lightSensorBody = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.42, 0.64), darkMaterial);
         lightSensorBody.position.set(0, 0.35, -1.7);
         lightSensorBody.castShadow = true;
         group.add(lightSensorBody);
+        group.userData.legacySensorParts.push(lightSensorBody);
 
         var lightLens = new THREE.Mesh(
             new THREE.CylinderGeometry(0.2, 0.2, 0.12, 18),
@@ -332,6 +369,7 @@
         lightLens.name = 'lightSensorLens';
         lightLens.position.set(0, 0.1, -1.72);
         group.add(lightLens);
+        group.userData.legacySensorParts.push(lightLens);
 
         var caster = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 10), hubMaterial);
         caster.position.set(0, 0.3, 1.25);
@@ -370,6 +408,7 @@
         cozmoCubeHeld = false;
         robotMesh = nextMesh;
         robotModelKey = nextKey;
+        sensorVisualState = { count: 0, groups: 0, revision: 0 };
         scene.add(robotMesh);
         lastRobotPose = null;
         wheelRotation = { left: 0, right: 0 };
@@ -1260,6 +1299,7 @@
         var frontVisual = (robotMesh.userData.frontExtent || 2.16) * robotVisualScale;
         var frontCollision = 25 * scale;
         var rearwardCorrection = Math.max(0, frontVisual - frontCollision);
+        syncConfiguredSensors(robot, rearwardCorrection / robotVisualScale);
         lastWorldScale = scale;
         lastRearwardCorrection = rearwardCorrection;
         var moving = updateWheelAnimation(robot, scale, robotVisualScale);
@@ -1410,11 +1450,39 @@
         isEnabled: function () {
             return enabled;
         },
+        getSensorMountContext: function () {
+            var simScene = getSimulationScene();
+            var robot = simScene && simScene.robots && simScene.robots[0];
+            if (!robot || !sensorTypes || !window.CodeOnSensorVisuals || !window.CodeOnSensorMounts) return null;
+            var family = robot instanceof sensorTypes.rcx ? 'rcx' : robot instanceof sensorTypes.rcj ? 'rcj' : null;
+            if (!family) return null;
+            var descriptors = window.CodeOnSensorVisuals.describe(robot, sensorTypes);
+            return { family: family, sensors: descriptors, positions: window.CodeOnSensorMounts.read(null, family, descriptors) };
+        },
+        setSensorMount: function (sensorId, position) {
+            var context = window.CodeOnSim3D.getSensorMountContext();
+            if (!context) return false;
+            var saved = position === 'default'
+                ? window.CodeOnSensorMounts.resetSensor(null, context.family, sensorId, context.sensors)
+                : window.CodeOnSensorMounts.write(null, context.family, sensorId, position, context.sensors);
+            if (!saved) return false;
+            sensorMountConfigurationId = null;
+            syncRobotPose();
+            return true;
+        },
+        resetSensorMounts: function () {
+            var context = window.CodeOnSim3D.getSensorMountContext();
+            if (!context || !window.CodeOnSensorMounts.clear(null, context.family, context.sensors)) return false;
+            sensorMountConfigurationId = null;
+            syncRobotPose();
+            return true;
+        },
         getDebugState: function () {
             return {
                 enabled: enabled,
                 initialized: initialized,
                 robotModel: robotModelKey,
+                configuredSensors: { count: sensorVisualState.count, groups: sensorVisualState.groups, revision: sensorVisualState.revision },
                 robotParts: robotMesh ? (function () { var names = []; robotMesh.traverse(function (node) { if (node.name) names.push(node.name); }); return names; })() : [],
                 cozmoCubePresent: !!cozmoCube,
                 cozmoCubeHeld: cozmoCubeHeld,

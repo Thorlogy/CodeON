@@ -29,12 +29,16 @@ you may not use this file except
         not keep an outdated code-to-blocks controller in the browser cache.
     -->
     <script src='js/app/mission-evaluator/mission-evaluator.js?v=codeon-standard-sensors-20260802-2'></script>
-    <script>var require = { urlArgs: 'v=codeon-live-20260928-rcx-stop-43' };</script>
-    <script data-main='js/main' src='js/require.js?v=codeon-live-20260928-rcx-stop-43'></script>
+    <script>var require = { urlArgs: 'v=codeon-live-20261006-sensor-mounts-47' };</script>
+    <script data-main='js/main' src='js/require.js?v=codeon-live-20261006-sensor-mounts-47'></script>
     <script src='js/app/simulation/simulationLogic/robot.rcx.visual.js?v=rcx-2'></script>
     <script src='js/app/simulation/simulationLogic/robot.apitor.visual.js?v=apitor-1'></script>
     <script src='js/app/simulation/simulationLogic/robot.edison.visual.js?v=edison-1'></script>
-    <script src='js/app/simulation/simulationLogic/simulation3d.adapter.js?v=codeon-3d-edison-11'></script>
+    <script src='js/app/simulation/simulationLogic/robot.sensor.visuals.js?v=codeon-sensor-visuals-7'></script>
+    <script src='js/app/simulation/simulationLogic/robot.sensor.geometry.js?v=codeon-sensor-geometry-5'></script>
+    <script src='js/app/simulation/simulationLogic/robot.sensor.mounts.js?v=codeon-sensor-mounts-4'></script>
+    <script src='js/app/simulation/simulationLogic/robot.sensor.overlay2d.js?v=codeon-sensor-overlay2d-1'></script>
+    <script src='js/app/simulation/simulationLogic/simulation3d.adapter.js?v=codeon-3d-sensors-14'></script>
     <link href='manifest.webapp.json' rel='manifest'>
     <link href='/css/img/codeon-favicon.svg?v=20260715' rel='icon' type='image/svg+xml'>
     <link href='/css/img/codeon-touch-icon.png' rel='apple-touch-icon' sizes='144x144' />
@@ -733,6 +737,8 @@ you may not use this file except
                         lkey='Blockly.Msg.MENU_SIM_TRAIL_TOOLTIP' rel='tooltip' title='' type='button'></button>
                     <button class='blbtn simNotWebots' data-bs-original-title='' id='sim3dToggle'
                         rel='tooltip' title='3D-Ansicht: ziehen zum Drehen, Mausrad zum Zoomen, rechte Maustaste zum Verschieben' type='button'>3D</button>
+                    <button aria-expanded='false' class='blbtn simNotWebots' hidden id='simSensorMounts'
+                        title='Lokale visuelle Sensorpositionen ändern' type='button'>Sensoren</button>
                     <button class='blbtn typcn typcn-upload' data-bs-original-title='' id='simImport'
                         lkey='Blockly.Msg.MENU_SIM_IMPORT_TOOLTIP' rel='tooltip' title='' type='button'></button>
                     <button class='blbtn typcn typcn-download-outline' data-bs-original-title='' id='simDownloadConfig'

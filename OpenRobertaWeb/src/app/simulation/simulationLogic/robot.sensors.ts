@@ -965,8 +965,9 @@ export class TouchSensor implements IExternalSensor, IDrawable, ILabel {
     ry: number = 0;
     value: boolean = false;
     position: string = '';
+    private readonly drawAsSegment: boolean;
 
-    constructor(port: string, x: number, y: number, color?: string) {
+    constructor(port: string, x: number, y: number, color?: string, drawAsSegment: boolean = false) {
         this.port = port;
         this.labelPriority = Number(this.port.replace('ORT_', ''));
         this.x = x;
@@ -978,6 +979,7 @@ export class TouchSensor implements IExternalSensor, IDrawable, ILabel {
             this.position = 'back';
         }
         this.color = color || this.color;
+        this.drawAsSegment = drawAsSegment;
     }
 
     draw(rCtx: CanvasRenderingContext2D, myRobot: RobotBaseMobile): void {
@@ -991,9 +993,17 @@ export class TouchSensor implements IExternalSensor, IDrawable, ILabel {
             rCtx.fillStyle = myRobot.chassis.geom.color;
         }
         if (this.position === 'front') {
-            rCtx.fillRect(myRobot.chassis.frontLeft.x - 3.5, myRobot.chassis.frontLeft.y, 3.5, -myRobot.chassis.frontLeft.y + myRobot.chassis.frontRight.y);
+            if (this.drawAsSegment) {
+                rCtx.fillRect(myRobot.chassis.frontLeft.x - 3.5, this.y - 4, 3.5, 8);
+            } else {
+                rCtx.fillRect(myRobot.chassis.frontLeft.x - 3.5, myRobot.chassis.frontLeft.y, 3.5, -myRobot.chassis.frontLeft.y + myRobot.chassis.frontRight.y);
+            }
         } else if (this.position === 'back') {
-            rCtx.fillRect(myRobot.chassis.backLeft.x, myRobot.chassis.backLeft.y, 3.5, -myRobot.chassis.backLeft.y + myRobot.chassis.backRight.y);
+            if (this.drawAsSegment) {
+                rCtx.fillRect(myRobot.chassis.backLeft.x, this.y - 4, 3.5, 8);
+            } else {
+                rCtx.fillRect(myRobot.chassis.backLeft.x, myRobot.chassis.backLeft.y, 3.5, -myRobot.chassis.backLeft.y + myRobot.chassis.backRight.y);
+            }
         }
         rCtx.restore();
     }

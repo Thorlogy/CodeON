@@ -37,6 +37,7 @@ define(["require", "exports", "robot.base.mobile", "robot.sensors", "robot.actua
                     case 'INDUCTIVE':
                         this_1[c] = new robot_sensors_1.InductiveSensor(c, 14, 0, 60);
                         break;
+                    case 'COLOR': // Current server type; retain legacy COLOUR configurations.
                     case 'COLOUR':
                         var myColorSensors_1 = [];
                         Object.keys(this_1).forEach(function (x) {
@@ -45,7 +46,7 @@ define(["require", "exports", "robot.base.mobile", "robot.sensors", "robot.actua
                             }
                         });
                         var ord = myColorSensors_1.length + 1;
-                        var id = Object.keys(sensors).filter(function (port) { return sensors[port]['TYPE'] == 'COLOUR'; }).length;
+                        var id = Object.keys(sensors).filter(function (port) { return ['COLOR', 'COLOUR'].includes(sensors[port]['TYPE']); }).length;
                         var y = ord * 10 - 5 * (id + 1);
                         this_1[c] = new robot_sensors_1.ColorSensorHex(c, 9, y, 0, 5);
                         break;
@@ -118,6 +119,16 @@ define(["require", "exports", "robot.base.mobile", "robot.sensors", "robot.actua
                 });
             }
             this.gyro = new robot_sensors_1.GyroSensor();
+            this.sensorMountOverlay = {
+                drawPriority: 99,
+                draw: function (ctx, robot) {
+                    var overlay = window.CodeOnSensorOverlay2D;
+                    if (overlay) overlay.draw(ctx, robot, {
+                        rcx: null, rcj: RobotRcj,
+                        sensors: { TouchSensor: robot_sensors_1.TouchSensor, ColorSensor: robot_sensors_1.ColorSensor, ColorSensorHex: robot_sensors_1.ColorSensorHex, UltrasonicSensor: robot_sensors_1.UltrasonicSensor, InductiveSensor: robot_sensors_1.InductiveSensor }
+                    });
+                }
+            };
         };
         return RobotRcj;
     }(robot_base_mobile_1.RobotBaseMobile));
