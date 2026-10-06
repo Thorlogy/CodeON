@@ -118,4 +118,24 @@ package`) wurden ebenfalls erfolgreich gebaut. `git diff --check` ist sauber.
 Die Dateiliste enthält nur Quell-, Paket-, Test- und Dokumentationsdateien,
 keine Laufzeitdaten oder Geheimdateien. Dies ersetzt keinen Hardwaretest und
 keine Cozmo-Browserprüfung auf dem isolierten Server. Zum Zeitpunkt der
-Freigabeprüfung war noch kein Commit erstellt; ein Push bleibt aus.
+Freigabeprüfung war noch kein Commit erstellt; ein Push war bis zur späteren
+ausdrücklichen Freigabe nicht erfolgt.
+
+## Prüfung vor der GitHub-Übertragung
+
+Der lokale Sicherungscommit `dabd5052d` liegt auf
+`feat/sensor-visual-descriptors`, direkt auf `31b073c85`. Vor dem Push wurde
+per `git ls-remote` geprüft: `origin/master` zeigte ebenfalls auf `31b073c85`;
+ein gleichnamiger Feature-Branch existierte auf GitHub noch nicht. Der Branch
+wird ohne Force-Push veröffentlicht, nicht mit `master` zusammengeführt.
+
+Für exakt diesen Commit wurden Architekturgraph, Code-Buddy-Sicherheit,
+Sensor-Toolboxen, Cozmo-/Apitor-/gemeinsame 3D-Simulation,
+Sensorpositionsspeicher und 2D-Overlay sowie `tsc --noEmit` erneut erfolgreich
+geprüft. Der isolierte Browserlauf bearbeitete RCX- und RCJ-Konfigurationen
+einschließlich 2D/3D, Mehrfachsensoren und RCJ-Stopp/Wiederstart. Aktiver
+Java-Reaktor, gezielte LEGACY-Programmtests und Serverpaket-Build bestanden
+erneut. Der Diff ist sauber; keine weiteren Arbeitsbaumänderungen oder
+Laufzeitdateien wurden in den Feature-Commit aufgenommen. Hardwaretests und
+der Cozmo-Browsertest auf dem RCX/RCJ-isolierten Server bleiben ausdrücklich
+außerhalb dieser Freigabe.
