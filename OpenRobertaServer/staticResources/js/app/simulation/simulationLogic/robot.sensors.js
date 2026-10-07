@@ -708,7 +708,8 @@ define(["require", "exports", "robot.base.mobile", "interpreter.constants", "sim
     }(InfraredSensors));
     exports.EdisonInfraredSensors = EdisonInfraredSensors;
     var TouchSensor = /** @class */ (function () {
-        function TouchSensor(port, x, y, color) {
+        function TouchSensor(port, x, y, color, drawAsSegment) {
+            if (drawAsSegment === void 0) { drawAsSegment = false; }
             this.color = '#FF69B4';
             this.rx = 0;
             this.ry = 0;
@@ -726,6 +727,7 @@ define(["require", "exports", "robot.base.mobile", "interpreter.constants", "sim
                 this.position = 'back';
             }
             this.color = color || this.color;
+            this.drawAsSegment = drawAsSegment;
         }
         TouchSensor.prototype.draw = function (rCtx, myRobot) {
             rCtx.save();
@@ -739,10 +741,20 @@ define(["require", "exports", "robot.base.mobile", "interpreter.constants", "sim
                 rCtx.fillStyle = myRobot.chassis.geom.color;
             }
             if (this.position === 'front') {
-                rCtx.fillRect(myRobot.chassis.frontLeft.x - 3.5, myRobot.chassis.frontLeft.y, 3.5, -myRobot.chassis.frontLeft.y + myRobot.chassis.frontRight.y);
+                if (this.drawAsSegment) {
+                    rCtx.fillRect(myRobot.chassis.frontLeft.x - 3.5, this.y - 4, 3.5, 8);
+                }
+                else {
+                    rCtx.fillRect(myRobot.chassis.frontLeft.x - 3.5, myRobot.chassis.frontLeft.y, 3.5, -myRobot.chassis.frontLeft.y + myRobot.chassis.frontRight.y);
+                }
             }
             else if (this.position === 'back') {
-                rCtx.fillRect(myRobot.chassis.backLeft.x, myRobot.chassis.backLeft.y, 3.5, -myRobot.chassis.backLeft.y + myRobot.chassis.backRight.y);
+                if (this.drawAsSegment) {
+                    rCtx.fillRect(myRobot.chassis.backLeft.x, this.y - 4, 3.5, 8);
+                }
+                else {
+                    rCtx.fillRect(myRobot.chassis.backLeft.x, myRobot.chassis.backLeft.y, 3.5, -myRobot.chassis.backLeft.y + myRobot.chassis.backRight.y);
+                }
             }
             rCtx.restore();
         };

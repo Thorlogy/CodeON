@@ -1541,7 +1541,7 @@ define(["require", "exports", "interpreter.constants", "simulation.math", "guiSt
         RCJChassis.prototype.updateAction = function (myRobot, dt, interpreterRunning) {
             _super.prototype.updateAction.call(this, myRobot, dt, interpreterRunning);
             if (interpreterRunning) {
-                if (this.manipulator.speed !== 0) {
+                if (this.manipulator && this.manipulator.speed !== 0) {
                     var diff = ((this.manipulator.speed * 6 * Math.PI) / 180) * dt;
                     if (this.manipulator.speed > 0) {
                         this.grabberAngle += diff;
@@ -1594,8 +1594,11 @@ define(["require", "exports", "interpreter.constants", "simulation.math", "guiSt
         RCJChassis.prototype.reset = function () {
             this.grabberAngle = 0;
             this.grabberWidth = this.grabber.w;
-            this.manipulator.speed = 0;
-            this.manipulator.angle = 0;
+            // A user configuration may omit the grabber motor (e.g. four sensors).
+            if (this.manipulator) {
+                this.manipulator.speed = 0;
+                this.manipulator.angle = 0;
+            }
             this.grabberLeft = null;
             this.grabberRight = null;
             $('#display' + this.id).html('');

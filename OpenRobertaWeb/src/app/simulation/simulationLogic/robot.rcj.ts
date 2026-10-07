@@ -10,6 +10,7 @@ export default class RobotRcj extends RobotBaseMobile {
     buttons: EV3Keys;
     gyro: GyroSensor;
     webAudio: WebAudio = new WebAudio();
+    sensorMountOverlay: { drawPriority: number; draw: (ctx: CanvasRenderingContext2D, robot: RobotRcj) => void };
 
     protected configure(configuration: object): void {
         let rcj = this;
@@ -25,6 +26,7 @@ export default class RobotRcj extends RobotBaseMobile {
                 case 'INDUCTIVE':
                     this[c] = new InductiveSensor(c, 14, 0, 60);
                     break;
+                case 'COLOR': // Current server type; retain legacy COLOUR configurations.
                 case 'COLOUR':
                     let myColorSensors = [];
                     Object.keys(this).forEach((x) => {
@@ -33,7 +35,7 @@ export default class RobotRcj extends RobotBaseMobile {
                         }
                     });
                     const ord = myColorSensors.length + 1;
-                    const id = Object.keys(sensors).filter((port) => sensors[port]['TYPE'] == 'COLOUR').length;
+                    const id = Object.keys(sensors).filter((port) => ['COLOR', 'COLOUR'].includes(sensors[port]['TYPE'])).length;
                     let y = ord * 10 - 5 * (id + 1);
                     this[c] = new ColorSensorHex(c, 9, y, 0, 5);
                     break;
@@ -100,5 +102,15 @@ export default class RobotRcj extends RobotBaseMobile {
             });
         }
         this.gyro = new GyroSensor();
+        this.sensorMountOverlay = {
+            drawPriority: 99,
+            draw: (ctx: CanvasRenderingContext2D, robot: RobotRcj) => {
+                const overlay = (window as any).CodeOnSensorOverlay2D;
+                if (overlay) overlay.draw(ctx, robot, {
+                    rcx: null, rcj: RobotRcj,
+                    sensors: { TouchSensor, ColorSensor, ColorSensorHex, UltrasonicSensor, InductiveSensor },
+                });
+            },
+        };
     }
 }

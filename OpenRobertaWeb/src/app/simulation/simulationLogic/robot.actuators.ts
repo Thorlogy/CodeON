@@ -1642,7 +1642,7 @@ export class RCJChassis extends ChassisDiffDrive implements ILabel {
     override updateAction(myRobot: RobotBaseMobile, dt: number, interpreterRunning: boolean) {
         super.updateAction(myRobot, dt, interpreterRunning);
         if (interpreterRunning) {
-            if (this.manipulator.speed !== 0) {
+            if (this.manipulator && this.manipulator.speed !== 0) {
                 let diff: number = ((this.manipulator.speed * 6 * Math.PI) / 180) * dt;
                 if (this.manipulator.speed > 0) {
                     this.grabberAngle += diff;
@@ -1695,8 +1695,11 @@ export class RCJChassis extends ChassisDiffDrive implements ILabel {
     reset(): void {
         this.grabberAngle = 0;
         this.grabberWidth = this.grabber.w;
-        this.manipulator.speed = 0;
-        this.manipulator.angle = 0;
+        // A user configuration may omit the grabber motor (e.g. four sensors).
+        if (this.manipulator) {
+            this.manipulator.speed = 0;
+            this.manipulator.angle = 0;
+        }
         this.grabberLeft = null;
         this.grabberRight = null;
         $('#display' + this.id).html('');
