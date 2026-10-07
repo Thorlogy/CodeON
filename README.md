@@ -44,6 +44,8 @@ Produktivangebot.
 | System | Reale Hardware | Simulation | Aktueller Hinweis |
 | --- | --- | --- | --- |
 | LEGO RCX | auf macOS geprüft | geprüft | Übertragung und Ton bestätigt; NQC und ein kompatibler IR-Tower werden benötigt |
+| Edison V2 | noch nicht physisch abgenommen | 2D/3D geprüft | Die Hardwareübertragung nutzt eine externe Edison-Programmierschnittstelle; ein realer End-to-End-Test steht aus |
+| RCJ RescueOnlineSim | kein physischer Roboter | 2D/3D geprüft | Simulationssystem; Greifer und Sensoren hängen von der gewählten Konfiguration ab |
 | Cozmo | auf macOS geprüft | 2D/3D geprüft | Fahren, Lift ohne Last, Gesichtserkennung und Not-Stopp bestätigt; das Aufheben eines Light Cubes ist noch offen |
 | Apitor Robot X | auf macOS geprüft | 2D/3D geprüft | Motoren, Stopp und Farbsensor bestätigt; Infrarot- und LED-Hardwaretests sind noch offen |
 
@@ -51,6 +53,9 @@ Die Windows- und Linux-Starter werden automatisiert geprüft, wurden aber noch
 nicht mit allen aufgeführten Robotern physisch abgenommen. Weitere bekannte
 Grenzen und der genaue Prüfumfang stehen in den
 [Preview-Hinweisen](docs/CodeON_Public_Preview.md).
+Der [Fünf-System-Smoketest vom 07.10.2026](docs/CodeON_Five_System_Smoke_2026-10-07.md)
+dokumentiert die zuletzt geprüften Browser-Grundpfade und einen dabei
+gefundenen, anschließend korrigierten Wechsel-Fehler in der SIM-Leiste.
 
 ## Verhältnis zu Open Roberta
 

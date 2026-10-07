@@ -227,7 +227,7 @@ const bridgeModule = loadAmd(bridgeRuntimePath, { connectionDiagnostics: diagnos
     assert.strictEqual(packagedIndex, serverIndex, 'Packaged and server entry pages must stay byte-identical.');
     assert.match(serverIndex, /id='connectionDiagnostics'/);
     assert.match(serverIndex, /id='connectionDiagnosticRecommendationValue'/);
-    assert.match(serverIndex, /codeon-live-20261006-sensor-mounts-47/);
+    assert.match(serverIndex, /codeon-live-20261007-sensor-mounts-48/);
 
     assert.ok(fs.existsSync(diagnosticsPackagedPath), 'The packaged diagnostics runtime must exist.');
     assert.ok(fs.existsSync(bridgePackagedPath), 'The packaged bridge runtime must exist.');

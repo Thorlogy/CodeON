@@ -1,6 +1,6 @@
-# CodeON Public Preview – September 2026
+# CodeON Public Preview – Stand Oktober 2026
 
-Stand: 7. September 2026
+Stand: 7. Oktober 2026
 
 Diese erste öffentliche CodeON-Vorschau richtet sich an neugierige
 Einzelanwender, die eine lokale Blockprogrammierumgebung mit vorhandener
@@ -13,6 +13,8 @@ für einen verlässlichen Unterrichts- oder Produktivbetrieb freigegeben.
 - grafische Blockprogrammierung und Codeansichten;
 - 2D- und 3D-Simulation für die ausgebauten CodeON-Systeme;
 - physisch geprüfte Kernpfade für LEGO RCX, Cozmo und Apitor Robot X;
+- browsergeprüfte 2D-/3D-Grundpfade für RCX, Edison V2, RCJ
+  RescueOnlineSim, Cozmo und Apitor Robot X;
 - sichtbarer Stopp und zusätzliche Bridge-Sicherheitsmechanismen;
 - optionaler Code Buddy mit lokalem Ollama oder selbst konfigurierten
   Cloud-Anbietern;
@@ -27,6 +29,19 @@ Tonausgabe auf echter Hardware bestätigt. NQC und gegebenenfalls eine rechtmä�
 bezogene RCX-Firmware müssen separat bereitgestellt werden. Windows- und
 Linux-Starter sind automatisiert geprüft, aber noch nicht mit realer
 RCX-Hardware auf diesen Plattformen abgenommen.
+
+### Edison V2
+
+Der lokale 2D-/3D-Simulationspfad wurde geprüft. Die Hardwareübertragung nutzt
+eine externe Edison-Programmierschnittstelle; ein vollständiger Test mit einem
+realen Edison wurde für diesen Projektstand nicht dokumentiert.
+
+### RCJ RescueOnlineSim
+
+RCJ ist ein Simulationssystem, kein physischer Roboter. Die Darstellung von
+Greifer und Sensoren richtet sich nach der Konfiguration. Das Öffnen und
+Starten der SIM wurde im isolierten Fünf-System-Smoketest bestätigt; dies ist
+kein Test aller Programmierblöcke.
 
 ### Cozmo
 
@@ -53,10 +68,16 @@ LED-Funktionen benötigen noch weitere Hardwaretests.
 - Nicht alle historischen Open-Roberta-Robotermodule gehören zum reduzierten
   CodeON-Build.
 - Windows und Linux sind nicht über alle Hardwarepfade hinweg physisch geprüft.
+- Der im Fünf-System-Smoketest entdeckte Wechsel-Fehler beim Button „Sensoren“
+  wurde anschließend korrigiert. Der Button wird beim Öffnen der SIM nur für
+  RCX/RCJ gezeigt; die Korrektur betrifft nicht die Sensor- oder Fahrlogik.
 - Für ein öffentlich betriebenes Mehrbenutzersystem fehlen bewusst
   betreibereigene Rechts-, Datenschutz-, SMTP- und Betriebsangaben.
 - Code Buddy ist optional. Cloud-Anbieter erhalten Daten erst nach expliziter
   Auswahl und Einwilligung; für lokale Nutzung ist Ollama vorgesehen.
+
+Der [Fünf-System-Smoketest vom 07.10.2026](CodeON_Five_System_Smoke_2026-10-07.md)
+benennt den genauen Prüfumfang und seine Grenzen.
 
 ## Feedback statt Codebeiträgen
 

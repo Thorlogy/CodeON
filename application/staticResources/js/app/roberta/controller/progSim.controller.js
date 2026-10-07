@@ -144,6 +144,9 @@ define(["require", "exports", "message", "util.roberta", "guiState.controller", 
             var SIM = this.SIM;
             var C = this;
             this.updateRcxLightControls();
+            if (window.CodeOnSensorMounts) {
+                window.CodeOnSensorMounts.setAvailableForRobotGroup(GUISTATE_C.getRobotGroup(), GUISTATE_C.hasWebotsSim());
+            }
             if (UTIL.isIE() || UTIL.isEdge()) {
                 // TODO IE and Edge: Input event not firing for file type of input
                 $('#simImport').hide();
