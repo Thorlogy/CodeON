@@ -35,6 +35,24 @@ Datenbanken mitsenden.
 - Abhängigkeiten, Buildskripte und GitHub-Actions-Workflows;
 - generierte Laufzeitpakete und herunterladbare Artefakte.
 
+## Lokale Betriebsgrenze
+
+CodeON ist nur für den lokalen Betrieb auf dem eigenen Rechner vorgesehen. Eine
+öffentlich erreichbare, gehostete oder als Cloud-Dienst betriebene Instanz wird
+nicht unterstützt und nicht empfohlen. Keine Portfreigabe, keinen öffentlichen
+Reverse-Proxy und keine Bindung an eine öffentliche Netzwerkschnittstelle
+einrichten. Die regulären Starter, die Server-Quellkonfiguration und das
+mitgelieferte Laufzeit-JAR verwenden `127.0.0.1`; lokale Roboter-Bridges
+verwenden ebenfalls Loopback. Der Server lehnt eine manuell gesetzte
+Nicht-Loopback-Adresse beim Start ab. Auch optionale Java-Debugports der
+Startskripte binden nur an `127.0.0.1`; der historische Docker-Startpfad ist
+keine unterstützte öffentliche Bereitstellung. Eine Netzwerkweiterleitung
+außerhalb von CodeON kann diese Schutzgrenze dennoch umgehen.
+
+Optionale externe Dienste wie die Edison-Programmierschnittstelle oder ein
+ausdrücklich ausgewählter Code-Buddy-Anbieter sind davon getrennt; ihre
+Datenübertragung ist in der README beschrieben.
+
 ## Grundsätze für Korrekturen
 
 - Geheimnisse niemals ins Repository oder in Logs schreiben.

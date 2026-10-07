@@ -20,6 +20,7 @@ jobs:
           node-version: '20'
           package-manager-cache: false
       - run: npm run test:architecture-graph
+      - run: node scripts/test-codeon-local-only-default.js
       - run: npm run test:code-graph
       - run: npm run test:robot-integration
       - name: Test shared robot bridge contract

@@ -6,7 +6,7 @@ GC_LOGGING=''
 while true
 do
   case "$1" in
-    remote.debug) REMOTE_DEBUG='-agentlib:jdwp=transport=dt_socket,address=0.0.0.0:2000,server=y,suspend=y'; shift ;;
+    remote.debug) REMOTE_DEBUG='-agentlib:jdwp=transport=dt_socket,address=127.0.0.1:2000,server=y,suspend=y'; shift ;;
     gc.logging)   GC_LOGGING="-XX:+PrintGC"; shift ;;
     *)            break ;;
   esac

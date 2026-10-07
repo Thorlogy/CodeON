@@ -122,6 +122,16 @@ public class ServerStarter {
         UtilForREST.setServerVersion(this.serverProperties.getStringProperty("openRobertaServer.version"));
     }
 
+    static String requireLoopbackHost(String host) {
+        if ( "127.0.0.1".equals(host) || "::1".equals(host) ) {
+            return host;
+        }
+        if ( "localhost".equalsIgnoreCase(host) ) {
+            return "127.0.0.1";
+        }
+        throw new IllegalArgumentException("CodeON server.ip must be a loopback address (127.0.0.1, ::1 or localhost)");
+    }
+
     /**
      * startup. See {@link ServerStarter}. If the server could not be created, <b>the process will be terminated by System.exit(status) with status > 0</b>.
      *
@@ -129,7 +139,7 @@ public class ServerStarter {
      * @return the server
      */
     public Server start(List<String> pluginDefines) throws IOException {
-        String host = this.serverProperties.getStringProperty("server.ip");
+        String host = requireLoopbackHost(this.serverProperties.getStringProperty("server.ip"));
         int httpPort = this.serverProperties.getIntProperty("server.port", 0);
         int httpsPort = this.serverProperties.getIntProperty("server.portHttps", 0);
 
