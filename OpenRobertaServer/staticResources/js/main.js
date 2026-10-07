@@ -28,7 +28,7 @@
 })();
 require.config({
     baseUrl: '.',
-    urlArgs: 'v=codeon-live-20261006-sensor-mounts-47',
+    urlArgs: 'v=codeon-live-20261007-sensor-mounts-48',
     paths: {
         ace: 'libs/ace/ace',
         ace_lang: 'libs/ace/ext-language_tools',

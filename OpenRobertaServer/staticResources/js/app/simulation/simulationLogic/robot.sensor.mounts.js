@@ -201,9 +201,12 @@
             if (button) button.setAttribute('aria-expanded','false');
         }
     }
+    function setAvailableForRobotGroup(robotGroup, webotsSim) {
+        setAvailable(!webotsSim && validFamily(robotGroup));
+    }
     if (typeof document !== 'undefined') {
         if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initEditor);
         else initEditor();
     }
-    return Object.freeze({ STORAGE_KEY, VERSION, POSITIONS: Object.freeze(POSITIONS.slice()), configurationId, read, write, clear, resetSensor, setAvailable });
+    return Object.freeze({ STORAGE_KEY, VERSION, POSITIONS: Object.freeze(POSITIONS.slice()), configurationId, read, write, clear, resetSensor, setAvailable, setAvailableForRobotGroup });
 });

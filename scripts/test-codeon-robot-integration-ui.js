@@ -318,7 +318,7 @@ const serverIndex = fs.readFileSync(path.join(ROOT, 'OpenRobertaServer/staticRes
 const packagedIndex = fs.readFileSync(path.join(ROOT, 'application/staticResources/index.html'), 'utf8');
 assert.strictEqual(packagedIndex, serverIndex, 'Maintained and packaged entry pages must be byte-identical.');
 for (const index of [serverIndex, packagedIndex]) {
-    assert.match(index, /codeon-live-20261006-sensor-mounts-47/, 'Entry page must invalidate the previous frontend cache generation.');
+    assert.match(index, /codeon-live-20261007-sensor-mounts-48/, 'Entry page must invalidate the previous frontend cache generation.');
 }
 
 const packageJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
