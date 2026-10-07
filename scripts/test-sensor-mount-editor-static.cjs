@@ -6,6 +6,7 @@ const root=path.resolve(__dirname,'..');
 for(const tree of ['OpenRobertaServer','application']){
     const html=fs.readFileSync(path.join(root,tree,'staticResources/index.html'),'utf8');
     assert.match(html,/<button[^>]*hidden[^>]*id='simSensorMounts'/);
+    assert.match(html,/#simSensorMounts\s*\{\s*vertical-align:\s*top;/);
     assert.ok(html.indexOf('robot.sensor.mounts.js')<html.indexOf('simulation3d.adapter.js'));
     assert.match(html,/robot\.sensor\.mounts\.js\?v=codeon-sensor-mounts-4/);
     const module=fs.readFileSync(path.join(root,tree,'staticResources/js/app/simulation/simulationLogic/robot.sensor.mounts.js'),'utf8');
