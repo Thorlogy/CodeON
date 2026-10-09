@@ -53,9 +53,9 @@
 
 ## Grenzen und nächste Freigabe
 
-Dies ist kein vollständiges Sicherheitsaudit. Die RCX-Programmübertragung auf
-dem isolierten Zweig wurde bestätigt; Cozmo und Apitor wurden auf diesem Zweig
-nicht erneut physisch getestet. Externe Portweiterleitungen oder ein
+Dies ist kein vollständiges Sicherheitsaudit. Die Hardwaretests mit RCX,
+Apitor und Cozmo auf dem isolierten Zweig wurden bestätigt; die Ergebnisse
+stehen unten. Externe Portweiterleitungen oder ein
 Reverse-Proxy außerhalb von CodeON können die lokale Bindung umgehen und sind
 nicht Teil des unterstützten Betriebs. Vor einer Übernahme in `master` sind der
 vollständige Diff und die unveränderte Live-Instanz erneut zu prüfen.
@@ -81,3 +81,33 @@ der Nutzer meldete ebenfalls Erfolg. Damit ist die physische RCX-Übertragung
 vom isolierten Prüfstand bestätigt. Es wurde keine Firmware übertragen. Der
 Prüfserver wurde anschließend sauber beendet, seine temporäre Datenbank
 entfernt; Port 1999 und die bestehende RCX-Bridge blieben aktiv.
+
+## Apitor und Cozmo: Hardwaretests am isolierten Prüfstand
+
+Für diese Tests wurde der Server auf `127.0.0.1:1996` erneut mit eigener
+temporärer Datenbank und allen fünf aktiven Roboter-Plugins gestartet. Die
+laufende Instanz auf Port 1999 blieb unverändert. Beide bestehenden Bridges
+akzeptierten zunächst nur die Ursprünge auf Port 1999. Die Apitor-Bridge wies
+den Browser auf Port 1996 mit `InvalidOrigin` ab. Nach kontrolliertem Neustart
+der Apitor-Bridge mit den zusätzlichen Ursprüngen `127.0.0.1:1996` und
+`localhost:1996` meldete das Protokoll `connect: ok`, danach erfolgreiche
+`setMotor`- und `stopAll`-Aufrufe. Der Nutzer bestätigte Bewegung und Stopp.
+
+Die Cozmo-Bridge wurde ebenfalls aus Terminal mit diesen zusätzlichen
+Test-Ursprüngen neu gestartet, damit die macOS-Berechtigung für Cozmos lokales
+WLAN erhalten blieb. Nach anfänglichen Verbindungsfehlern ohne empfangene
+Frames meldete das Protokoll am 08.10. `connect: ok` und anschließend
+erfolgreiche `drive`-, `stopDrive`- und `stopAll`-Aufrufe. Der Nutzer bestätigte
+den Praxistest. Am 09.10. wurden weitere automatische Verbindungsversuche ohne
+empfangene Frames protokolliert; für diese späteren Versuche ist kein erneuter
+erfolgreicher Roboterlauf belegt. Die bestätigte Abnahme stützt sich auf den
+erfolgreichen Lauf vom 08.10. und die Nutzerrückmeldung.
+
+Die zusätzlichen Bridge-Ursprünge wurden nur als Laufzeitoption gesetzt;
+Quellcode und reguläre CodeON-Instanz wurden dafür nicht geändert. Der
+temporäre Prüfserver auf Port 1996 wurde nach dem Test kontrolliert beendet;
+seine getrennte Datenbank blieb vorerst unter `/private/tmp` erhalten. Sie ist
+nicht versioniert und kein dauerhafter Rücksprungpunkt. Die beiden Bridges
+laufen weiter
+und akzeptieren weiterhin die regulären Ursprünge auf Port 1999. Bei ihrem
+nächsten regulären Neustart entfallen die zusätzlichen Test-Ursprünge.
