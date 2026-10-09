@@ -48,13 +48,15 @@ LED-Funktionen benötigen noch weitere Hardwaretests.
 
 - CodeON ist ein Hobbyprojekt ohne Supportzusage, SLA oder garantierte
   Weiterentwicklung.
-- Es gibt keine von diesem Projekt betriebene öffentliche CodeON-Instanz.
+- CodeON ist ausschließlich für den lokalen Betrieb vorgesehen. Cloud-Hosting
+  oder eine öffentlich erreichbare Instanz wird nicht empfohlen.
 - Deutsch und Englisch sind die einzigen ausgelieferten Oberflächensprachen.
 - Nicht alle historischen Open-Roberta-Robotermodule gehören zum reduzierten
   CodeON-Build.
 - Windows und Linux sind nicht über alle Hardwarepfade hinweg physisch geprüft.
-- Für ein öffentlich betriebenes Mehrbenutzersystem fehlen bewusst
-  betreibereigene Rechts-, Datenschutz-, SMTP- und Betriebsangaben.
+- Eine Netzwerkfreigabe oder ein öffentliches Mehrbenutzersystem gehört nicht
+  zum unterstützten Einsatzbereich; dafür fehlen auch die nötigen Betriebs- und
+  Datenschutzvorkehrungen.
 - Code Buddy ist optional. Cloud-Anbieter erhalten Daten erst nach expliziter
   Auswahl und Einwilligung; für lokale Nutzung ist Ollama vorgesehen.
 

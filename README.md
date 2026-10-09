@@ -24,7 +24,7 @@ Hinweise gelten unabhängig vom eigenständigen CodeON-Produktnamen.
 
 ## Was CodeON auszeichnet
 
-- **lokal zuerst:** Anwendung und Roboter-Bridges laufen auf dem eigenen Rechner;
+- **ausschließlich lokal:** Anwendung und Roboter-Bridges laufen auf dem eigenen Rechner;
 - **ein gemeinsamer Einstieg:** die Starter öffnen CodeON und starten die lokalen
   Bridges für RCX, Cozmo und Apitor automatisch;
 - **alte und neue Lernrobotik:** vom LEGO RCX bis zu Cozmo und Apitor Robot X;
@@ -106,8 +106,17 @@ nennt bei Cozmo und Apitor eine passende nächste Prüfmaßnahme.
 
 ## Datenverarbeitung
 
-Der CodeON-Server und die Roboter-Bridges laufen lokal und binden an
-`127.0.0.1`. Zwei bewusst gewählte Funktionen können externe Dienste nutzen:
+CodeON ist ausschließlich für die Nutzung auf dem eigenen Rechner vorgesehen.
+Eine Cloud- oder öffentlich erreichbare CodeON-Instanz ist nicht geplant und wird
+nicht empfohlen. CodeON sollte nicht über Portfreigaben, Reverse-Proxys oder
+öffentliche Server erreichbar gemacht werden. Die regulären Starter binden den
+Server und die Roboter-Bridges an `127.0.0.1`; auch die Server-Quellkonfiguration
+und das mitgelieferte Laufzeit-JAR verwenden diese Adresse als Standard.
+Ein manuell gesetztes `server.ip` außerhalb von Loopback wird beim Start
+abgelehnt. Externe Portweiterleitungen kann CodeON nicht selbst verhindern.
+
+Das betrifft das Hosting der Anwendung, nicht jede optionale Verbindung zu
+externen Diensten. Zwei bewusst gewählte Funktionen können solche Dienste nutzen:
 Die Hardwareübertragung für Edison V2 ruft die Edison-Programmierschnittstelle
 auf, und der optionale Code Buddy kann nach ausdrücklicher Zustimmung einen
 Cloud-Anbieter verwenden. Die lokalen Bridges für RCX, Cozmo und Apitor senden
@@ -225,6 +234,7 @@ npx gulp watch
 ```bash
 npm run test:constants
 npm run test:architecture-graph
+node scripts/test-codeon-local-only-default.js
 npm run test:code-graph
 node scripts/test-system-sensor-toolboxes.js
 node scripts/test-cozmo-simulation-static.js
@@ -235,6 +245,8 @@ node scripts/test-codeon-buddy-security.js
 mvn -pl OpenRobertaRobot,RobotEdison,RobotSpike,RobotCozmo,RobotApitor,RobotRCX \
   -am -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test
 mvn -pl OpenRobertaServer -am -DskipTests package
+mvn -pl OpenRobertaServer -am -Dtest=CodeOnLegacyProgramRegressionTest,ServerStarterLoopbackTest \
+  -DfailIfNoTests=false -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test
 ```
 
 Die historische, ungefilterte Server-Testsuite referenziert teilweise Plugins,
