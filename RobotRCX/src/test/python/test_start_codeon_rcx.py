@@ -1,6 +1,7 @@
 import importlib.util
 import io
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -145,6 +146,42 @@ class CodeOnRcxStarterTest(unittest.TestCase):
         with patch.object(STARTER.subprocess, "run", side_effect=[modern, legacy]):
             self.assertEqual(17, STARTER.java_major_version("java"))
             self.assertEqual(8, STARTER.java_major_version("java"))
+
+    def test_java_command_opens_java_lang_only_for_modern_runtimes(self):
+        self.assertEqual(["java"], STARTER.java_command("java", 8))
+        self.assertEqual(["java"], STARTER.java_command("java", 11))
+        self.assertEqual(
+            ["java", "--add-opens", "java.base/java.lang=ALL-UNNAMED"],
+            STARTER.java_command("java", 21),
+        )
+
+    def test_java21_database_creation_uses_module_open(self):
+        with tempfile.TemporaryDirectory() as tmp, patch.object(STARTER, "RUNTIME", Path(tmp)), patch.object(
+            STARTER.subprocess, "run", return_value=MagicMock(returncode=0)
+        ) as run:
+            self.assertTrue(STARTER.create_database("java", 21, "lib/*", {}, io.StringIO()))
+        self.assertEqual(
+            ["java", "--add-opens", "java.base/java.lang=ALL-UNNAMED", "-cp", "lib/*"],
+            run.call_args.args[0][:5],
+        )
+
+    @unittest.skipUnless(os.environ.get("CODEON_JAVA_STARTUP_SMOKE") == "1", "explicit Java smoke test")
+    def test_real_java_can_create_a_fresh_codeon_database(self):
+        java = shutil.which("java")
+        self.assertIsNotNone(java)
+        with tempfile.TemporaryDirectory(prefix="codeon-java-startup-") as tmp, tempfile.TemporaryFile(
+            mode="w+t", encoding="utf-8"
+        ) as log, patch.object(STARTER, "RUNTIME", Path(tmp)):
+            created = STARTER.create_database(
+                java,
+                STARTER.java_major_version(java),
+                str(STARTER.APPLICATION / "lib" / "*"),
+                os.environ.copy(),
+                log,
+            )
+            log.seek(0)
+            self.assertTrue(created, log.read()[-3000:])
+            self.assertTrue((Path(tmp) / "db" / "openroberta-db.script").is_file())
 
     def test_configured_nqc_has_priority(self):
         with tempfile.TemporaryDirectory() as tmp:

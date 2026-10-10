@@ -93,6 +93,14 @@ def java_major_version(java: str | None) -> int | None:
     return int(match.group(2)) if first == 1 and match.group(2) else first
 
 
+def java_command(java: str, major_version: int | None) -> list[str]:
+    """Open java.lang for the bundled JAXB version on Java 17 and newer."""
+    command = [java]
+    if major_version is not None and major_version >= 17:
+        command.extend(("--add-opens", "java.base/java.lang=ALL-UNNAMED"))
+    return command
+
+
 def url_json(url: str, timeout: float = 1.0) -> dict | None:
     try:
         with urllib.request.urlopen(url, timeout=timeout) as response:
@@ -328,14 +336,15 @@ def wait_for(url: str, process: subprocess.Popen | None, timeout: float, expect_
     return False
 
 
-def create_database(java: str, classpath: str, env: dict, log) -> bool:
+def create_database(java: str, java_version: int | None, classpath: str, env: dict, log) -> bool:
     db_dir = RUNTIME / "db"
     if (db_dir / "openroberta-db.script").exists():
         return True
     db_dir.mkdir(parents=True, exist_ok=True)
     uri = "jdbc:hsqldb:file:" + str(db_dir / "openroberta-db")
     result = subprocess.run(
-        [java, "-cp", classpath, "de.fhg.iais.roberta.main.Administration", "create-empty-db", uri],
+        java_command(java, java_version)
+        + ["-cp", classpath, "de.fhg.iais.roberta.main.Administration", "create-empty-db", uri],
         cwd=APPLICATION,
         env=env,
         stdout=log,
@@ -635,14 +644,14 @@ def start(args: argparse.Namespace) -> int:
             return 0
 
         java = checks["java"]["value"]
+        java_version = checks["java"]["version"]
         classpath = str(APPLICATION / "lib" / "*")
         server_log = server_log_path.open("a", encoding="utf-8")
-        if not create_database(java, classpath, env, server_log):
+        if not create_database(java, java_version, classpath, env, server_log):
             print(f"Die lokale CodeON-Datenbank konnte nicht vorbereitet werden. Protokoll: {server_log_path}")
             return 4
 
-        server_command = [
-            java,
+        server_command = java_command(java, java_version) + [
             "-cp",
             classpath,
             "de.fhg.iais.roberta.main.ServerStarter",

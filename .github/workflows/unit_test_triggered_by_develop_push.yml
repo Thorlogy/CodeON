@@ -11,8 +11,13 @@ permissions:
 
 jobs:
   build:
+    name: Build and test (Java ${{ matrix.java }})
     runs-on: ubuntu-22.04
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [ '11', '21' ]
     steps:
       - name: Checkout branch ${{ github.ref }} of repo ${{ github.repository }}
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -21,19 +26,23 @@ jobs:
       - name: Setup Java JDK
         uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
         with:
-          java-version: '11'
+          java-version: ${{ matrix.java }}
           distribution: 'temurin'
       - name: Cache local maven repository
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-maven-java${{ matrix.java }}-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-maven-
+            ${{ runner.os }}-maven-java${{ matrix.java }}-
       - name: Verify generated constants
         run: npm run test:constants
       - name: Test read-only connection diagnostics
         run: npm run test:connection-diagnostics
+      - name: Test local Java startup assistant
+        env:
+          CODEON_JAVA_STARTUP_SMOKE: '1'
+        run: python3 -m unittest RobotRCX/src/test/python/test_start_codeon_rcx.py
       - name: Test active CodeON robot reactor
         run: mvn --batch-mode -pl OpenRobertaRobot,RobotEdison,RobotSpike,RobotCozmo,RobotApitor,RobotRCX -am -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test
       - name: Test CodeON LEGACY programs and local server binding
