@@ -20,3 +20,12 @@ unter outputs/edison-install-2026-09-29; Sicherungen werden nicht publiziert.
 Vorheriger Git-Stand: 0b3bc3e70 (noch ohne uncommittierte Apitor-Ergänzungen).
 Kein Merge nach master. Nächster separater Arbeitsschritt: konfigurations-
 abhängige Sensoranbauten für RCX/RCJ planen und isoliert umsetzen.
+
+## Nachtrag vom 10.10.2026: Git-Stand und Prüfgrenze
+
+Der oben vermerkte ausstehende Merge beschreibt den Stand der Abnahme am
+29.09. Die Edison-/Apitor-3D-Änderung `bc475bb05` wurde anschließend über
+PR 28 in `master` übernommen (Merge `31b073c85`). Der lokale Prüfstand und
+die damalige Nutzerrückmeldung betrafen die Darstellung und das Programmieren
+in der Simulation. Daraus folgt keine neue physische Edison-Abnahme und keine
+Bestätigung einer Programmübertragung an einen echten Edison.

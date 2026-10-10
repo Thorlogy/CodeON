@@ -1,6 +1,6 @@
-# CodeON Public Preview – September 2026
+# CodeON Public Preview
 
-Stand: 7. September 2026
+Erstveröffentlichung: 7. September 2026. Statusabgleich: 10. Oktober 2026.
 
 Diese erste öffentliche CodeON-Vorschau richtet sich an neugierige
 Einzelanwender, die eine lokale Blockprogrammierumgebung mit vorhandener
@@ -13,6 +13,9 @@ für einen verlässlichen Unterrichts- oder Produktivbetrieb freigegeben.
 - grafische Blockprogrammierung und Codeansichten;
 - 2D- und 3D-Simulation für die ausgebauten CodeON-Systeme;
 - physisch geprüfte Kernpfade für LEGO RCX, Cozmo und Apitor Robot X;
+- lokal geprüfte Edison- und RCJ-Simulationen; RCJ ist ein reines
+  Simulationssystem, für Edison ist bei diesem Stand kein physischer
+  Hardwaretest dokumentiert;
 - sichtbarer Stopp und zusätzliche Bridge-Sicherheitsmechanismen;
 - optionaler Code Buddy mit lokalem Ollama oder selbst konfigurierten
   Cloud-Anbietern;
@@ -43,6 +46,15 @@ Auf macOS wurden BLE-Verbindung, Motoren M1 bis M3, globaler Stopp,
 Endlosschleifen und Farbsensor auf echter Hardware bestätigt. Die numerischen
 Infrarotwerte sind keine kalibrierten Zentimeterangaben. Infrarot- und
 LED-Funktionen benötigen noch weitere Hardwaretests.
+
+### Edison V2 und RCJ RescueOnlineSim
+
+Edisons 3D-Darstellung sowie Programmieren, Start/Stopp und Wiederstart in der
+lokalen Simulation sind bestätigt. Dieser Nachtrag ist keine Abnahme einer
+Programmübertragung an einen echten Edison; dafür nutzt CodeON die externe
+Edison-Programmierschnittstelle. RCJ ist ein reines Simulationssystem. Die
+RCJ-Simulationskompilierung, Fahrt, Stopp und Wiederstart wurden bestätigt;
+ein Hardwaretest ist hier nicht anwendbar.
 
 ## Bekannte Grenzen
 

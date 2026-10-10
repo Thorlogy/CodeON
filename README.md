@@ -44,6 +44,8 @@ Produktivangebot.
 | System | Reale Hardware | Simulation | Aktueller Hinweis |
 | --- | --- | --- | --- |
 | LEGO RCX | auf macOS geprüft | geprüft | Übertragung und Ton bestätigt; NQC und ein kompatibler IR-Tower werden benötigt |
+| Edison V2 | für diesen Stand kein Hardwaretest belegt | 2D/3D geprüft | 3D-Darstellung sowie Programmieren und Start/Stopp in der lokalen Simulation bestätigt; die Programmübertragung nutzt eine externe Edison-Schnittstelle |
+| RCJ RescueOnlineSim | kein physischer Roboter | 2D/3D geprüft | Simulationskompilierung, Fahrt, Stopp und Wiederstart bestätigt |
 | Cozmo | auf macOS geprüft | 2D/3D geprüft | Fahren, Lift ohne Last, Gesichtserkennung und Not-Stopp bestätigt; das Aufheben eines Light Cubes ist noch offen |
 | Apitor Robot X | auf macOS geprüft | 2D/3D geprüft | Motoren, Stopp und Farbsensor bestätigt; Infrarot- und LED-Hardwaretests sind noch offen |
 
@@ -296,9 +298,10 @@ benötigt aber die jeweiligen Cross-Compiler und weitere Systemwerkzeuge.
 
 Fehler, Fragen und Verbesserungsvorschläge bitte als
 [GitHub-Issue](https://github.com/Thorlogy/CodeON/issues) melden. Das Projekt
-nimmt derzeit keine Pull Requests oder sonstigen Codebeiträge an. Vor einer
-öffentlichen Produktivbereitstellung müssen betreibereigene Datenschutz-,
-Impressums-, Nutzungs- und SMTP-Konfigurationen hinterlegt werden.
+nimmt derzeit keine Pull Requests oder sonstigen Codebeiträge an. CodeON ist
+nur für den lokalen Betrieb vorgesehen; eine öffentliche Bereitstellung gehört
+nicht zum unterstützten Einsatzbereich. Hinweise zum Melden von
+Sicherheitsproblemen stehen in [SECURITY.md](SECURITY.md).
 
 ## Lizenz und Herkunft
 
