@@ -43,3 +43,17 @@ jobs:
       - run: node scripts/test-apitor-simulation-static.js
       - run: node scripts/test-codeon-3d-static.js
       - run: node scripts/test-codeon-buddy-security.js
+
+  cozmo-python-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Install optional Cozmo dependencies in an isolated environment
+        run: |
+          python3 -m venv "$RUNNER_TEMP/codeon-cozmo-tests"
+          "$RUNNER_TEMP/codeon-cozmo-tests/bin/python" -m pip install './RobotIntegrationKit/python[cozmo-vision]'
+      - name: Run all hardware-free Cozmo Python contracts without skips
+        run: PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=RobotIntegrationKit/python/src "$RUNNER_TEMP/codeon-cozmo-tests/bin/python" scripts/run-codeon-cozmo-tests.py --require-all

@@ -66,6 +66,11 @@ assert.strictEqual(robotBridgeImpact.reviewRequired, true);
 assert.deepStrictEqual(robotBridgeImpact.unknownPaths, []);
 assert.ok(robotBridgeImpact.requiredChecks.some((test) => test.id === 'test.robot-bridge'));
 assert.ok(robotBridgeImpact.requiredChecks.some((test) => test.id === 'test.websocket-safety'));
+assert.ok(robotBridgeImpact.requiredChecks.some((test) => test.id === 'test.cozmo-python'));
+
+const cozmoRunnerImpact = impactForPaths(graph, ['scripts/run-codeon-cozmo-tests.py']);
+assert.deepStrictEqual(cozmoRunnerImpact.affectedRobots.map((robot) => robot.id), ['robot.cozmo']);
+assert.ok(cozmoRunnerImpact.requiredChecks.some((test) => test.id === 'test.cozmo-python'));
 
 const constantsImpact = impactForPaths(graph, ['scripts/generate-codeon-constants.js']);
 assert.strictEqual(constantsImpact.risk, 'critical');
@@ -85,6 +90,8 @@ const architectureWorkflow = fs.readFileSync(path.resolve(__dirname, '../.github
 assert.ok(architectureWorkflow.includes('python3 -m unittest RobotRCX/src/test/python/test_rcx_bridge.py'));
 assert.ok(architectureWorkflow.includes("-p 'test_server*.py' -v"));
 assert.ok(architectureWorkflow.includes("pip install './RobotIntegrationKit/python[server]'"));
+assert.ok(architectureWorkflow.includes("pip install './RobotIntegrationKit/python[cozmo-vision]'"));
+assert.ok(architectureWorkflow.includes('scripts/run-codeon-cozmo-tests.py --require-all'));
 
 function assertActionsArePinned(workflow, workflowName) {
     const actionReferences = Array.from(workflow.matchAll(/uses:\s+([^\s#]+)/g), (match) => match[1]);
