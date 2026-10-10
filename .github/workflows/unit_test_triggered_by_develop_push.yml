@@ -35,7 +35,7 @@ jobs:
           CODEON_JAVA_STARTUP_SMOKE: '1'
         run: python -m unittest RobotRCX/src/test/python/test_start_codeon_rcx.py
 
-  build:
+  build-matrix:
     name: Build and test (Java ${{ matrix.java }})
     runs-on: ubuntu-22.04
     timeout-minutes: 45
@@ -74,3 +74,14 @@ jobs:
         run: mvn --batch-mode -pl OpenRobertaServer -am -Dtest=CodeOnLegacyProgramRegressionTest,ServerStarterLoopbackTest -DfailIfNoTests=false -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test
       - name: Package CodeON server reactor
         run: mvn --batch-mode -pl OpenRobertaServer -am -DskipTests package
+
+  # Keep the branch-protection check named "build" and require every test job.
+  build:
+    runs-on: ubuntu-22.04
+    needs: [build-matrix, windows-starter-smoke]
+    if: ${{ always() }}
+    steps:
+      - name: Require all build and starter checks
+        run: |
+          test "${{ needs['build-matrix'].result }}" = success
+          test "${{ needs['windows-starter-smoke'].result }}" = success
