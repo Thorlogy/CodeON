@@ -10,6 +10,31 @@ permissions:
   contents: read
 
 jobs:
+  windows-starter-smoke:
+    name: Windows Java 21 starter database smoke
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - name: Checkout branch ${{ github.ref }} of repo ${{ github.repository }}
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Setup Java JDK
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - name: Verify Windows starter runtime
+        shell: pwsh
+        run: |
+          java -version
+          python --version
+          python -c "import sys; assert sys.version_info[:2] == (3, 12), sys.version"
+      - name: Create fresh CodeON database via Windows starter
+        env:
+          CODEON_JAVA_STARTUP_SMOKE: '1'
+        run: python -m unittest RobotRCX/src/test/python/test_start_codeon_rcx.py
+
   build:
     name: Build and test (Java ${{ matrix.java }})
     runs-on: ubuntu-22.04
