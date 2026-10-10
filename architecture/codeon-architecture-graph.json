@@ -19,6 +19,7 @@
     { "id": "robot.apitor", "type": "robot", "label": "Apitor Robot X", "propertiesPath": "RobotApitor/src/main/resources/apitor.properties", "configurationMode": "user-configurable" },
 
     { "id": "test.graph", "type": "test", "label": "Architecture graph contract", "command": "npm run test:architecture-graph" },
+    { "id": "test.static-resources", "type": "test", "label": "Static resource parity and packaged interpreter/RCX behavior", "command": "npm run test:static-resources" },
     { "id": "test.code-graph", "type": "test", "label": "Local code graph contract", "command": "npm run test:code-graph" },
     { "id": "test.robot-integration", "type": "test", "label": "Robot integration developer tooling", "command": "npm run test:robot-integration" },
     { "id": "test.connection-diagnostics", "type": "test", "label": "Read-only robot connection diagnostics", "command": "npm run test:connection-diagnostics" },
@@ -82,6 +83,14 @@
     { "from": "robot.apitor", "type": "verified-by", "to": "test.legacy-programs" }
   ],
   "impactRules": [
+    {
+      "id": "static-resource-parity",
+      "paths": ["OpenRobertaServer/staticResources/", "application/staticResources/", "scripts/test-static-resource-parity.js", "docs/CodeON_Static_Resources.md"],
+      "risk": "high",
+      "robots": ["robot.rcx", "robot.edison", "robot.rcj", "robot.cozmo", "robot.apitor"],
+      "tests": ["test.static-resources"],
+      "reason": "Source and packaged browser resources must stay synchronized for every active robot."
+    },
     {
       "id": "continuous-integration",
       "paths": [".github/workflows/"],
