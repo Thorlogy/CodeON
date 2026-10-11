@@ -111,3 +111,13 @@ nicht versioniert und kein dauerhafter Rücksprungpunkt. Die beiden Bridges
 laufen weiter
 und akzeptieren weiterhin die regulären Ursprünge auf Port 1999. Bei ihrem
 nächsten regulären Neustart entfallen die zusätzlichen Test-Ursprünge.
+
+## Nachtrag vom 10.10.2026: Git-Stand
+
+Die oben genannten Aussagen zum noch ausstehenden Merge beschreiben den
+Prüfzeitpunkt vom 07.–09.10. Der Zweig `security/local-only-default` wurde
+inzwischen mit PR 32 in `master` übernommen; der geprüfte `master`-Stand ist
+`b916e0b9652b9903613514bdb0f59ace9b76334b`. Dieser Nachtrag belegt nur
+den Repository-Stand. Er ist kein erneuter Laufzeit- oder Hardwaretest und
+keine Aussage, dass die laufende Installation auf Port 1999 aus genau diesem
+Commit gestartet wurde.
