@@ -34,6 +34,8 @@ jobs:
         env:
           CODEON_JAVA_STARTUP_SMOKE: '1'
         run: python -m unittest RobotRCX/src/test/python/test_start_codeon_rcx.py
+      - name: Test direct Windows admin launcher with temporary database
+        run: python scripts/test_codeon_windows_admin.py
 
   build-matrix:
     name: Build and test (Java ${{ matrix.java }})

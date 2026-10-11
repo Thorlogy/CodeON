@@ -1,4 +1,5 @@
 *.sh text eol=lf
 *.cmd text eol=crlf
+*.bat text eol=crlf
 OpenRobertaServer/src/test/resources/crossCompilerTests/_expected eof=lf
 OpenRobertaServer/staticResources/js/libs/webots/wrenjs.data eof=lf
