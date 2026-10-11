@@ -35,6 +35,21 @@ folgt keine funktionierende oder freigegebene Host-Verbindung. Wir öffnen
 dafür keinen Nicht-Loopback-Port und empfehlen weder Docker- noch
 Cloud-Bereitstellung. Ein Docker-Laufzeittest wurde hier nicht durchgeführt.
 
-Der direkte Windows-Admin-Batchpfad `admin.bat` ist von dieser Unix-Korrektur
-nicht erfasst; er benötigt eine gesonderte Prüfung. Der reguläre
-Windows-Starter wird in CI mit Java 21 separat getestet.
+Für den direkten Windows-Admin-Batchpfad ist eine gesonderte CI-Prüfung
+vorbereitet.
+`admin.bat` und `application/admin.bat` bleiben bytegleich. Sie erkennen die
+Java-Hauptversion, geben ab Java 17 die benötigte Moduloption mit und brechen
+nach einem Datenbankfehler vor dem Serverstart ab. Der optionale Befehl
+`create-empty-db` legt nur die Datenbank an; `-db-parentdir`, `-admin-dir` und
+`-java-lib-dir` erlauben dafür getrennte temporäre Testpfade. Ohne Befehl
+bleibt `start-server` das bisherige Verhalten. Der Server erhält ausdrücklich
+`server.ip=127.0.0.1`. Ein vorhandenes, aber unvollständiges
+Datenbankverzeichnis wird weder überschrieben noch als erfolgreicher Start
+gemeldet.
+
+`python scripts/test_codeon_windows_admin.py` soll in der Windows-CI
+simulierte Java-8/11/17/21-Aufrufe, Fehlerpfade und eine echte Datenbankanlage
+mit Java 21 prüfen; dafür wird ausschließlich eine temporäre Datenbank
+verwendet. Das ist noch **kein** manueller Windows-Frischinstallationstest
+und kein Hardwaretest. Für die reguläre Anwendung bleibt
+`CodeON-Starten.cmd` der empfohlene Windows-Einstieg.

@@ -77,6 +77,11 @@ assert.deepStrictEqual(directStarterImpact.unknownPaths, []);
 assert.strictEqual(directStarterImpact.risk, 'high');
 assert.ok(directStarterImpact.requiredChecks.some((test) => test.id === 'test.direct-java-starters'));
 
+const windowsAdminImpact = impactForPaths(graph, ['admin.bat', 'application/admin.bat']);
+assert.deepStrictEqual(windowsAdminImpact.unknownPaths, []);
+assert.strictEqual(windowsAdminImpact.risk, 'high');
+assert.ok(windowsAdminImpact.requiredChecks.some((test) => test.id === 'test.windows-admin'));
+
 const constantsImpact = impactForPaths(graph, ['scripts/generate-codeon-constants.js']);
 assert.strictEqual(constantsImpact.risk, 'critical');
 assert.deepStrictEqual(constantsImpact.unknownPaths, []);
@@ -118,6 +123,7 @@ assert.match(unitTestWorkflow, /persist-credentials: false/);
 assert.match(unitTestWorkflow, /distribution: 'temurin'/);
 assert.match(unitTestWorkflow, /run: npm run test:constants/);
 assert.ok(unitTestWorkflow.includes('run: PYTHONDONTWRITEBYTECODE=1 python3 scripts/test_codeon_direct_java_starters.py'));
+assert.ok(unitTestWorkflow.includes('run: python scripts/test_codeon_windows_admin.py'));
 assert.ok(unitTestWorkflow.includes("run: mvn --batch-mode -pl OpenRobertaRobot,RobotEdison,RobotSpike,RobotCozmo,RobotApitor,RobotRCX -am -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test"));
 assert.match(unitTestWorkflow, /run: mvn --batch-mode -pl OpenRobertaServer -am -DskipTests package/);
 assertActionsArePinned(unitTestWorkflow, 'Unit test workflow');
