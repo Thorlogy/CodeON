@@ -1,4 +1,5 @@
 import asyncio
+import importlib
 import socket
 import threading
 import unittest
@@ -7,6 +8,14 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from codeon_robot_bridge import CozmoAdapter
+
+
+def optional_module_available(name):
+    try:
+        importlib.import_module(name)
+    except ImportError:
+        return False
+    return True
 
 
 class StubClient:
@@ -41,6 +50,7 @@ class StubClient:
         return call
 
 
+@unittest.skipUnless(optional_module_available("pycozmo"), "optional pycozmo dependency is not installed")
 class CozmoAdapterTest(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.client = StubClient()
@@ -112,22 +122,6 @@ class CozmoAdapterTest(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(["CubeId", "CubeLights"], [type(packet).__name__ for packet in self.client.conn.sent[-2:]])
         self.assertEqual(99, self.client.conn.sent[-2].object_id)
-
-    async def test_square_fiducial_is_reported_as_local_cube_marker(self):
-        import cv2
-        import numpy
-
-        image = numpy.full((120, 160), 255, dtype=numpy.uint8)
-        cv2.rectangle(image, (50, 25), (110, 85), 0, 5)
-        cv2.circle(image, (80, 55), 13, 0, 4)
-        cv2.circle(image, (80, 55), 5, 0, -1)
-        self.adapter._cv2 = cv2
-
-        marker = self.adapter._detect_cube_marker(image)
-
-        self.assertTrue(marker["detected"])
-        self.assertAlmostEqual(0.5, marker["x"], delta=0.08)
-        self.assertAlmostEqual(0.46, marker["y"], delta=0.08)
 
     async def test_parallel_connect_requests_initialize_hardware_only_once(self):
         results = await asyncio.gather(self.adapter.connect(), self.adapter.connect())
@@ -370,10 +364,6 @@ class CozmoAdapterTest(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("image", snapshot)
         self.assertNotIn("frame", snapshot)
 
-    async def test_camera_capability_promises_no_image_transfer(self):
-        self.assertTrue(self.adapter.manifest.capabilities["camera"]["localFaceDetection"])
-        self.assertFalse(self.adapter.manifest.capabilities["camera"]["imagesLeaveBridge"])
-
     async def test_disconnect_stops_before_closing_transport(self):
         await self.adapter.connect()
         await self.adapter.disconnect()
@@ -382,6 +372,34 @@ class CozmoAdapterTest(unittest.IsolatedAsyncioTestCase):
             [name for name, _ in self.client.calls[-3:]],
         )
         self.assertFalse(self.adapter.connected)
+
+
+class CozmoAdapterUtilityTest(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        self.client = StubClient()
+        self.adapter = CozmoAdapter(lambda: self.client)
+
+    @unittest.skipUnless(
+        optional_module_available("cv2") and optional_module_available("numpy"),
+        "optional Cozmo vision dependencies are not installed",
+    )
+    async def test_square_fiducial_is_reported_as_local_cube_marker(self):
+        import cv2
+        import numpy
+
+        image = numpy.full((120, 160), 255, dtype=numpy.uint8)
+        cv2.rectangle(image, (50, 25), (110, 85), 0, 5)
+        cv2.circle(image, (80, 55), 13, 0, 4)
+        cv2.circle(image, (80, 55), 5, 0, -1)
+        self.adapter._cv2 = cv2
+        marker = self.adapter._detect_cube_marker(image)
+        self.assertTrue(marker["detected"])
+        self.assertAlmostEqual(0.5, marker["x"], delta=0.08)
+        self.assertAlmostEqual(0.46, marker["y"], delta=0.08)
+
+    async def test_camera_capability_promises_no_image_transfer(self):
+        self.assertTrue(self.adapter.manifest.capabilities["camera"]["localFaceDetection"])
+        self.assertFalse(self.adapter.manifest.capabilities["camera"]["imagesLeaveBridge"])
 
     async def test_failed_unstarted_transport_socket_is_closed(self):
         class Connection:
@@ -417,7 +435,6 @@ class CozmoAdapterTest(unittest.IsolatedAsyncioTestCase):
             "codeon_robot_bridge.cozmo_adapter.socket.if_nametoindex", return_value=7
         ):
             CozmoAdapter._pin_socket_to_macos_wifi(robot_socket)
-
         self.assertEqual([(socket.IPPROTO_IP, 25, 7)], robot_socket.options)
 
     def test_non_macos_cozmo_transport_is_not_interface_pinned(self):
@@ -431,7 +448,6 @@ class CozmoAdapterTest(unittest.IsolatedAsyncioTestCase):
         robot_socket = StubSocket()
         with patch("codeon_robot_bridge.cozmo_adapter.platform.system", return_value="Linux"):
             CozmoAdapter._pin_socket_to_macos_wifi(robot_socket)
-
         self.assertEqual([], robot_socket.options)
 
 

@@ -138,6 +138,14 @@ PYTHONPATH=RobotIntegrationKit/python/src .venv/bin/python -m unittest discover 
   -s RobotIntegrationKit/python/tests -v
 ```
 
+The hardware-free Cozmo adapter and behavior checks also run in CI, with the
+existing `cozmo-vision` optional extra installed in a separate virtual
+environment. CI uses `scripts/run-codeon-cozmo-tests.py --require-all` and
+fails if any test is skipped. Locally, the same runner without `--require-all`
+executes the dependency-free checks and explicitly skips checks whose optional
+libraries are absent. Neither mode connects to a physical robot; hardware
+acceptance remains a separate manual step.
+
 Install the WebSocket transport in an isolated environment and start it with
 the fake adapter:
 
