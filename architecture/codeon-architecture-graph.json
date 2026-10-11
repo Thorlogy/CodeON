@@ -19,10 +19,12 @@
     { "id": "robot.apitor", "type": "robot", "label": "Apitor Robot X", "propertiesPath": "RobotApitor/src/main/resources/apitor.properties", "configurationMode": "user-configurable" },
 
     { "id": "test.graph", "type": "test", "label": "Architecture graph contract", "command": "npm run test:architecture-graph" },
+    { "id": "test.static-resources", "type": "test", "label": "Static resource parity and packaged interpreter/RCX behavior", "command": "npm run test:static-resources" },
     { "id": "test.code-graph", "type": "test", "label": "Local code graph contract", "command": "npm run test:code-graph" },
     { "id": "test.robot-integration", "type": "test", "label": "Robot integration developer tooling", "command": "npm run test:robot-integration" },
     { "id": "test.connection-diagnostics", "type": "test", "label": "Read-only robot connection diagnostics", "command": "npm run test:connection-diagnostics" },
     { "id": "test.robot-bridge", "type": "test", "label": "Shared local robot bridge contract", "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=RobotIntegrationKit/python/src python3 -m unittest discover -s RobotIntegrationKit/python/tests -p 'test_bridge_contract.py' -v" },
+    { "id": "test.cozmo-python", "type": "test", "label": "Cozmo Python adapter and behavior contracts (CI: cozmo-vision extra, no skipped tests)", "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=RobotIntegrationKit/python/src python3 scripts/run-codeon-cozmo-tests.py --require-all" },
     { "id": "test.websocket-safety", "type": "test", "label": "WebSocket validation and disconnect safety (requires server extra; loopback, simulated adapters)", "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=RobotIntegrationKit/python/src python3 -m unittest discover -s RobotIntegrationKit/python/tests -p 'test_server*.py' -v" },
     { "id": "test.behavior-runtime", "type": "test", "label": "Cooperative behavior arbitration and Cozmo presets", "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=RobotIntegrationKit/python/src python3 -m unittest discover -s RobotIntegrationKit/python/tests -p 'test_*behavior*.py' -v" },
     { "id": "test.constants", "type": "test", "label": "Generated Java and TypeScript constants", "command": "npm run test:constants" },
@@ -64,6 +66,7 @@
     { "from": "robot.rcj", "type": "verified-by", "to": "test.sensors" },
     { "from": "robot.cozmo", "type": "verified-by", "to": "test.cozmo-contract" },
     { "from": "robot.cozmo", "type": "verified-by", "to": "test.robot-bridge" },
+    { "from": "robot.cozmo", "type": "verified-by", "to": "test.cozmo-python" },
     { "from": "robot.cozmo", "type": "verified-by", "to": "test.websocket-safety" },
     { "from": "robot.cozmo", "type": "verified-by", "to": "test.behavior-runtime" },
     { "from": "robot.cozmo", "type": "verified-by", "to": "test.cozmo-simulation" },
@@ -82,6 +85,14 @@
     { "from": "robot.apitor", "type": "verified-by", "to": "test.legacy-programs" }
   ],
   "impactRules": [
+    {
+      "id": "static-resource-parity",
+      "paths": ["OpenRobertaServer/staticResources/", "application/staticResources/", "scripts/test-static-resource-parity.js", "docs/CodeON_Static_Resources.md"],
+      "risk": "high",
+      "robots": ["robot.rcx", "robot.edison", "robot.rcj", "robot.cozmo", "robot.apitor"],
+      "tests": ["test.static-resources"],
+      "reason": "Source and packaged browser resources must stay synchronized for every active robot."
+    },
     {
       "id": "continuous-integration",
       "paths": [".github/workflows/"],
@@ -143,8 +154,16 @@
       "paths": ["RobotIntegrationKit/python/"],
       "risk": "critical",
       "robots": ["robot.cozmo", "robot.apitor"],
-      "tests": ["test.graph", "test.robot-bridge", "test.websocket-safety", "test.behavior-runtime", "test.cozmo-contract", "test.cozmo-simulation", "test.apitor-simulation"],
+      "tests": ["test.graph", "test.robot-bridge", "test.websocket-safety", "test.behavior-runtime", "test.cozmo-python", "test.cozmo-contract", "test.cozmo-simulation", "test.apitor-simulation"],
       "reason": "The shared local bridge controls physical actuators and must retain stop, watchdog, protocol, and adapter guarantees."
+    },
+    {
+      "id": "cozmo-python-verification",
+      "paths": ["scripts/run-codeon-cozmo-tests.py"],
+      "risk": "high",
+      "robots": ["robot.cozmo"],
+      "tests": ["test.graph", "test.cozmo-python"],
+      "reason": "The strict Cozmo test runner must not silently accept skipped adapter coverage in CI."
     },
     {
       "id": "connection-diagnostics",
