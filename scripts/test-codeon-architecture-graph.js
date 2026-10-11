@@ -80,8 +80,13 @@ assert.strictEqual(ciImpact.reviewRequired, true);
 assert.deepStrictEqual(ciImpact.unknownPaths, []);
 assert.ok(ciImpact.requiredChecks.some((test) => test.id === 'test.graph'));
 
+const staticResourceImpact = impactForPaths(graph, ['OpenRobertaServer/staticResources/css/style.css', 'application/staticResources/css/style.css']);
+assert.deepStrictEqual(staticResourceImpact.unknownPaths, []);
+assert.ok(staticResourceImpact.requiredChecks.some((test) => test.id === 'test.static-resources'));
+
 const unitTestWorkflow = fs.readFileSync(path.resolve(__dirname, '../.github/workflows/unit_test_triggered_by_develop_push.yml'), 'utf8');
 const architectureWorkflow = fs.readFileSync(path.resolve(__dirname, '../.github/workflows/codeon_architecture_graph.yml'), 'utf8');
+assert.match(architectureWorkflow, /run: npm run test:static-resources/);
 assert.ok(architectureWorkflow.includes('python3 -m unittest RobotRCX/src/test/python/test_rcx_bridge.py'));
 assert.ok(architectureWorkflow.includes("-p 'test_server*.py' -v"));
 assert.ok(architectureWorkflow.includes("pip install './RobotIntegrationKit/python[server]'"));
