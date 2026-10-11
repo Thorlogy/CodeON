@@ -147,6 +147,19 @@ class CodeOnRcxStarterTest(unittest.TestCase):
             self.assertEqual(17, STARTER.java_major_version("java"))
             self.assertEqual(8, STARTER.java_major_version("java"))
 
+    def test_java_version_retries_a_transient_probe_failure(self):
+        modern = MagicMock(stderr='openjdk version "21.0.12"', stdout="")
+        with patch.object(
+            STARTER.subprocess, "run", side_effect=[subprocess.TimeoutExpired("java", 5), modern]
+        ) as run:
+            self.assertEqual(21, STARTER.java_major_version("java"))
+        self.assertEqual(2, run.call_count)
+
+    def test_java_version_stays_unknown_after_repeated_probe_failures(self):
+        with patch.object(STARTER.subprocess, "run", side_effect=OSError("java unavailable")) as run:
+            self.assertIsNone(STARTER.java_major_version("java"))
+        self.assertEqual(2, run.call_count)
+
     def test_java_command_opens_java_lang_only_for_modern_runtimes(self):
         self.assertEqual(["java"], STARTER.java_command("java", 8))
         self.assertEqual(["java"], STARTER.java_command("java", 11))
@@ -169,12 +182,14 @@ class CodeOnRcxStarterTest(unittest.TestCase):
     def test_real_java_can_create_a_fresh_codeon_database(self):
         java = shutil.which("java")
         self.assertIsNotNone(java)
+        java_version = STARTER.java_major_version(java)
+        self.assertIsNotNone(java_version, f"Could not determine Java version from {java} -version")
         with tempfile.TemporaryDirectory(prefix="codeon-java-startup-") as tmp, tempfile.TemporaryFile(
             mode="w+t", encoding="utf-8"
         ) as log, patch.object(STARTER, "RUNTIME", Path(tmp)):
             created = STARTER.create_database(
                 java,
-                STARTER.java_major_version(java),
+                java_version,
                 str(STARTER.APPLICATION / "lib" / "*"),
                 os.environ.copy(),
                 log,

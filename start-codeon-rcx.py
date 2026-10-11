@@ -76,21 +76,24 @@ def find_firmware() -> Path | None:
 def java_major_version(java: str | None) -> int | None:
     if not java:
         return None
-    try:
-        result = subprocess.run(
-            [java, "-version"],
-            capture_output=True,
-            text=True,
-            timeout=5,
-            check=False,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return None
-    match = re.search(r'version\s+"([0-9]+)(?:\.([0-9]+))?', result.stderr + result.stdout)
-    if not match:
-        return None
-    first = int(match.group(1))
-    return int(match.group(2)) if first == 1 and match.group(2) else first
+    # A busy machine can fail a single short version probe. Retry before
+    # returning unknown; preflight rejects that result rather than starting.
+    for _ in range(2):
+        try:
+            result = subprocess.run(
+                [java, "-version"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+                check=False,
+            )
+        except (OSError, subprocess.SubprocessError):
+            continue
+        match = re.search(r'version\s+"([0-9]+)(?:\.([0-9]+))?', result.stderr + result.stdout)
+        if match:
+            first = int(match.group(1))
+            return int(match.group(2)) if first == 1 and match.group(2) else first
+    return None
 
 
 def java_command(java: str, major_version: int | None) -> list[str]:
