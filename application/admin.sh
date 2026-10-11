@@ -1,5 +1,28 @@
 #!/bin/bash
 
+# Keep the direct administration path compatible with the Java 8/11 and 17+
+# runtimes supported by CodeON. The bundled JAXB stack needs this opening on
+# Java 17+, including when an embedded database is first created.
+codeonJava() {
+    local version major
+    version=$(command java -version 2>&1 | awk -F '"' '/version / { print $2; exit }')
+    if [[ -z "$version" ]]; then
+        echo 'Unable to determine Java version. No Java command was run.' >&2
+        return 12
+    fi
+    [[ "$version" == 1.* ]] && version=${version#1.}
+    major=${version%%.*}
+    if [[ ! "$major" =~ ^[0-9]+$ ]]; then
+        echo 'Unable to determine Java major version. No Java command was run.' >&2
+        return 12
+    fi
+    if (( major >= 17 )); then
+        command java --add-opens java.base/java.lang=ALL-UNNAMED "$@"
+    else
+        command java "$@"
+    fi
+}
+
 function isDefined {
     local VAR="$1"; shift
     local VAL="${!VAR}"
@@ -108,18 +131,18 @@ esac
 RC=0
 case "$CMD" in
   sql-client)      echo 'command line sql client. Type commands, exit with an empty line'
-                   java $RDBG $XMX  -cp $JAVA_LIB_DIR/\* de.fhg.iais.roberta.main.Administration sql-client "$DB_URI"
+                   codeonJava $RDBG $XMX -cp "$JAVA_LIB_DIR/*" de.fhg.iais.roberta.main.Administration sql-client "$DB_URI"
                    RC=$? ;;
   sql-gui)         hsqldbJar="$JAVA_LIB_DIR/hsqldb.jar"
-                   java $RDBG $XMX -jar "${hsqldbJar}" --driver org.hsqldb.jdbc.JDBCDriver --url "$DB_URI" --user orA --password Pid
+                   codeonJava $RDBG $XMX -jar "${hsqldbJar}" --driver org.hsqldb.jdbc.JDBCDriver --url "$DB_URI" --user orA --password Pid
                    RC=$? ;;                   
   sql-exec)        SQL="$1";
                    echo "execute the sql statement '$SQL'"
-                   java $RDBG $XMX -cp $JAVA_LIB_DIR/\* de.fhg.iais.roberta.main.Administration sql-exec "$DB_URI" "$SQL"
+                   codeonJava $RDBG $XMX -cp "$JAVA_LIB_DIR/*" de.fhg.iais.roberta.main.Administration sql-exec "$DB_URI" "$SQL"
                    RC=$? ;;
-  create-empty-db) java -cp $JAVA_LIB_DIR/\* de.fhg.iais.roberta.main.Administration create-empty-db "$DB_URI_FILE" >>$ADMIN_LOG_FILE 2>&1
+  create-empty-db) codeonJava -cp "$JAVA_LIB_DIR/*" de.fhg.iais.roberta.main.Administration create-empty-db "$DB_URI_FILE" >>"$ADMIN_LOG_FILE" 2>&1
                    RC=$? ;;
-  version)         java -cp $JAVA_LIB_DIR/\* de.fhg.iais.roberta.main.Administration version
+  version)         codeonJava -cp "$JAVA_LIB_DIR/*" de.fhg.iais.roberta.main.Administration version
                    RC=$? ;;
   '')              echo 'no command. Script terminates with exit 0'
                    exit 0 ;;
@@ -128,18 +151,24 @@ case "$CMD" in
                      server)   echo 'starting the jetty server with a data base in server mode. Server must be running' ;;
                      embedded) if [[ ! -d $DB_PARENTDIR ]]; then 
                                   echo 'No database found. An empty database will be created.'
-                                  java -cp lib/\* de.fhg.iais.roberta.main.Administration create-empty-db "$DB_URI_FILE" >>$ADMIN_LOG_FILE 2>&1
+                                  codeonJava -cp "$JAVA_LIB_DIR/*" de.fhg.iais.roberta.main.Administration create-empty-db "$DB_URI_FILE" >>"$ADMIN_LOG_FILE" 2>&1
+                                  RC=$?
+                                  if [ "$RC" -ne 0 ]; then
+                                    echo 'Database creation failed; server will not be started.' >&2
+                                    exit "$RC"
+                                  fi
                                fi
                                echo 'starting the jetty server with a data base in embedded mode' ;;
                    esac
                      
-                   java $RDBG $XMX -cp ${JAVA_LIB_DIR}/\* de.fhg.iais.roberta.main.ServerStarter \
+                   codeonJava $RDBG $XMX -cp "$JAVA_LIB_DIR/*" de.fhg.iais.roberta.main.ServerStarter \
                         -d database.mode="$DB_MODE" \
-                        -d database.parentdir=$DB_PARENTDIR \
-                        -d database.name=$DB_NAME \
+                        -d "database.parentdir=$DB_PARENTDIR" \
+                        -d "database.name=$DB_NAME" \
                         -d server.staticresources.dir="$STATIC_RESOURCES" \
-                        -d server.admin.dir=$ADMIN_DIR \
-                        $* >>$SERVER_LOG_FILE 2>&1
+                        -d "server.admin.dir=$ADMIN_DIR" \
+                        $* >>"$SERVER_LOG_FILE" 2>&1
+                   RC=$?
                    ;;
 # ----------------------------------------------------------------------------------------------------------------------------------------------
   *)                 echo "*** invalid command ignored: '$CMD' ***"
@@ -150,3 +179,4 @@ if [ $RC -ne 0 ]
 then
   echo '*** the command did NOT succeed. Look into console output and logfiles ***'
 fi
+exit "$RC"

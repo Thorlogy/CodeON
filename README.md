@@ -199,6 +199,10 @@ an `127.0.0.1` und werden beim Beenden gemeinsam wieder beendet. Fehlt eine opti
 Roboter-Abhängigkeit, bleiben Server und die übrigen Systeme verfügbar; Hinweise
 stehen in `admin/logs/robot-bridges.log`.
 
+Die direkten Unix-Entwicklerstarter und die nicht unterstützten Docker- und
+Batch-Sonderwege sind in [Direkte Java-Starter](docs/CodeON_Direkte_Java_Starter.md)
+abgegrenzt.
+
 ### Gemeinsame Konstanten ändern
 
 Die Quelle der gemeinsamen Java- und TypeScript-Konstanten ist
@@ -237,6 +241,7 @@ npx gulp watch
 npm run test:constants
 npm run test:architecture-graph
 node scripts/test-codeon-local-only-default.js
+python3 scripts/test_codeon_direct_java_starters.py
 npm run test:code-graph
 node scripts/test-system-sensor-toolboxes.js
 node scripts/test-cozmo-simulation-static.js

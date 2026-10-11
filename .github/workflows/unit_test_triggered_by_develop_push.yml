@@ -68,6 +68,8 @@ jobs:
         env:
           CODEON_JAVA_STARTUP_SMOKE: '1'
         run: python3 -m unittest RobotRCX/src/test/python/test_start_codeon_rcx.py
+      - name: Test direct Unix Java launchers without robot hardware
+        run: PYTHONDONTWRITEBYTECODE=1 python3 scripts/test_codeon_direct_java_starters.py
       - name: Test active CodeON robot reactor
         run: mvn --batch-mode -pl OpenRobertaRobot,RobotEdison,RobotSpike,RobotCozmo,RobotApitor,RobotRCX -am -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test
       - name: Test CodeON LEGACY programs and local server binding

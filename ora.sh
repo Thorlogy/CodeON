@@ -1,5 +1,27 @@
 #!/bin/bash
 
+# Direct developer commands need the same Java 17+ module opening as the
+# regular CodeON starter when creating or opening the embedded database.
+codeonJava() {
+  local version major
+  version=$(command java -version 2>&1 | awk -F '"' '/version / { print $2; exit }')
+  if [[ -z "$version" ]]; then
+    echo 'Unable to determine Java version. No Java command was run.' >&2
+    return 12
+  fi
+  [[ "$version" == 1.* ]] && version=${version#1.}
+  major=${version%%.*}
+  if [[ ! "$major" =~ ^[0-9]+$ ]]; then
+    echo 'Unable to determine Java major version. No Java command was run.' >&2
+    return 12
+  fi
+  if (( major >= 17 )); then
+    command java --add-opens java.base/java.lang=ALL-UNNAMED "$@"
+  else
+    command java "$@"
+  fi
+}
+
 function _mkAndCheckDir {
   mkdir -p "$1"
   if [ $? -ne 0 ]
@@ -26,7 +48,7 @@ function _export {
   echo "creating the target directory \"$exportpath\""
   _mkAndCheckDir "$exportpath"
   exportpath=$(cd "$exportpath"; pwd)
-  serverVersion=$(java -cp OpenRobertaServer/target/resources/\* de.fhg.iais.roberta.main.Administration version)
+  serverVersion=$(codeonJava -cp 'OpenRobertaServer/target/resources/*' de.fhg.iais.roberta.main.Administration version) || return $?
   echo "server version: ${serverVersion}"
   
   echo "copying all jars"
@@ -161,14 +183,14 @@ export)         _export $* ;;
 
 start-from-git) if [[ ! -d $DB_PARENTDIR ]]; then 
                    echo "No database found. An empty database will be created."
-                   java -cp ${JAVA_LIB_DIR}/\* de.fhg.iais.roberta.main.Administration create-empty-db jdbc:hsqldb:file:$DB_PARENTDIR/$DB_NAME
+                   codeonJava -cp "$JAVA_LIB_DIR/*" de.fhg.iais.roberta.main.Administration create-empty-db "jdbc:hsqldb:file:$DB_PARENTDIR/$DB_NAME" || exit $?
                 fi
                 _syncRcxPlugin
                 _startRobotBridges
-                java $RDBG -cp OpenRobertaServer/src/main/resources:${JAVA_LIB_DIR}/\* de.fhg.iais.roberta.main.ServerStarter \
+                codeonJava $RDBG -cp "OpenRobertaServer/src/main/resources:$JAVA_LIB_DIR/*" de.fhg.iais.roberta.main.ServerStarter \
                      -d database.mode=embedded \
-                     -d database.parentdir=$DB_PARENTDIR \
-                     -d database.name=$DB_NAME \
+                     -d "database.parentdir=$DB_PARENTDIR" \
+                     -d "database.name=$DB_NAME" \
                      -d server.staticresources.dir=OpenRobertaServer/staticResources \
                      -d server.ip=127.0.0.1 \
                      -d robot.crosscompiler.resourcebase="$CC_RESOURCE_DIR" \
@@ -177,20 +199,20 @@ start-from-git) if [[ ! -d $DB_PARENTDIR ]]; then
 check-xss)      # unused
                 exit 12
                 databaseurl="jdbc:hsqldb:file:$DB_PARENTDIR/$DB_NAME"
-                java -cp ${JAVA_LIB_DIR}/\* "$ADMIN_CLASS" check-xss "$databaseurl" ;;
+                codeonJava -cp "$JAVA_LIB_DIR/*" "$ADMIN_CLASS" check-xss "$databaseurl" ;;
                   
 renameRobot)    # unused
                 exit 12
                 databaseurl="jdbc:hsqldb:file:$DB_PARENTDIR/$DB_NAME"
-                java -cp ${JAVA_LIB_DIR}/\* "$ADMIN_CLASS" rename "$databaseurl" $2 $3;;
+                codeonJava -cp "$JAVA_LIB_DIR/*" "$ADMIN_CLASS" rename "$databaseurl" $2 $3;;
                   
 configurationCleanUp) #unused
                 exit 12
                 databaseurl="jdbc:hsqldb:file:$DB_PARENTDIR/$DB_NAME"
-                java -cp ${JAVA_LIB_DIR}/\* "$ADMIN_CLASS" configuration-clean-up "$databaseurl" ;;
+                codeonJava -cp "$JAVA_LIB_DIR/*" "$ADMIN_CLASS" configuration-clean-up "$databaseurl" ;;
 
 *)              echo "invalid command: $cmd - exit 1"
                 exit 1 ;;
 esac
 
-exit 0
+exit $?

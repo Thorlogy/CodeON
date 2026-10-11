@@ -72,6 +72,11 @@ const cozmoRunnerImpact = impactForPaths(graph, ['scripts/run-codeon-cozmo-tests
 assert.deepStrictEqual(cozmoRunnerImpact.affectedRobots.map((robot) => robot.id), ['robot.cozmo']);
 assert.ok(cozmoRunnerImpact.requiredChecks.some((test) => test.id === 'test.cozmo-python'));
 
+const directStarterImpact = impactForPaths(graph, ['admin.sh', 'application/admin.sh', 'ora.sh']);
+assert.deepStrictEqual(directStarterImpact.unknownPaths, []);
+assert.strictEqual(directStarterImpact.risk, 'high');
+assert.ok(directStarterImpact.requiredChecks.some((test) => test.id === 'test.direct-java-starters'));
+
 const constantsImpact = impactForPaths(graph, ['scripts/generate-codeon-constants.js']);
 assert.strictEqual(constantsImpact.risk, 'critical');
 assert.deepStrictEqual(constantsImpact.unknownPaths, []);
@@ -112,6 +117,7 @@ assert.match(unitTestWorkflow, /permissions:\s*\n\s+contents: read/);
 assert.match(unitTestWorkflow, /persist-credentials: false/);
 assert.match(unitTestWorkflow, /distribution: 'temurin'/);
 assert.match(unitTestWorkflow, /run: npm run test:constants/);
+assert.ok(unitTestWorkflow.includes('run: PYTHONDONTWRITEBYTECODE=1 python3 scripts/test_codeon_direct_java_starters.py'));
 assert.ok(unitTestWorkflow.includes("run: mvn --batch-mode -pl OpenRobertaRobot,RobotEdison,RobotSpike,RobotCozmo,RobotApitor,RobotRCX -am -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test"));
 assert.match(unitTestWorkflow, /run: mvn --batch-mode -pl OpenRobertaServer -am -DskipTests package/);
 assertActionsArePinned(unitTestWorkflow, 'Unit test workflow');
