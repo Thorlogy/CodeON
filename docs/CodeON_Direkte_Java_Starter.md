@@ -35,8 +35,7 @@ folgt keine funktionierende oder freigegebene Host-Verbindung. Wir öffnen
 dafür keinen Nicht-Loopback-Port und empfehlen weder Docker- noch
 Cloud-Bereitstellung. Ein Docker-Laufzeittest wurde hier nicht durchgeführt.
 
-Für den direkten Windows-Admin-Batchpfad ist eine gesonderte CI-Prüfung
-vorbereitet.
+Der direkte Windows-Admin-Batchpfad wird gesondert in CI geprüft.
 `admin.bat` und `application/admin.bat` bleiben bytegleich. Sie erkennen die
 Java-Hauptversion, geben ab Java 17 die benötigte Moduloption mit und brechen
 nach einem Datenbankfehler vor dem Serverstart ab. Der optionale Befehl
@@ -47,7 +46,7 @@ bleibt `start-server` das bisherige Verhalten. Der Server erhält ausdrücklich
 Datenbankverzeichnis wird weder überschrieben noch als erfolgreicher Start
 gemeldet.
 
-`python scripts/test_codeon_windows_admin.py` soll in der Windows-CI
+`python scripts/test_codeon_windows_admin.py` prüft in der Windows-CI
 simulierte Java-8/11/17/21-Aufrufe, Fehlerpfade und eine echte Datenbankanlage
 mit Java 21 prüfen; dafür wird ausschließlich eine temporäre Datenbank
 verwendet. Das ist noch **kein** manueller Windows-Frischinstallationstest
