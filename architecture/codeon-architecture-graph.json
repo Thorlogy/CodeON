@@ -35,6 +35,7 @@
     { "id": "test.simulation-3d", "type": "test", "label": "Shared 3D simulation contract", "command": "node scripts/test-codeon-3d-static.js" },
     { "id": "test.buddy-security", "type": "test", "label": "Code Buddy credential and runtime security", "command": "node scripts/test-codeon-buddy-security.js" },
     { "id": "test.local-launcher", "type": "test", "label": "Local server and robot bridge launcher", "command": "python3 -m unittest RobotRCX/src/test/python/test_start_codeon_rcx.py" },
+    { "id": "test.direct-java-starters", "type": "test", "label": "Direct Unix Java launcher and fresh database safety", "command": "PYTHONDONTWRITEBYTECODE=1 python3 scripts/test_codeon_direct_java_starters.py" },
     { "id": "test.rcx-bridge", "type": "test", "label": "RCX transfer and bounded read-only firmware diagnostics", "command": "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest RobotRCX/src/test/python/test_rcx_bridge.py" },
     { "id": "test.legacy-programs", "type": "test", "label": "Five active CodeON LEGACY program regressions", "command": "mvn --batch-mode -pl OpenRobertaServer -am -Dtest=CodeOnLegacyProgramRegressionTest -DfailIfNoTests=false -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test" },
     { "id": "test.java-reactor", "type": "test", "label": "Active robot Maven reactor tests", "command": "mvn -pl OpenRobertaRobot,RobotEdison,RobotSpike,RobotCozmo,RobotApitor,RobotRCX -am -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test" },
@@ -183,10 +184,10 @@
     },
     {
       "id": "local-launcher",
-      "paths": ["ora.sh", "start-codeon-rcx.py", "start-codeon.sh", "CodeON-Starten.command", "CodeON-Starten.cmd", "RobotRCX/src/test/python/test_start_codeon_rcx.py"],
+      "paths": ["admin.sh", "application/admin.sh", "ora.sh", "start-codeon-rcx.py", "start-codeon.sh", "CodeON-Starten.command", "CodeON-Starten.cmd", "RobotRCX/src/test/python/test_start_codeon_rcx.py", "scripts/test_codeon_direct_java_starters.py"],
       "risk": "high",
       "robots": ["robot.rcx", "robot.edison", "robot.rcj", "robot.cozmo", "robot.apitor"],
-      "tests": ["test.graph", "test.local-launcher", "test.cozmo-simulation", "test.apitor-simulation"],
+      "tests": ["test.graph", "test.local-launcher", "test.direct-java-starters", "test.cozmo-simulation", "test.apitor-simulation"],
       "reason": "The local launcher coordinates the CodeON server and optional loopback-only robot bridges."
     },
     {
