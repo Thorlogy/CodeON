@@ -94,7 +94,14 @@ def _log(message: str) -> None:
 async def _watchdog(session: BridgeSession, stop: asyncio.Event) -> None:
     while not stop.is_set():
         await asyncio.sleep(0.1)
-        await session.watchdog_tick()
+        try:
+            await session.watchdog_tick()
+        except Exception as error:
+            # A failed stop must remain visible, but must not kill the only
+            # watchdog task. The active motion lease remains expired and will
+            # trigger another stop attempt after this bounded pause.
+            _log(f"watchdog stop unconfirmed: {type(error).__name__}: {error}")
+            await asyncio.sleep(1.0)
 
 
 async def _serve(args: argparse.Namespace) -> None:
@@ -201,11 +208,15 @@ async def _serve(args: argparse.Namespace) -> None:
             await stopped.wait()
     finally:
         stopped.set()
-        await adapter.stop_all()
-        await adapter.disconnect()
-        watchdog_task.cancel()
-        with suppress(asyncio.CancelledError):
-            await watchdog_task
+        try:
+            await adapter.stop_all()
+        finally:
+            try:
+                await adapter.disconnect()
+            finally:
+                watchdog_task.cancel()
+                with suppress(asyncio.CancelledError):
+                    await watchdog_task
 
 
 def _arguments() -> argparse.Namespace:

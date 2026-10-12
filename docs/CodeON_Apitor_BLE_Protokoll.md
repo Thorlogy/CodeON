@@ -129,6 +129,50 @@ The JSON result must contain `"motorMotionRequested": false` and
 successfully written, but no visual change from the Robot X's existing blue
 blinking was observed. LED control is therefore **not hardware-verified**.
 
+### Pending infrared/LED hardware acceptance
+
+Use the diagnostic probe only when no CodeON program or vendor app is connected
+to the hub. Leave the normal CodeON server and bridge running, but do not start
+a program during the probe: two BLE clients must not contend for this device.
+Identify the hub by its local macOS CoreBluetooth identifier from a fresh scan;
+do not assume that a previously recorded identifier belongs to this hub.
+
+1. Run the five-second `--sensor-test` above with the sensor unobstructed, then
+   repeat with a light and a dark surface close to each infrared sensor. Record
+   `sampleCount` and the observed `infrared1`/`infrared2` ranges for each
+   condition. A parsed packet alone verifies transport, **not** that the
+   intended physical sensor changes or that the provisional threshold `5` is
+   suitable. Do not report distance in centimetres.
+2. Test an LED only if an actual controllable LED is fitted to L1 or L2 and the
+   port is known. Use the bounded `--led-test` above, observe whether that LED
+   visibly changes during the one-second command, and confirm it is off after
+   cleanup. A successful GATT write without a visible change is not LED
+   hardware verification; the hub's connection/status blink is not an L1/L2
+   observation.
+3. For every run, record the date, hub/port configuration, surface or LED
+   observation, relevant parsed values, command success/failure, and whether
+   `safetyStopSent` is true. Never record the full CoreBluetooth identifier in
+   a public issue or commit. Keep infrared and LED marked *pending* if their
+   respective physical observation is missing.
+
+Neither test requests motor motion. An unexpected BLE error ends the sequence;
+do not retry writes or proceed to a motor test until the hub's state is checked.
+
+Checkpoint on 2026-10-12: with Bluetooth enabled, a fresh scan identified
+`ApitorTXAA0080955` advertising F0FF. Read-only GATT inventory confirmed F001
+write and F002 notify. One five-second sensor capture completed and produced
+many correctly shaped notifications; the displayed samples had zero infrared
+values, but the terminal output was truncated, so no complete value range can
+be claimed. A subsequent three-second capture lost the BLE connection while
+writing the initial global stop. The probe attempted its cleanup stops, but
+their delivery could not be confirmed after disconnection. No motor-motion
+command was requested. At this checkpoint the user had reported one motor
+connected; whether S1/S2 infrared modules were connected was not established.
+Therefore infrared hardware behavior and the threshold remain **unverified**.
+No LED test was run because no separate L1/L2 LED was confirmed. Before any
+further probe write, verify that the physical motor is stationary and clarify
+the sensor/LED wiring; do not treat notification transport as sensor acceptance.
+
 ## Bounded motor verification
 
 After explicit user authorization, both drive motors were commanded at low
@@ -160,6 +204,167 @@ block program and start it with the Run button. The initial disabled Run button
 was caused by a missing Blockly configuration definition for the three fixed
 Apitor motor ports. Registering M1, M2 and M3 and refreshing the static-resource
 cache fixed the selection and connection path.
+
+Checkpoint on 2026-10-12: the hub was already BLE-connected to the local
+CodeON bridge, so a second direct BLE client could not discover or open it.
+With no browser client controlling that bridge, M1, M2 and M3 were commanded
+sequentially at speed level 4 for 0.25 seconds each. The bridge acknowledged
+each `setMotor`, each intervening `stopAll`, the final `stopAll`, and another
+stop when the test client closed. The user observed movement and stopping for
+all three commands. However, the user had previously reported only one motor
+connected; its physical socket was not yet confirmed. This run verifies the
+bounded bridge command/stop path, but does **not** by itself establish port
+isolation or supersede the earlier M2/M3 isolation test. Clarify the actual
+wiring before interpreting the three observed movements.
+
+Safety hold on 2026-10-12: the user clarified that two motors were attached
+and requested a separate one-second M1 test with feedback before M2. The bridge
+reported `setMotor(M1)` accepted, but both subsequent `stopAll` responses timed
+out. The requested one-second *command interval* therefore does not establish
+the physical motor's running time. A separate emergency `stopAll` request was
+acknowledged as stopped; the bridge log also recorded a stop on client close.
+The timeout's cause is not established; a later successful stop cannot explain
+or erase it.
+
+Subsequent user-led check on 2026-10-12: the user reported testing all three
+motor channels and stopping them, and finally confirmed that the motors were
+stationary. The bridge log recorded later `setMotor` and `stopAll` requests with
+successful acknowledgements. No additional motor command was sent by the
+assistant after this confirmation. This is a user-reported functional check,
+not a measured run-time or a documented mapping between physical motors and
+M1/M2/M3. The earlier stop-response timeout remains an open reliability
+finding; investigate it in software before scheduling any further automated
+motor test. Infrared and LED hardware acceptance remain separate and pending.
+
+Software-only follow-up on 2026-10-12: `BridgeSession.watchdog_tick()` and an
+incoming `stopAll` request can both call the same adapter's `stop_all()` at the
+one-second watchdog boundary. A deterministic fake-adapter run observed two
+simultaneous `stop_all()` calls. The Apitor adapter then issues three BLE writes
+with responses for each stop, without serializing these calls or bounding an
+individual write. The live bridge used byte-identical versions of these bridge,
+server and Apitor-adapter source files. This establishes a concurrency hazard,
+**not** that it caused the earlier timeout or that the motor kept moving. The
+test client's three-second response timeout and the later acknowledged
+emergency stop also cannot determine physical motion duration. No production
+motor-control change or further hardware command was made in this follow-up.
+Before changing the stop path, add deterministic regression coverage for
+overlapping watchdog/manual stops, review the effect on Cozmo's shared bridge
+contract, and arrange a separate hardware acceptance for any proposed fix.
+
+Safety review of a candidate fix on 2026-10-12: a simple asynchronous lock
+prevented overlapping watchdog/manual stop calls in fake-adapter tests, and
+all targeted Apitor, Cozmo, WebSocket, behavior, Java and static checks passed.
+The candidate was **not retained**: if the watchdog is already stuck in a BLE
+write, the lock would also make a manual emergency `stopAll` wait behind it.
+The observed live timeout lasted longer than the test client's three-second
+response limit, so this is a material safety trade-off, not an acceptable
+verified fix. The bridge source and live process remain unchanged. A future
+design must cover both normal overlap and a stalled first stop, without
+preventing a second emergency stop attempt. It also needs hardware acceptance
+before release. The earlier timeout's root cause remains unproven.
+
+Local dependency inspection strengthens the concurrency hypothesis: in the
+installed Bleak 1.1.1 CoreBluetooth backend, `PeripheralDelegate` stores one
+pending write-with-response future per characteristic handle. Two concurrent
+response writes to Apitor's same F001 characteristic can replace that future,
+leaving one caller without its expected acknowledgement. F001 also advertises
+`write-without-response`, but its delivery and stop effect have **not** been
+verified for this emergency path. A safe replacement should serialize normal
+response writes, bound a stalled write, preserve a second emergency-stop
+attempt, and explicitly report when physical delivery is unconfirmed. Fake
+tests must cover the normal race and the stalled-first-write case; the
+hardware stop behavior must then be checked separately before release.
+
+Baseline regression checkpoint on 2026-10-12: three hardware-free tests in
+`test_apitor_adapter.py` first reproduced the stop-path defects as expected
+failures: (1) overlapping confirmed F001 writes, (2) a second stop colliding
+with a stalled first one, and (3) a success acknowledgement after failed
+stop writes. The baseline `OK (expected failures=3)` was **not** a safety pass.
+
+Unreleased software candidate on local branch `fix/apitor-stop-safety-draft`:
+all three tests now pass normally. The Apitor adapter serializes confirmed
+F001 writes, bounds them to 0.75 seconds, and marks a timed-out session unsafe
+so a late ACK cannot be accepted as confirmation of a later command. If a
+confirmed write is already in flight, a second stop attempts F001 without
+response immediately, then still requires confirmed stop writes before
+returning success. An unconfirmed or disconnected stop returns an error;
+subsequent motor commands are rejected until a fresh connection completes.
+The server watchdog logs a failed stop and remains alive to retry it. Fake
+tests cover collision, stalled/failed writes, timeout, disconnect after
+motion, and the bridge's error response. The unchanged normal stop path still
+sends three confirmed stop frames. The running CodeON bridge has **not** been
+restarted or updated with this candidate; no motor command was sent.
+
+This is **not yet hardware-approved**. F001 write-without-response is
+advertised, but its delivery and actual motor-stop effect are unverified. A
+same-WebSocket `stopAll` still waits for the previous request handler; the
+0.75-second write bound limits that delay but is not an instantaneous physical
+stop guarantee. A GATT acknowledgement is not proof of motor standstill.
+Before merging or deploying, review the entire candidate and perform a
+separately approved, one-motor-at-a-time stop test with immediate hub power-off
+available. If that test fails, keep the prior version and revisit the design.
+
+Follow-up review on 2026-10-12: if a motor write times out or fails, the hub
+may still have received it. The candidate now reports both the original BLE
+error and that the motor stop could not be confirmed, including an instruction
+to switch off the hub if a motor is moving. The focused Apitor adapter suite
+passed (17/17); the first run exposed an outdated assertion which was adjusted
+without weakening the stale-client check. This remains a local, unreleased
+draft. The running bridge was not changed and no motor command was sent.
+
+First supervised acceptance attempt later on 2026-10-12: the user approved a
+single short M1 test with the hub safely placed, but could not identify the
+connected motor port. The unchanged Apitor bridge was stopped gracefully to
+avoid a competing BLE client. The candidate adapter's initial eight-second
+scan found no advertising Apitor and failed **before any motor command**. A
+separate passive scan listed no Apitor advertisement either. The unchanged
+bridge was restarted and confirmed listening again on 127.0.0.1:2224. No
+physical stop behavior was verified; do not mark the candidate accepted. Ask
+the user to power-cycle or otherwise make the hub advertise again before a
+new, separately observed single-port attempt. Do not infer the missing M1/M2/M3
+wiring from this aborted run.
+
+After the user made the hub advertise again, a passive scan found the expected
+`ApitorTXAA...` advertisement with F0FF. The user confirmed that the hub could
+be switched off immediately. With the unchanged bridge listening but having
+no browser client, a one-shot test against the **local candidate adapter**
+connected and sent exactly one low-speed M1 motor command. Its GATT write was
+acknowledged; 0.4 seconds later, an F001 global STOP without response was
+attempted; after a further 0.6 seconds, the adapter completed its redundant
+confirmed global STOP writes and disconnected. No M2/M3 motor command was sent.
+The user then reported that one motor moved, stopped at the early stop attempt
+before the later confirmed STOP, and was stationary afterward. This is one
+positive physical observation for the F001 write-without-response global STOP
+on M1; it does **not** prove delivery when CoreBluetooth itself stalls, nor
+does it verify the unknown wiring of M2/M3. The test script also completed the
+redundant confirmed STOP and disconnect cleanup. Do not run further motor
+tests automatically. The candidate remains local and unreleased pending final
+review and regression checks; the running bridge source was not updated.
+
+Software-only final review on 2026-10-12 found three additional cancellation
+and state-reporting gaps in the local candidate. Deterministic fake-BLE tests
+first reproduced them: cancelling a motor write made no emergency STOP attempt,
+cancelling a confirmed STOP made no unconfirmed STOP attempt, and an unsafe
+acknowledgement still appeared as `connected: true`. A fourth test reproduced
+a cancelled connect leaving its BLE client open. The candidate now makes a
+best-effort unconfirmed STOP and disconnect on cancelled motor writes, makes
+a best-effort unconfirmed STOP when a confirmed stop is cancelled, excludes an
+unsafe client from connected status, and releases the client on cancelled
+connect. Cancellation still propagates to the caller; neither cancellation
+nor a write-without-response is treated as physical stop confirmation. No
+new hardware commands or live-bridge changes were made for these fixes.
+
+Regression checkpoint after these final Apitor-only changes: the complete
+RobotIntegrationKit Python suite passed (124 tests, no skips), including the
+Apitor, bridge, WebSocket, behavior and Cozmo adapter cases. The dedicated
+Cozmo `--require-all` run passed 41 tests; the active Cozmo Java contract
+passed 14 tests; Apitor/Cozmo simulation static checks and the architecture
+graph check passed. `git diff --check` is clean. The Java and static checks
+preceded only the final Apitor-adapter cancellation/status adjustments, which
+do not change Java, web resources or shared simulation. No live deployment or
+physical stalled-CoreBluetooth test was performed. A PR should therefore be
+reviewed as a safety change and merged only after its checks pass; the user's
+known-working live installation must remain the rollback path until then.
 
 ## Motor and encoder classification
 

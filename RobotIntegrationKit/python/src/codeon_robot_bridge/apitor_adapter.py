@@ -36,6 +36,12 @@ def _default_ble_factory():
 class ApitorAdapter(RobotAdapter):
     """Apitor Robot X adapter with verified motors and APK-recovered I/O."""
 
+    # Keep each write below the browser's three-second request limit. A timed
+    # out confirmed write poisons this BLE session: a late CoreBluetooth ACK
+    # must never be mistaken for an ACK to a later command on the same F001.
+    _gatt_write_timeout = 0.75
+    _emergency_write_timeout = 0.2
+
     _manifest = CapabilityManifest(
         robot="apitor",
         adapter_version="0.2.1",
@@ -70,6 +76,12 @@ class ApitorAdapter(RobotAdapter):
         self._client = None
         self._connected = False
         self._connect_lock = asyncio.Lock()
+        self._write_lock = asyncio.Lock()
+        self._unsafe_client = None
+        self._stop_epoch = 0
+        self._active_stops = 0
+        self._motion_may_be_active = False
+        self._stop_unconfirmed = False
         self._sensor_packet: ApitorSensorPacket | None = None
         self._sensor_timestamp: float | None = None
 
@@ -82,6 +94,7 @@ class ApitorAdapter(RobotAdapter):
         return bool(
             self._connected
             and self._client is not None
+            and self._unsafe_client is not self._client
             and getattr(self._client, "is_connected", False)
         )
 
@@ -104,18 +117,24 @@ class ApitorAdapter(RobotAdapter):
             self._client = client
             try:
                 await client.connect()
-                await client.write_gatt_char(APITOR_WRITE_UUID, ROBOT_X_AUTHORIZE, response=True)
+                await self._confirmed_write(client, ROBOT_X_AUTHORIZE)
                 await client.start_notify(APITOR_NOTIFY_UUID, self._on_notification)
                 await asyncio.sleep(0.5)
-                await client.write_gatt_char(APITOR_WRITE_UUID, STOP_ALL_MOTORS, response=True)
-            except Exception as error:
+                await self._confirmed_write(client, STOP_ALL_MOTORS)
+            except (Exception, asyncio.CancelledError) as error:
                 if getattr(client, "is_connected", False):
-                    await self._safe_stop(client)
-                    await client.disconnect()
+                    with contextlib.suppress(Exception):
+                        await self._safe_stop(client)
+                    with contextlib.suppress(Exception):
+                        await asyncio.wait_for(client.disconnect(), timeout=1.0)
                 self._reset_connection()
+                if isinstance(error, asyncio.CancelledError):
+                    raise
                 raise AdapterError(f"failed to connect to Apitor Robot X: {error}") from error
             self._identifier = identifier
             self._connected = True
+            self._motion_may_be_active = False
+            self._stop_unconfirmed = False
             return self._connection_result()
 
     async def disconnect(self) -> None:
@@ -142,6 +161,8 @@ class ApitorAdapter(RobotAdapter):
             direction = self._integer(params, "direction", 1, 2)
             speed = self._integer(params, "speed", 1, 12)
             packet = motor_frame(self._motor_indices[port], direction, speed)
+            # The motor write may reach the hub even if its ACK never arrives.
+            self._motion_may_be_active = True
             await self._write(client, packet)
         elif command == "stopMotor":
             port = self._motor_port(params)
@@ -188,8 +209,11 @@ class ApitorAdapter(RobotAdapter):
         raise UnsupportedCommandError(f"unsupported sensor: {sensor}")
 
     async def stop_all(self) -> None:
-        if self._client is not None:
-            await self._safe_stop(self._client)
+        if self._client is None:
+            if self._stop_unconfirmed:
+                raise AdapterError("Apitor stop is unconfirmed after BLE disconnect; check the hub")
+            return
+        await self._safe_stop(self._client)
 
     def _require_client(self):
         if not self.connected or self._client is None:
@@ -208,11 +232,15 @@ class ApitorAdapter(RobotAdapter):
     def _on_disconnect(self, client: Any) -> None:
         """Invalidate a dropped Bleak client so the next connect is real."""
         if client is self._client:
+            if self._motion_may_be_active:
+                self._stop_unconfirmed = True
             self._reset_connection()
 
     def _reset_connection(self) -> None:
         self._client = None
         self._connected = False
+        self._unsafe_client = None
+        self._stop_epoch += 1
         self._sensor_packet = None
         self._sensor_timestamp = None
 
@@ -242,24 +270,83 @@ class ApitorAdapter(RobotAdapter):
         return value
 
     async def _write(self, client, packet: bytes) -> None:
+        epoch = self._stop_epoch
+        if self._active_stops:
+            raise AdapterError("Apitor stop is in progress; command was not sent")
         try:
-            await client.write_gatt_char(APITOR_WRITE_UUID, packet, response=True)
-        except Exception as error:
-            await self._safe_stop(client)
+            await self._confirmed_write(client, packet, command_epoch=epoch)
+        except AdapterError:
+            raise
+        except (Exception, asyncio.CancelledError) as error:
+            with contextlib.suppress(Exception):
+                await self._safe_stop(client)
             with contextlib.suppress(Exception):
                 if getattr(client, "is_connected", False):
-                    await client.disconnect()
+                    await asyncio.wait_for(client.disconnect(), timeout=1.0)
             if client is self._client:
                 self._reset_connection()
+            if isinstance(error, asyncio.CancelledError):
+                raise
+            if self._stop_unconfirmed:
+                raise AdapterError(
+                    f"Apitor BLE write failed: {error}; motor stop could not be confirmed; "
+                    "switch off the hub if a motor is moving"
+                ) from error
             raise AdapterError(f"Apitor BLE write failed: {error}") from error
 
-    @staticmethod
-    async def _safe_stop(client) -> None:
-        if not getattr(client, "is_connected", False):
-            return
-        for _ in range(3):
+    async def _confirmed_write(self, client, packet: bytes, command_epoch: int | None = None) -> None:
+        async with self._write_lock:
+            if self._unsafe_client is client:
+                raise AdapterError("Apitor BLE acknowledgement is unsafe; reconnect before further commands")
+            if command_epoch is not None and (command_epoch != self._stop_epoch or self._active_stops):
+                raise AdapterError("Apitor command was superseded by an emergency stop")
             try:
-                await client.write_gatt_char(APITOR_WRITE_UUID, STOP_ALL_MOTORS, response=True)
+                await asyncio.wait_for(
+                    client.write_gatt_char(APITOR_WRITE_UUID, packet, response=True),
+                    timeout=self._gatt_write_timeout,
+                )
+            except (Exception, asyncio.CancelledError):
+                if client is self._client:
+                    self._unsafe_client = client
+                raise
+
+    async def _unconfirmed_emergency_stop(self, client) -> None:
+        # F001 advertises write-without-response. This is an immediate attempt,
+        # never evidence that the motor physically stopped. Hardware acceptance
+        # is required before this candidate can be released.
+        await asyncio.wait_for(
+            client.write_gatt_char(APITOR_WRITE_UUID, STOP_ALL_MOTORS, response=False),
+            timeout=self._emergency_write_timeout,
+        )
+
+    async def _safe_stop(self, client) -> None:
+        if not getattr(client, "is_connected", False):
+            self._stop_unconfirmed = True
+            raise AdapterError("Apitor stop could not be confirmed: BLE client is disconnected")
+        self._stop_epoch += 1
+        self._active_stops += 1
+        fallback_attempted = False
+        try:
+            if self._write_lock.locked() or self._unsafe_client is client:
+                fallback_attempted = True
+                with contextlib.suppress(Exception):
+                    await self._unconfirmed_emergency_stop(client)
+            for _ in range(3):
+                await self._confirmed_write(client, STOP_ALL_MOTORS)
                 await asyncio.sleep(0.05)
-            except Exception:
-                pass
+            self._motion_may_be_active = False
+            self._stop_unconfirmed = False
+        except (Exception, asyncio.CancelledError) as error:
+            self._stop_unconfirmed = True
+            if (not fallback_attempted or isinstance(error, asyncio.CancelledError)) and getattr(
+                client, "is_connected", False
+            ):
+                with contextlib.suppress(Exception):
+                    await self._unconfirmed_emergency_stop(client)
+            if isinstance(error, asyncio.CancelledError):
+                raise
+            raise AdapterError(
+                "Apitor stop was attempted, but BLE delivery is unconfirmed; switch off the hub if it moves"
+            ) from error
+        finally:
+            self._active_stops -= 1
