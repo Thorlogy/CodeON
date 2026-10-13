@@ -1,11 +1,16 @@
 import argparse
+import asyncio
 import os
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from codeon_robot_bridge.server import RotatingTextStream, _validate_launch_context
+from codeon_robot_bridge.bridge import BridgeSession
+from codeon_robot_bridge.errors import AdapterError
+from codeon_robot_bridge.fake_adapter import FakeRobotAdapter
+from codeon_robot_bridge.safety import MotionWatchdog
+from codeon_robot_bridge.server import RotatingTextStream, _validate_launch_context, _watchdog
 
 
 class RotatingTextStreamTest(unittest.TestCase):
@@ -48,6 +53,65 @@ class CozmoLaunchContextTest(unittest.TestCase):
         ):
             _validate_launch_context(args)
 
+
+class WatchdogRecoveryTest(unittest.IsolatedAsyncioTestCase):
+
+    async def test_failed_stop_is_logged_and_retried_without_killing_watchdog(self):
+        class FailOnceAdapter(FakeRobotAdapter):
+            def __init__(self):
+                super().__init__()
+                self.attempts = 0
+                self.retried = asyncio.Event()
+
+            async def stop_all(self):
+                self.attempts += 1
+                if self.attempts == 1:
+                    raise AdapterError("simulated unconfirmed stop")
+                await super().stop_all()
+                self.retried.set()
+
+        adapter = FailOnceAdapter()
+        now = [0.0]
+        session = BridgeSession(adapter, MotionWatchdog(1.0, lambda: now[0]))
+        session.watchdog.motion_started()
+        now[0] = 1.1
+        stop = asyncio.Event()
+        messages = []
+        with patch("codeon_robot_bridge.server._log", messages.append):
+            task = asyncio.create_task(_watchdog(session, stop))
+            try:
+                await asyncio.wait_for(adapter.retried.wait(), 2.0)
+            finally:
+                stop.set()
+                await asyncio.wait_for(task, 1.0)
+        self.assertEqual(adapter.attempts, 2)
+        self.assertEqual(adapter.stop_count, 1)
+        self.assertTrue(any("watchdog stop unconfirmed" in message for message in messages))
+
+    async def test_normal_stop_does_not_retry_for_unaffected_adapter(self):
+        class ObservedAdapter(FakeRobotAdapter):
+            def __init__(self):
+                super().__init__()
+                self.stopped = asyncio.Event()
+
+            async def stop_all(self):
+                await super().stop_all()
+                self.stopped.set()
+
+        adapter = ObservedAdapter()
+        now = [0.0]
+        session = BridgeSession(adapter, MotionWatchdog(1.0, lambda: now[0]))
+        session.watchdog.motion_started()
+        now[0] = 1.1
+        stop = asyncio.Event()
+        task = asyncio.create_task(_watchdog(session, stop))
+        try:
+            await asyncio.wait_for(adapter.stopped.wait(), 0.5)
+            await asyncio.sleep(0.2)
+        finally:
+            stop.set()
+            await asyncio.wait_for(task, 1.0)
+        self.assertEqual(adapter.stop_count, 1)
 
 if __name__ == "__main__":
     unittest.main()

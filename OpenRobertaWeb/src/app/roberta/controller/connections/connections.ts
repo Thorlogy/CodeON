@@ -2507,6 +2507,8 @@ export class ApitorConnection extends AbstractConnection {
     private connected = false;
     private stopped = false;
     private lastConnectionError: DiagnosticError | undefined;
+    private errorRecoveryPending = false;
+    private recoveryEpoch = 0;
 
     override init(): void {
         this.stopped = false;
@@ -2567,12 +2569,17 @@ export class ApitorConnection extends AbstractConnection {
 
     override terminate(): void {
         this.stopped = true;
+        this.recoveryEpoch++;
+        this.errorRecoveryPending = false;
         this.clearRetry();
         if (this.interpreter && !this.interpreter.isTerminated()) this.interpreter.terminate();
         this.interpreter = undefined;
         this.connected = false;
         document.getElementById('codeon-apitor-status')?.remove();
-        this.bridge.stopAll().catch(() => undefined).finally(() => this.bridge.close());
+        this.bridge.stopAll()
+            .then(() => document.getElementById('codeon-apitor-stop-warning')?.remove())
+            .catch((error) => this.showStopWarning(error))
+            .finally(() => this.bridge.close());
         super.terminate();
     }
 
@@ -2630,8 +2637,10 @@ export class ApitorConnection extends AbstractConnection {
 
     private hardwareError(error: Error): void {
         this.recordConnectionError(error);
+        if (this.errorRecoveryPending || this.retryTimer !== undefined) return;
+        this.errorRecoveryPending = true;
+        const recoveryEpoch = ++this.recoveryEpoch;
         this.stopped = true;
-        this.bridge.stopAll().catch(() => undefined);
         if (this.interpreter && !this.interpreter.isTerminated()) this.interpreter.terminate();
         this.interpreter = undefined;
         this.connected = false;
@@ -2639,14 +2648,36 @@ export class ApitorConnection extends AbstractConnection {
         GUISTATE_C.setConnectionState('error');
         GUISTATE_C.setRunEnabled(false);
         $('#head-navi-icon-robot').removeClass('wait busy').addClass('error').attr('title', error.message);
-        console.error('Apitor wurde sicher gestoppt:', error);
-        this.bridge.close();
+        this.showStopWarning(error);
+        console.error('Apitor-Fehler; Motorstopp nicht bestätigt:', error);
         this.clearRetry();
-        this.retryTimer = window.setTimeout(() => {
-            this.retryTimer = undefined;
-            this.stopped = false;
-            this.connectBridge();
-        }, 1000);
+        this.bridge.stopAll().catch(() => undefined).finally(() => {
+            if (this.recoveryEpoch !== recoveryEpoch) return;
+            this.bridge.close();
+            this.errorRecoveryPending = false;
+            this.retryTimer = window.setTimeout(() => {
+                this.retryTimer = undefined;
+                this.stopped = false;
+                this.connectBridge();
+            }, 1000);
+        });
+    }
+
+    private showStopWarning(error: unknown): void {
+        let warning = document.getElementById('codeon-apitor-stop-warning');
+        if (!warning) {
+            warning = document.createElement('div');
+            warning.id = 'codeon-apitor-stop-warning';
+            Object.assign(warning.style, {
+                position: 'fixed', right: '18px', bottom: '24px', zIndex: '10000',
+                maxWidth: '340px', padding: '10px 14px', borderRadius: '6px',
+                color: '#ffffff', background: 'rgba(128, 28, 28, 0.96)',
+                fontSize: '13px', whiteSpace: 'pre-line', pointerEvents: 'none'
+            });
+            document.body.appendChild(warning);
+        }
+        warning.setAttribute('role', 'alert');
+        warning.textContent = '⚠ Apitor: Motorstopp nicht bestätigt. Falls ein Motor läuft, Hub sofort ausschalten.\n' + String(error instanceof Error ? error.message : error).slice(0, 300);
     }
 
     private clearRetry(): void {

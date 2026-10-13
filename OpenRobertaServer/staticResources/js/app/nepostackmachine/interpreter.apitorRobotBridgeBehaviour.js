@@ -26,6 +26,7 @@ define(["require", "exports", "./interpreter.robotSimBehaviour"], function (requ
             _this.lastAction = '';
             _this.sensorSnapshot = {};
             _this.motorStates = new Map();
+            _this.stopUnconfirmed = false;
             _this.pollSensors();
             _this.updateStatus();
             return _this;
@@ -47,7 +48,7 @@ define(["require", "exports", "./interpreter.robotSimBehaviour"], function (requ
                 if (_this.motorStates.get(normalizedPort) === nextState) {
                     _this.motorStates.delete(normalizedPort);
                 }
-                _this.report(error);
+                _this.markStopUnconfirmed(error);
             });
             return 0;
         };
@@ -58,13 +59,20 @@ define(["require", "exports", "./interpreter.robotSimBehaviour"], function (requ
                 return 0;
             }
             this.motorStates.set(normalizedPort, 'stopped');
-            this.lastAction = "".concat(normalizedPort, " \u00B7 ").concat(this.label('gestoppt', 'stopped'));
+            this.lastAction = "".concat(normalizedPort, " \u00B7 ").concat(this.label('Stopp angefordert · Bestätigung ausstehend', 'stop requested · awaiting confirmation'));
             this.updateStatus();
-            this.bridge.command('stopMotor', { port: normalizedPort }).catch(function (error) {
+            this.bridge.command('stopMotor', { port: normalizedPort })
+                .then(function () {
+                if (_this.motorStates.get(normalizedPort) === 'stopped' && !_this.stopUnconfirmed) {
+                    _this.lastAction = "".concat(normalizedPort, " \u00B7 ").concat(_this.label('Stopp von Bridge bestätigt', 'stop confirmed by bridge'));
+                    _this.updateStatus();
+                }
+            })
+                .catch(function (error) {
                 if (_this.motorStates.get(normalizedPort) === 'stopped') {
                     _this.motorStates.delete(normalizedPort);
                 }
-                _this.report(error);
+                _this.markStopUnconfirmed(error);
             });
             return 0;
         };
@@ -75,9 +83,16 @@ define(["require", "exports", "./interpreter.robotSimBehaviour"], function (requ
                 this.sensorTimer = undefined;
             }
             this.motorStates.clear();
-            this.bridge.stopAll().catch(function (error) { return _this.report(error); });
-            this.lastAction = this.label('Alle Motoren gestoppt', 'All motors stopped');
+            this.lastAction = this.label('Stopp angefordert · Bestätigung ausstehend', 'Stop requested · awaiting confirmation');
             this.updateStatus();
+            this.bridge.stopAll()
+                .then(function () {
+                if (!_this.stopUnconfirmed) {
+                    _this.lastAction = _this.label('Stopp von Bridge bestätigt', 'Stop confirmed by bridge');
+                    _this.updateStatus();
+                }
+            })
+                .catch(function (error) { return _this.markStopUnconfirmed(error); });
         };
         ApitorRobotBridgeBehaviour.prototype.getSample = function (state, name, sensor, port, mode, slot) {
             if (sensor !== 'apitor') {
@@ -123,10 +138,18 @@ define(["require", "exports", "./interpreter.robotSimBehaviour"], function (requ
                 });
                 document.body.appendChild(panel);
             }
+            panel.style.background = this.stopUnconfirmed ? 'rgba(128, 28, 28, 0.96)' : 'rgba(0, 52, 74, 0.92)';
+            panel.setAttribute('role', this.stopUnconfirmed ? 'alert' : 'status');
             var sensorLine = this.sensorSnapshot.colorRaw === undefined
                 ? this.label('Sensoren: noch keine Daten', 'Sensors: no data yet')
                 : "".concat(this.label('Sensoren', 'Sensors'), ": Farbe ").concat(this.sensorSnapshot.colorRaw, "/").concat(this.sensorSnapshot.colorGroup, " \u00B7 S1 ").concat(this.sensorSnapshot.infrared1, " \u00B7 S2 ").concat(this.sensorSnapshot.infrared2);
             panel.textContent = "\uD83E\uDD16 Apitor ".concat(this.label('Status', 'status'), "\n").concat(this.label('Aktion', 'Action'), ": ").concat(this.lastAction || this.label('Bereit', 'Ready'), "\n").concat(sensorLine);
+        };
+        ApitorRobotBridgeBehaviour.prototype.markStopUnconfirmed = function (error) {
+            this.stopUnconfirmed = true;
+            this.lastAction = this.label('Stopp nicht bestätigt · Hub ausschalten, falls Motor läuft', 'Stop unconfirmed · switch off hub if motor moves');
+            this.updateStatus();
+            this.report(error);
         };
         ApitorRobotBridgeBehaviour.prototype.label = function (de, en) {
             var language = (document.documentElement.lang || navigator.language || 'de').toLowerCase();
