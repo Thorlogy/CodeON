@@ -8,6 +8,7 @@ export class ApitorRobotBridgeBehaviour extends RobotSimBehaviour {
     private sensorSnapshot: any = {};
     private sensorTimer: number | undefined;
     private motorStates = new Map<string, string>();
+    private stopUnconfirmed = false;
 
     constructor(private readonly bridge: RobotBridgeClient, private readonly onError?: (error: Error) => void) {
         super();
@@ -31,7 +32,7 @@ export class ApitorRobotBridgeBehaviour extends RobotSimBehaviour {
             if (this.motorStates.get(normalizedPort) === nextState) {
                 this.motorStates.delete(normalizedPort);
             }
-            this.report(error);
+            this.markStopUnconfirmed(error);
         });
         return 0;
     }
@@ -42,14 +43,21 @@ export class ApitorRobotBridgeBehaviour extends RobotSimBehaviour {
             return 0;
         }
         this.motorStates.set(normalizedPort, 'stopped');
-        this.lastAction = `${normalizedPort} · ${this.label('gestoppt', 'stopped')}`;
+        this.lastAction = `${normalizedPort} · ${this.label('Stopp angefordert · Bestätigung ausstehend', 'stop requested · awaiting confirmation')}`;
         this.updateStatus();
-        this.bridge.command('stopMotor', { port: normalizedPort }).catch((error) => {
-            if (this.motorStates.get(normalizedPort) === 'stopped') {
-                this.motorStates.delete(normalizedPort);
-            }
-            this.report(error);
-        });
+        this.bridge.command('stopMotor', { port: normalizedPort })
+            .then(() => {
+                if (this.motorStates.get(normalizedPort) === 'stopped' && !this.stopUnconfirmed) {
+                    this.lastAction = `${normalizedPort} · ${this.label('Stopp von Bridge bestätigt', 'stop confirmed by bridge')}`;
+                    this.updateStatus();
+                }
+            })
+            .catch((error) => {
+                if (this.motorStates.get(normalizedPort) === 'stopped') {
+                    this.motorStates.delete(normalizedPort);
+                }
+                this.markStopUnconfirmed(error);
+            });
         return 0;
     }
 
@@ -59,9 +67,16 @@ export class ApitorRobotBridgeBehaviour extends RobotSimBehaviour {
             this.sensorTimer = undefined;
         }
         this.motorStates.clear();
-        this.bridge.stopAll().catch((error) => this.report(error));
-        this.lastAction = this.label('Alle Motoren gestoppt', 'All motors stopped');
+        this.lastAction = this.label('Stopp angefordert · Bestätigung ausstehend', 'Stop requested · awaiting confirmation');
         this.updateStatus();
+        this.bridge.stopAll()
+            .then(() => {
+                if (!this.stopUnconfirmed) {
+                    this.lastAction = this.label('Stopp von Bridge bestätigt', 'Stop confirmed by bridge');
+                    this.updateStatus();
+                }
+            })
+            .catch((error) => this.markStopUnconfirmed(error));
     }
 
     override getSample(state: State, name: string, sensor: string, port: any, mode: string, slot: string): void {
@@ -108,10 +123,19 @@ export class ApitorRobotBridgeBehaviour extends RobotSimBehaviour {
             });
             document.body.appendChild(panel);
         }
+        panel.style.background = this.stopUnconfirmed ? 'rgba(128, 28, 28, 0.96)' : 'rgba(0, 52, 74, 0.92)';
+        panel.setAttribute('role', this.stopUnconfirmed ? 'alert' : 'status');
         const sensorLine = this.sensorSnapshot.colorRaw === undefined
             ? this.label('Sensoren: noch keine Daten', 'Sensors: no data yet')
             : `${this.label('Sensoren', 'Sensors')}: Farbe ${this.sensorSnapshot.colorRaw}/${this.sensorSnapshot.colorGroup} · S1 ${this.sensorSnapshot.infrared1} · S2 ${this.sensorSnapshot.infrared2}`;
         panel.textContent = `🤖 Apitor ${this.label('Status', 'status')}\n${this.label('Aktion', 'Action')}: ${this.lastAction || this.label('Bereit', 'Ready')}\n${sensorLine}`;
+    }
+
+    private markStopUnconfirmed(error: unknown): void {
+        this.stopUnconfirmed = true;
+        this.lastAction = this.label('Stopp nicht bestätigt · Hub ausschalten, falls Motor läuft', 'Stop unconfirmed · switch off hub if motor moves');
+        this.updateStatus();
+        this.report(error);
     }
 
     private label(de: string, en: string): string {

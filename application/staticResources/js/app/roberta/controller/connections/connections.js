@@ -2961,6 +2961,8 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
             _this.bridge = new robotBridge_1.RobotBridgeClient('ws://127.0.0.1:2224', 5000);
             _this.connected = false;
             _this.stopped = false;
+            _this.errorRecoveryPending = false;
+            _this.recoveryEpoch = 0;
             _this.runInterpreterStep = function () {
                 if (!_this.interpreter || _this.stopped || _this.interpreter.isTerminated())
                     return;
@@ -3026,13 +3028,18 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
             var _this = this;
             var _a;
             this.stopped = true;
+            this.recoveryEpoch++;
+            this.errorRecoveryPending = false;
             this.clearRetry();
             if (this.interpreter && !this.interpreter.isTerminated())
                 this.interpreter.terminate();
             this.interpreter = undefined;
             this.connected = false;
             (_a = document.getElementById('codeon-apitor-status')) === null || _a === void 0 ? void 0 : _a.remove();
-            this.bridge.stopAll().catch(function () { return undefined; }).finally(function () { return _this.bridge.close(); });
+            this.bridge.stopAll()
+                .then(function () { var _a; return (_a = document.getElementById('codeon-apitor-stop-warning')) === null || _a === void 0 ? void 0 : _a.remove(); })
+                .catch(function (error) { return _this.showStopWarning(error); })
+                .finally(function () { return _this.bridge.close(); });
             _super.prototype.terminate.call(this);
         };
         ApitorConnection.prototype.setState = function () { };
@@ -3098,8 +3105,11 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
         ApitorConnection.prototype.hardwareError = function (error) {
             var _this = this;
             this.recordConnectionError(error);
+            if (this.errorRecoveryPending || this.retryTimer !== undefined)
+                return;
+            this.errorRecoveryPending = true;
+            var recoveryEpoch = ++this.recoveryEpoch;
             this.stopped = true;
-            this.bridge.stopAll().catch(function () { return undefined; });
             if (this.interpreter && !this.interpreter.isTerminated())
                 this.interpreter.terminate();
             this.interpreter = undefined;
@@ -3108,14 +3118,36 @@ define(["require", "exports", "abstract.connections", "jquery", "guiState.contro
             GUISTATE_C.setConnectionState('error');
             GUISTATE_C.setRunEnabled(false);
             $('#head-navi-icon-robot').removeClass('wait busy').addClass('error').attr('title', error.message);
-            console.error('Apitor wurde sicher gestoppt:', error);
-            this.bridge.close();
+            this.showStopWarning(error);
+            console.error('Apitor-Fehler; Motorstopp nicht bestätigt:', error);
             this.clearRetry();
-            this.retryTimer = window.setTimeout(function () {
-                _this.retryTimer = undefined;
-                _this.stopped = false;
-                _this.connectBridge();
-            }, 1000);
+            this.bridge.stopAll().catch(function () { return undefined; }).finally(function () {
+                if (_this.recoveryEpoch !== recoveryEpoch)
+                    return;
+                _this.bridge.close();
+                _this.errorRecoveryPending = false;
+                _this.retryTimer = window.setTimeout(function () {
+                    _this.retryTimer = undefined;
+                    _this.stopped = false;
+                    _this.connectBridge();
+                }, 1000);
+            });
+        };
+        ApitorConnection.prototype.showStopWarning = function (error) {
+            var warning = document.getElementById('codeon-apitor-stop-warning');
+            if (!warning) {
+                warning = document.createElement('div');
+                warning.id = 'codeon-apitor-stop-warning';
+                Object.assign(warning.style, {
+                    position: 'fixed', right: '18px', bottom: '24px', zIndex: '10000',
+                    maxWidth: '340px', padding: '10px 14px', borderRadius: '6px',
+                    color: '#ffffff', background: 'rgba(128, 28, 28, 0.96)',
+                    fontSize: '13px', whiteSpace: 'pre-line', pointerEvents: 'none'
+                });
+                document.body.appendChild(warning);
+            }
+            warning.setAttribute('role', 'alert');
+            warning.textContent = '⚠ Apitor: Motorstopp nicht bestätigt. Falls ein Motor läuft, Hub sofort ausschalten.\n' + String(error instanceof Error ? error.message : error).slice(0, 300);
         };
         ApitorConnection.prototype.clearRetry = function () {
             if (this.retryTimer !== undefined) {
