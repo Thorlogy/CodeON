@@ -13,7 +13,7 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-define(["require", "exports", "robot.base.mobile", "robot.sensors", "robot.actuators", "jquery"], function (require, exports, robot_base_mobile_1, robot_sensors_1, robot_actuators_1, $) {
+define(["require", "exports", "robot.base.mobile", "robot.sensors", "robot.actuators", "robot.sensor.points", "jquery"], function (require, exports, robot_base_mobile_1, robot_sensors_1, robot_actuators_1, robot_sensor_mounts_1, $) {
     Object.defineProperty(exports, "__esModule", { value: true });
     var RobotRcj = /** @class */ (function (_super) {
         __extends(RobotRcj, _super);
@@ -32,10 +32,12 @@ define(["require", "exports", "robot.base.mobile", "robot.sensors", "robot.actua
                 switch (sensors[c]['TYPE']) {
                     case 'TOUCH':
                         // only one is drawable as bumper
-                        this_1[c] = new robot_sensors_1.TouchSensor(c, -25, 0, this_1.chassis.geom.color);
+                        var touchMount = (0, robot_sensor_mounts_1.getSensorMount)('rcj', c, 'TOUCH', { x: -25, y: 0 });
+                        this_1[c] = new robot_sensors_1.TouchSensor(c, touchMount.x, touchMount.y, this_1.chassis.geom.color);
                         break;
                     case 'INDUCTIVE':
-                        this_1[c] = new robot_sensors_1.InductiveSensor(c, 14, 0, 60);
+                        var inductiveMount = (0, robot_sensor_mounts_1.getSensorMount)('rcj', c, 'INDUCTIVE', { x: 14, y: 0 });
+                        this_1[c] = new robot_sensors_1.InductiveSensor(c, inductiveMount.x, inductiveMount.y, 60);
                         break;
                     case 'COLOR': // Current server type; retain legacy COLOUR configurations.
                     case 'COLOUR':
@@ -48,7 +50,8 @@ define(["require", "exports", "robot.base.mobile", "robot.sensors", "robot.actua
                         var ord = myColorSensors_1.length + 1;
                         var id = Object.keys(sensors).filter(function (port) { return ['COLOR', 'COLOUR'].includes(sensors[port]['TYPE']); }).length;
                         var y = ord * 10 - 5 * (id + 1);
-                        this_1[c] = new robot_sensors_1.ColorSensorHex(c, 9, y, 0, 5);
+                        var colorMount = (0, robot_sensor_mounts_1.getSensorMount)('rcj', c, 'COLOR', { x: 9, y: y, theta: 0 });
+                        this_1[c] = new robot_sensors_1.ColorSensorHex(c, colorMount.x, colorMount.y, colorMount.theta || 0, 5);
                         break;
                     case 'ULTRASONIC': {
                         var mySensors_1 = [];
@@ -85,7 +88,8 @@ define(["require", "exports", "robot.base.mobile", "robot.sensors", "robot.actua
                                     break;
                             }
                         }
-                        this_1[c] = new robot_sensors_1.UltrasonicSensor(c, position.x, position.y, position.theta, 250);
+                        var ultrasonicMount = (0, robot_sensor_mounts_1.getSensorMount)('rcj', c, 'ULTRASONIC', { x: position.x, y: position.y, theta: position.theta });
+                        this_1[c] = new robot_sensors_1.UltrasonicSensor(c, ultrasonicMount.x, ultrasonicMount.y, ultrasonicMount.theta || 0, 250);
                         break;
                     }
                 }

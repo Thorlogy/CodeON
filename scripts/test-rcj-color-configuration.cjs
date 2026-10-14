@@ -16,6 +16,7 @@ const modules={require(){},exports:robotExports,
     'robot.base.mobile':{RobotBaseMobile,Pose:class {constructor(x,y,theta){Object.assign(this,{x,y,theta});}}},
     'robot.sensors':{ColorSensor,ColorSensorHex,DistanceSensor,UltrasonicSensor,TouchSensor,InductiveSensor,EV3Keys:class {constructor(){this.keys=[];}},GyroSensor:class {},Timer:class {}},
     'robot.actuators':{RCJChassis:class {constructor(){this.geom={x:-20,y:-20,w:34,h:40,color:'yellow'};}},StatusLed:class {},WebAudio:class {}},
+    'robot.sensor.points':{getSensorMount(_group,_id,_type,fallback){return fallback;}},
     jquery:()=>({on(){}})};
 vm.runInNewContext(server,{define:(deps,factory)=>factory(...deps.map(key=>{assert.ok(key in modules,key);return modules[key];}))});
 for(const types of [['COLOR'],['COLOUR'],['COLOR','COLOUR'],['COLOUR','COLOR','COLOR']]){

@@ -11,6 +11,8 @@
     const POSITIONS = ['front', 'right', 'back', 'left', 'up', 'down'];
     const MAX_STORAGE_CHARS = 32768;
     const own = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
+    let refreshEditor = null;
+    let activeConfigurationId = null;
 
     function browserStorage() {
         try { return typeof localStorage === 'undefined' ? null : localStorage; }
@@ -176,11 +178,19 @@
             if (selected) positionSelect.value = current.positions[selected.id] || '';
             status.textContent = sensors.length ? '' : words.none;
         }
+        refreshEditor = refresh;
         button.addEventListener('click', function () {
             refresh(); panel.hidden = !panel.hidden; button.setAttribute('aria-expanded', String(!panel.hidden));
             if (!panel.hidden && !sensorSelect.hidden) sensorSelect.focus();
         });
         close.addEventListener('click', function () { panel.hidden = true; button.setAttribute('aria-expanded','false'); button.focus(); });
+        document.addEventListener('click', function (event) {
+            if (event.target instanceof Element && event.target.closest('#menuRobotSwitch, #logoShowStart, .menuShowStart')) {
+                panel.hidden = true;
+                button.setAttribute('aria-expanded', 'false');
+                activeConfigurationId = null;
+            }
+        });
         sensorSelect.addEventListener('change', refresh);
         positionSelect.addEventListener('change', function () {
             const selected = sensorSelect.value;
@@ -192,13 +202,18 @@
             refresh(); status.textContent = ok ? words.saved : words.failed;
         });
     }
-    function setAvailable(available) {
+    function setAvailable(available, configurationId) {
         const button = typeof document !== 'undefined' && document.getElementById('simSensorMounts');
         if (button) button.hidden = !available;
         if (!available && typeof document !== 'undefined') {
+            activeConfigurationId = null;
             const panel = document.querySelector('.codeonSensorMountPanel');
             if (panel) panel.hidden = true;
             if (button) button.setAttribute('aria-expanded','false');
+        } else if (available && configurationId !== activeConfigurationId) {
+            activeConfigurationId = configurationId;
+            const panel = typeof document !== 'undefined' && document.querySelector('.codeonSensorMountPanel');
+            if (panel && !panel.hidden && refreshEditor) refreshEditor();
         }
     }
     if (typeof document !== 'undefined') {

@@ -105,7 +105,9 @@ function rcxSnapshot(base, sensors) {
     const context = {
         window: { CodeOnSensorOverlay2D: { draw() { overlayCalls++; } } },
         define(dependencies, factory) {
-            factory(() => {}, exports, { default: RobotEv3 }, { RCXChassis }, { TouchSensor, LightSensor, Timer, EV3Keys });
+            factory(() => {}, exports, { default: RobotEv3 }, { RCXChassis }, { TouchSensor, LightSensor, Timer, EV3Keys }, {
+                getSensorMount(_group, _port, _type, fallback) { return fallback; }
+            });
         }
     };
     const file = path.join(base, 'js/app/simulation/simulationLogic/robot.rcx.js');
