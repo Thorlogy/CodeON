@@ -28,7 +28,7 @@
 })();
 require.config({
     baseUrl: '.',
-    urlArgs: 'v=codeon-live-20261006-sensor-mounts-47',
+    urlArgs: 'v=codeon-live-20261013-sensor-integration-51',
     paths: {
         ace: 'libs/ace/ace',
         ace_lang: 'libs/ace/ext-language_tools',
@@ -132,6 +132,7 @@ require.config({
         'robot.base': 'js/app/simulation/simulationLogic/robot.base',
         'simulation.objects': 'js/app/simulation/simulationLogic/simulation.objects',
         'robot.sensors': 'js/app/simulation/simulationLogic/robot.sensors',
+        'robot.sensor.points': 'js/app/simulation/simulationLogic/robot.sensor.points',
         'robot.actuators': 'js/app/simulation/simulationLogic/robot.actuators',
         'simulation.types': 'js/app/simulation/simulationLogic/types',
         'simulation.scene': 'js/app/simulation/simulationLogic/simulation.scene',

@@ -43,6 +43,9 @@ jobs:
       - run: node scripts/test-cozmo-simulation-static.js
       - run: node scripts/test-apitor-simulation-static.js
       - run: node scripts/test-codeon-3d-static.js
+      - run: node scripts/test-sensor-mount-injection.cjs
+      - run: node scripts/test-sensor-mount-ui.cjs
+      - run: node scripts/test-rcj-color-configuration.cjs
       - run: node scripts/test-codeon-buddy-security.js
 
   cozmo-python-contract:

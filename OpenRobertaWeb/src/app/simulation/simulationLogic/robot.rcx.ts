@@ -1,6 +1,7 @@
 import RobotEv3 from 'robot.ev3';
 import { RCXChassis } from 'robot.actuators';
 import { EV3Keys, LightSensor, Timer, TouchSensor } from 'robot.sensors';
+import { getSensorMount } from 'robot.sensor.points';
 
 export default class RobotRcx extends RobotEv3 {
     override timer: Timer = new Timer(1);
@@ -19,7 +20,8 @@ export default class RobotRcx extends RobotEv3 {
                 case 'TOUCH': {
                     const index = touchPorts.indexOf(c);
                     const y = touchPorts.length > 1 ? (index - (touchPorts.length - 1) / 2) * 12 : 0;
-                    this[c] = new TouchSensor(c, 25, y, this.chassis.geom.color, touchPorts.length > 1);
+                    const mount = getSensorMount('rcx', c, 'TOUCH', { x: 25, y });
+                    this[c] = new TouchSensor(c, mount.x, mount.y, this.chassis.geom.color, touchPorts.length > 1);
                     break;
                 }
                 case 'LIGHT': {
@@ -33,7 +35,8 @@ export default class RobotRcx extends RobotEv3 {
                     const ord = myColorLightSensors.length + 1;
                     const id = Object.keys(sensors).filter((sensor) => sensors[sensor]['TYPE'] == 'LIGHT').length;
                     let y = ord * 10 - 5 * (id + 1);
-                    this[c] = new LightSensor(c, 15, y, 0, 5);
+                    const mount = getSensorMount('rcx', c, 'LIGHT', { x: 15, y, theta: 0 });
+                    this[c] = new LightSensor(c, mount.x, mount.y, mount.theta || 0, 5);
                     break;
                 }
             }

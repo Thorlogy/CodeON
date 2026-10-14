@@ -1,6 +1,7 @@
 import { Pose, RobotBaseMobile } from 'robot.base.mobile';
 import { ColorSensor, ColorSensorHex, DistanceSensor, EV3Keys, GyroSensor, InductiveSensor, Timer, TouchSensor, UltrasonicSensor } from 'robot.sensors';
 import { ChassisDiffDrive, RCJChassis, StatusLed, WebAudio } from 'robot.actuators';
+import { getSensorMount } from 'robot.sensor.points';
 import * as $ from 'jquery';
 
 export default class RobotRcj extends RobotBaseMobile {
@@ -21,10 +22,12 @@ export default class RobotRcj extends RobotBaseMobile {
             switch (sensors[c]['TYPE']) {
                 case 'TOUCH':
                     // only one is drawable as bumper
-                    this[c] = new TouchSensor(c, -25, 0, this.chassis.geom.color);
+                    const touchMount = getSensorMount('rcj', c, 'TOUCH', { x: -25, y: 0 });
+                    this[c] = new TouchSensor(c, touchMount.x, touchMount.y, this.chassis.geom.color);
                     break;
                 case 'INDUCTIVE':
-                    this[c] = new InductiveSensor(c, 14, 0, 60);
+                    const inductiveMount = getSensorMount('rcj', c, 'INDUCTIVE', { x: 14, y: 0 });
+                    this[c] = new InductiveSensor(c, inductiveMount.x, inductiveMount.y, 60);
                     break;
                 case 'COLOR': // Current server type; retain legacy COLOUR configurations.
                 case 'COLOUR':
@@ -37,7 +40,8 @@ export default class RobotRcj extends RobotBaseMobile {
                     const ord = myColorSensors.length + 1;
                     const id = Object.keys(sensors).filter((port) => ['COLOR', 'COLOUR'].includes(sensors[port]['TYPE'])).length;
                     let y = ord * 10 - 5 * (id + 1);
-                    this[c] = new ColorSensorHex(c, 9, y, 0, 5);
+                    const colorMount = getSensorMount('rcj', c, 'COLOR', { x: 9, y, theta: 0 });
+                    this[c] = new ColorSensorHex(c, colorMount.x, colorMount.y, colorMount.theta || 0, 5);
                     break;
                 case 'ULTRASONIC': {
                     let mySensors = [];
@@ -72,7 +76,8 @@ export default class RobotRcj extends RobotBaseMobile {
                                 break;
                         }
                     }
-                    this[c] = new UltrasonicSensor(c, position.x, position.y, position.theta, 250);
+                    const ultrasonicMount = getSensorMount('rcj', c, 'ULTRASONIC', { x: position.x, y: position.y, theta: position.theta });
+                    this[c] = new UltrasonicSensor(c, ultrasonicMount.x, ultrasonicMount.y, ultrasonicMount.theta || 0, 250);
                     break;
                 }
             }

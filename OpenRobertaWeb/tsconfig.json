@@ -251,6 +251,9 @@
       "robot.sensors": [
         "app/simulation/simulationLogic/robot.sensors"
       ],
+      "robot.sensor.points": [
+        "app/simulation/simulationLogic/robot.sensor.points"
+      ],
       "robot.actuators": [
         "app/simulation/simulationLogic/robot.actuators"
       ],

@@ -163,8 +163,10 @@
             return;
         }
         var selected = robot instanceof sensorTypes.rcx || robot instanceof sensorTypes.rcj;
-        if (window.CodeOnSensorMounts) window.CodeOnSensorMounts.setAvailable(selected);
-        if (!selected) { sensorVisualState = { count: 0, groups: 0, revision: 0 }; sensorMountConfigurationId = null; sensorMountPreferences = Object.create(null); return; }
+        if (!selected) {
+            if (window.CodeOnSensorMounts) window.CodeOnSensorMounts.setAvailable(false);
+            sensorVisualState = { count: 0, groups: 0, revision: 0 }; sensorMountConfigurationId = null; sensorMountPreferences = Object.create(null); return;
+        }
         var descriptors = window.CodeOnSensorVisuals.describe(robot, sensorTypes);
         var family = robot instanceof sensorTypes.rcx ? 'rcx' : 'rcj';
         if (window.CodeOnSensorMounts) {
@@ -175,6 +177,7 @@
             }
             descriptors = window.CodeOnSensorVisuals.applyMounts(robot, descriptors, sensorMountPreferences);
         }
+        if (window.CodeOnSensorMounts) window.CodeOnSensorMounts.setAvailable(true, sensorMountConfigurationId);
         sensorVisualState = window.CodeOnSensorGeometry.update(THREE, robotMesh, descriptors, offset);
         // Hide only the old decorative sensor parts, not chassis/wheels/gripper.
         (robotMesh.userData.legacySensorParts || []).forEach(function (part) { part.visible = false; });

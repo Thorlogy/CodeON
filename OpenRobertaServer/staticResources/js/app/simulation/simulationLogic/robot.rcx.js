@@ -13,7 +13,7 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-define(["require", "exports", "robot.ev3", "robot.actuators", "robot.sensors"], function (require, exports, robot_ev3_1, robot_actuators_1, robot_sensors_1) {
+define(["require", "exports", "robot.ev3", "robot.actuators", "robot.sensors", "robot.sensor.points"], function (require, exports, robot_ev3_1, robot_actuators_1, robot_sensors_1, robot_sensor_mounts_1) {
     Object.defineProperty(exports, "__esModule", { value: true });
     var RobotRcx = /** @class */ (function (_super) {
         __extends(RobotRcx, _super);
@@ -34,7 +34,8 @@ define(["require", "exports", "robot.ev3", "robot.actuators", "robot.sensors"], 
                     case 'TOUCH': {
                         var index = touchPorts.indexOf(c);
                         var y = touchPorts.length > 1 ? (index - (touchPorts.length - 1) / 2) * 12 : 0;
-                        this_1[c] = new robot_sensors_1.TouchSensor(c, 25, y, this_1.chassis.geom.color, touchPorts.length > 1);
+                        var mount = (0, robot_sensor_mounts_1.getSensorMount)('rcx', c, 'TOUCH', { x: 25, y: y });
+                        this_1[c] = new robot_sensors_1.TouchSensor(c, mount.x, mount.y, this_1.chassis.geom.color, touchPorts.length > 1);
                         break;
                     }
                     case 'LIGHT': {
@@ -48,7 +49,8 @@ define(["require", "exports", "robot.ev3", "robot.actuators", "robot.sensors"], 
                         var ord = myColorLightSensors_1.length + 1;
                         var id = Object.keys(sensors).filter(function (sensor) { return sensors[sensor]['TYPE'] == 'LIGHT'; }).length;
                         var y = ord * 10 - 5 * (id + 1);
-                        this_1[c] = new robot_sensors_1.LightSensor(c, 15, y, 0, 5);
+                        var mount = (0, robot_sensor_mounts_1.getSensorMount)('rcx', c, 'LIGHT', { x: 15, y: y, theta: 0 });
+                        this_1[c] = new robot_sensors_1.LightSensor(c, mount.x, mount.y, mount.theta || 0, 5);
                         break;
                     }
                 }
