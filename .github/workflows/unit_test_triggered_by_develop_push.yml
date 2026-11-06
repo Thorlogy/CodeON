@@ -74,8 +74,8 @@ jobs:
         run: PYTHONDONTWRITEBYTECODE=1 python3 scripts/test_codeon_direct_java_starters.py
       - name: Test active CodeON robot reactor
         run: mvn --batch-mode -pl OpenRobertaRobot,RobotEdison,RobotSpike,RobotCozmo,RobotApitor,RobotRCX -am -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test
-      - name: Test CodeON LEGACY programs and local server binding
-        run: mvn --batch-mode -pl OpenRobertaServer -am -Dtest=CodeOnLegacyProgramRegressionTest,ServerStarterLoopbackTest -DfailIfNoTests=false -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test
+      - name: Test CodeON LEGACY programs, import limits and local server binding
+        run: mvn --batch-mode -pl OpenRobertaServer -am -Dtest=CodeOnLegacyProgramRegressionTest,ServerStarterLoopbackTest,FullRestRequestProviderImportTest,ProgramImportHttpTest -DfailIfNoTests=false -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test
       - name: Package CodeON server reactor
         run: mvn --batch-mode -pl OpenRobertaServer -am -DskipTests package
 

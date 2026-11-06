@@ -32,6 +32,7 @@ import de.fhg.iais.roberta.factory.RobotFactory;
 import de.fhg.iais.roberta.generated.restEntities.BaseResponse;
 import de.fhg.iais.roberta.generated.restEntities.EntityResponse;
 import de.fhg.iais.roberta.generated.restEntities.FullRestRequest;
+import de.fhg.iais.roberta.javaServer.provider.ProgramImport;
 import de.fhg.iais.roberta.generated.restEntities.ImportErrorResponse;
 import de.fhg.iais.roberta.generated.restEntities.ImportRequest;
 import de.fhg.iais.roberta.generated.restEntities.ImportResponse;
@@ -402,7 +403,7 @@ public class ClientProgramController {
     @Path("/import")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response importProgram(@XsltTrans XsltAndJavaTransformer xsltAndJavaTransformer, FullRestRequest request) {
+    public Response importProgram(@XsltTrans XsltAndJavaTransformer xsltAndJavaTransformer, @ProgramImport FullRestRequest request) {
         HttpSessionState httpSessionState = UtilForREST.handleRequestInit(LOG, request, true);
         try {
             ImportRequest importRequest = ImportRequest.make(request.getData());

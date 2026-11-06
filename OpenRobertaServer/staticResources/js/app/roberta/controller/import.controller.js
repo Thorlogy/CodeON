@@ -6,6 +6,17 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
         $('#fileSelector').off();
         $('#fileSelector').onWrap('change', function (event) {
             var file = event.target.files[0];
+            if (!file) {
+                return false;
+            }
+            // Restrict block-program imports only; source-code imports keep their existing behavior.
+            if ((callback === loadProgramFromXML || callback === loadProgramFromXMLStart) && file.size > 2 * 1024 * 1024) {
+                var message = GUISTATE_C.getLanguage() === 'de'
+                    ? 'Die XML-Datei ist zu groß. Erlaubt sind höchstens 2 MiB. Dein aktuelles Programm bleibt unverändert.'
+                    : 'The XML file is too large. The maximum size is 2 MiB. Your current program remains unchanged.';
+                MSG.displayPopupMessage('', message, Blockly.Msg.OK || 'OK');
+                return false;
+            }
             var reader = new FileReader();
             reader.onload = function (event) {
                 var name = UTIL.getBasename(file.name);
@@ -109,7 +120,12 @@ define(["require", "exports", "message", "log", "util.roberta", "guiState.contro
                 }
             }
             else {
-                if (result.message === 'ORA_PROGRAM_IMPORT_ERROR_WRONG_ROBOT_TYPE') {
+                if (result.message === 'ORA_PROGRAM_IMPORT_TOO_LARGE') {
+                    var message = GUISTATE_C.getLanguage() === 'de'
+                        ? 'Die Importanfrage ist zu groß. Bitte verkleinere dein Programm. Dein aktuelles Programm bleibt unverändert.'
+                        : 'The import request is too large. Please reduce your program size. Your current program remains unchanged.';
+                    MSG.displayPopupMessage('', message, Blockly.Msg.OK || 'OK');
+                } else if (result.message === 'ORA_PROGRAM_IMPORT_ERROR_WRONG_ROBOT_TYPE') {
                     MSG.displayInformation(result, '', result.message, result.robotTypes);
                 }
                 else {
