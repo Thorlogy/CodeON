@@ -28,7 +28,7 @@
 })();
 require.config({
     baseUrl: '.',
-    urlArgs: 'v=codeon-live-20261013-sensor-integration-51',
+    urlArgs: 'v=codeon-import-limit-20261106',
     paths: {
         ace: 'libs/ace/ace',
         ace_lang: 'libs/ace/ext-language_tools',

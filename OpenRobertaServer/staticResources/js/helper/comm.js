@@ -90,7 +90,13 @@ define(["require", "exports", "jquery", "wrap", "log"], function (require, expor
             dataType: 'json',
             data: JSON.stringify(load),
             success: WRAP.wrapREST(successFnWrapper, message),
-            error: WRAP.wrapErrorFn(errorFn),
+            error: WRAP.wrapErrorFn(function (response) {
+                if (url === '/program/import' && response.status === 413) {
+                    successFn({ rc: 'error', message: 'ORA_PROGRAM_IMPORT_TOO_LARGE' });
+                } else {
+                    errorFn(response);
+                }
+            }),
         });
     }
     exports.json = json;

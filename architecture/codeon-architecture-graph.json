@@ -38,7 +38,7 @@
     { "id": "test.direct-java-starters", "type": "test", "label": "Direct Unix Java launcher and fresh database safety", "command": "PYTHONDONTWRITEBYTECODE=1 python3 scripts/test_codeon_direct_java_starters.py" },
     { "id": "test.windows-admin", "type": "test", "label": "Direct Windows admin batch launcher and fresh database safety", "command": "python scripts/test_codeon_windows_admin.py" },
     { "id": "test.rcx-bridge", "type": "test", "label": "RCX transfer and bounded read-only firmware diagnostics", "command": "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest RobotRCX/src/test/python/test_rcx_bridge.py" },
-    { "id": "test.legacy-programs", "type": "test", "label": "Five active CodeON LEGACY program regressions", "command": "mvn --batch-mode -pl OpenRobertaServer -am -Dtest=CodeOnLegacyProgramRegressionTest -DfailIfNoTests=false -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test" },
+    { "id": "test.legacy-programs", "type": "test", "label": "Active CodeON LEGACY programs and import limit regressions", "command": "mvn --batch-mode -pl OpenRobertaServer -am -Dtest=CodeOnLegacyProgramRegressionTest,FullRestRequestProviderImportTest,ProgramImportHttpTest -DfailIfNoTests=false -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test" },
     { "id": "test.java-reactor", "type": "test", "label": "Active robot Maven reactor tests", "command": "mvn -pl OpenRobertaRobot,RobotEdison,RobotSpike,RobotCozmo,RobotApitor,RobotRCX -am -DargLine='--add-opens java.base/java.lang=ALL-UNNAMED' test" },
     { "id": "test.server-package", "type": "test", "label": "Server reactor package build", "command": "mvn -pl OpenRobertaServer -am -DskipTests package" }
   ],
