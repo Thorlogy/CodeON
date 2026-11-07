@@ -276,20 +276,27 @@ class CozmoAdapterTest(unittest.IsolatedAsyncioTestCase):
 
     async def test_prioritized_face_behavior_starts_and_stops_cooperatively(self):
         await self.adapter.connect()
+        drive_called = asyncio.Event()
+        loop = asyncio.get_running_loop()
+        original_drive = self.client.drive_wheels
+
+        def record_drive(*args):
+            original_drive(*args)
+            loop.call_soon_threadsafe(drive_called.set)
 
         async def start_camera(_client):
             self.adapter._camera_enabled = True
 
-        with patch.object(self.adapter, "_start_camera", side_effect=start_camera):
+        with patch.object(self.adapter, "_start_camera", side_effect=start_camera), patch.object(
+            self.client, "drive_wheels", side_effect=record_drive
+        ):
             await self.adapter.execute("startBehavior", {"preset": "faceSearchAndFollow"})
-            for _ in range(5):
-                if any(name == "drive_wheels" for name, _ in self.client.calls):
-                    break
-                await asyncio.sleep(0)
-            self.assertTrue(self.adapter._behavior_runtime.running)
-            self.assertIn("drive_wheels", [name for name, _ in self.client.calls])
-
-            await self.adapter.execute("stopBehavior", {})
+            try:
+                await asyncio.wait_for(drive_called.wait(), timeout=2.0)
+                self.assertTrue(self.adapter._behavior_runtime.running)
+                self.assertIn("drive_wheels", [name for name, _ in self.client.calls])
+            finally:
+                await self.adapter.execute("stopBehavior", {})
 
         self.assertFalse(self.adapter._behavior_runtime.running)
         self.assertEqual("stop_all_motors", self.client.calls[-1][0])
