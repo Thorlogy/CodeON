@@ -65,9 +65,9 @@ assert.match(
 );
 assert.match(server, /function showProgramTab\(callback, params, opt_onProgramTabReady\)/);
 assert.match(server, /\.initConnection\(robot\)[\s\S]*?Initial robot connection failed/);
-assert.match(source, /codeon-live-20261013-sensor-integration-51/);
-assert.match(server, /codeon-live-20261013-sensor-integration-51/);
+assert.match(source, /codeon-import-limit-20261106/);
+assert.match(server, /codeon-import-limit-20261106/);
 assert.strictEqual(serverIndex, applicationIndex, 'the packaged application must contain the same index as the server resources');
-assert.match(serverIndex, /codeon-live-20261013-sensor-integration-51/);
+assert.match(serverIndex, /codeon-import-limit-20261106/);
 
 console.log('Cozmo first-selection initialization checks passed.');
